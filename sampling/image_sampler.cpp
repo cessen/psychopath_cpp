@@ -10,8 +10,6 @@
 #include <math.h>
 #include <algorithm>
 
-#define RAND ((float)(rand_cmwc()%400000000)/(float)400000000)
-
 inline float radical_inverse(int n, int base)
 {
     float val = 0;
@@ -57,7 +55,7 @@ ImageSampler::ImageSampler(int spp_,
     }
     points_traversed = 0;
     
-    init_rand(17);
+    rng.seed(17);
 }                    
 
 
@@ -84,11 +82,11 @@ bool ImageSampler::get_next_sample(Sample *sample)
     
     // Using random
     /*
-    sample->x = (RAND + x) / res_x;
-    sample->y = (RAND + y) / res_y;
-    sample->u = RAND;
-    sample->v = RAND;
-    sample->t = RAND;
+    sample->x = (rng.next_float() + x) / res_x;
+    sample->y = (rng.next_float() + y) / res_y;
+    sample->u = rng.next_float();
+    sample->v = rng.next_float();
+    sample->t = rng.next_float();
     */
     
     // increment to next sample

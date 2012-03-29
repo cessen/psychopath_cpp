@@ -2,6 +2,7 @@
 #define IMAGE_SAMPLER_H
 
 #include "sample.h"
+#include "rng.h"
 #include <vector>
 
 /*
@@ -32,6 +33,9 @@ class ImageSampler
         /* For reporting percentages. */
         unsigned int samp_taken;
         unsigned int tot_samp;
+        
+        /* Random number generator. */
+        RNG rng;
         
         
     public:

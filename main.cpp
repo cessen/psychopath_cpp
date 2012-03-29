@@ -19,7 +19,7 @@
 OIIO_NAMESPACE_USING
 
 #define GAMMA 2.2
-#define SPP 64
+#define SPP 8
 #define XRES 1280
 #define YRES 720
 #define ASPECT (((float)(YRES))/XRES)
