@@ -272,12 +272,12 @@ inline bool intersect_grid_bvh_node(unsigned char time_count, GridBVHNode *nodes
         bounds[1].z = nodes[ia].bounds[5];
     }
     
-    tmin = (bounds[ray.accel.d_is_neg[0]].x - ray.o.x) * ray.accel.inv_d.x;
-    tmax = (bounds[1-ray.accel.d_is_neg[0]].x - ray.o.x) * ray.accel.inv_d.x;
-    const float tymin = (bounds[ray.accel.d_is_neg[1]].y - ray.o.y) * ray.accel.inv_d.y;
-    const float tymax = (bounds[1-ray.accel.d_is_neg[1]].y - ray.o.y) * ray.accel.inv_d.y;
-    const float tzmin = (bounds[ray.accel.d_is_neg[2]].z - ray.o.z) * ray.accel.inv_d.z;
-    const float tzmax = (bounds[1-ray.accel.d_is_neg[2]].z - ray.o.z) * ray.accel.inv_d.z;
+    tmin = (bounds[ray.d_is_neg[0]].x - ray.o.x) * ray.inv_d.x;
+    tmax = (bounds[1-ray.d_is_neg[0]].x - ray.o.x) * ray.inv_d.x;
+    const float tymin = (bounds[ray.d_is_neg[1]].y - ray.o.y) * ray.inv_d.y;
+    const float tymax = (bounds[1-ray.d_is_neg[1]].y - ray.o.y) * ray.inv_d.y;
+    const float tzmin = (bounds[ray.d_is_neg[2]].z - ray.o.z) * ray.inv_d.z;
+    const float tzmax = (bounds[1-ray.d_is_neg[2]].z - ray.o.z) * ray.inv_d.z;
 
     if (tymin > tmin)
         tmin = tymin;
@@ -288,7 +288,7 @@ inline bool intersect_grid_bvh_node(unsigned char time_count, GridBVHNode *nodes
     if (tzmax < tmax)
         tmax = tzmax;
     
-    return (tmin < tmax) && (tmin < ray.maxt) && (tmax > ray.mint);
+    return (tmin < tmax) && (tmin < ray.max_t) && (tmax > ray.min_t);
 }
 
 
@@ -347,11 +347,11 @@ bool Grid::intersect_ray(Ray &rayo, Intersection *intersection)
             if(bvh_nodes[node].flags & IS_LEAF)
             {
                 //Intersect ray with upoly in leaf BVH node
-                if(intersect_ray_upoly(rayo, bvh_nodes[node].upoly_index, &u, &v, &(rayo.maxt)))
+                if(intersect_ray_upoly(rayo, bvh_nodes[node].upoly_index, &u, &v, &(rayo.max_t)))
                 {
                     hit = true;
                     upoly_i = bvh_nodes[node].upoly_index;
-                    //ray.maxt = rayo.maxt * tscale;
+                    //ray.max_t = rayo.max_t * tscale;
                 }
                 
                 if(todo_offset == 0)

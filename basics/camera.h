@@ -55,14 +55,20 @@ class Camera
             ray.d.z = 1.0;
             ray.d.normalize();
             
-            // Ray differentials
-            ray.rdw = 0.0;
-            ray.rdd = (2.0 * dx * tfov) * ray.d.z;
+            // Ray image plane differentials
+            ray.od[0] = Vec3(0.0f, 0.0f, 0.0f);
+            ray.od[1] = Vec3(0.0f, 0.0f, 0.0f);
+            ray.dd[0] = Vec3(dx, 0.0f, 0.0f);
+            ray.dd[1] = Vec3(0.0f, dy, 0.0f);
             
-            // Ray scattering differentials ("focus factor")
-            ray.sw = 0.707 * lens_diameter * Config::focus_factor;
-            ray.sd = (-ray.sw / focus_distance) * ray.d.z;
+            // Ray lens differentials
+            ray.od[2] = Vec3(lens_diameter * Config::focus_factor, 0.0f, 0.0f);
+            ray.od[3] = Vec3(0.0f, lens_diameter * Config::focus_factor, 0.0f);
+            ray.dd[2] = Vec3((-lens_diameter/focus_distance) * Config::focus_factor, 0.0f, 0.0f);
+            ray.dd[3] = Vec3(0.0f, (-lens_diameter/focus_distance) * Config::focus_factor, 0.0f);
             
+            ray.has_differentials = true;
+                    
             // Get transform matrix
             unsigned int ia;
             float alpha;

@@ -96,7 +96,7 @@ static inline bool fast_intersect_test_bbox(const BBox &b, const Ray &ray, float
     
     // Fetch the ray origin and inverse direction
     const __m128 o = _mm_setr_ps(ray.o.x, ray.o.y, ray.o.z, 0.0);
-    const __m128 invd = _mm_setr_ps(ray.accel.inv_d.x, ray.accel.inv_d.y, ray.accel.inv_d.z, 0.0);
+    const __m128 invd = _mm_setr_ps(ray.inv_d.x, ray.inv_d.y, ray.inv_d.z, 0.0);
     
     
     
@@ -122,7 +122,7 @@ static inline bool fast_intersect_test_bbox(const BBox &b, const Ray &ray, float
     //bool hit = fast_intersect_test_bbox2(b, ray, tmin2, tmax2);
     //std::cout << hit << " " << tmin2 << " " << tmax2 << std::endl;
     
-    return (tmin < tmax) && (tmin < ray.maxt) && (tmax > ray.mint);
+    return (tmin < tmax) && (tmin < ray.max_t) && (tmax > ray.min_t);
 }
 #else
 static inline bool fast_intersect_test_bbox(const BBox &b, const Ray &ray, float &tmin, float &tmax)
@@ -147,12 +147,12 @@ static inline bool fast_intersect_test_bbox(const BBox &b, const Ray &ray, float
         bounds[1] = b.bmax[0];
     }
     
-    tmin = (bounds[ray.accel.d_is_neg[0]].x - ray.o.x) * ray.accel.inv_d.x;
-    tmax = (bounds[1-ray.accel.d_is_neg[0]].x - ray.o.x) * ray.accel.inv_d.x;
-    const float tymin = (bounds[ray.accel.d_is_neg[1]].y - ray.o.y) * ray.accel.inv_d.y;
-    const float tymax = (bounds[1-ray.accel.d_is_neg[1]].y - ray.o.y) * ray.accel.inv_d.y;
-    const float tzmin = (bounds[ray.accel.d_is_neg[2]].z - ray.o.z) * ray.accel.inv_d.z;
-    const float tzmax = (bounds[1-ray.accel.d_is_neg[2]].z - ray.o.z) * ray.accel.inv_d.z;
+    tmin = (bounds[ray.d_is_neg[0]].x - ray.o.x) * ray.inv_d.x;
+    tmax = (bounds[1-ray.d_is_neg[0]].x - ray.o.x) * ray.inv_d.x;
+    const float tymin = (bounds[ray.d_is_neg[1]].y - ray.o.y) * ray.inv_d.y;
+    const float tymax = (bounds[1-ray.d_is_neg[1]].y - ray.o.y) * ray.inv_d.y;
+    const float tzmin = (bounds[ray.d_is_neg[2]].z - ray.o.z) * ray.inv_d.z;
+    const float tzmax = (bounds[1-ray.d_is_neg[2]].z - ray.o.z) * ray.inv_d.z;
 
     //tmin = tmin > tymin ? tmin : tymin;
     //tmin = tmin > tzmin ? tmin : tzmin;
@@ -167,7 +167,7 @@ static inline bool fast_intersect_test_bbox(const BBox &b, const Ray &ray, float
     if (tzmax < tmax)
         tmax = tzmax;
     
-    return (tmin < tmax) && (tmin < ray.maxt) && (tmax > ray.mint);
+    return (tmin < tmax) && (tmin < ray.max_t) && (tmax > ray.min_t);
 }
 #endif
 

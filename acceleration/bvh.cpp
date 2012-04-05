@@ -418,7 +418,7 @@ bool BVH::intersect_ray(Ray &ray, Intersection *intersection)
             else
             {
                 // Put far BVH node on todo stack, advance to near node
-                if(ray.accel.d_is_neg[nodes[node].flags & SPLIT_MASK])
+                if(ray.d_is_neg[nodes[node].flags & SPLIT_MASK])
                 {
                     todo[todo_offset++] = nodes[node].child_index;
                     node = nodes[node].child_index + 1;

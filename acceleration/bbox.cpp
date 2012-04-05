@@ -26,8 +26,8 @@ void BBox::add_time_sample(const int &samp, const Vec3 &bmin_, const Vec3 &bmax_
 
 bool BBox::intersect_ray_(Ray &ray, float *hitt0, float *hitt1)
 {
-    float t0 = ray.mint;
-    float t1 = ray.maxt;
+    float t0 = ray.min_t;
+    float t1 = ray.max_t;
     int ia=0, ib=0;
     float alpha=0.0;
     float bminf, bmaxf; // Store time-interpolated bbox values

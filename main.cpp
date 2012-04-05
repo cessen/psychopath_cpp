@@ -16,10 +16,11 @@
 #include "sample.h"
 #include "image_sampler.h"
 #include <OpenImageIO/imageio.h>
+#include <OSL/oslexec.h>
 OIIO_NAMESPACE_USING
 
 #define GAMMA 2.2
-#define SPP 8
+#define SPP 16
 #define XRES 1280
 #define YRES 720
 #define ASPECT (((float)(YRES))/XRES)
@@ -178,6 +179,7 @@ int main(int argc, char **argv)
     cam_mats[3].rotate((angle/3)*3, axis);
     cam_mats[3].translate(Vec3(0.0, 0.0, 20.0));
     
+    
     #define LENS_DIAM 1.0
     #define FOCUS_DISTANCE 40.0
     #define FOV 55
@@ -205,8 +207,8 @@ int main(int argc, char **argv)
     {
         float rx = (samp.x - 0.5) * (image->max_x - image->min_x);
         float ry = (0.5 - samp.y) * (image->max_y - image->min_y);
-        float dx = (image->max_x - image->min_x) / (2.0 * XRES);
-        float dy = (image->max_y - image->min_y) / (2.0 * YRES);
+        float dx = (image->max_x - image->min_x) / XRES;
+        float dy = (image->max_y - image->min_y) / YRES;
         
         ray = cam.generate_ray(rx, ry, dx, dy, samp.t, samp.u, samp.v);
         ray.finalize();
