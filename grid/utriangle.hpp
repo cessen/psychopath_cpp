@@ -1,6 +1,8 @@
 #ifndef TRIANGLE_HPP
 #define TRIANGLE_HPP
 
+#include "numtype.h"
+
 #include <stdlib.h>
 #include "vector.h"
 
@@ -13,7 +15,7 @@ struct UTriangle {
     UTriangle(const Vec3 &v1, const Vec3 &v2, const Vec3 &v3);
     
     bool intersect_ray_(const Ray &ray,
-			           float *t=NULL, float *u=NULL, float *v=NULL) const;
+			           float32 *t=NULL, float32 *u=NULL, float32 *v=NULL) const;
 };
 
 #endif

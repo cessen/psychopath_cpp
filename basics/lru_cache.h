@@ -1,6 +1,8 @@
 #ifndef LRU_CACHE_H
 #define LRU_CACHE_H
 
+#include "numtype.h"
+
 #include <iostream>
 #include <stdlib.h>
 #include <map>
@@ -8,7 +10,7 @@
 #include <utility>
 #include "config.h"
 
-typedef unsigned int LRUKey;
+typedef uint32 LRUKey;
 
 template <class T>
 class LRUPair
@@ -29,8 +31,8 @@ template <class T>
 class LRUCache
 {
     private:
-        unsigned int max_bytes;
-        unsigned int byte_count;
+        uint32 max_bytes;
+        uint32 byte_count;
         LRUKey next_key;
         
         // A map from indices to iterators into the list
@@ -39,7 +41,7 @@ class LRUCache
         std::list<LRU_PAIR > elements;
         
     public:
-        LRUCache(unsigned int max_bytes_=40)
+        LRUCache(uint32 max_bytes_=40)
         {
             max_bytes = max_bytes_;
             byte_count = 0;
@@ -61,7 +63,7 @@ class LRUCache
          * Sets the maximum number of bytes in the cache.
          * Should only be called once right after construction.
          */
-        void set_max_size(unsigned int size)
+        void set_max_size(uint32 size)
         {
             max_bytes = size;
         }
@@ -158,7 +160,7 @@ class LRUCache
          * Returns a pointer to the data associated with the given
          * key.
          */
-        T *operator[](unsigned int key)
+        T *operator[](uint32 key)
         {
             return fetch(key);
         }

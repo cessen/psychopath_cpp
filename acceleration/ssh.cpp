@@ -1,3 +1,5 @@
+#include "numtype.h"
+
 #include <iostream>
 #include <algorithm>
 #include "ray.hpp"
@@ -23,7 +25,7 @@
 
 SSH::~SSH()
 {
-    for(unsigned int i=0; i < next_node; i++)
+    for(uint32 i=0; i < next_node; i++)
     {
         if(nodes[i].flags & IS_LEAF)
             delete nodes[i].data;
@@ -32,11 +34,11 @@ SSH::~SSH()
 
 void SSH::add_primitives(std::vector<Primitive *> &primitives)
 {
-    int start = bag.size();
-    int added = primitives.size();
+    int32 start = bag.size();
+    int32 added = primitives.size();
     bag.resize(start + added);
     
-    for(int i=0; i < added; i++)
+    for(int32 i=0; i < added; i++)
     {
         bag[start + i].init(primitives[i]);
     }
@@ -46,7 +48,7 @@ bool SSH::finalize()
 {
     // Calculate over-all SSH bounding box
     bbox.copy(bag[0].data->bounds());
-    for(unsigned int i=1; i < bag.size(); i++)
+    for(uint32 i=1; i < bag.size(); i++)
         bbox.merge(bag[i].data->bounds());
     
     // Generate SSH
@@ -58,10 +60,10 @@ bool SSH::finalize()
 
 
 struct CompareToMid {
-    int dim;
-    float mid;
+    int32 dim;
+    float32 mid;
     
-    CompareToMid(int d, float m)
+    CompareToMid(int32 d, float32 m)
     {
         dim = d;
         mid = m;
@@ -73,9 +75,9 @@ struct CompareToMid {
 };
 
 struct CompareDim {
-    int dim;
+    int32 dim;
     
-    CompareDim(int d)
+    CompareDim(int32 d)
     {
         dim = d;
     }
@@ -93,7 +95,7 @@ struct CompareDim {
  * list.  Used in recursive_build for SSH construction.
  * Returns the split index (last index of the first group).
  */
-unsigned int SSH::split_primitives(unsigned int first_prim, unsigned int last_prim, int *axis)
+uint32 SSH::split_primitives(uint32 first_prim, uint32 last_prim, int32 *axis)
 {
     //std::cout << "First: " << first_prim << " Last: " << last_prim << std::endl;
 
@@ -101,9 +103,9 @@ unsigned int SSH::split_primitives(unsigned int first_prim, unsigned int last_pr
     Vec min, max;
     min = bag[first_prim].c;
     max = bag[first_prim].c;
-    for(unsigned int i = first_prim+1; i <= last_prim; i++)
+    for(uint32 i = first_prim+1; i <= last_prim; i++)
     {
-        for(int d = 0; d < 3; d++)
+        for(int32 d = 0; d < 3; d++)
         {
             min[d] = min[d] < bag[i].c[d] ? min[d] : bag[i].c[d];  
             max[d] = max[d] > bag[i].c[d] ? max[d] : bag[i].c[d];
@@ -111,7 +113,7 @@ unsigned int SSH::split_primitives(unsigned int first_prim, unsigned int last_pr
     }
     
     // Find the axis with the maximum extent
-    int max_axis = 0;
+    int32 max_axis = 0;
     if((max.y - min.y) > (max.x - min.x))
         max_axis = 1;
     if((max.z - min.z) > (max.y - min.y))
@@ -121,12 +123,12 @@ unsigned int SSH::split_primitives(unsigned int first_prim, unsigned int last_pr
         *axis = max_axis;
         
     // Sort and split the list
-    float pmid = .5f * (min[max_axis] + max[max_axis]);
+    float32 pmid = .5f * (min[max_axis] + max[max_axis]);
     SSHPrimitive *mid_ptr = std::partition(&bag[first_prim],
                                            (&bag[last_prim])+1,
                                            CompareToMid(max_axis, pmid));
     
-    unsigned int split = (mid_ptr - &bag.front());
+    uint32 split = (mid_ptr - &bag.front());
     if(split > 0)
         split--;
         
@@ -144,7 +146,7 @@ unsigned int SSH::split_primitives(unsigned int first_prim, unsigned int last_pr
  * Recursively builds the SSH starting at the given node with the given
  * first and last primitive indices (in bag).
  */
-void SSH::recursive_build(unsigned int me, unsigned int first_prim, unsigned int last_prim, BBox &parent_bounds)
+void SSH::recursive_build(uint32 me, uint32 first_prim, uint32 last_prim, BBox &parent_bounds)
 {
     // Need to allocate more node space?
     if(me >= nodes.size())
@@ -158,19 +160,19 @@ void SSH::recursive_build(unsigned int me, unsigned int first_prim, unsigned int
     // Calculate collective primitive bounds
     BBox my_bounds;
     my_bounds.copy(bag[first_prim].data->bounds());
-    for(unsigned int i=first_prim+1; i <= last_prim; i++)
+    for(uint32 i=first_prim+1; i <= last_prim; i++)
         my_bounds.merge(bag[i].data->bounds());
     
     nodes[me].plane.init(my_bounds.bmin.state_count);
     
     // Calculate bounding plane
-    int plane_axis=0;
+    int32 plane_axis=0;
     bool plane_neg=false;
-    float area = 999999999999999999999999.0;
-    for(int d=0; d < 3; d++)
+    float32 area = 999999999999999999999999.0;
+    for(int32 d=0; d < 3; d++)
     {
         BBox temp;
-        float temp_area;
+        float32 temp_area;
         
         // Contents on positive side
         temp.copy(parent_bounds);
@@ -181,7 +183,7 @@ void SSH::recursive_build(unsigned int me, unsigned int first_prim, unsigned int
             area = temp_area;
             plane_axis = d;
             plane_neg = false;
-            for(int j=0; j < nodes[me].plane.state_count; j++)
+            for(int32 j=0; j < nodes[me].plane.state_count; j++)
                 nodes[me].plane[j] = my_bounds.bmin[j][d];
         }
         
@@ -194,7 +196,7 @@ void SSH::recursive_build(unsigned int me, unsigned int first_prim, unsigned int
             area = temp_area;
             plane_axis = d;
             plane_neg = true;
-            for(int j=0; j < nodes[me].plane.state_count; j++)
+            for(int32 j=0; j < nodes[me].plane.state_count; j++)
                 nodes[me].plane[j] = my_bounds.bmax[j][d];
         }
     }
@@ -205,12 +207,12 @@ void SSH::recursive_build(unsigned int me, unsigned int first_prim, unsigned int
     my_bounds.copy(parent_bounds);
     if(plane_neg)
     {
-        for(int i=0; i < my_bounds.bmax.state_count; i++)
+        for(int32 i=0; i < my_bounds.bmax.state_count; i++)
             my_bounds.bmax[i][plane_axis] = nodes[me].plane[i];
     }
     else
     {
-        for(int i=0; i < my_bounds.bmin.state_count; i++)
+        for(int32 i=0; i < my_bounds.bmin.state_count; i++)
             my_bounds.bmin[i][plane_axis] = nodes[me].plane[i];
     }
     
@@ -250,14 +252,14 @@ void SSH::recursive_build(unsigned int me, unsigned int first_prim, unsigned int
     }
 
     // Not a leaf
-    unsigned int child1i = next_node;
-    unsigned int child2i = next_node + 1;
+    uint32 child1i = next_node;
+    uint32 child2i = next_node + 1;
     next_node += 2;
     nodes[me].child_index = child1i;
     
     // Create child nodes
-    int axis;
-    unsigned int split_index = split_primitives(first_prim, last_prim, &axis);
+    int32 axis;
+    uint32 split_index = split_primitives(first_prim, last_prim, &axis);
     switch(axis)
     {
         case 0:
@@ -295,13 +297,13 @@ bool SSH::intersect_ray(Ray &ray, Intersection *intersection)
     std::vector<Primitive *> temp_prim;
     BBox temp_bb;
 
-    unsigned int todo[64];
-    float todo_t_near[64];
-    float todo_t_far[64];
-    unsigned int todo_offset, node;
+    uint32 todo[64];
+    float32 todo_t_near[64];
+    float32 todo_t_far[64];
+    uint32 todo_offset, node;
     
-    float t, t_hit, t_near, t_far;
-    unsigned int axis;
+    float32 t, t_hit, t_near, t_far;
+    uint32 axis;
     
     t_hit = ray.maxt;
     

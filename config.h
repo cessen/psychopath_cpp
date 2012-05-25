@@ -1,18 +1,20 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#include "numtype.h"
+
 namespace Config
 {
-    extern float dice_rate;
-    extern float focus_factor;
-    extern float min_upoly_size;
+    extern float32 dice_rate;
+    extern float32 focus_factor;
+    extern float32 min_upoly_size;
     extern int max_grid_size;
     extern int grid_cache_size;
     
     // Statistics
-    extern unsigned long split_count;
-    extern unsigned long upoly_gen_count;
-    extern unsigned long cache_misses;
+    extern uint64 split_count;
+    extern uint64 upoly_gen_count;
+    extern uint64 cache_misses;
 }
 
 #endif

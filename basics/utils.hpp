@@ -1,6 +1,8 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
+#include "numtype.h"
+
 #include <math.h>
 
 /*
@@ -10,14 +12,14 @@
  */
 
 template <class T>
-static inline T lerp(const float &alpha, const T &a, const T &b)
+static inline T lerp(const float32 &alpha, const T &a, const T &b)
 {
     return (a * (1.0-alpha)) + (b * alpha);
 }
 
 
 template <class T>
-static inline T lerp2d(float alpha_u, float alpha_v,
+static inline T lerp2d(float32 alpha_u, float32 alpha_v,
                        T s00, T s10, T s01, T s11)
 {
     T temp1 = (s00 * (1.0-alpha_u)) + (s10 * alpha_u);
@@ -31,14 +33,14 @@ static inline T lerp2d(float alpha_u, float alpha_v,
  * Maps the unit square to the unit circle.
  * Modifies x and y in place.
  */
-static inline void square_to_circle(float *x, float *y)
+static inline void square_to_circle(float32 *x, float32 *y)
 {
     //std::cout << "In: " << *x << " " << *y << std::endl;
     
     if(*x == 0 && *y == 0)
         return;
         
-    float radius, angle;
+    float32 radius, angle;
     
     if(*x > fabs(*y)) // Quadrant 1
     {
@@ -73,16 +75,16 @@ static inline void square_to_circle(float *x, float *y)
  * time samples.
  * The first index and alpha are put into i and alpha respectively.
  */
-static inline bool calc_time_interp(const unsigned char& time_count, const float &time, unsigned int *i, float *alpha)
+static inline bool calc_time_interp(const uint8& time_count, const float32 &time, uint32 *i, float32 *alpha)
 {
     if(time_count < 2)
         return false;
     
     if(time < 1.0)
     {
-        const float temp = time * (time_count - 1);
+        const float32 temp = time * (time_count - 1);
         *i = temp;
-        *alpha = temp - (float)(*i);
+        *alpha = temp - (float32)(*i);
     }
     else
     {

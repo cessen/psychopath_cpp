@@ -1,8 +1,10 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+#include "numtype.h"
 #include <cmath>
 #include <vector>
+
 
 #include "config.h"
 #include "utils.hpp"
@@ -18,13 +20,13 @@ class Camera
 {
     public:
         TimeBox<Matrix44> transforms;
-        float fov, tfov;
-        float lens_diameter, focus_distance;
+        float32 fov, tfov;
+        float32 lens_diameter, focus_distance;
         
-        Camera(std::vector<Matrix44> &trans, float fov_, float lens_diameter_, float focus_distance_)
+        Camera(std::vector<Matrix44> &trans, float32 fov_, float32 lens_diameter_, float32 focus_distance_)
         {
             transforms.init(trans.size());
-            for(unsigned int i=0; i < trans.size(); i++)
+            for(uint32 i=0; i < trans.size(); i++)
                 transforms[i] = trans[i];
             
             fov = fov_;
@@ -37,7 +39,7 @@ class Camera
         /*
          * Generates a camera ray based on the given information.
          */
-        Ray generate_ray(float x, float y, float dx, float dy, float time, float u, float v) const
+        Ray generate_ray(float32 x, float32 y, float32 dx, float32 dy, float32 time, float32 u, float32 v) const
         {
             Ray ray;
             
@@ -70,8 +72,8 @@ class Camera
             ray.has_differentials = true;
                     
             // Get transform matrix
-            unsigned int ia;
-            float alpha;
+            uint32 ia;
+            float32 alpha;
             
             if(calc_time_interp(transforms.state_count, time, &ia, &alpha))
             {

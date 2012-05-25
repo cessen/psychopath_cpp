@@ -1,3 +1,5 @@
+#include "numtype.h"
+
 #include <iostream>
 #include <algorithm>
 #include "ray.hpp"
@@ -15,7 +17,7 @@
 
 BVH::~BVH()
 {
-    for(unsigned int i=0; i < next_node; i++)
+    for(uint32 i=0; i < next_node; i++)
     {
         if(nodes[i].flags & IS_LEAF)
             delete nodes[i].data;
@@ -24,11 +26,11 @@ BVH::~BVH()
 
 void BVH::add_primitives(std::vector<Primitive *> &primitives)
 {
-    int start = bag.size();
-    int added = primitives.size();
+    int32 start = bag.size();
+    int32 added = primitives.size();
     bag.resize(start + added);
     
-    for(int i=0; i < added; i++)
+    for(int32 i=0; i < added; i++)
     {
         bag[start + i].init(primitives[i]);
     }
@@ -45,10 +47,10 @@ bool BVH::finalize()
 
 
 struct CompareToMid {
-    int dim;
-    float mid;
+    int32 dim;
+    float32 mid;
     
-    CompareToMid(int d, float m)
+    CompareToMid(int32 d, float32 m)
     {
         dim = d;
         mid = m;
@@ -60,9 +62,9 @@ struct CompareToMid {
 };
 
 struct CompareDim {
-    int dim;
+    int32 dim;
     
-    CompareDim(int d)
+    CompareDim(int32 d)
     {
         dim = d;
     }
@@ -81,7 +83,7 @@ struct CompareDim {
  * Returns the split index (last index of the first group).
  */
 #ifndef SAH
-unsigned int BVH::split_primitives(unsigned int first_prim, unsigned int last_prim, int *axis)
+uint32 BVH::split_primitives(uint32 first_prim, uint32 last_prim, int32 *axis)
 {
     //std::cout << "First: " << first_prim << " Last: " << last_prim << std::endl;
 
@@ -89,9 +91,9 @@ unsigned int BVH::split_primitives(unsigned int first_prim, unsigned int last_pr
     Vec3 min, max;
     min = bag[first_prim].c;
     max = bag[first_prim].c;
-    for(unsigned int i = first_prim+1; i <= last_prim; i++)
+    for(uint32 i = first_prim+1; i <= last_prim; i++)
     {
-        for(int d = 0; d < 3; d++)
+        for(int32 d = 0; d < 3; d++)
         {
             min[d] = min[d] < bag[i].c[d] ? min[d] : bag[i].c[d];  
             max[d] = max[d] > bag[i].c[d] ? max[d] : bag[i].c[d];
@@ -99,7 +101,7 @@ unsigned int BVH::split_primitives(unsigned int first_prim, unsigned int last_pr
     }
     
     // Find the axis with the maximum extent
-    int max_axis = 0;
+    int32 max_axis = 0;
     if((max.y - min.y) > (max.x - min.x))
         max_axis = 1;
     if((max.z - min.z) > (max.y - min.y))
@@ -109,12 +111,12 @@ unsigned int BVH::split_primitives(unsigned int first_prim, unsigned int last_pr
         *axis = max_axis;
         
     // Sort and split the list
-    float pmid = .5f * (min[max_axis] + max[max_axis]);
+    float32 pmid = .5f * (min[max_axis] + max[max_axis]);
     BVHPrimitive *mid_ptr = std::partition(&bag[first_prim],
                                            (&bag[last_prim])+1,
                                            CompareToMid(max_axis, pmid));
     
-    unsigned int split = (mid_ptr - &bag.front());
+    uint32 split = (mid_ptr - &bag.front());
     if(split > 0)
         split--;
         
@@ -129,32 +131,32 @@ unsigned int BVH::split_primitives(unsigned int first_prim, unsigned int last_pr
 #else
 
 /* SAH-based split */
-unsigned int BVH::split_primitives(unsigned int first_prim, unsigned int last_prim, int *axis)
+uint32 BVH::split_primitives(uint32 first_prim, uint32 last_prim, int32 *axis)
 {
     //std::cout << "First: " << first_prim << " Last: " << last_prim << std::endl;
 
-    unsigned int split;
+    uint32 split;
 
     // Find the minimum and maximum centroid values on each axis
     Vec3 min, max;
     min = bag[first_prim].c;
     max = bag[first_prim].c;
-    for(unsigned int i = first_prim+1; i <= last_prim; i++)
+    for(uint32 i = first_prim+1; i <= last_prim; i++)
     {
-        for(int d = 0; d < 3; d++)
+        for(int32 d = 0; d < 3; d++)
         {
             min[d] = min[d] < bag[i].c[d] ? min[d] : bag[i].c[d];  
             max[d] = max[d] > bag[i].c[d] ? max[d] : bag[i].c[d];
         }
     }
     
-    const int nBuckets = 12;
+    const int32 nBuckets = 12;
     if((last_prim - first_prim) <= 4)
     {
         // No need to do SAH-based split
         
         // Find the axis with the maximum extent
-        int max_axis = 0;
+        int32 max_axis = 0;
         if((max.y - min.y) > (max.x - min.x))
             max_axis = 1;
         if((max.z - min.z) > (max.y - min.y))
@@ -177,11 +179,11 @@ unsigned int BVH::split_primitives(unsigned int first_prim, unsigned int last_pr
         BucketInfo buckets_x[nBuckets];
         BucketInfo buckets_y[nBuckets];
         BucketInfo buckets_z[nBuckets];
-        for (unsigned int i = first_prim; i <= last_prim; i++)
+        for (uint32 i = first_prim; i <= last_prim; i++)
         {
-            int b_x = nBuckets * ((bag[i].c[0] - min[0]) / (max[0] - min[0]));
-            int b_y = nBuckets * ((bag[i].c[1] - min[1]) / (max[1] - min[1]));
-            int b_z = nBuckets * ((bag[i].c[2] - min[2]) / (max[2] - min[2]));
+            int32 b_x = nBuckets * ((bag[i].c[0] - min[0]) / (max[0] - min[0]));
+            int32 b_y = nBuckets * ((bag[i].c[1] - min[1]) / (max[1] - min[1]));
+            int32 b_z = nBuckets * ((bag[i].c[2] - min[2]) / (max[2] - min[2]));
             
             if (b_x == nBuckets)
                 b_x = nBuckets-1;
@@ -194,7 +196,7 @@ unsigned int BVH::split_primitives(unsigned int first_prim, unsigned int last_pr
             buckets_x[b_x].count++;
             buckets_y[b_y].count++;
             buckets_z[b_z].count++;
-            for(int j=0; j < 3; j++)
+            for(int32 j=0; j < 3; j++)
             {
                 buckets_x[b_x].bb.bmin[0][j] = bag[i].bmin[j] < buckets_x[b_x].bb.bmin[0][j] ? bag[i].bmin[j] : buckets_x[b_x].bb.bmin[0][j];
                 buckets_x[b_x].bb.bmax[0][j] = bag[i].bmax[j] > buckets_x[b_x].bb.bmax[0][j] ? bag[i].bmax[j] : buckets_x[b_x].bb.bmax[0][j];
@@ -208,22 +210,22 @@ unsigned int BVH::split_primitives(unsigned int first_prim, unsigned int last_pr
         }
         
         // Calculate the cost of each split
-        float cost_x[nBuckets-1];
-        float cost_y[nBuckets-1];
-        float cost_z[nBuckets-1];
-        for (int i = 0; i < nBuckets-1; ++i)
+        float32 cost_x[nBuckets-1];
+        float32 cost_y[nBuckets-1];
+        float32 cost_z[nBuckets-1];
+        for (int32 i = 0; i < nBuckets-1; ++i)
         {
             BBox b0_x, b1_x;
             BBox b0_y, b1_y;
             BBox b0_z, b1_z;
-            int count0_x = 0, count1_x = 0;
-            int count0_y = 0, count1_y = 0;
-            int count0_z = 0, count1_z = 0;
+            int32 count0_x = 0, count1_x = 0;
+            int32 count0_y = 0, count1_y = 0;
+            int32 count0_z = 0, count1_z = 0;
             
             b0_x.copy(buckets_x[0].bb);
             b0_y.copy(buckets_y[0].bb);
             b0_z.copy(buckets_z[0].bb);
-            for (int j = 0; j <= i; ++j)
+            for (int32 j = 0; j <= i; ++j)
             {
                 b0_x.merge(buckets_x[j].bb);
                 count0_x += buckets_x[j].count;
@@ -238,7 +240,7 @@ unsigned int BVH::split_primitives(unsigned int first_prim, unsigned int last_pr
             b1_x.copy(buckets_x[i+1].bb);
             b1_y.copy(buckets_y[i+1].bb);
             b1_z.copy(buckets_z[i+1].bb);
-            for (int j = i+1; j < nBuckets; ++j)
+            for (int32 j = i+1; j < nBuckets; ++j)
             {
                 b1_x.merge(buckets_x[j].bb);
                 count1_x += buckets_x[j].count;
@@ -257,11 +259,11 @@ unsigned int BVH::split_primitives(unsigned int first_prim, unsigned int last_pr
         }
         
         // Find the most efficient split
-        float minCost = cost_x[0];
-        int split_axis = 0;
-        unsigned int minCostSplit = 0;
+        float32 minCost = cost_x[0];
+        int32 split_axis = 0;
+        uint32 minCostSplit = 0;
         // X
-        for (int i = 1; i < nBuckets-1; ++i)
+        for (int32 i = 1; i < nBuckets-1; ++i)
         {
             if (cost_x[i] < minCost)
             {
@@ -288,7 +290,7 @@ unsigned int BVH::split_primitives(unsigned int first_prim, unsigned int last_pr
         if(axis)
             *axis = split_axis;
 
-        float pmid = min[split_axis] + (((max[split_axis] - min[split_axis]) / nBuckets) * (minCostSplit+1));
+        float32 pmid = min[split_axis] + (((max[split_axis] - min[split_axis]) / nBuckets) * (minCostSplit+1));
         BVHPrimitive *mid_ptr = std::partition(&bag[first_prim],
                                                (&bag[last_prim])+1,
                                                CompareToMid(split_axis, pmid));
@@ -314,7 +316,7 @@ unsigned int BVH::split_primitives(unsigned int first_prim, unsigned int last_pr
  * Recursively builds the BVH starting at the given node with the given
  * first and last primitive indices (in bag).
  */
-void BVH::recursive_build(unsigned int me, unsigned int first_prim, unsigned int last_prim)
+void BVH::recursive_build(uint32 me, uint32 first_prim, uint32 last_prim)
 {
     // Need to allocate more node space?
     if(me >= nodes.size())
@@ -334,14 +336,14 @@ void BVH::recursive_build(unsigned int me, unsigned int first_prim, unsigned int
     }
 
     // Not a leaf
-    unsigned int child1i = next_node;
-    unsigned int child2i = next_node + 1;
+    uint32 child1i = next_node;
+    uint32 child2i = next_node + 1;
     next_node += 2;
     nodes[me].child_index = child1i;
     
     // Create child nodes
-    int axis;
-    unsigned int split_index = split_primitives(first_prim, last_prim, &axis);
+    int32 axis;
+    uint32 split_index = split_primitives(first_prim, last_prim, &axis);
     switch(axis)
     {
         case 0:
@@ -381,9 +383,9 @@ bool BVH::intersect_ray(Ray &ray, Intersection *intersection)
     std::vector<Primitive *> temp_prim;
 
     // Traverse the BVH and check for intersections. Yay!
-    float tnear, tfar;
-    unsigned int todo_offset = 0, node = 0;
-    unsigned int todo[64];
+    float32 tnear, tfar;
+    uint32 todo_offset = 0, node = 0;
+    uint32 todo[64];
     
     while(true)
     {

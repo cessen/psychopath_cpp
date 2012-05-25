@@ -1,6 +1,8 @@
 #ifndef INTERSECTION_HPP
 #define INTERSECTION_HPP
 
+#include "numtype.h"
+
 #include "vector.h"
 #include "color.hpp"
 
@@ -11,7 +13,7 @@ struct Intersection
 {
     Vec3 p;  // Intersection postion
     Vec3 n;  // Surface normal at the intersection
-    float d; // Distance along the ray to the intersection
+    float32 d; // Distance along the ray to the intersection
     
     Color col;
 };

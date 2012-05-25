@@ -1,6 +1,8 @@
 #ifndef BVH_H
 #define BVH_H
 
+#include "numtype.h"
+
 #include <stdlib.h>
 #include <iostream>
 #include <vector>
@@ -16,7 +18,7 @@
 
 struct BucketInfo {
     BucketInfo() { count = 0; }
-    int count;
+    int32 count;
     BBox bb;
 };
 
@@ -41,8 +43,8 @@ class BVHPrimitive
             data = prim;
             
             // Get bounds at time 0.5
-            int ia, ib;
-            float alpha;
+            int32 ia, ib;
+            float32 alpha;
             if(data->bounds().bmin.query_time(0.5, &ia, &ib, &alpha))
             {
                 bmin = lerp(0.5, data->bounds().bmin[ia], data->bounds().bmin[ib]);
@@ -71,11 +73,11 @@ class BVHNode {
     public:
         BBox b;
         union {
-            unsigned int child_index;
+            uint32 child_index;
             Primitive *data;
         };
         
-        unsigned char flags;
+        uint8 flags;
         
         BVHNode()
         {
@@ -93,7 +95,7 @@ class BVHNode {
 class BVHNodes {
     public:
         std::vector<BVHNode *> nodes;
-        unsigned int num_nodes;
+        uint32 num_nodes;
         
         BVHNodes()
         {
@@ -102,31 +104,31 @@ class BVHNodes {
         
         ~BVHNodes()
         {
-            int s = nodes.size();
-            for(int i=0; i < s; i++)
+            int32 s = nodes.size();
+            for(int32 i=0; i < s; i++)
             {
                 delete [] nodes[i];
             }
         }
         
-        BVHNode &operator[](const int &i)
+        BVHNode &operator[](const int32 &i)
         {
             return (nodes[i/BVH_CHUNK_SIZE])[i%BVH_CHUNK_SIZE];
         }
         
-        const BVHNode &operator[](const int &i) const
+        const BVHNode &operator[](const int32 &i) const
         {
             return (nodes[i/BVH_CHUNK_SIZE])[i%BVH_CHUNK_SIZE];
         }
         
-        unsigned int size() const
+        uint32 size() const
         {
             return num_nodes;
         }
         
         void add_chunk()
         {
-            int s = nodes.size();
+            int32 s = nodes.size();
             nodes.resize(s+1);
             nodes[s] = new BVHNode[BVH_CHUNK_SIZE];
             num_nodes = BVH_CHUNK_SIZE * (s+1);
@@ -143,7 +145,7 @@ class BVH: public Aggregate
     private:
         BBox bbox;
         BVHNodes nodes;
-        unsigned int next_node;
+        uint32 next_node;
         std::vector<BVHPrimitive> bag;  // Temporary holding spot for primitives not yet added to the hierarchy
         
     public:
@@ -160,8 +162,8 @@ class BVH: public Aggregate
         virtual BBox &bounds();
         virtual bool intersect_ray(Ray &ray, Intersection *intersection=NULL);
         
-        unsigned split_primitives(unsigned int first_prim, unsigned int last_prim, int *axis=NULL);
-        void recursive_build(unsigned int me, unsigned int first_prim, unsigned int last_prim);
+        unsigned split_primitives(uint32 first_prim, uint32 last_prim, int32 *axis=NULL);
+        void recursive_build(uint32 me, uint32 first_prim, uint32 last_prim);
 };
 
 

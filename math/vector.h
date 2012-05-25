@@ -1,14 +1,16 @@
 #ifndef VECTOR_H
 #define VECTOR_H
 
+#include "numtype.h"
+
 #include <iostream>
 #include <stdlib.h>
 #include <math.h>
 
 struct Vec3 {
-    float x, y, z;
+    float32 x, y, z;
     
-    Vec3(const float &x_=0.0, const float &y_=0.0, const float &z_=0.0)
+    Vec3(const float32 &x_=0.0, const float32 &y_=0.0, const float32 &z_=0.0)
     {
         x = x_;
         y = y_;
@@ -23,38 +25,38 @@ struct Vec3 {
         return Vec3(x-b.x, y-b.y, z-b.z);
     }
     
-    Vec3 operator*(const float &b) const {
+    Vec3 operator*(const float32 &b) const {
         return Vec3(x*b, y*b, z*b);
     }
     
-    Vec3 operator/(const float &b) const {
+    Vec3 operator/(const float32 &b) const {
         return Vec3(x/b, y/b, z/b);
     }
     
-    float length() const {
+    float32 length() const {
         return sqrt(x*x + y*y + z*z);
     }
     
-    float normalize() {
-        const float l = length();
+    float32 normalize() {
+        const float32 l = length();
         x /= l;
         y /= l;
         z /= l;
         return l;
     }
     
-    float &operator[](const int &i)
+    float32 &operator[](const int &i)
     {
         return (&x)[i];
     }
     
-    float const &operator[](const int &i) const
+    float32 const &operator[](const int &i) const
     {
         return (&x)[i];
     }
 };
 
-inline float dot(const Vec3 &v1, const Vec3 &v2)
+inline float32 dot(const Vec3 &v1, const Vec3 &v2)
 {
     return (v1.x * v2.x) + (v1.y * v2.y) + (v1.z * v2.z);
 }

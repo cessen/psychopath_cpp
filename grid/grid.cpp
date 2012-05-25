@@ -1,3 +1,5 @@
+#include "numtype.h"
+
 #include <iostream>
 #include <stdlib.h>
 #include <math.h>
@@ -16,22 +18,22 @@
 #define IS_LEAF 8
 
 
-inline float grid_quant(const float &v, const float &o, const float &f)
+inline float32 grid_quant(const float32 &v, const float32 &o, const float32 &f)
 {
     return ((v - o) * GRID_BVH_QUANT) / f;
 }
 
-inline float inv_grid_quant(const float &v, const float &o, const float &f)
+inline float32 inv_grid_quant(const float32 &v, const float32 &o, const float32 &f)
 {
     return ((v * f) / GRID_BVH_QUANT) + o;
 }
 
-inline float grid_quantd(const float &v, const float &o, const float &f)
+inline float32 grid_quantd(const float32 &v, const float32 &o, const float32 &f)
 {
     return (v * GRID_BVH_QUANT) / f;
 }
 
-Grid::Grid(int ru, int rv, int rt, int vc)
+Grid::Grid(int32 ru, int32 rv, int32 rt, int32 vc)
 {
     res_u = ru;
     res_v = rv;
@@ -47,11 +49,11 @@ Grid::Grid(int ru, int rv, int rt, int vc)
     
     // Initialize vertex list
     verts.init(rt);
-    for(int i=0; i < time_count; i++)
+    for(int32 i=0; i < time_count; i++)
         verts[i] = new UVert[res_u * res_v];
 
     if(var_count > 0)
-        vars = new float[res_u * res_v * var_count];
+        vars = new float32[res_u * res_v * var_count];
     else
         vars = NULL;
         
@@ -60,7 +62,7 @@ Grid::Grid(int ru, int rv, int rt, int vc)
 
 Grid::~Grid()
 {
-    for(int i=0; i < time_count; i++)
+    for(int32 i=0; i < time_count; i++)
         delete [] verts[i];
     if(vars)
         delete [] vars;
@@ -75,14 +77,14 @@ void Grid::calc_normals()
     Vec3 n[4];
     bool n_avail[4] = {false, false, false, false};
 
-    int upoly_i;
-    int i2, n_count = 0;
+    int32 upoly_i;
+    int32 i2, n_count = 0;
     
-    for(int time=0; time < time_count; time++)
+    for(int32 time=0; time < time_count; time++)
     {
-        for(int v=0; v < res_v; v++)
+        for(int32 v=0; v < res_v; v++)
         {
-            for(int u=0; u < res_u; u++)
+            for(int32 u=0; u < res_u; u++)
             {
                 upoly_i = (v * res_u) + u;
                 
@@ -111,7 +113,7 @@ void Grid::calc_normals()
                 }
                 
                 // Calculate the normals
-                for(int i=0; i < 4; i++)
+                for(int32 i=0; i < 4; i++)
                 {
                     i2 = (i + 1) % 4;
                     
@@ -125,12 +127,12 @@ void Grid::calc_normals()
                 
                 // Average the normals
                 verts[time][upoly_i].n = Vec3(0,0,0);
-                for(int i=0; i < 4; i++)
+                for(int32 i=0; i < 4; i++)
                 {
                     if(n_avail[i])
                         verts[time][upoly_i].n = verts[time][upoly_i].n + n[i];
                 }
-                verts[time][upoly_i].n = verts[time][upoly_i].n / (float)(n_count);
+                verts[time][upoly_i].n = verts[time][upoly_i].n / (float32)(n_count);
                 
                 // Normalize the normal
                 verts[time][upoly_i].n.normalize();
@@ -140,15 +142,15 @@ void Grid::calc_normals()
 }
 
 
-bool Grid::intersect_ray_upoly(Ray &ray, int upoly_i, float *u, float *v, float *t)
+bool Grid::intersect_ray_upoly(Ray &ray, int32 upoly_i, float32 *u, float32 *v, float32 *t)
 {
     UTriangle tri;
-    int v1, v2, v3, v4;
-    float ub, vb, tb;
+    int32 v1, v2, v3, v4;
+    float32 ub, vb, tb;
     bool hit = false;
     bool motion;
-    float alpha;
-    int ti1, ti2;
+    float32 alpha;
+    int32 ti1, ti2;
 
     v1 = upoly_i;
     v2 = upoly_i + 1;
@@ -209,10 +211,10 @@ bool Grid::intersect_ray_upoly(Ray &ray, int upoly_i, float *u, float *v, float 
 /*
  * Utility function to calculate intersections with quantized BVH nodes.
  */
-inline bool intersect_grid_bvh_node(unsigned char time_count, GridBVHNode *nodes, const Ray &ray,
-                                    const unsigned int &ia, const float &alpha,
+inline bool intersect_grid_bvh_node(uint8 time_count, GridBVHNode *nodes, const Ray &ray,
+                                    const uint32 &ia, const float32 &alpha,
                                     GridQuantInfo &qi, std::vector<GridQuantInfo> &qs,
-                                    float &tmin, float &tmax)
+                                    float32 &tmin, float32 &tmax)
 {
     //return true;
     Vec3 bounds[2];
@@ -221,41 +223,41 @@ inline bool intersect_grid_bvh_node(unsigned char time_count, GridBVHNode *nodes
     if(alpha > 0.0)
     {
         //return true;
-        const unsigned int ib = ia + 1;
+        const uint32 ib = ia + 1;
         
-        bounds[0].x = lerp(alpha, (float)nodes[ia].bounds[0], (float)nodes[ib].bounds[0]);
-        bounds[0].y = lerp(alpha, (float)nodes[ia].bounds[1], (float)nodes[ib].bounds[1]);
-        bounds[0].z = lerp(alpha, (float)nodes[ia].bounds[2], (float)nodes[ib].bounds[2]);
+        bounds[0].x = lerp(alpha, (float32)nodes[ia].bounds[0], (float32)nodes[ib].bounds[0]);
+        bounds[0].y = lerp(alpha, (float32)nodes[ia].bounds[1], (float32)nodes[ib].bounds[1]);
+        bounds[0].z = lerp(alpha, (float32)nodes[ia].bounds[2], (float32)nodes[ib].bounds[2]);
         
         /*
         bounds[0].x = lerp(alpha,
-                           inv_grid_quant((float)nodes[ia].bounds[0], qs[ia].offset[0], qs[ia].factor[0]),
-                           inv_grid_quant((float)nodes[ib].bounds[0], qs[ib].offset[0], qs[ib].factor[0]));
+                           inv_grid_quant((float32)nodes[ia].bounds[0], qs[ia].offset[0], qs[ia].factor[0]),
+                           inv_grid_quant((float32)nodes[ib].bounds[0], qs[ib].offset[0], qs[ib].factor[0]));
         bounds[0].y = lerp(alpha,
-                           inv_grid_quant((float)nodes[ia].bounds[1], qs[ia].offset[1], qs[ia].factor[1]),
-                           inv_grid_quant((float)nodes[ib].bounds[1], qs[ib].offset[1], qs[ib].factor[1]));
+                           inv_grid_quant((float32)nodes[ia].bounds[1], qs[ia].offset[1], qs[ia].factor[1]),
+                           inv_grid_quant((float32)nodes[ib].bounds[1], qs[ib].offset[1], qs[ib].factor[1]));
         bounds[0].z = lerp(alpha,
-                           inv_grid_quant((float)nodes[ia].bounds[2], qs[ia].offset[2], qs[ia].factor[2]),
-                           inv_grid_quant((float)nodes[ib].bounds[2], qs[ib].offset[2], qs[ib].factor[2]));
+                           inv_grid_quant((float32)nodes[ia].bounds[2], qs[ia].offset[2], qs[ia].factor[2]),
+                           inv_grid_quant((float32)nodes[ib].bounds[2], qs[ib].offset[2], qs[ib].factor[2]));
         bounds[0].x = grid_quant(bounds[0].x, qi.offset[0], qi.factor[0]);
         bounds[0].y = grid_quant(bounds[0].y, qi.offset[1], qi.factor[1]);
         bounds[0].z = grid_quant(bounds[0].z, qi.offset[2], qi.factor[2]);
         */
         
-        bounds[1].x = lerp(alpha, (float)nodes[ia].bounds[3], (float)nodes[ib].bounds[3]);
-        bounds[1].y = lerp(alpha, (float)nodes[ia].bounds[4], (float)nodes[ib].bounds[4]);
-        bounds[1].z = lerp(alpha, (float)nodes[ia].bounds[5], (float)nodes[ib].bounds[5]);
+        bounds[1].x = lerp(alpha, (float32)nodes[ia].bounds[3], (float32)nodes[ib].bounds[3]);
+        bounds[1].y = lerp(alpha, (float32)nodes[ia].bounds[4], (float32)nodes[ib].bounds[4]);
+        bounds[1].z = lerp(alpha, (float32)nodes[ia].bounds[5], (float32)nodes[ib].bounds[5]);
         
         /*
         bounds[1].x = lerp(alpha,
-                           inv_grid_quant((float)nodes[ia].bounds[3], qs[ia].offset[0], qs[ia].factor[0]),
-                           inv_grid_quant((float)nodes[ib].bounds[3], qs[ib].offset[0], qs[ib].factor[0]));
+                           inv_grid_quant((float32)nodes[ia].bounds[3], qs[ia].offset[0], qs[ia].factor[0]),
+                           inv_grid_quant((float32)nodes[ib].bounds[3], qs[ib].offset[0], qs[ib].factor[0]));
         bounds[1].y = lerp(alpha,
-                           inv_grid_quant((float)nodes[ia].bounds[4], qs[ia].offset[1], qs[ia].factor[1]),
-                           inv_grid_quant((float)nodes[ib].bounds[4], qs[ib].offset[1], qs[ib].factor[1]));
+                           inv_grid_quant((float32)nodes[ia].bounds[4], qs[ia].offset[1], qs[ia].factor[1]),
+                           inv_grid_quant((float32)nodes[ib].bounds[4], qs[ib].offset[1], qs[ib].factor[1]));
         bounds[1].z = lerp(alpha,
-                           inv_grid_quant((float)nodes[ia].bounds[5], qs[ia].offset[2], qs[ia].factor[2]),
-                           inv_grid_quant((float)nodes[ib].bounds[5], qs[ib].offset[2], qs[ib].factor[2]));
+                           inv_grid_quant((float32)nodes[ia].bounds[5], qs[ia].offset[2], qs[ia].factor[2]),
+                           inv_grid_quant((float32)nodes[ib].bounds[5], qs[ib].offset[2], qs[ib].factor[2]));
         bounds[1].x = grid_quant(bounds[1].x, qi.offset[0], qi.factor[0]);
         bounds[1].y = grid_quant(bounds[1].y, qi.offset[1], qi.factor[1]);
         bounds[1].z = grid_quant(bounds[1].z, qi.offset[2], qi.factor[2]);
@@ -274,10 +276,10 @@ inline bool intersect_grid_bvh_node(unsigned char time_count, GridBVHNode *nodes
     
     tmin = (bounds[ray.d_is_neg[0]].x - ray.o.x) * ray.inv_d.x;
     tmax = (bounds[1-ray.d_is_neg[0]].x - ray.o.x) * ray.inv_d.x;
-    const float tymin = (bounds[ray.d_is_neg[1]].y - ray.o.y) * ray.inv_d.y;
-    const float tymax = (bounds[1-ray.d_is_neg[1]].y - ray.o.y) * ray.inv_d.y;
-    const float tzmin = (bounds[ray.d_is_neg[2]].z - ray.o.z) * ray.inv_d.z;
-    const float tzmax = (bounds[1-ray.d_is_neg[2]].z - ray.o.z) * ray.inv_d.z;
+    const float32 tymin = (bounds[ray.d_is_neg[1]].y - ray.o.y) * ray.inv_d.y;
+    const float32 tymax = (bounds[1-ray.d_is_neg[1]].y - ray.o.y) * ray.inv_d.y;
+    const float32 tzmin = (bounds[ray.d_is_neg[2]].z - ray.o.z) * ray.inv_d.z;
+    const float32 tzmax = (bounds[1-ray.d_is_neg[2]].z - ray.o.z) * ray.inv_d.z;
 
     if (tymin > tmin)
         tmin = tymin;
@@ -299,17 +301,17 @@ inline bool intersect_grid_bvh_node(unsigned char time_count, GridBVHNode *nodes
 bool Grid::intersect_ray(Ray &rayo, Intersection *intersection)
 {
     bool hit = false;
-    float u=1.0, v=1.0, t=1.0;
-    int upoly_i=0;
-    float tnear, tfar;
+    float32 u=1.0, v=1.0, t=1.0;
+    int32 upoly_i=0;
+    float32 tnear, tfar;
 
     // Get the quantization transforms for this ray's time
-    unsigned int ia = 0;
-    float alpha = 0.0;
+    uint32 ia = 0;
+    float32 alpha = 0.0;
     bool motion = calc_time_interp(time_count, rayo.time, &ia, &alpha);
     
     GridQuantInfo q;
-    for(int i = 0; i < 3; i++)
+    for(int32 i = 0; i < 3; i++)
     {
         if(motion)
         {
@@ -322,12 +324,12 @@ bool Grid::intersect_ray(Ray &rayo, Intersection *intersection)
             q.offset[i] = quant_info[0].offset[i];
         }
     }
-    //float tscale = sqrtf((q.factor[0]*q.factor[0]) + (q.factor[1]*q.factor[1]) + (q.factor[2]*q.factor[2]));
+    //float32 tscale = sqrtf((q.factor[0]*q.factor[0]) + (q.factor[1]*q.factor[1]) + (q.factor[2]*q.factor[2]));
     
     // Transform the ray into quant space
     Ray ray;
     ray = rayo;
-    for(int i = 0; i < 3; i++)
+    for(int32 i = 0; i < 3; i++)
     {
         ray.o[i] = grid_quant(rayo.o[i], q.offset[i], q.factor[i]);
         ray.d[i] = grid_quantd(rayo.d[i], q.offset[i], q.factor[i]);
@@ -337,8 +339,8 @@ bool Grid::intersect_ray(Ray &rayo, Intersection *intersection)
     
 
     // Traverse the BVH and check for intersections. Yay!
-    unsigned int todo_offset = 0, node = 0;
-    unsigned int todo[64];
+    uint32 todo_offset = 0, node = 0;
+    uint32 todo[64];
     
     while(true)
     {
@@ -377,7 +379,7 @@ bool Grid::intersect_ray(Ray &rayo, Intersection *intersection)
     
     // Fill in intersection structure
     if(hit && intersection) {
-        float l = rayo.d.length();
+        float32 l = rayo.d.length();
         Vec3 temp = rayo.d / l;
         temp = temp * t;
         intersection->d = t;
@@ -385,8 +387,8 @@ bool Grid::intersect_ray(Ray &rayo, Intersection *intersection)
         
         // Calculate surface normal at intersection point
         Vec3 n1, n2, n3, n4;
-        int ia, ib;
-        float alpha;
+        int32 ia, ib;
+        float32 alpha;
         
         if(verts.query_time(ray.time, &ia, &ib, &alpha))
         {   
@@ -433,14 +435,14 @@ BBox &Grid::bounds()
         bbox.bmin.init(time_count);
         bbox.bmax.init(time_count);
         
-        for(int time=0; time < time_count; time++)
+        for(int32 time=0; time < time_count; time++)
         {
             bbox.bmin[time] = verts[time][0].p;
             bbox.bmax[time] = verts[time][0].p;
             
-            for(int i = 0; i < res_u*res_v; i++)
+            for(int32 i = 0; i < res_u*res_v; i++)
             {
-                for(int n=0; n < 3; n++)
+                for(int32 n=0; n < 3; n++)
                 {
                     bbox.bmin[time][n] = verts[time][i].p[n] < bbox.bmin[time][n] ? verts[time][i].p[n] : bbox.bmin[time][n];
                     bbox.bmax[time][n] = verts[time][i].p[n] > bbox.bmax[time][n] ? verts[time][i].p[n] : bbox.bmax[time][n];
@@ -465,10 +467,10 @@ BBox &Grid::bounds()
  * is specified by it's first (i.e. upper left) vertex.
  * Bounds are placed into bnodes.
  */
-void Grid::bound_upoly(int first_vert, GridBVHNode *bnodes)
+void Grid::bound_upoly(int32 first_vert, GridBVHNode *bnodes)
 {
     
-    int is[4];  // indices to the upoly's four vertices
+    int32 is[4];  // indices to the upoly's four vertices
     is[0] = first_vert;
     is[1] = first_vert + 1;
     is[2] = first_vert + res_u;
@@ -476,7 +478,7 @@ void Grid::bound_upoly(int first_vert, GridBVHNode *bnodes)
     
     Vec3 bmin, bmax;
     
-    for(int time = 0; time < time_count; time++)
+    for(int32 time = 0; time < time_count; time++)
     {
         // Get the real bounds
         bmin.x = verts[time][is[0]].p.x;
@@ -486,7 +488,7 @@ void Grid::bound_upoly(int first_vert, GridBVHNode *bnodes)
         bmin.z = verts[time][is[0]].p.z;
         bmax.z = verts[time][is[0]].p.z;
         
-        for(int i = 1; i < 4; i++)
+        for(int32 i = 1; i < 4; i++)
         {
             bmin.x = verts[time][is[i]].p.x < bmin.x ? verts[time][is[i]].p.x : bmin.x;
             bmax.x = verts[time][is[i]].p.x > bmax.x ? verts[time][is[i]].p.x : bmax.x;
@@ -497,7 +499,7 @@ void Grid::bound_upoly(int first_vert, GridBVHNode *bnodes)
         }
         
         // Quantize the bounds
-        for(int i = 0; i < 3; i++)
+        for(int32 i = 0; i < 3; i++)
         {
             bnodes[time].bounds[i] = grid_quant(bmin[i], quant_info[time].offset[i], quant_info[time].factor[i]);
             bnodes[time].bounds[i+3] = grid_quant(bmax[i], quant_info[time].offset[i], quant_info[time].factor[i]);
@@ -519,15 +521,15 @@ bool Grid::finalize()
     bounds();
 
     // Calculate quantization information
-    float factor[3] = {0.0, 0.0, 0.0};
+    float32 factor[3] = {0.0, 0.0, 0.0};
     quant_info.resize(time_count);
-    for(int time = 0; time < time_count; time++)
+    for(int32 time = 0; time < time_count; time++)
     {
-        for(int i = 0; i < 3; i++)
+        for(int32 i = 0; i < 3; i++)
         {
             quant_info[time].offset[i] = bbox.bmin[time][i];
             
-            float f = bbox.bmax[time][i] - bbox.bmin[time][i];
+            float32 f = bbox.bmax[time][i] - bbox.bmin[time][i];
             if(f < 0.000001)
                 f = 0.000001;
             
@@ -535,7 +537,7 @@ bool Grid::finalize()
                 factor[i] = f;
         }
     }
-    for(int time=0; time < time_count; time++)
+    for(int32 time=0; time < time_count; time++)
     {
         quant_info[time].factor[0] = factor[0];
         quant_info[time].factor[1] = factor[1];
@@ -553,9 +555,9 @@ bool Grid::finalize()
 /*
  * Recursive building of the grid's bvh.
  */
-int Grid::recursive_build_bvh(int me, int next_node,
-                   int umin, int umax,
-                   int vmin, int vmax)
+int32 Grid::recursive_build_bvh(int32 me, int32 next_node,
+                   int32 umin, int32 umax,
+                   int32 vmin, int32 vmax)
 {
     bvh_nodes[me].flags = 0;
 
@@ -573,13 +575,13 @@ int Grid::recursive_build_bvh(int me, int next_node,
     bvh_nodes[me].child_index = next_node;
     
     // Create child nodes
-    int next_i = next_node + 2;
-    int child1i = next_node * time_count;
-    int child2i = (next_node + 1) * time_count;
+    int32 next_i = next_node + 2;
+    int32 child1i = next_node * time_count;
+    int32 child2i = (next_node + 1) * time_count;
     if((umax-umin) > (vmax-vmin))
     {
         // Split on U
-        int u = umin + ((umax-umin) / 2);
+        int32 u = umin + ((umax-umin) / 2);
         next_i = recursive_build_bvh(child1i, next_i,
                                      umin, u,
                                      vmin, vmax);
@@ -590,7 +592,7 @@ int Grid::recursive_build_bvh(int me, int next_node,
     else
     {
         // Split on V
-        int v = vmin + ((vmax-vmin) / 2);
+        int32 v = vmin + ((vmax-vmin) / 2);
         next_i = recursive_build_bvh(child1i, next_i,
                                      umin, umax,
                                      vmin, v);
@@ -600,10 +602,10 @@ int Grid::recursive_build_bvh(int me, int next_node,
     }
     
     // Calculate bounds
-    for(unsigned int time = 0; time < time_count; time++)
+    for(uint32 time = 0; time < time_count; time++)
     {
         //std::cout << "Time " << time << ": ";
-        for(int i=0; i < 3; i++)
+        for(int32 i=0; i < 3; i++)
         {
             bvh_nodes[me+time].bounds[i] = bvh_nodes[child1i+time].bounds[i];
             bvh_nodes[me+time].bounds[i+3] = bvh_nodes[child1i+time].bounds[i+3];

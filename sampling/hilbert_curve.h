@@ -2,10 +2,12 @@
  * Code taken (nearly) verbatim from "Hacker's Delight" by Henry S. Warren
  */
 
-void hil_inc_xy(unsigned *xp, unsigned *yp, int n) {
+#include "numtype.h"
+
+void hil_inc_xy(uint *xp, uint *yp, int n) {
 
    int i;
-   unsigned x, y, state, dx, dy, row, dochange;
+   uint x, y, state, dx, dy, row, dochange;
 
    x = *xp;
    y = *yp;

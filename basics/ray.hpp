@@ -1,6 +1,8 @@
 #ifndef RAY_HPP
 #define RAY_HPP
 
+#include "numtype.h"
+
 #include "vector.h"
 #include "matrix.h"
 #include "config.h"
@@ -24,11 +26,11 @@
  * Returns the origin differential transfered onto the surface intersection.
  */
 /*
-static inline Vec3 transfer_differential(const Vec3 normal, const Vec3 d, const float t,
+static inline Vec3 transfer_differential(const Vec3 normal, const Vec3 d, const float32 t,
                                           const Vec3 od, const Vec3 dd)
 {
     const Vec3 temp = od + (dd * t);
-    const float td = dot(temp, normal) / dot(d, normal);
+    const float32 td = dot(temp, normal) / dot(d, normal);
     
     return temp + (d * td);
 }
@@ -43,11 +45,11 @@ static inline Vec3 transfer_differential(const Vec3 normal, const Vec3 d, const 
 struct Ray {
     // Coordinates
     Vec3 o, d; // Ray origin and direction
-    float time; // Time coordinate
+    float32 time; // Time coordinate
     
     // Minimum and maximum extent along the ray
-    float min_t;
-    float max_t;
+    float32 min_t;
+    float32 max_t;
     
     // Differentials for origin and direction
     // 0: Image X
@@ -60,13 +62,13 @@ struct Ray {
     bool has_differentials;
     
     // Ray tracing tracking data
-    unsigned int depth;
+    uint32 depth;
     bool is_shadow_ray;
     
     // Pre-computed data for accelerating ray intersection
     Vec3 inv_d;                 // 1.0/d
-    unsigned int d_is_neg[3];  // Whether each component of d is negative
-    float diff_rate[NUM_DIFFERENTIALS];  // Rates of ray differentials change, as a function of distance
+    uint32 d_is_neg[3];  // Whether each component of d is negative
+    float32 diff_rate[NUM_DIFFERENTIALS];  // Rates of ray differentials change, as a function of distance
                                           // along the ray.  This is useful for determining if
                                           // the range of micropolygon sizes across a surface
                                           // is going to be too broad for dicing.
@@ -78,7 +80,7 @@ struct Ray {
      * Ray differentials need to be filled in manually after this.
      */
     Ray(const Vec3 &o_=Vec3(0,0,0), const Vec3 &d_=Vec3(0,0,0),
-        const float &time_ = 0.0)
+        const float32 &time_ = 0.0)
     {
         o = o_;
         d = d_;
@@ -115,7 +117,7 @@ struct Ray {
         
         if(has_differentials)
         {
-            for(int i = 0; i < NUM_DIFFERENTIALS; i++)
+            for(int32 i = 0; i < NUM_DIFFERENTIALS; i++)
             {
                 diff_rate[i] = dd[i].length();
             }
@@ -137,7 +139,7 @@ struct Ray {
         // These can be transformed as directional vectors...?
         if(has_differentials)
         {
-            for(int i = 0; i < NUM_DIFFERENTIALS; i++)
+            for(int32 i = 0; i < NUM_DIFFERENTIALS; i++)
             {
                 od[i] = m.mult_dir(od[i]);
                 dd[i] = m.mult_dir(dd[i]);
@@ -152,20 +154,20 @@ struct Ray {
      *
      * Returns true on success.
      */
-    bool transfer_ray_differentials(const Vec3 normal, const float t)
+    bool transfer_ray_differentials(const Vec3 normal, const float32 t)
     {
         if(!has_differentials)
             return false;
     
-        const float d_n = dot(d, normal);
+        const float32 d_n = dot(d, normal);
         
         if(d_n == 0.0)
             return false;
         
-        for(int i = 0; i < NUM_DIFFERENTIALS; i++)
+        for(int32 i = 0; i < NUM_DIFFERENTIALS; i++)
         {
             Vec3 temp = od[i] + (dd[i] * t);
-            float td = dot(temp, normal) / d_n;
+            float32 td = dot(temp, normal) / d_n;
             
             od[i] = temp + (d * td);
         }
@@ -180,28 +182,28 @@ struct Ray {
      * needs to be for this ray at that distance.  And that is its primary
      * purpose as well: determining dicing rates.
      */
-    float width(const float &t) const
+    float32 width(const float32 &t) const
     {
         if(!has_differentials)
             return 0.0f;
         
         // Calculate the width of each differential at t.
         const Vec3 rev_d = d * -1.0f;
-        const float d_n = dot(d, rev_d);
-        float w[NUM_DIFFERENTIALS];
-        for(int i = 0; i < NUM_DIFFERENTIALS; i++)
+        const float32 d_n = dot(d, rev_d);
+        float32 w[NUM_DIFFERENTIALS];
+        for(int32 i = 0; i < NUM_DIFFERENTIALS; i++)
         {
             Vec3 temp = od[i] + (dd[i] * t);
-            float td = dot(temp, rev_d) / d_n;
+            float32 td = dot(temp, rev_d) / d_n;
             
             w[i] = (temp + (d * td)).length();
         }
         
         // Minimum of the image differentials
-        const float image = std::min(w[0], w[1]);
+        const float32 image = std::min(w[0], w[1]);
         
         // Minimum of the lens differentials
-        const float lens = std::min(w[2], w[3]);
+        const float32 lens = std::min(w[2], w[3]);
         
         // Maximum of the results
         return std::max(image, lens) * 0.5f;
@@ -211,20 +213,20 @@ struct Ray {
      * Returns an estimate of the minimum ray width over a distance
      * range along the ray.
      */
-    float min_width(const float &tnear, const float &tfar) const
+    float32 min_width(const float32 &tnear, const float32 &tfar) const
     {
         if(!has_differentials)
             return 0.0f;
         
         // Calculate the min width of each differential at the average distance.
-        const float t = (tnear + tfar) / 2.0f;
+        const float32 t = (tnear + tfar) / 2.0f;
         const Vec3 rev_d = d * -1.0f;
-        const float d_n = dot(d, rev_d);
-        float w[NUM_DIFFERENTIALS];
-        for(int i = 0; i < NUM_DIFFERENTIALS; i++)
+        const float32 d_n = dot(d, rev_d);
+        float32 w[NUM_DIFFERENTIALS];
+        for(int32 i = 0; i < NUM_DIFFERENTIALS; i++)
         {
             Vec3 temp = od[i] + (dd[i] * t);
-            float td = dot(temp, rev_d) / d_n;
+            float32 td = dot(temp, rev_d) / d_n;
             
             w[i] = (temp + (d * td)).length() - (diff_rate[i] * 0.5);
             if(w[i] < 0.0f)
@@ -232,10 +234,10 @@ struct Ray {
         }
         
         // Minimum of the image differentials
-        const float image = std::min(w[0], w[1]);
+        const float32 image = std::min(w[0], w[1]);
         
         // Minimum of the lens differentials
-        const float lens = std::min(w[2], w[3]);
+        const float32 lens = std::min(w[2], w[3]);
         
         //std::cout << "Image d: " << image << std::endl;
         //std::cout << "Lens d: " << lens << std::endl;

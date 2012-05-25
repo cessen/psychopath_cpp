@@ -7,6 +7,8 @@
  * by Eisemann et al. for more information.
  */
 
+#include "numtype.h"
+
 #include <stdlib.h>
 #include <iostream>
 #include <vector>
@@ -45,8 +47,8 @@ class SSHPrimitive
             data = prim;
             
             // Get bounds at time 0.5
-            int ia, ib;
-            float alpha;
+            int32 ia, ib;
+            float32 alpha;
             if(data->bounds().bmin.query_time(0.5, &ia, &ib, &alpha))
             {
                 bmin = lerp(0.5, data->bounds().bmin[ia], data->bounds().bmin[ib]);
@@ -68,10 +70,10 @@ class SSHPrimitive
  */
 class SSHNode {
     public:
-        TimeBox<float> plane;  // Potentially multiple planes for multiple time samples
+        TimeBox<float32> plane;  // Potentially multiple planes for multiple time samples
 
         union {
-            unsigned int child_index;
+            uint32 child_index;
             Primitive *data;
         };
         
@@ -93,7 +95,7 @@ class SSHNode {
 class SSHNodes {
     public:
         std::vector<SSHNode *> nodes;
-        unsigned int num_nodes;
+        uint32 num_nodes;
         
         SSHNodes()
         {
@@ -102,14 +104,14 @@ class SSHNodes {
         
         ~SSHNodes()
         {
-            int s = nodes.size();
-            for(int i=0; i < s; i++)
+            int32 s = nodes.size();
+            for(int32 i=0; i < s; i++)
             {
                 delete [] nodes[i];
             }
         }
         
-        SSHNode &operator[](int i)
+        SSHNode &operator[](int32 i)
         {
             if(SSH_CHUNK_SIZE > 1)
                 return (nodes[i/SSH_CHUNK_SIZE])[i%SSH_CHUNK_SIZE];
@@ -117,14 +119,14 @@ class SSHNodes {
                 return *nodes[i];
         }
         
-        unsigned int size()
+        uint32 size()
         {
             return num_nodes;
         }
         
         void add_chunk()
         {
-            int s = nodes.size();
+            int32 s = nodes.size();
             nodes.resize(s+1);
             nodes[s] = new SSHNode[SSH_CHUNK_SIZE];
             num_nodes = SSH_CHUNK_SIZE * (s+1);
@@ -141,7 +143,7 @@ class SSH: public Aggregate
     private:
         BBox bbox;
         SSHNodes nodes;
-        unsigned int next_node;
+        uint32 next_node;
         std::vector<SSHPrimitive> bag;  // Temporary holding spot for primitives not yet added to the hierarchy
         
     public:
@@ -158,8 +160,8 @@ class SSH: public Aggregate
         virtual BBox &bounds();
         virtual bool intersect_ray(Ray &ray, Intersection *intersection=NULL);
         
-        unsigned split_primitives(unsigned int first_prim, unsigned int last_prim, int *axis=NULL);
-        void recursive_build(unsigned int me, unsigned int first_prim, unsigned int last_prim, BBox &parent_bounds);
+        unsigned split_primitives(uint32 first_prim, uint32 last_prim, int32 *axis=NULL);
+        void recursive_build(uint32 me, uint32 first_prim, uint32 last_prim, BBox &parent_bounds);
 };
 
 

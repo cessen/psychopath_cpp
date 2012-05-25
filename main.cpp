@@ -1,7 +1,11 @@
+#include "numtype.h"
+
 #include <stdlib.h>
 #include <math.h>
 #include <iostream>
 #include <vector>
+
+#include "scene.h"
 #include "bvh.h"
 #include "raster.hpp"
 #include "vector.h"
@@ -20,25 +24,25 @@
 OIIO_NAMESPACE_USING
 
 #define GAMMA 2.2
-#define SPP 16
+#define SPP 1
 #define XRES 1280
 #define YRES 720
-#define ASPECT (((float)(YRES))/XRES)
-#define RAND ((float)rand()/(float)RAND_MAX)
-#define RANDC (((float)rand()/(float)RAND_MAX) - 0.5)
+#define ASPECT (((float32)(YRES))/XRES)
+#define RAND ((float32)rand()/(float32)RAND_MAX)
+#define RANDC (((float32)rand()/(float32)RAND_MAX) - 0.5)
 #define IMAGE_CHANNELS 3
 #define NUM_RAND_PATCHES 1000
 
 #define GAUSS_WIDTH 2.0 / 4
-float gaussian(float x, float y)
+float32 gaussian(float32 x, float32 y)
 {
-    float xf = expf(-x * x / (2 * GAUSS_WIDTH * GAUSS_WIDTH));
-    float yf = expf(-y * y / (2 * GAUSS_WIDTH * GAUSS_WIDTH));
+    float32 xf = expf(-x * x / (2 * GAUSS_WIDTH * GAUSS_WIDTH));
+    float32 yf = expf(-y * y / (2 * GAUSS_WIDTH * GAUSS_WIDTH));
     return xf * yf;
 }
 
-float mitchell_1d(float x, float C) {
-    float B = 1.0 - (2*C);
+float32 mitchell_1d(float32 x, float32 C) {
+    float32 B = 1.0 - (2*C);
     x = fabsf(1.f * x);
     if(x > 2.0)
         return 0.0;
@@ -51,7 +55,7 @@ float mitchell_1d(float x, float C) {
         (6 - 2*B)) * (1.f/6.f);
 }
 
-float mitchell_2d(float x, float y, float C) {
+float32 mitchell_2d(float32 x, float32 y, float32 C) {
     return mitchell_1d(x, C) * mitchell_1d(y, C);
 }
 
@@ -64,99 +68,9 @@ int main(int argc, char **argv)
      * Build scene
      ******************************************************
      */
-    // BVH containing our scene objects
-    BVH scene;
+    Scene scene;
     
-    
-    /*
-    std::vector<Primitive *> objects(1);
-    
-    float yar = 1000000.0;
-    float yar2 = -0.5;
-    float yar3 = 150.0;
-    
-    // Patch 1, back wall
-    objects[0] = new Bilinear(1);
-    ((Bilinear *)(objects[0]))->add_time_sample(0,
-                          Vec3(yar, yar, yar3),
-                          Vec3(-yar, yar, yar3),
-                          Vec3(-yar, -yar, yar3),
-                          Vec3(yar, -yar, yar3)
-                          );
-    
-    // Patch 2, floor
-    objects[1] = new Bilinear(1);
-    ((Bilinear *)(objects[1]))->add_time_sample(0,
-                          Vec3(yar, yar2, yar),
-                          Vec3(-yar, yar2, yar),
-                          Vec3(-yar, yar2, -yar),
-                          Vec3(yar, yar2, -yar)
-                          );
-    
-    scene.add_primitives(objects);
-    */
-    
-    
-    std::vector<Primitive *> rand_objects(NUM_RAND_PATCHES);
-    
-    // Random patches
-    std::cout << "Generating random patches..."; std::cout.flush();
-    for(int i=0; i < NUM_RAND_PATCHES; i++)
-    {
-        float x, y, z;
-        z = 15 + (RAND * NUM_RAND_PATCHES / 4);
-        float s = z / 15;
-        x = RANDC * 40;
-        y = RANDC * 20;
-        
-        // Motion?
-        int ms = 1;
-        if(RAND < 0.25)
-            ms = 2;
-        
-        // Flipped?
-        bool flip = false;
-        if(RAND < 0.5)
-            flip = true;
-            
-        rand_objects[i] = new Bilinear(ms);
-        
-        for(int j = 0; j < ms; j++)
-        {
-            x += (RANDC * j * 8) / s;
-            y += (RANDC * j * 8) / s;
-            z += (RANDC * j * 8) / s;
-            
-            if(flip)
-            {
-                ((Bilinear *)(rand_objects[i]))->add_time_sample(j,
-                                                 Vec3((x*s)+2, (y*s)+2, z+(RANDC*2)),
-                                                 Vec3((x*s)+2, (y*s)-2, z+(RANDC*2)),
-                                                 Vec3((x*s)-2, (y*s)-2, z+(RANDC*2)),
-                                                 Vec3((x*s)-2, (y*s)+2, z+(RANDC*2)));
-            }
-            else
-            {
-                ((Bilinear *)(rand_objects[i]))->add_time_sample(j,
-                                                 Vec3((x*s)+2, (y*s)+2, z+(RANDC*2)),
-                                                 Vec3((x*s)-2, (y*s)+2, z+(RANDC*2)),
-                                                 Vec3((x*s)-2, (y*s)-2, z+(RANDC*2)),
-                                                 Vec3((x*s)+2, (y*s)-2, z+(RANDC*2)));
-
-            }
-        }
-    }
-    std::cout << " done." << std::endl; std::cout.flush();
-    
-    
-    scene.add_primitives(rand_objects);
-    
-    std::cout << "Building acceleration structure... "; std::cout.flush();
-    scene.finalize();
-    std::cout << " done." << std::endl;  std::cout.flush();
-    //return 0;
-    
-    // Create camera
+    // Add camera
     std::vector<Matrix44> cam_mats;
     cam_mats.resize(4);
     
@@ -179,13 +93,70 @@ int main(int argc, char **argv)
     cam_mats[3].rotate((angle/3)*3, axis);
     cam_mats[3].translate(Vec3(0.0, 0.0, 20.0));
     
-    
     #define LENS_DIAM 1.0
     #define FOCUS_DISTANCE 40.0
     #define FOV 55
-    Camera cam(cam_mats, (3.14159/180.0)*FOV, LENS_DIAM, FOCUS_DISTANCE);
+    scene.camera = new Camera(cam_mats, (3.14159/180.0)*FOV, LENS_DIAM, FOCUS_DISTANCE);
     
     
+    // Add random patches
+    std::cout << "Generating random patches..."; std::cout.flush();
+    
+    Bilinear *patch;
+    for(int i=0; i < NUM_RAND_PATCHES; i++)
+    {
+        float32 x, y, z;
+        z = 15 + (RAND * NUM_RAND_PATCHES / 4);
+        float32 s = z / 15;
+        x = RANDC * 40;
+        y = RANDC * 20;
+        
+        // Motion?
+        int ms = 1;
+        if(RAND < 0.25)
+            ms = 2;
+        
+        // Flipped?
+        bool flip = false;
+        if(RAND < 0.5)
+            flip = true;
+            
+        patch = new Bilinear(ms);
+        
+        for(int j = 0; j < ms; j++)
+        {
+            x += (RANDC * j * 8) / s;
+            y += (RANDC * j * 8) / s;
+            z += (RANDC * j * 8) / s;
+            
+            if(flip)
+            {
+                patch->add_time_sample(j,
+                                                 Vec3((x*s)+2, (y*s)+2, z+(RANDC*2)),
+                                                 Vec3((x*s)+2, (y*s)-2, z+(RANDC*2)),
+                                                 Vec3((x*s)-2, (y*s)-2, z+(RANDC*2)),
+                                                 Vec3((x*s)-2, (y*s)+2, z+(RANDC*2)));
+            }
+            else
+            {
+                patch->add_time_sample(j,
+                                                 Vec3((x*s)+2, (y*s)+2, z+(RANDC*2)),
+                                                 Vec3((x*s)-2, (y*s)+2, z+(RANDC*2)),
+                                                 Vec3((x*s)-2, (y*s)-2, z+(RANDC*2)),
+                                                 Vec3((x*s)+2, (y*s)-2, z+(RANDC*2)));
+
+            }
+        }
+        
+        scene.add_primitive(patch);
+    }
+    std::cout << " done." << std::endl; std::cout.flush();
+    
+    std::cout << "Building acceleration structure... "; std::cout.flush();
+    scene.finalize();
+    std::cout << " done." << std::endl;  std::cout.flush();
+    //return 0;
+
     
     /*
      ******************************************************
@@ -201,16 +172,16 @@ int main(int argc, char **argv)
     Ray ray;
     Intersection inter;
     
-    float x, y;
-    int i;
+    float32 x, y;
+    int32 i;
     while(image_sampler.get_next_sample(&samp))
     {
-        float rx = (samp.x - 0.5) * (image->max_x - image->min_x);
-        float ry = (0.5 - samp.y) * (image->max_y - image->min_y);
-        float dx = (image->max_x - image->min_x) / XRES;
-        float dy = (image->max_y - image->min_y) / YRES;
+        float32 rx = (samp.x - 0.5) * (image->max_x - image->min_x);
+        float32 ry = (0.5 - samp.y) * (image->max_y - image->min_y);
+        float32 dx = (image->max_x - image->min_x) / XRES;
+        float32 dy = (image->max_y - image->min_y) / YRES;
         
-        ray = cam.generate_ray(rx, ry, dx, dy, samp.t, samp.u, samp.v);
+        ray = scene.camera->generate_ray(rx, ry, dx, dy, samp.t, samp.u, samp.v);
         ray.finalize();
         
         x = (samp.x * image->width) - 0.5;
@@ -218,15 +189,15 @@ int main(int argc, char **argv)
         
         bool hit = false;
         hit = scene.intersect_ray(ray, &inter);
-        for(int j=-2; j <= 2; j++)
+        for(int32 j=-2; j <= 2; j++)
         {
-            for(int k=-2; k <= 2; k++)
+            for(int32 k=-2; k <= 2; k++)
             {
-                int a = x + j;
-                int b = y + k;
+                int32 a = x + j;
+                int32 b = y + k;
                 if(a < 0 || !(a < image->width) || b < 0 || !(b < image->height))
                     continue;
-                float contrib = mitchell_2d(a-x, b-y, 0.5);
+                float32 contrib = mitchell_2d(a-x, b-y, 0.5);
                 i = (image->width * b) + a;
                 
                 image_contrib->pixels[i] += contrib;
@@ -244,8 +215,8 @@ int main(int argc, char **argv)
 
         
         // Print percentage complete
-        static int last_perc = -1;
-        int perc = image_sampler.percentage() * 100;
+        static int32 last_perc = -1;
+        int32 perc = image_sampler.percentage() * 100;
         if(perc > last_perc)
         {
             std::cout << perc << "%" << std::endl;
@@ -300,14 +271,15 @@ int main(int argc, char **argv)
     delete image;
     
     std::cout << std::endl << "Struct sizes:" << std::endl;
+    std::cout << "Ray: " << sizeof(Ray) << std::endl;
     std::cout << "BBounds: " << sizeof(BBounds) << std::endl;
     std::cout << "BBox: " << sizeof(BBox) << std::endl;
     std::cout << "BVHNode: " << sizeof(BVHNode) << std::endl;
     std::cout << "Grid: " << sizeof(Grid) << std::endl;
     std::cout << "GridBVHNode: " << sizeof(GridBVHNode) << std::endl;
     std::cout << "Primitive *: " << sizeof(Primitive *) << std::endl;
-    std::cout << "TimeBox<int>: " << sizeof(std::vector<int>) << std::endl;
-    std::cout << "std::vector<int>: " << sizeof(std::vector<int>) << std::endl;
+    std::cout << "TimeBox<int32>: " << sizeof(std::vector<int32>) << std::endl;
+    std::cout << "std::vector<int32>: " << sizeof(std::vector<int32>) << std::endl;
     
     return 0;
 }

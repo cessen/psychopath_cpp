@@ -1,3 +1,5 @@
+#include "numtype.h"
+
 #include "sobol.h"
 #include "rng.h"
 #include "image_sampler.h"
@@ -10,11 +12,11 @@
 #include <math.h>
 #include <algorithm>
 
-inline float radical_inverse(int n, int base)
+inline float32 radical_inverse(int n, int base)
 {
-    float val = 0;
-    float inv_base = 1.0 / base;
-    float inv_bi = inv_base;
+    float32 val = 0;
+    float32 inv_base = 1.0 / base;
+    float32 inv_bi = inv_base;
     while (n > 0) {
         int d_i = (n % base);
         val += d_i * inv_bi;
@@ -25,10 +27,10 @@ inline float radical_inverse(int n, int base)
 }
 
 
-ImageSampler::ImageSampler(int spp_,
-                     int res_x_, int res_y_,
-                     float f_width_,
-                     int bucket_size_)
+ImageSampler::ImageSampler(uint spp_,
+                     uint res_x_, uint res_y_,
+                     float32 f_width_,
+                     uint bucket_size_)
 {
     spp = spp_;
     res_x = res_x_;
@@ -44,7 +46,7 @@ ImageSampler::ImageSampler(int spp_,
     tot_samp = spp * res_x * res_y;
     
     // Determine hilbert order to cover entire image
-    unsigned int dim = res_x > res_y ? res_x : res_y;
+    uint dim = res_x > res_y ? res_x : res_y;
     dim += f_width;
     hilbert_order = 1;
     hilbert_res = 2;

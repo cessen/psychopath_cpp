@@ -1,6 +1,8 @@
 #ifndef TIMEBOX_HPP
 #define TIMEBOX_HPP
 
+#include "numtype.h"
+
 #include <iostream>
 #include <stdlib.h>
 
@@ -8,7 +10,7 @@ template <class T>
 class TimeBox {
     public:
         T *states;
-        unsigned char state_count;
+        uint8 state_count;
         
         
         TimeBox();
@@ -21,18 +23,18 @@ class TimeBox {
         // either side along with an alpha to blend between them.
         // Returns true on success, false on failure.  Failure typically
         // means that there is only one state in the TimeBox.
-        bool query_time(const float &time, int *ia, int *ib, float *alpha) const
+        bool query_time(const float32 &time, int32 *ia, int32 *ib, float32 *alpha) const
         {
             if(state_count < 2)
                 return false;
             
             if(time < 1.0)
             {
-                const float temp = time * (state_count - 1);
-                const int index = temp;
+                const float32 temp = time * (state_count - 1);
+                const int32 index = temp;
                 *ia = index;
                 *ib = index + 1;
-                *alpha = temp - (float)(index);
+                *alpha = temp - (float32)(index);
             }
             else
             {
@@ -45,12 +47,12 @@ class TimeBox {
         }
         
         // Allows transparent access to the underlying state data
-        T &operator[](const int &i)
+        T &operator[](const int32 &i)
         {
                 return states[i];
         }
         
-        const T &operator[](const int &i) const
+        const T &operator[](const int32 &i) const
         {
                 return states[i];
         }

@@ -1,6 +1,8 @@
 #ifndef RASTER_HPP
 #define RASTER_HPP
 
+#include "numtype.h"
+
 /*
  * A lightweight raster image buffer.
  * Includes a mapping to 2d coordinates.
@@ -10,12 +12,12 @@
 class Raster {
     public:
         int width, height; // Resolution of the image
-        float min_x, min_y; // Minimum x/y coordinates of the image
-        float max_x, max_y; // Maximum x/y coordinates of the image
+        float32 min_x, min_y; // Minimum x/y coordinates of the image
+        float32 max_x, max_y; // Maximum x/y coordinates of the image
         int channels; // Channels per pixel
-        float *pixels; // Pixel data
+        float32 *pixels; // Pixel data
     
-        Raster(int w, int h, int cc, float x1, float y1, float x2, float y2);
+        Raster(int w, int h, int cc, float32 x1, float32 y1, float32 x2, float32 y2);
         ~Raster();
 };
 

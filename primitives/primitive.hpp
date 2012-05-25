@@ -1,6 +1,8 @@
 #ifndef PRIMITIVE_HPP
 #define PRIMITIVE_HPP
 
+#include "numtype.h"
+
 #include <vector>
 #include <iostream>
 #include <stdlib.h>
@@ -65,7 +67,7 @@ class Primitive: public Boundable, public Traceable
         
         /* Returns whether the surface needs to be split before tracing.
          */
-        virtual bool is_traceable(float ray_width)
+        virtual bool is_traceable(float32 ray_width)
         {
             return true;
         }
@@ -83,11 +85,11 @@ class Surface: public Primitive
         /* Returns the dicing rate to use to acheive a given
          * micropolygon size.
          */
-        virtual int dice_rate(float upoly_width) = 0;
+        virtual int dice_rate(float32 upoly_width) = 0;
         
         /* Default implementation for surfaces.
          */
-        virtual bool is_traceable(float ray_width)
+        virtual bool is_traceable(float32 ray_width)
         {
             if(dice_rate(ray_width) < 32)
                 return true;

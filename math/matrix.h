@@ -1,6 +1,8 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
+#include "numtype.h"
+
 #include <iostream>
 #include <cmath>
 #include "vector.h"
@@ -15,7 +17,7 @@
 class Matrix44
 {
     public:
-        float elements[4][4];
+        float32 elements[4][4];
     
         // Set the matrix to be the identity matrix
         // Wipes out the existing contents of the matrix
@@ -70,35 +72,35 @@ class Matrix44
         }
         
         // Rotate
-        void rotate( const float &angle, Vec3 axis )
+        void rotate( const float32 &angle, Vec3 axis )
         {
 	        if( angle != 0.0 )
 	        {
 		        Matrix44 r;
 		        axis.normalize();
 
-		        const float s = std::sin(angle);
-		        const float c = std::cos(angle);
-		        const float t = 1.0 - c;
+		        const float32 s = std::sin(angle);
+		        const float32 c = std::cos(angle);
+		        const float32 t = 1.0 - c;
 
 		        r.elements[0][0] = t * axis.x * axis.x + c;
 		        r.elements[1][1] = t * axis.y * axis.y + c;
 		        r.elements[2][2] = t * axis.z * axis.z + c;
 
-		        const float txy = t * axis.x * axis.y;
-		        const float sz = s * axis.z;
+		        const float32 txy = t * axis.x * axis.y;
+		        const float32 sz = s * axis.z;
 
 		        r.elements[0][1] = txy + sz;
 		        r.elements[1][0] = txy - sz;
 
-		        const float txz = t * axis.x * axis.z;
-		        const float sy = s * axis.y;
+		        const float32 txz = t * axis.x * axis.z;
+		        const float32 sy = s * axis.y;
 
 		        r.elements[0][2] = txz - sy;
 		        r.elements[2][0] = txz + sy;
 
-		        const float tyz = t * axis.y * axis.z;
-		        const float sx = s * axis.x;
+		        const float32 tyz = t * axis.y * axis.z;
+		        const float32 sx = s * axis.x;
 
 		        r.elements[1][2] = tyz + sx;
 		        r.elements[2][1] = tyz - sx;
@@ -148,7 +150,7 @@ class Matrix44
 		        if(i1 != j)
 		        {
 			        // Swap rows i1 and j in a and *this to put pivot on diagonal
-			        float temp;
+			        float32 temp;
 
 			        temp = a.elements[i1][0];
 			        a.elements[i1][0] = a.elements[j][0];
@@ -182,7 +184,7 @@ class Matrix44
 		        {
 			        return false;
 		        }
-		        float scale = 1.0f / a.elements[j][j];
+		        float32 scale = 1.0f / a.elements[j][j];
 		        (*this).elements[j][0] *= scale;
 		        (*this).elements[j][1] *= scale;
 		        (*this).elements[j][2] *= scale;
@@ -223,12 +225,12 @@ class Matrix44
     /*
      * Easy access to elements.
      */
-        float *operator[](const int &i)
+        float32 *operator[](const int &i)
         {
             return &elements[i][0];
         }
         
-        const float *operator[](const int &i) const
+        const float32 *operator[](const int &i) const
         {
             return &elements[i][0];
         }
@@ -328,7 +330,7 @@ class Matrix44
      * Matrix<-->Scalar operations
      */
         // Multiplication
-        void operator*=(const float &f)
+        void operator*=(const float32 &f)
         {
             for(int row=0; row < 4; row++)
             {
@@ -338,7 +340,7 @@ class Matrix44
                 }
             }
         }
-        Matrix44 operator*(const float &f) const
+        Matrix44 operator*(const float32 &f) const
         {
             Matrix44 result(*this);
             for(int row=0; row < 4; row++)

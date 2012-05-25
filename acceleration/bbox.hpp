@@ -1,6 +1,8 @@
 #ifndef BBOX_HPP
 #define BBOX_HPP
 
+#include "numtype.h"
+
 #include <stdlib.h>
 #include <xmmintrin.h>
 #include "timebox.hpp"
@@ -9,7 +11,7 @@
 #include "utils.hpp"
 
 union V4 {
-    float a[4];
+    float32 a[4];
     __m128 b;
 };
 
@@ -25,12 +27,12 @@ struct BBox
         TimeBox<Vec3> bmin;
         TimeBox<Vec3> bmax;
         
-        BBox(const int &res_time=1);
+        BBox(const int32 &res_time=1);
         BBox(const Vec3 &bmin_, const Vec3 &bmax_);
         
-        void add_time_sample(const int &samp, const Vec3 &bmin_, const Vec3 &bmax_);
+        void add_time_sample(const int32 &samp, const Vec3 &bmin_, const Vec3 &bmax_);
         
-        bool intersect_ray_(Ray &ray, float *hitt0=NULL, float *hitt1=NULL);
+        bool intersect_ray_(Ray &ray, float32 *hitt0=NULL, float32 *hitt1=NULL);
         
         /*
          * Copies another BBox into this one, overwriting any bounds
@@ -49,11 +51,11 @@ struct BBox
          * Returns the surface area of the BBox.
          * For now just takes the first time sample.
          */
-        float surface_area() const
+        float32 surface_area() const
         {
-            const float x = bmax[0].x - bmin[0].x;
-            const float y = bmax[0].y - bmin[0].y;
-            const float z = bmax[0].z - bmin[0].z;
+            const float32 x = bmax[0].x - bmin[0].x;
+            const float32 y = bmax[0].y - bmin[0].y;
+            const float32 z = bmax[0].z - bmin[0].z;
             
             return 2 * (x*y + x*z + y*z);
         }
@@ -69,11 +71,11 @@ struct BBox
 
 //#define BBOXSSE
 #ifdef BBOXSSE
-static inline bool fast_intersect_test_bbox(const BBox &b, const Ray &ray, float &tmin, float &tmax)
+static inline bool fast_intersect_test_bbox(const BBox &b, const Ray &ray, float32 &tmin, float32 &tmax)
 {
     //std::cout << "Hi" << std::endl;
-    int ia=0, ib=0;
-    float alpha=0.0;
+    int32 ia=0, ib=0;
+    float32 alpha=0.0;
     __m128 bmin, bmax;
     
     // Calculate bounds in time
@@ -110,25 +112,25 @@ static inline bool fast_intersect_test_bbox(const BBox &b, const Ray &ray, float
     t_nears.b = _mm_min_ps(temp1, temp2);
     t_fars.b = _mm_max_ps(temp1, temp2);
     
-    const float temp3 = t_nears.a[0] > t_nears.a[1] ? t_nears.a[0] : t_nears.a[1];
+    const float32 temp3 = t_nears.a[0] > t_nears.a[1] ? t_nears.a[0] : t_nears.a[1];
     tmin = temp3 > t_nears.a[2] ? temp3 : t_nears.a[2];
     
-    const float temp4 = t_fars.a[0] < t_fars.a[1] ? t_fars.a[0] : t_fars.a[1];
+    const float32 temp4 = t_fars.a[0] < t_fars.a[1] ? t_fars.a[0] : t_fars.a[1];
     tmax = temp4 < t_fars.a[2] ? temp4 : t_fars.a[2];
     
     //std::cout << (tmin < tmax) << " " << tmin << " " << tmax << std::endl;
-    //float tmin2 = tmin;
-    //float tmax2 = tmax;
+    //float32 tmin2 = tmin;
+    //float32 tmax2 = tmax;
     //bool hit = fast_intersect_test_bbox2(b, ray, tmin2, tmax2);
     //std::cout << hit << " " << tmin2 << " " << tmax2 << std::endl;
     
     return (tmin < tmax) && (tmin < ray.max_t) && (tmax > ray.min_t);
 }
 #else
-static inline bool fast_intersect_test_bbox(const BBox &b, const Ray &ray, float &tmin, float &tmax)
+static inline bool fast_intersect_test_bbox(const BBox &b, const Ray &ray, float32 &tmin, float32 &tmax)
 {
-    int ia=0, ib=0;
-    float alpha=0.0;
+    int32 ia=0, ib=0;
+    float32 alpha=0.0;
     Vec3 bounds[2];
     
     // Calculate bounds in time
@@ -149,10 +151,10 @@ static inline bool fast_intersect_test_bbox(const BBox &b, const Ray &ray, float
     
     tmin = (bounds[ray.d_is_neg[0]].x - ray.o.x) * ray.inv_d.x;
     tmax = (bounds[1-ray.d_is_neg[0]].x - ray.o.x) * ray.inv_d.x;
-    const float tymin = (bounds[ray.d_is_neg[1]].y - ray.o.y) * ray.inv_d.y;
-    const float tymax = (bounds[1-ray.d_is_neg[1]].y - ray.o.y) * ray.inv_d.y;
-    const float tzmin = (bounds[ray.d_is_neg[2]].z - ray.o.z) * ray.inv_d.z;
-    const float tzmax = (bounds[1-ray.d_is_neg[2]].z - ray.o.z) * ray.inv_d.z;
+    const float32 tymin = (bounds[ray.d_is_neg[1]].y - ray.o.y) * ray.inv_d.y;
+    const float32 tymax = (bounds[1-ray.d_is_neg[1]].y - ray.o.y) * ray.inv_d.y;
+    const float32 tzmin = (bounds[ray.d_is_neg[2]].z - ray.o.z) * ray.inv_d.z;
+    const float32 tzmax = (bounds[1-ray.d_is_neg[2]].z - ray.o.z) * ray.inv_d.z;
 
     //tmin = tmin > tymin ? tmin : tymin;
     //tmin = tmin > tzmin ? tmin : tzmin;

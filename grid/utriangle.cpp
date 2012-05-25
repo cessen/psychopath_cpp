@@ -5,6 +5,8 @@
  * Modified, Nathan Vegdahl
  */
 
+#include "numtype.h"
+
 #include "vector.h"
 #include "ray.hpp"
 #include "utriangle.hpp"
@@ -21,10 +23,10 @@ UTriangle::UTriangle(const Vec3 &v1, const Vec3 &v2, const Vec3 &v3)
 }
 
 bool UTriangle::intersect_ray_(const Ray &ray,
-			                 float *t_, float *u_, float *v_) const
+			                 float32 *t_, float32 *u_, float32 *v_) const
 {
     Vec3 qvec;
-    float u, v;
+    float32 u, v;
 
     /* find vectors for two edges sharing vert0 */
     const Vec3 edge1 = verts[1] - verts[0];
@@ -34,11 +36,11 @@ bool UTriangle::intersect_ray_(const Ray &ray,
     const Vec3 pvec = cross(ray.d, edge2);
 
     /* if determinant is near zero, ray lies in plane of triangle */
-    const float det = dot(edge1, pvec);
+    const float32 det = dot(edge1, pvec);
 
     /* calculate distance from vert0 to ray origin */
     const Vec3 tvec = ray.o - verts[0];
-    const float inv_det = 1.0 / det;
+    const float32 inv_det = 1.0 / det;
     
     if(det > EPSILON)
     {

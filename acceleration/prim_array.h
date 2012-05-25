@@ -1,6 +1,8 @@
 #ifndef PRIM_ARRAY_H
 #define PRIM_ARRAY_H
 
+#include "numtype.h"
+
 #include <vector>
 #include "primitive.hpp"
 #include "aggregate.hpp"

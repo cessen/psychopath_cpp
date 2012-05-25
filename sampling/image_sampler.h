@@ -1,6 +1,8 @@
 #ifndef IMAGE_SAMPLER_H
 #define IMAGE_SAMPLER_H
 
+#include "numtype.h"
+
 #include "sample.h"
 #include "rng.h"
 #include <vector>
@@ -18,31 +20,31 @@ class ImageSampler
 {
     private:
         /* General settings. */
-        unsigned int spp;  // Approximate number of samples per pixel
-        unsigned int res_x, res_y;  // Image resolution in pixels
-        float f_width;  // Filter width; not used directly
+        uint spp;  // Approximate number of samples per pixel
+        uint res_x, res_y;  // Image resolution in pixels
+        float32 f_width;  // Filter width; not used directly
                         // here, but we need to know so we can buffer
                         // the image around the edges
-        unsigned int bucket_size;  // Width and height of each bucket in pixels
+        int bucket_size;  // Width and height of each bucket in pixels
     
         /* State information. */
-        unsigned int hilbert_order, hilbert_res;
-        unsigned int points_traversed;
-        unsigned int x, y, s;
+        uint hilbert_order, hilbert_res;
+        uint points_traversed;
+        uint x, y, s;
         
         /* For reporting percentages. */
-        unsigned int samp_taken;
-        unsigned int tot_samp;
+        uint samp_taken;
+        uint tot_samp;
         
         /* Random number generator. */
         RNG rng;
         
         
     public:
-        ImageSampler(int spp_,
-                     int res_x_, int res_y_,
-                     float f_width_=1.0,
-                     int bucket_size_=0);
+        ImageSampler(uint spp_,
+                     uint res_x_, uint res_y_,
+                     float32 f_width_=1.0,
+                     uint bucket_size_=0);
         ~ImageSampler();
         
         void init_tile();

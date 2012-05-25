@@ -1,16 +1,18 @@
+#include "numtype.h"
+
 #include <iostream>
 #include <stdlib.h>
 #include "bilinear.hpp"
 #include "grid.hpp"
 #include "config.h"
 
-Bilinear::Bilinear(unsigned int res_time_)
+Bilinear::Bilinear(uint8 res_time_)
 {
     last_rayw = 99999999999999999999999.0;
     has_bounds = false;
     verts.init(res_time_);
     
-    for(unsigned int i=0; i < res_time_; i++)
+    for(uint8 i=0; i < res_time_; i++)
     {
         verts[i] = new Vec3[4];
     }
@@ -53,10 +55,10 @@ void Bilinear::add_time_sample(int samp, Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4)
 
 //////////////////////////////////////////////////////////////
 
-int Bilinear::dice_rate(float upoly_width)
+int Bilinear::dice_rate(float32 upoly_width)
 {   
     // Approximate size of the patch
-    float size = (bounds().bmax[0] - bounds().bmin[0]).length() / 1.4;
+    float32 size = (bounds().bmax[0] - bounds().bmin[0]).length() / 1.4;
         
     // Dicing rate based on ray width
     int rate = 1 + (size / (upoly_width * Config::dice_rate));
@@ -73,7 +75,7 @@ bool Bilinear::intersect_ray(Ray &ray, Intersection *intersection)
     if(!GridCache::cache.exists(grid_key))
     {
         // Get closest intersection with the bounding box
-        float tnear, tfar;
+        float32 tnear, tfar;
         if(!bounds().intersect_ray_(ray, &tnear, &tfar))
             return false;
         
@@ -123,13 +125,13 @@ BBox &Bilinear::bounds()
 }
 
 
-bool Bilinear::is_traceable(float ray_width)
+bool Bilinear::is_traceable(float32 ray_width)
 {
     if(ray_width < last_rayw)
     {
-        float lu = (verts[0][0] - verts[0][1]).length() + (verts[0][3] - verts[0][2]).length();
-        float lv = (verts[0][0] - verts[0][3]).length() + (verts[0][1] - verts[0][2]).length();
-        float edge_ratio = lu / lv;
+        float32 lu = (verts[0][0] - verts[0][1]).length() + (verts[0][3] - verts[0][2]).length();
+        float32 lv = (verts[0][0] - verts[0][3]).length() + (verts[0][1] - verts[0][2]).length();
+        float32 edge_ratio = lu / lv;
         
         int r = dice_rate(ray_width);
         if(r <= Config::max_grid_size && (edge_ratio <= 1.5 && edge_ratio >= 0.75))
@@ -155,8 +157,8 @@ void Bilinear::refine(std::vector<Primitive *> &primitives)
     primitives[0] = new Bilinear(verts.state_count);
     primitives[1] = new Bilinear(verts.state_count);
     
-    float lu;
-    float lv;
+    float32 lu;
+    float32 lv;
     
     lu = (verts[0][0] - verts[0][1]).length() + (verts[0][3] - verts[0][2]).length();
     lv = (verts[0][0] - verts[0][3]).length() + (verts[0][1] - verts[0][2]).length();

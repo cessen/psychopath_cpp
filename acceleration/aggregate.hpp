@@ -1,6 +1,8 @@
 #ifndef AGGREGATE_HPP
 #define AGGREGATE_HPP
 
+#include "numtype.h"
+
 #include <vector>
 
 /*

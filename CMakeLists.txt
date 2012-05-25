@@ -25,6 +25,7 @@ include_directories ("${PROJECT_SOURCE_DIR}",
                      "${PROJECT_SOURCE_DIR}/math",
                      "${PROJECT_SOURCE_DIR}/primitives",
                      "${PROJECT_SOURCE_DIR}/sampling",
+                     "${PROJECT_SOURCE_DIR}/scene",
                      "${OIIO_INCLUDE}",
                      "${OSL_INCLUDE}")
 

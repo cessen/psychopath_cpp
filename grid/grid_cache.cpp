@@ -1,3 +1,5 @@
+#include "numtype.h"
+
 #include "grid_cache.h"
 
 namespace GridCache

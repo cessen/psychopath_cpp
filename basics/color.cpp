@@ -1,3 +1,5 @@
+#include "numtype.h"
+
 #include "color.hpp"
 
 Color Color::operator+(Color &b)
@@ -33,7 +35,7 @@ Color Color::operator*(Color &b)
     return col;
 }
 
-Color Color::operator*(float b)
+Color Color::operator*(float32 b)
 {
     Color col;
     for(int i=0; i < SPECTRUM_COUNT; i++)
