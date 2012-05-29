@@ -19,8 +19,8 @@
  */
 class Integrator
 {
-	public:
-		
+public:
+
 }
 
 #endif // INTEGRATOR_H

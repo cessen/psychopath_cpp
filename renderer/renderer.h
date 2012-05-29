@@ -29,13 +29,13 @@
  */
 class Renderer
 {
-	private:
-		uint res_x, res_y;
-		string::string output_path;
-		 
-	public:
-		// Starts a render with the given number of threads.
-		void render(int thread_count);
+private:
+	uint res_x, res_y;
+	string::string output_path;
+
+public:
+	// Starts a render with the given number of threads.
+	void render(int thread_count);
 }
 
 

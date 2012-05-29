@@ -1,0 +1,29 @@
+- Refactor:
+	- Step 1: Refactor code to use Integrator for rendering
+	  and ray tracing
+	- Step 2: Refactor code to use Tracer for ray tracing
+	- Step 3: Refactor code to use Renderer to manage rendering
+
+- Sphere primitive
+- Triangle primitive
+
+- Two-stage ray tracing, similar to the Rayes (not Reyes) paper
+
+- Simple scene-description format
+
+- Light sources with direct lighting
+
+- Simple material system (for testing purposes
+  only, eventually replace with OSL)
+
+- Refactor TimeBox template to use class methods for interpolation
+
+- Multi-threaded rendering
+
+- OSL integration
+
+- More compact and/or faster BVH:
+	- Quantized BVH?
+	- MSBVH?
+	- QuadBVH?
+

@@ -32,15 +32,15 @@
  */
 class Tracer
 {
-	public:
-		// Adds a single ray to the ray queue for tracing.
-		// Returns the number of rays currently queued for tracing (includes
-		// the ray queued with the call, so e.g. queuing the first ray will
-		// return 1).
-		uint32 queue_rays(Ray *ray);
-		
-		// Traces all queued rays, and returns the number of rays traced.
-		uint32 trace_rays();
+public:
+	// Adds a single ray to the ray queue for tracing.
+	// Returns the number of rays currently queued for tracing (includes
+	// the ray queued with the call, so e.g. queuing the first ray will
+	// return 1).
+	uint32 queue_rays(Ray *ray);
+
+	// Traces all queued rays, and returns the number of rays traced.
+	uint32 trace_rays();
 }
 
 #endif // TRACER_H

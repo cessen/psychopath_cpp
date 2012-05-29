@@ -14,7 +14,7 @@
 template <class T>
 static inline T lerp(const float32 &alpha, const T &a, const T &b)
 {
-    return (a * (1.0-alpha)) + (b * alpha);
+	return (a * (1.0-alpha)) + (b * alpha);
 }
 
 
@@ -22,9 +22,9 @@ template <class T>
 static inline T lerp2d(float32 alpha_u, float32 alpha_v,
                        T s00, T s10, T s01, T s11)
 {
-    T temp1 = (s00 * (1.0-alpha_u)) + (s10 * alpha_u);
-    T temp2 = (s01 * (1.0-alpha_u)) + (s11 * alpha_u);
-    return (temp1 * (1.0-alpha_v)) + (temp2 * alpha_v);
+	T temp1 = (s00 * (1.0-alpha_u)) + (s10 * alpha_u);
+	T temp2 = (s01 * (1.0-alpha_u)) + (s11 * alpha_u);
+	return (temp1 * (1.0-alpha_v)) + (temp2 * alpha_v);
 }
 
 #define QPI (3.1415926535897932384626433 / 4)
@@ -35,38 +35,31 @@ static inline T lerp2d(float32 alpha_u, float32 alpha_v,
  */
 static inline void square_to_circle(float32 *x, float32 *y)
 {
-    //std::cout << "In: " << *x << " " << *y << std::endl;
-    
-    if(*x == 0 && *y == 0)
-        return;
-        
-    float32 radius, angle;
-    
-    if(*x > fabs(*y)) // Quadrant 1
-    {
-        radius = *x;
-        angle = QPI * (*y/ *x);
-    }
-    else if (*y > fabs(*x)) // Quadrant 2
-    {
-        radius = *y;
-        angle = QPI * (2 - (*x/ *y));
-    }
-    else if(*x < -fabs(*y)) // Quadrant 3
-    {
-        radius = -*x;
-        angle = QPI * (4 + (*y/ *x));
-    }
-    else // Quadrant 4
-    {
-        radius = -*y;
-        angle = QPI * (6 - (*x/ *y));
-    }
-    
-    *x = radius * cos(angle);
-    *y = radius * sin(angle);
-    
-    //std::cout << "Out: " << *x << " " << *y << std::endl;
+	//std::cout << "In: " << *x << " " << *y << std::endl;
+
+	if (*x == 0 && *y == 0)
+		return;
+
+	float32 radius, angle;
+
+	if (*x > fabs(*y)) { // Quadrant 1
+		radius = *x;
+		angle = QPI * (*y/ *x);
+	} else if (*y > fabs(*x)) { // Quadrant 2
+		radius = *y;
+		angle = QPI * (2 - (*x/ *y));
+	} else if (*x < -fabs(*y)) { // Quadrant 3
+		radius = -*x;
+		angle = QPI * (4 + (*y/ *x));
+	} else { // Quadrant 4
+		radius = -*y;
+		angle = QPI * (6 - (*x/ *y));
+	}
+
+	*x = radius * cos(angle);
+	*y = radius * sin(angle);
+
+	//std::cout << "Out: " << *x << " " << *y << std::endl;
 }
 
 
@@ -77,22 +70,19 @@ static inline void square_to_circle(float32 *x, float32 *y)
  */
 static inline bool calc_time_interp(const uint8& time_count, const float32 &time, uint32 *i, float32 *alpha)
 {
-    if(time_count < 2)
-        return false;
-    
-    if(time < 1.0)
-    {
-        const float32 temp = time * (time_count - 1);
-        *i = temp;
-        *alpha = temp - (float32)(*i);
-    }
-    else
-    {
-        *i = time_count - 2;
-        *alpha = 1.0;
-    }
-    
-    return true;
+	if (time_count < 2)
+		return false;
+
+	if (time < 1.0) {
+		const float32 temp = time * (time_count - 1);
+		*i = temp;
+		*alpha = temp - (float32)(*i);
+	} else {
+		*i = time_count - 2;
+		*alpha = 1.0;
+	}
+
+	return true;
 }
 
 

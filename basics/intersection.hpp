@@ -9,13 +9,12 @@
 /*
  * Contains the information from a ray intersection.
  */
-struct Intersection
-{
-    Vec3 p;  // Intersection postion
-    Vec3 n;  // Surface normal at the intersection
-    float32 d; // Distance along the ray to the intersection
-    
-    Color col;
+struct Intersection {
+	Vec3 p;  // Intersection postion
+	Vec3 n;  // Surface normal at the intersection
+	float32 d; // Distance along the ray to the intersection
+
+	Color col;
 };
 
 #endif

@@ -5,28 +5,26 @@
 
 #define SPECTRUM_COUNT 3
 
-struct Color
-{
-        float32 spectrum[SPECTRUM_COUNT];
+struct Color {
+	float32 spectrum[SPECTRUM_COUNT];
 
-        Color(float32 n=0.0) {
-            
-            for(int32 i=0; i < SPECTRUM_COUNT; i++)
-            {
-                spectrum[i] = n;
-            }
-        }
-        
-        Color(float32 r_, float32 g_, float32 b_) {
-            spectrum[0] = r_;
-            spectrum[1] = g_;
-            spectrum[2] = b_;
-        }
-        
-        Color operator+(Color &b);
-        Color operator-(Color &b);
-        Color operator*(Color &b);
-        Color operator*(float32 b);
+	Color(float32 n=0.0) {
+
+		for (int32 i=0; i < SPECTRUM_COUNT; i++) {
+			spectrum[i] = n;
+		}
+	}
+
+	Color(float32 r_, float32 g_, float32 b_) {
+		spectrum[0] = r_;
+		spectrum[1] = g_;
+		spectrum[2] = b_;
+	}
+
+	Color operator+(Color &b);
+	Color operator-(Color &b);
+	Color operator*(Color &b);
+	Color operator*(float32 b);
 };
 
 #endif

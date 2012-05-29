@@ -21,23 +21,22 @@
  * shaders.  It must be finalized (which initializes important acceleration
  * structures, etc.) before being passed off for rendering.
  */
-struct Scene
-{
+struct Scene {
 	Camera *camera;
 	std::vector<Primitive *> primitives;
 	BVH world;
-	
-		
+
+
 	void add_primitive(Primitive *primitive) {
 		primitives.push_back(primitive);
 	}
-	
+
 	// Finalizes the scene for rendering
 	void finalize() {
 		world.add_primitives(primitives);
 		world.finalize();
 	}
-	
+
 	bool intersect_ray(Ray &ray, Intersection *intersection=NULL) {
 		return world.intersect_ray(ray, intersection);
 	}

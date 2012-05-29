@@ -23,13 +23,13 @@
 
 #include <cassert>
 
-namespace sobol {
-
-struct Matrices
+namespace sobol
 {
-    static const unsigned num_dimensions = 1024;
-    static const unsigned size = 52;
-    static const unsigned long long matrices[];
+
+struct Matrices {
+	static const unsigned num_dimensions = 1024;
+	static const unsigned size = 52;
+	static const unsigned long long matrices[];
 };
 
 // Compute one component of the Sobol'-sequence, where the component
@@ -43,16 +43,15 @@ inline double sample(
     const unsigned dimension,
     const unsigned long long scramble = 0ULL)
 {
-    assert(dimension < Matrices::num_dimensions);
+	assert(dimension < Matrices::num_dimensions);
 
-    unsigned long long result = scramble & ~-(1ULL << Matrices::size);
-    for (unsigned i = dimension * Matrices::size; index; index >>= 1, ++i)
-    {
-        if (index & 1)
-            result ^= Matrices::matrices[i];
-    }
+	unsigned long long result = scramble & ~-(1ULL << Matrices::size);
+	for (unsigned i = dimension * Matrices::size; index; index >>= 1, ++i) {
+		if (index & 1)
+			result ^= Matrices::matrices[i];
+	}
 
-    return result * (1.0 / (1ULL << Matrices::size));
+	return result * (1.0 / (1ULL << Matrices::size));
 }
 
 } // namespace sobol

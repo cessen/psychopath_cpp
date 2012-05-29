@@ -10,7 +10,7 @@ typedef LRUKey GridCacheKey;
 
 namespace GridCache
 {
-    extern LRUCache<Grid> cache;
+extern LRUCache<Grid> cache;
 }
 
 #endif
