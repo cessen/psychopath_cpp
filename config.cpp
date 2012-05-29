@@ -1,6 +1,6 @@
 #include "numtype.h"
 
-#include "config.h"
+#include "config.hpp"
 
 namespace Config
 {

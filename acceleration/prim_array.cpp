@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include "ray.hpp"
-#include "prim_array.h"
+#include "prim_array.hpp"
 
 
 

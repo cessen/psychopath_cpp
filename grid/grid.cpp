@@ -3,7 +3,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <math.h>
-#include "vector.h"
+#include "vector.hpp"
 #include "grid.hpp"
 #include "utriangle.hpp"
 #include "ray.hpp"

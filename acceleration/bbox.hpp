@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <xmmintrin.h>
 #include "timebox.hpp"
-#include "vector.h"
+#include "vector.hpp"
 #include "ray.hpp"
 #include "utils.hpp"
 

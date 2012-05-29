@@ -7,7 +7,7 @@
 
 #include "numtype.h"
 
-#include "vector.h"
+#include "vector.hpp"
 #include "ray.hpp"
 #include "utriangle.hpp"
 #include <math.h>

@@ -3,7 +3,7 @@
 #include <iostream>
 #include <algorithm>
 #include "ray.hpp"
-#include "bvh.h"
+#include "bvh.hpp"
 #include <cmath>
 
 

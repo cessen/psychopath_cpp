@@ -4,11 +4,11 @@
 #include "numtype.h"
 
 #include <vector>
-#include "vector.h"
+#include "vector.hpp"
 #include "grid.hpp"
 #include "primitive.hpp"
 #include "timebox.hpp"
-#include "grid_cache.h"
+#include "grid_cache.hpp"
 
 /*
  * A bilinear patch.

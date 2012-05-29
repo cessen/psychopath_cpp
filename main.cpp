@@ -5,20 +5,20 @@
 #include <iostream>
 #include <vector>
 
-#include "scene.h"
-#include "bvh.h"
+#include "scene.hpp"
+#include "bvh.hpp"
 #include "raster.hpp"
-#include "vector.h"
-#include "matrix.h"
+#include "vector.hpp"
+#include "matrix.hpp"
 #include "ray.hpp"
-#include "camera.h"
+#include "camera.hpp"
 #include "grid.hpp"
 #include "bilinear.hpp"
 #include "intersection.hpp"
 #include "primitive.hpp"
-#include "config.h"
-#include "sample.h"
-#include "image_sampler.h"
+#include "config.hpp"
+#include "sample.hpp"
+#include "image_sampler.hpp"
 #include <OpenImageIO/imageio.h>
 #include <OSL/oslexec.h>
 OIIO_NAMESPACE_USING

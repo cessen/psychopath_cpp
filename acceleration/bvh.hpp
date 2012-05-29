@@ -11,7 +11,7 @@
 #include "ray.hpp"
 #include "bbox.hpp"
 #include "utils.hpp"
-#include "vector.h"
+#include "vector.hpp"
 
 #define BVH_CHUNK_SIZE 1024
 

@@ -1,9 +1,9 @@
 #include "numtype.h"
 
-#include "sobol.h"
-#include "rng.h"
-#include "image_sampler.h"
-#include "sample.h"
+#include "sobol.hpp"
+#include "rng.hpp"
+#include "image_sampler.hpp"
+#include "sample.hpp"
 #include "hilbert_curve.h"
 
 #include <limits.h>

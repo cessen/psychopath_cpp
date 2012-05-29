@@ -4,7 +4,7 @@
 #include "numtype.h"
 
 #include "grid.hpp"
-#include "lru_cache.h"
+#include "lru_cache.hpp"
 
 typedef LRUKey GridCacheKey;
 

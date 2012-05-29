@@ -6,11 +6,11 @@
 #include <vector>
 
 
-#include "config.h"
+#include "config.hpp"
 #include "utils.hpp"
 #include "timebox.hpp"
-#include "vector.h"
-#include "matrix.h"
+#include "vector.hpp"
+#include "matrix.hpp"
 #include "ray.hpp"
 
 /*

@@ -3,8 +3,8 @@
 
 #include "numtype.h"
 
-#include "sample.h"
-#include "rng.h"
+#include "sample.hpp"
+#include "rng.hpp"
 #include <vector>
 
 /*

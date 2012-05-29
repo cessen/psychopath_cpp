@@ -8,7 +8,7 @@
 #include <map>
 #include <list>
 #include <utility>
-#include "config.h"
+#include "config.hpp"
 
 typedef uint32 LRUKey;
 

@@ -3,9 +3,9 @@
 
 #include "numtype.h"
 
-#include "vector.h"
-#include "matrix.h"
-#include "config.h"
+#include "vector.hpp"
+#include "matrix.hpp"
+#include "config.hpp"
 #include <algorithm>
 #include <math.h>
 #include <iostream>

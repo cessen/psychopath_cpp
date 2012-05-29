@@ -3,7 +3,7 @@
 #include <iostream>
 #include <algorithm>
 #include "ray.hpp"
-#include "ssh.h"
+#include "ssh.hpp"
 #include <cmath>
 
 

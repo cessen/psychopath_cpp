@@ -16,7 +16,7 @@
 #include "primitive.hpp"
 #include "bbox.hpp"
 #include "timebox.hpp"
-#include "vector.h"
+#include "vector.hpp"
 #include <stdlib.h>
 
 

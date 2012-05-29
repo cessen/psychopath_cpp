@@ -5,7 +5,7 @@
 
 #include <iostream>
 #include <cmath>
-#include "vector.h"
+#include "vector.hpp"
 
 /*
  * A 4x4 transform matrix.

@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include "bilinear.hpp"
 #include "grid.hpp"
-#include "config.h"
+#include "config.hpp"
 
 Bilinear::Bilinear(uint8 res_time_)
 {

@@ -3,7 +3,7 @@
 
 #include "numtype.h"
 
-#include "vector.h"
+#include "vector.hpp"
 #include "color.hpp"
 
 /*

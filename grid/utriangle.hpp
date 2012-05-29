@@ -4,7 +4,7 @@
 #include "numtype.h"
 
 #include <stdlib.h>
-#include "vector.h"
+#include "vector.hpp"
 
 /* Not a true primitive.  Mainly a utility for tracing upoly grids.
  */

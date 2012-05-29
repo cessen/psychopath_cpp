@@ -9,8 +9,8 @@
 
 #include <vector>
 
-#include "camera.h"
-#include "bvh.h"
+#include "camera.hpp"
+#include "bvh.hpp"
 #include "primitive.hpp"
 
 /*
