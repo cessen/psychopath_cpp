@@ -4,8 +4,10 @@
 	- Step 2: Refactor code to use Tracer for ray tracing
 	- Step 3: Refactor code to use Renderer to manage rendering
 
-- Sphere primitive
+//- Sphere primitive
 - Triangle primitive
+
+- Make min_t/max_t ray updating the responsibility of the Tracer, not the primitives
 
 - Two-stage ray tracing, similar to the Rayes (not Reyes) paper
 

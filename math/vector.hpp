@@ -36,6 +36,10 @@ struct Vec3 {
 		return sqrt(x*x + y*y + z*z);
 	}
 
+	float32 length2() const {
+		return x*x + y*y + z*z;
+	}
+
 	float32 normalize() {
 		const float32 l = length();
 		x /= l;

@@ -1,2 +1,2 @@
 add_library(primitives
-            bilinear)
+            bilinear sphere)

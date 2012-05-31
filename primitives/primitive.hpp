@@ -35,7 +35,7 @@ public:
 
 	/* Intersects a ray with the primitive.
 	 * Intersection information gets stored in the optional
-	 * "interesection" structure.
+	 * "intersection" structure.
 	 * Returns true on a hit, false on a miss.
 	 */
 	virtual bool intersect_ray(Ray &ray, Intersection *intersection=NULL) = 0;
@@ -79,20 +79,6 @@ class Surface: public Primitive
 {
 public:
 	virtual ~Surface() {}
-
-	/* Returns the dicing rate to use to acheive a given
-	 * micropolygon size.
-	 */
-	virtual int dice_rate(float32 upoly_width) = 0;
-
-	/* Default implementation for surfaces.
-	 */
-	virtual bool is_traceable(float32 ray_width) {
-		if (dice_rate(ray_width) < 32)
-			return true;
-		else
-			return false;
-	}
 };
 
 #endif

@@ -14,6 +14,7 @@
 #include "camera.hpp"
 #include "grid.hpp"
 #include "bilinear.hpp"
+#include "sphere.hpp"
 #include "intersection.hpp"
 #include "primitive.hpp"
 #include "config.hpp"
@@ -24,7 +25,7 @@
 OIIO_NAMESPACE_USING
 
 #define GAMMA 2.2
-#define SPP 16
+#define SPP 4
 #define XRES 1280
 #define YRES 720
 #define ASPECT (((float32)(YRES))/XRES)
@@ -32,6 +33,7 @@ OIIO_NAMESPACE_USING
 #define RANDC (((float32)rand()/(float32)RAND_MAX) - 0.5)
 #define IMAGE_CHANNELS 3
 #define NUM_RAND_PATCHES 1000
+#define NUM_RAND_SPHERES 10000
 
 #define GAUSS_WIDTH 2.0 / 4
 float32 gaussian(float32 x, float32 y)
@@ -76,7 +78,7 @@ int main(int argc, char **argv)
 	std::vector<Matrix44> cam_mats;
 	cam_mats.resize(4);
 
-	float angle = 15 * (3.14159 / 180.0);
+	float angle = 0 * (3.14159 / 180.0);
 	Vec3 axis(0.0, 0.0, 1.0);
 
 	cam_mats[0].translate(Vec3(0.0, 0.0, -40.0));
@@ -147,6 +149,41 @@ int main(int argc, char **argv)
 		}
 
 		scene.add_primitive(patch);
+	}
+	std::cout << " done." << std::endl;
+	std::cout.flush();
+	
+	
+	// Add random spheres
+	std::cout << "Generating random spheres...";
+	std::cout.flush();
+
+	Sphere *sphere;
+	for (int i=0; i < NUM_RAND_SPHERES; i++) {
+		float32 x, y, z;
+		z = 15 + (RAND * NUM_RAND_SPHERES / 4);
+		float32 s = z / 15;
+		x = RANDC * 40;
+		y = RANDC * 20;
+
+		// Motion?
+		int ms = 1;
+		if (RAND < 0.25)
+			ms = 2;
+
+		sphere = new Sphere(ms);
+
+		for (int j = 0; j < ms; j++) {
+			x += (RANDC * j * 8) / s;
+			y += (RANDC * j * 8) / s;
+			z += (RANDC * j * 8) / s;
+
+			sphere->add_time_sample(j,
+			                       Vec3(x*s, y*s, z+(RANDC*2)),
+			                       1.0f);
+		}
+
+		scene.add_primitive(sphere);
 	}
 	std::cout << " done." << std::endl;
 	std::cout.flush();
