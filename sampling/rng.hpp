@@ -1,5 +1,5 @@
-#ifndef RNG_H
-#define RNG_H
+#ifndef RNG_HPP
+#define RNG_HPP
 
 // UINT32_C is defined here to work around lack of stdint.h defs in C++
 // There's probably a more proper way to handle this.

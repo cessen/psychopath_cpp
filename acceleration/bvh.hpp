@@ -1,5 +1,5 @@
-#ifndef BVH_H
-#define BVH_H
+#ifndef BVH_HPP
+#define BVH_HPP
 
 #include "numtype.h"
 

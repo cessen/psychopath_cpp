@@ -1,3 +1,4 @@
+#include "config.h"
 #include "numtype.h"
 
 #include <stdlib.h>
@@ -22,10 +23,11 @@
 #include "image_sampler.hpp"
 #include <OpenImageIO/imageio.h>
 #include <OSL/oslexec.h>
+#include <boost/test/unit_test.hpp>
 OIIO_NAMESPACE_USING
 
 #define GAMMA 2.2
-#define SPP 4
+#define SPP 16
 #define XRES 1280
 #define YRES 720
 #define ASPECT (((float32)(YRES))/XRES)
@@ -67,6 +69,13 @@ float32 mitchell_2d(float32 x, float32 y, float32 C)
 
 int main(int argc, char **argv)
 {
+	// Print program information
+	std::cout << "Psychopath v" << VERSION_MAJOR << "." << VERSION_MINOR << "." << VERSION_PATCH;
+#ifdef DEBUG
+	std::cout << " (DEBUG build)";
+#endif
+	std::cout << std::endl << std::endl;
+
 	/*
 	 ******************************************************
 	 * Build scene
@@ -152,16 +161,18 @@ int main(int argc, char **argv)
 	}
 	std::cout << " done." << std::endl;
 	std::cout.flush();
-	
-	
+
+
 	// Add random spheres
 	std::cout << "Generating random spheres...";
 	std::cout.flush();
 
+	const float32 radius = 0.2;
+
 	Sphere *sphere;
 	for (int i=0; i < NUM_RAND_SPHERES; i++) {
 		float32 x, y, z;
-		z = 15 + (RAND * NUM_RAND_SPHERES / 4);
+		z = 15 + (RAND * NUM_RAND_SPHERES / 4) * radius;
 		float32 s = z / 15;
 		x = RANDC * 40;
 		y = RANDC * 20;
@@ -179,8 +190,8 @@ int main(int argc, char **argv)
 			z += (RANDC * j * 8) / s;
 
 			sphere->add_time_sample(j,
-			                       Vec3(x*s, y*s, z+(RANDC*2)),
-			                       1.0f);
+			                        Vec3(x*s, y*s, z+(RANDC*2)),
+			                        0.1f);
 		}
 
 		scene.add_primitive(sphere);

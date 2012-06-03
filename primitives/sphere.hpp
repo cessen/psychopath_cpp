@@ -8,8 +8,10 @@
 #include "primitive.hpp"
 #include "timebox.hpp"
 
-/*
- * A sphere.
+/**
+ * @brief A sphere primitive.
+ *
+ * This serves as a simple example of how to implement a surface primitive.
  */
 class Sphere: public Surface
 {
@@ -20,8 +22,9 @@ public:
 	BBox bbox;
 	bool has_bounds;
 
-	Sphere(uint8 res_time_);
+
 	Sphere(Vec3 center_, float32 radius_);
+	Sphere(uint8 res_time_);
 	virtual ~Sphere();
 
 	void add_time_sample(int samp, Vec3 center_, float32 radius_);

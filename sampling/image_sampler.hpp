@@ -1,5 +1,5 @@
-#ifndef IMAGE_SAMPLER_H
-#define IMAGE_SAMPLER_H
+#ifndef IMAGE_SAMPLER_HPP
+#define IMAGE_SAMPLER_HPP
 
 #include "numtype.h"
 

@@ -1,5 +1,5 @@
-#ifndef SAMPLE_H
-#define SAMPLE_H
+#ifndef SAMPLE_HPP
+#define SAMPLE_HPP
 
 #include "numtype.h"
 

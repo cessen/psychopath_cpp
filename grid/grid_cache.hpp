@@ -1,5 +1,5 @@
-#ifndef GRID_CACHE_H
-#define GRID_CACHE_H
+#ifndef GRID_CACHE_HPP
+#define GRID_CACHE_HPP
 
 #include "numtype.h"
 

@@ -18,8 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef SOBOL_H
-#define SOBOL_H
+#ifndef SOBOL_HPP
+#define SOBOL_HPP
 
 #include <cassert>
 

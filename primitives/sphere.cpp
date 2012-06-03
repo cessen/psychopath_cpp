@@ -1,18 +1,17 @@
 #include "numtype.h"
 
 #include <iostream>
-//#include <math>
 #include <stdlib.h>
 #include "sphere.hpp"
 #include "config.hpp"
 
-Sphere::Sphere(uint8 res_time_)
-{
-	has_bounds = false;
-	center.init(res_time_);
-	radius.init(res_time_);
-}
 
+/**
+ * @brief Construct sphere with the given center and radius.
+ *
+ * @param center_ Center of the sphere.
+ * @param radius_ Radius of the sphere.
+ */
 Sphere::Sphere(Vec3 center_, float32 radius_)
 {
 	has_bounds = false;
@@ -23,12 +22,36 @@ Sphere::Sphere(Vec3 center_, float32 radius_)
 	radius[0] = radius_;
 }
 
+
+/**
+ * @brief Construct sphere with the given number of time samples (for motion blur).
+ *
+ * The time samples must then be filled in with centers and radii via
+ * add_time_sample()
+ *
+ * @param res_time_ Number of time samples.
+ */
+Sphere::Sphere(uint8 res_time_)
+{
+	has_bounds = false;
+	center.init(res_time_);
+	radius.init(res_time_);
+}
+
+
 Sphere::~Sphere()
 {
 	return;
 }
 
 
+/**
+ * @brief Fills in a time sample with the given center and radius.
+ *
+ * @param samp Index of the time sample.
+ * @param center_ Center of the sphere for this time sample.
+ * @param radius_ Radius of the sphere for this time sample.
+ */
 void Sphere::add_time_sample(int samp, Vec3 center_, float32 radius_)
 {
 	center[samp] = center_;
@@ -116,7 +139,7 @@ bool Sphere::intersect_ray(Ray &ray, Intersection *intersection)
 	} else {
 		return false;
 	}
-	
+
 	// TODO: move this outside of primitive intersection routines
 	ray.max_t = t;
 

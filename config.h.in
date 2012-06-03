@@ -1,0 +1,8 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#define VERSION_MAJOR ${Psychopath_VERSION_MAJOR}
+#define VERSION_MINOR ${Psychopath_VERSION_MINOR}
+#define VERSION_PATCH ${Psychopath_VERSION_PATCH}
+
+#endif // CONFIG_H

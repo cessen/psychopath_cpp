@@ -2,8 +2,8 @@
  * This file and tracer.cpp define a Tracer class, which manages the tracing
  * of rays in a scene.
  */
-#ifndef TRACER_H
-#define TRACER_H
+#ifndef TRACER_HPP
+#define TRACER_HPP
 
 #include "numtype.h"
 

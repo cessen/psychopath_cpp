@@ -2,8 +2,8 @@
  * This file and scene.cpp define a Scene class, which is used to build and
  * store a scene description to be rendered.
  */
-#ifndef SCENE_H
-#define SCENE_H
+#ifndef SCENE_HPP
+#define SCENE_HPP
 
 #include "numtype.h"
 

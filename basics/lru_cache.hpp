@@ -1,5 +1,5 @@
-#ifndef LRU_CACHE_H
-#define LRU_CACHE_H
+#ifndef LRU_CACHE_HPP
+#define LRU_CACHE_HPP
 
 #include "numtype.h"
 

@@ -2,8 +2,8 @@
  * This file and integrator.cpp define a Integrator class, which decides where
  * to shoot rays and how to combine their results into a final image or images.
  */
-#ifndef INTEGRATOR_H
-#define INTEGRATOR_H
+#ifndef INTEGRATOR_HPP
+#define INTEGRATOR_HPP
 
 #include "numtype.h"
 

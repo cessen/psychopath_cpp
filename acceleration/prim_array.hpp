@@ -1,5 +1,5 @@
-#ifndef PRIM_ARRAY_H
-#define PRIM_ARRAY_H
+#ifndef PRIM_ARRAY_HPP
+#define PRIM_ARRAY_HPP
 
 #include "numtype.h"
 

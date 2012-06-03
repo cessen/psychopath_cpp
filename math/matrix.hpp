@@ -1,5 +1,5 @@
-#ifndef MATRIX_H
-#define MATRIX_H
+#ifndef MATRIX_HPP
+#define MATRIX_HPP
 
 #include "numtype.h"
 

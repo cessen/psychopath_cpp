@@ -1,5 +1,5 @@
-#ifndef SSH_H
-#define SSH_H
+#ifndef SSH_HPP
+#define SSH_HPP
 
 /*
  * A "Single Slab Hierarchy" ray tracing acceleration structure.

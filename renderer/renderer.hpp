@@ -2,8 +2,8 @@
  * This file and renderer.cpp define a Renderer class, which serves as
  * as the API for setting up, running, and controlling a render.
  */
-#ifndef RENDERER_H
-#define RENDERER_H
+#ifndef RENDERER_HPP
+#define RENDERER_HPP
 
 #include "numtype.h"
 #include <string>
