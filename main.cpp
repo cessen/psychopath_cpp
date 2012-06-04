@@ -23,7 +23,6 @@
 #include "image_sampler.hpp"
 #include <OpenImageIO/imageio.h>
 #include <OSL/oslexec.h>
-#include <boost/test/unit_test.hpp>
 OIIO_NAMESPACE_USING
 
 #define GAMMA 2.2

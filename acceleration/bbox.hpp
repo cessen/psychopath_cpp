@@ -21,70 +21,70 @@ union V4 {
 struct BBox {
 	Vec3 min;
 	Vec3 max;
-	
+
 	BBox() {
 		min.x = 0.0;
 		min.y = 0.0;
 		min.z = 0.0;
-		
+
 		max.x = 0.0;
 		max.y = 0.0;
 		max.z = 0.0;
 	}
-	
+
 	BBox(const Vec3 &min_, const Vec3 &max_) {
 		min = min_;
 		max = max_;
 	}
-	
+
 	/**
 	 * @brief Adds two BBox's together in a component-wise manner.
 	 */
 	BBox operator+(const BBox &b) const {
 		BBox c;
-	
+
 		c.min = min + b.min;
 		c.max = max + b.max;
-		
+
 		return c;
 	}
-	
+
 	/**
 	 * @brief Subtracts one BBox from another in a component-wise manner.
 	 */
 	BBox operator-(const BBox &b) const {
 		BBox c;
-	
+
 		c.min = min - b.min;
 		c.max = max - b.max;
-		
+
 		return c;
 	}
-	
+
 	/**
 	 * @brief Multiples all the components of a BBox by a float.
 	 */
 	BBox operator*(const float32 &f) const {
 		BBox c;
-	
+
 		c.min = min * f;
 		c.max = max * f;
-		
+
 		return c;
 	}
-	
+
 	/**
 	 * @brief Divides all the components of a BBox by a float.
 	 */
 	BBox operator/(const float32 &f) const {
 		BBox c;
-	
+
 		c.min = min / f;
 		c.max = max / f;
-		
+
 		return c;
 	}
-	
+
 	/**
 	 * @brief Sets this bbox to be equal to the given bbox.
 	 */
@@ -92,7 +92,7 @@ struct BBox {
 		min = b.min;
 		max = b.max;
 	}
-	
+
 	/**
 	 * @brief Merge another BBox into this one.
 	 *
@@ -106,7 +106,7 @@ struct BBox {
 			min.y = b.min.y;
 		if (b.min.z < min.z)
 			min.z = b.min.z;
-		
+
 		if (b.max.x > max.x)
 			max.x = b.max.x;
 		if (b.max.y > max.y)
@@ -114,7 +114,7 @@ struct BBox {
 		if (b.max.z > max.z)
 			max.z = b.max.z;
 	}
-	
+
 	/**
 	 * @brief Tests a ray against the BBox.
 	 *
@@ -128,7 +128,7 @@ struct BBox {
 	 */
 	inline bool intersect_ray(const Ray &ray, float32 *hitt0, float32 *hitt1) const {
 		const Vec3 *bounds = &min;
-		
+
 		float32 tmin = (bounds[ray.d_is_neg[0]].x - ray.o.x) * ray.inv_d.x;
 		float32 tmax = (bounds[1-ray.d_is_neg[0]].x - ray.o.x) * ray.inv_d.x;
 		const float32 tymin = (bounds[ray.d_is_neg[1]].y - ray.o.y) * ray.inv_d.y;
@@ -153,7 +153,7 @@ struct BBox {
 			return false;
 		}
 	}
-	
+
 	/**
 	 * @brief Tests a ray against the BBox.
 	 *
@@ -165,7 +165,7 @@ struct BBox {
 		float32 hitt0, hitt1;
 		return intersect_ray(ray, &hitt0, &hitt1);
 	}
-	
+
 	/**
 	 * @brief Returns the surface area of the BBox.
 	 */
@@ -198,12 +198,11 @@ public:
 		return bbox.init(state_count_);
 	}
 
-	void add_time_sample(const int32 &samp, const Vec3 &bmin_, const Vec3 &bmax_)
-	{
+	void add_time_sample(const int32 &samp, const Vec3 &bmin_, const Vec3 &bmax_) {
 		bbox[samp].min = bmin_;
 		bbox[samp].max = bmax_;
 	}
-	
+
 	/**
 	 * @brief Fetches the BBox at time t.
 	 */
@@ -213,14 +212,14 @@ public:
 		bool motion;
 
 		motion = bbox.query_time(t, &ia, &ib, &alpha);
-		
+
 		if (motion) {
 			return lerp(alpha, bbox[ia], bbox[ib]);
 		} else {
 			return bbox[0];
 		}
 	}
-	
+
 	BBox &operator[](const int32 &i) {
 		return bbox.states[i];
 	}
@@ -243,16 +242,14 @@ public:
 		// BBoxes have the same state count, so we
 		// can just merge each corresponding state.
 		if (bbox.state_count == b.bbox.state_count) {
-			for(int i=0; i < bbox.state_count; i++)
-			{
+			for (int i=0; i < bbox.state_count; i++) {
 				bbox[i].merge_with(b.bbox[i]);
 			}
 		}
 		// BBoxes have differing state count, so we
 		// merge into a single-state bbox.
 		// TODO: something more sophisticated.
-		else
-		{
+		else {
 			BBox bb = bbox[0];
 			for (int i=1; i < bbox.state_count; i++)
 				bb.merge_with(bbox[i]);
@@ -270,7 +267,7 @@ public:
 	float32 surface_area() const {
 		return bbox[0].surface_area();
 	}
-	
+
 	/**
 	 * @brief Intersects a ray with the BBoxT.
 	 *
@@ -280,7 +277,7 @@ public:
 	inline bool intersect_ray(const Ray &ray, float32 *hitt0, float32 *hitt1) {
 		return at_time(ray.time).intersect_ray(ray, hitt0, hitt1);
 	}
-	
+
 	/**
 	 * @brief Intersects a ray with the BBoxT.
 	 */
