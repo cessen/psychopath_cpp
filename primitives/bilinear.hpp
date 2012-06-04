@@ -25,7 +25,7 @@ public:
 	TimeBox<Vec3 *> verts;
 	GridCacheKey grid_key;
 
-	BBox bbox;
+	BBoxT bbox;
 	bool has_bounds;
 
 	float32 last_rayw;
@@ -35,7 +35,7 @@ public:
 	virtual ~Bilinear();
 
 	virtual bool intersect_ray(Ray &ray, Intersection *intersection=NULL);
-	virtual BBox &bounds();
+	virtual BBoxT &bounds();
 	virtual int dice_rate(float32 upoly_width);
 	bool is_traceable(float32 ray_width);
 	virtual void refine(std::vector<Primitive *> &primitives);

@@ -21,7 +21,7 @@ struct BucketInfo {
 		count = 0;
 	}
 	int32 count;
-	BBox bb;
+	BBoxT bb;
 };
 
 /*
@@ -43,15 +43,9 @@ public:
 		data = prim;
 
 		// Get bounds at time 0.5
-		int32 ia, ib;
-		float32 alpha;
-		if (data->bounds().bmin.query_time(0.5, &ia, &ib, &alpha)) {
-			bmin = lerp(0.5, data->bounds().bmin[ia], data->bounds().bmin[ib]);
-			bmax = lerp(0.5, data->bounds().bmax[ia], data->bounds().bmax[ib]);
-		} else {
-			bmin = data->bounds().bmin[0];
-			bmax = data->bounds().bmax[0];
-		}
+		BBox mid_bb = data->bounds().at_time(0.5);
+		bmin = mid_bb.min;
+		bmax = mid_bb.max;
 
 		// Get centroid
 		c = (bmin * 0.5) + (bmax * 0.5);
@@ -69,7 +63,7 @@ public:
 class BVHNode
 {
 public:
-	BBox b;
+	BBoxT b;
 	union {
 		uint32 child_index;
 		Primitive *data;
@@ -134,7 +128,7 @@ public:
 class BVH: public Aggregate
 {
 private:
-	BBox bbox;
+	BBoxT bbox;
 	BVHNodes nodes;
 	uint32 next_node;
 	std::vector<BVHPrimitive> bag;  // Temporary holding spot for primitives not yet added to the hierarchy
@@ -149,7 +143,7 @@ public:
 	virtual void add_primitives(std::vector<Primitive *> &primitives);
 	virtual bool finalize();
 
-	virtual BBox &bounds();
+	virtual BBoxT &bounds();
 	virtual bool intersect_ray(Ray &ray, Intersection *intersection=NULL);
 
 	unsigned split_primitives(uint32 first_prim, uint32 last_prim, int32 *axis=NULL);

@@ -185,14 +185,14 @@ uint32 BVH::split_primitives(uint32 first_prim, uint32 last_prim, int32 *axis)
 			buckets_y[b_y].count++;
 			buckets_z[b_z].count++;
 			for (int32 j=0; j < 3; j++) {
-				buckets_x[b_x].bb.bmin[0][j] = bag[i].bmin[j] < buckets_x[b_x].bb.bmin[0][j] ? bag[i].bmin[j] : buckets_x[b_x].bb.bmin[0][j];
-				buckets_x[b_x].bb.bmax[0][j] = bag[i].bmax[j] > buckets_x[b_x].bb.bmax[0][j] ? bag[i].bmax[j] : buckets_x[b_x].bb.bmax[0][j];
+				buckets_x[b_x].bb[0].min[j] = bag[i].bmin[j] < buckets_x[b_x].bb[0].min[j] ? bag[i].bmin[j] : buckets_x[b_x].bb[0].min[j];
+				buckets_x[b_x].bb[0].max[j] = bag[i].bmax[j] > buckets_x[b_x].bb[0].max[j] ? bag[i].bmax[j] : buckets_x[b_x].bb[0].max[j];
 
-				buckets_y[b_y].bb.bmin[0][j] = bag[i].bmin[j] < buckets_y[b_y].bb.bmin[0][j] ? bag[i].bmin[j] : buckets_y[b_y].bb.bmin[0][j];
-				buckets_y[b_y].bb.bmax[0][j] = bag[i].bmax[j] > buckets_y[b_y].bb.bmax[0][j] ? bag[i].bmax[j] : buckets_y[b_y].bb.bmax[0][j];
+				buckets_y[b_y].bb[0].min[j] = bag[i].bmin[j] < buckets_y[b_y].bb[0].min[j] ? bag[i].bmin[j] : buckets_y[b_y].bb[0].min[j];
+				buckets_y[b_y].bb[0].max[j] = bag[i].bmax[j] > buckets_y[b_y].bb[0].max[j] ? bag[i].bmax[j] : buckets_y[b_y].bb[0].max[j];
 
-				buckets_z[b_z].bb.bmin[0][j] = bag[i].bmin[j] < buckets_z[b_z].bb.bmin[0][j] ? bag[i].bmin[j] : buckets_z[b_z].bb.bmin[0][j];
-				buckets_z[b_z].bb.bmax[0][j] = bag[i].bmax[j] > buckets_z[b_z].bb.bmax[0][j] ? bag[i].bmax[j] : buckets_z[b_z].bb.bmax[0][j];
+				buckets_z[b_z].bb[0].min[j] = bag[i].bmin[j] < buckets_z[b_z].bb[0].min[j] ? bag[i].bmin[j] : buckets_z[b_z].bb[0].min[j];
+				buckets_z[b_z].bb[0].max[j] = bag[i].bmax[j] > buckets_z[b_z].bb[0].max[j] ? bag[i].bmax[j] : buckets_z[b_z].bb[0].max[j];
 			}
 		}
 
@@ -201,9 +201,9 @@ uint32 BVH::split_primitives(uint32 first_prim, uint32 last_prim, int32 *axis)
 		float32 cost_y[nBuckets-1];
 		float32 cost_z[nBuckets-1];
 		for (int32 i = 0; i < nBuckets-1; ++i) {
-			BBox b0_x, b1_x;
-			BBox b0_y, b1_y;
-			BBox b0_z, b1_z;
+			BBoxT b0_x, b1_x;
+			BBoxT b0_y, b1_y;
+			BBoxT b0_z, b1_z;
 			int32 count0_x = 0, count1_x = 0;
 			int32 count0_y = 0, count1_y = 0;
 			int32 count0_z = 0, count1_z = 0;
@@ -212,13 +212,13 @@ uint32 BVH::split_primitives(uint32 first_prim, uint32 last_prim, int32 *axis)
 			b0_y.copy(buckets_y[0].bb);
 			b0_z.copy(buckets_z[0].bb);
 			for (int32 j = 0; j <= i; ++j) {
-				b0_x.merge(buckets_x[j].bb);
+				b0_x.merge_with(buckets_x[j].bb);
 				count0_x += buckets_x[j].count;
 
-				b0_y.merge(buckets_y[j].bb);
+				b0_y.merge_with(buckets_y[j].bb);
 				count0_y += buckets_y[j].count;
 
-				b0_z.merge(buckets_z[j].bb);
+				b0_z.merge_with(buckets_z[j].bb);
 				count0_z += buckets_z[j].count;
 			}
 
@@ -226,13 +226,13 @@ uint32 BVH::split_primitives(uint32 first_prim, uint32 last_prim, int32 *axis)
 			b1_y.copy(buckets_y[i+1].bb);
 			b1_z.copy(buckets_z[i+1].bb);
 			for (int32 j = i+1; j < nBuckets; ++j) {
-				b1_x.merge(buckets_x[j].bb);
+				b1_x.merge_with(buckets_x[j].bb);
 				count1_x += buckets_x[j].count;
 
-				b1_y.merge(buckets_y[j].bb);
+				b1_y.merge_with(buckets_y[j].bb);
 				count1_y += buckets_y[j].count;
 
-				b1_z.merge(buckets_z[j].bb);
+				b1_z.merge_with(buckets_z[j].bb);
 				count1_z += buckets_z[j].count;
 			}
 
@@ -346,11 +346,11 @@ void BVH::recursive_build(uint32 me, uint32 first_prim, uint32 last_prim)
 
 	// Calculate bounds
 	nodes[me].b.copy(nodes[child1i].b);
-	nodes[me].b.merge(nodes[child2i].b);
+	nodes[me].b.merge_with(nodes[child2i].b);
 }
 
 
-BBox &BVH::bounds()
+BBoxT &BVH::bounds()
 {
 	return bbox;
 }
@@ -366,7 +366,7 @@ bool BVH::intersect_ray(Ray &ray, Intersection *intersection)
 	uint32 todo[64];
 
 	while (true) {
-		if (fast_intersect_test_bbox(nodes[node].b, ray, tnear, tfar)) {
+		if (nodes[node].b.intersect_ray(ray, &tnear, &tfar)) {
 			if (nodes[node].flags & IS_LEAF) {
 				if (nodes[node].data->is_traceable(ray.min_width(tnear, tfar))) {
 					// Trace!

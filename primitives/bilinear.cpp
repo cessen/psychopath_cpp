@@ -56,7 +56,7 @@ void Bilinear::add_time_sample(int samp, Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4)
 int Bilinear::dice_rate(float32 upoly_width)
 {
 	// Approximate size of the patch
-	float32 size = (bounds().bmax[0] - bounds().bmin[0]).length() / 1.4;
+	float32 size = (bounds()[0].max - bounds()[0].min).length() / 1.4;
 
 	// Dicing rate based on ray width
 	int rate = 1 + (size / (upoly_width * Config::dice_rate));
@@ -73,7 +73,7 @@ bool Bilinear::intersect_ray(Ray &ray, Intersection *intersection)
 	if (!GridCache::cache.exists(grid_key)) {
 		// Get closest intersection with the bounding box
 		float32 tnear, tfar;
-		if (!bounds().intersect_ray_(ray, &tnear, &tfar))
+		if (!bounds().intersect_ray(ray, &tnear, &tfar))
 			return false;
 
 		// Get dicing rate
@@ -89,27 +89,26 @@ bool Bilinear::intersect_ray(Ray &ray, Intersection *intersection)
 }
 
 
-BBox &Bilinear::bounds()
+BBoxT &Bilinear::bounds()
 {
 	if (!has_bounds) {
-		bbox.bmin.init(verts.state_count);
-		bbox.bmax.init(verts.state_count);
+		bbox.init(verts.state_count);
 
 		for (int time = 0; time < verts.state_count; time++) {
-			bbox.bmin[time].x = verts[time][0].x;
-			bbox.bmax[time].x = verts[time][0].x;
-			bbox.bmin[time].y = verts[time][0].y;
-			bbox.bmax[time].y = verts[time][0].y;
-			bbox.bmin[time].z = verts[time][0].z;
-			bbox.bmax[time].z = verts[time][0].z;
+			bbox[time].min.x = verts[time][0].x;
+			bbox[time].max.x = verts[time][0].x;
+			bbox[time].min.y = verts[time][0].y;
+			bbox[time].max.y = verts[time][0].y;
+			bbox[time].min.z = verts[time][0].z;
+			bbox[time].max.z = verts[time][0].z;
 
 			for (int i = 1; i < 4; i++) {
-				bbox.bmin[time].x = verts[time][i].x < bbox.bmin[time].x ? verts[time][i].x : bbox.bmin[time].x;
-				bbox.bmax[time].x = verts[time][i].x > bbox.bmax[time].x ? verts[time][i].x : bbox.bmax[time].x;
-				bbox.bmin[time].y = verts[time][i].y < bbox.bmin[time].y ? verts[time][i].y : bbox.bmin[time].y;
-				bbox.bmax[time].y = verts[time][i].y > bbox.bmax[time].y ? verts[time][i].y : bbox.bmax[time].y;
-				bbox.bmin[time].z = verts[time][i].z < bbox.bmin[time].z ? verts[time][i].z : bbox.bmin[time].z;
-				bbox.bmax[time].z = verts[time][i].z > bbox.bmax[time].z ? verts[time][i].z : bbox.bmax[time].z;
+				bbox[time].min.x = verts[time][i].x < bbox[time].min.x ? verts[time][i].x : bbox[time].min.x;
+				bbox[time].max.x = verts[time][i].x > bbox[time].max.x ? verts[time][i].x : bbox[time].max.x;
+				bbox[time].min.y = verts[time][i].y < bbox[time].min.y ? verts[time][i].y : bbox[time].min.y;
+				bbox[time].max.y = verts[time][i].y > bbox[time].max.y ? verts[time][i].y : bbox[time].max.y;
+				bbox[time].min.z = verts[time][i].z < bbox[time].min.z ? verts[time][i].z : bbox[time].min.z;
+				bbox[time].max.z = verts[time][i].z > bbox[time].max.z ? verts[time][i].z : bbox[time].max.z;
 			}
 		}
 		has_bounds = true;

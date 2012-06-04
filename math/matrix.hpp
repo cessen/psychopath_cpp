@@ -7,8 +7,8 @@
 #include <cmath>
 #include "vector.hpp"
 
-/*
- * A 4x4 transform matrix.
+/**
+ * @brief A 4x4 transform matrix.
  *
  * Elements are addressed as Column x Row (e.g. [column][row]).  This is the
  * opposite of normal math notation, but is more consistent with computer

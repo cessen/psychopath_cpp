@@ -155,19 +155,18 @@ bool Sphere::intersect_ray(Ray &ray, Intersection *intersection)
 }
 
 
-BBox &Sphere::bounds()
+BBoxT &Sphere::bounds()
 {
 	if (!has_bounds) {
-		bbox.bmin.init(center.state_count);
-		bbox.bmax.init(center.state_count);
+		bbox.init(center.state_count);
 
 		for (int time = 0; time < center.state_count; time++) {
-			bbox.bmin[time].x = center[time].x - radius[time];
-			bbox.bmax[time].x = center[time].x + radius[time];
-			bbox.bmin[time].y = center[time].y - radius[time];
-			bbox.bmax[time].y = center[time].y + radius[time];
-			bbox.bmin[time].z = center[time].z - radius[time];
-			bbox.bmax[time].z = center[time].z + radius[time];
+			bbox[time].min.x = center[time].x - radius[time];
+			bbox[time].max.x = center[time].x + radius[time];
+			bbox[time].min.y = center[time].y - radius[time];
+			bbox[time].max.y = center[time].y + radius[time];
+			bbox[time].min.z = center[time].z - radius[time];
+			bbox[time].max.z = center[time].z + radius[time];
 		}
 		has_bounds = true;
 	}

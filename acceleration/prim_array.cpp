@@ -31,7 +31,7 @@ bool PrimArray::finalize()
 	return true;
 }
 
-BBox &PrimArray::bounds()
+BBoxT &PrimArray::bounds()
 {
 	return bbox;
 }
@@ -44,7 +44,7 @@ bool PrimArray::intersect_ray(Ray &ray, Intersection *intersection)
 	int32 size = children.size();
 
 	for (int32 i=0; i < size; i++) {
-		if (children[i]->bounds().intersect_ray_(ray, &tnear, &tfar)) {
+		if (children[i]->bounds().intersect_ray(ray, &tnear, &tfar)) {
 			if (children[i]->is_traceable(ray.min_width(tnear, tfar))) {
 				// Trace!
 				if (children[i]->intersect_ray(ray, intersection))

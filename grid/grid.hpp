@@ -69,7 +69,7 @@ public:
 class Grid: Boundable, Traceable
 {
 private:
-	BBox bbox;
+	BBoxT bbox;
 	bool has_bounds;
 
 	std::vector<GridBVHNode> bvh_nodes;
@@ -94,7 +94,7 @@ public:
 	bool finalize();
 
 	virtual bool intersect_ray(Ray &ray, Intersection *intersection=NULL);
-	virtual BBox &bounds();
+	virtual BBoxT &bounds();
 
 	bool intersect_ray_upoly(Ray &ray, int32 upoly_i, float32 *u, float32 *v, float32 *t);
 

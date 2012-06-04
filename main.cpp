@@ -34,8 +34,8 @@ OIIO_NAMESPACE_USING
 #define RAND ((float32)rand()/(float32)RAND_MAX)
 #define RANDC (((float32)rand()/(float32)RAND_MAX) - 0.5)
 #define IMAGE_CHANNELS 3
-#define NUM_RAND_PATCHES 1000
-#define NUM_RAND_SPHERES 10000
+#define NUM_RAND_PATCHES 100
+#define NUM_RAND_SPHERES 1000
 
 #define GAUSS_WIDTH 2.0 / 4
 float32 gaussian(float32 x, float32 y)
@@ -106,7 +106,7 @@ int main(int argc, char **argv)
 	cam_mats[3].rotate((angle/3)*3, axis);
 	cam_mats[3].translate(Vec3(0.0, 0.0, 20.0));
 
-#define LENS_DIAM 1.0
+#define LENS_DIAM 0.0
 #define FOCUS_DISTANCE 40.0
 #define FOV 55
 	scene.camera = new Camera(cam_mats, (3.14159/180.0)*FOV, LENS_DIAM, FOCUS_DISTANCE);
@@ -191,7 +191,7 @@ int main(int argc, char **argv)
 
 			sphere->add_time_sample(j,
 			                        Vec3(x*s, y*s, z+(RANDC*2)),
-			                        0.1f);
+			                        1.0f);
 		}
 
 		scene.add_primitive(sphere);
@@ -316,8 +316,8 @@ int main(int argc, char **argv)
 
 	std::cout << std::endl << "Struct sizes:" << std::endl;
 	std::cout << "Ray: " << sizeof(Ray) << std::endl;
-	std::cout << "BBounds: " << sizeof(BBounds) << std::endl;
-	std::cout << "BBox: " << sizeof(BBox) << std::endl;
+	std::cout << "BBounds: " << sizeof(BBox) << std::endl;
+	std::cout << "BBox: " << sizeof(BBoxT) << std::endl;
 	std::cout << "BVHNode: " << sizeof(BVHNode) << std::endl;
 	std::cout << "Grid: " << sizeof(Grid) << std::endl;
 	std::cout << "GridBVHNode: " << sizeof(GridBVHNode) << std::endl;

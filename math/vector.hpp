@@ -31,6 +31,10 @@ struct Vec3 {
 	Vec3 operator/(const float32 &b) const {
 		return Vec3(x/b, y/b, z/b);
 	}
+	
+	bool operator==(const Vec3 &b) const {
+		return ((x == b.x) && (y == b.y) && (z == b.z));
+	}
 
 	float32 length() const {
 		return sqrt(x*x + y*y + z*z);

@@ -13,7 +13,9 @@
 #include "bvh.hpp"
 #include "primitive.hpp"
 
-/*
+/**
+ * @brief A 3D scene for rendering.
+ *
  * The Scene class is used to build and store the complete description of a 3d
  * scene to be rendered.
  *

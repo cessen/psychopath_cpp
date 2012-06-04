@@ -22,7 +22,7 @@ public:
 	/**
 	 @brief Returns the bounding box of the object.
 	 */
-	virtual BBox &bounds() = 0;
+	virtual BBoxT &bounds() = 0;
 };
 
 

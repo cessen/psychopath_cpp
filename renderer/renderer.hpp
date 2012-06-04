@@ -9,7 +9,9 @@
 #include <string>
 #include <vector>
 
-/*
+/**
+ * @brief Manages a render.
+ *
  * The Renderer is responsible for doing the actual rendering.  It is given
  * 3d scene that has already been setup, and it dives in and tears it
  * to pieces.  The result is an image or images.

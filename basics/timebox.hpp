@@ -18,7 +18,7 @@ public:
 	~TimeBox();
 
 	// Initializes the timebox with the given number of states
-	bool init(const unsigned char &state_count_);
+	bool init(const uint8 &state_count_);
 
 	// Given a time in range [0.0, 1.0], fills in the state indices on
 	// either side along with an alpha to blend between them.
@@ -70,7 +70,7 @@ TimeBox<T>::~TimeBox()
 
 
 template <class T>
-bool TimeBox<T>::init(const unsigned char &state_count_)
+bool TimeBox<T>::init(const uint8 &state_count_)
 {
 	if (state_count == state_count_) {
 		return true;

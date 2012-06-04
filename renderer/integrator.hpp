@@ -7,7 +7,9 @@
 
 #include "numtype.h"
 
-/*
+/**
+ * @brief An integrator for the rendering equation.
+ *
  * The Integrator's job is to solve the rendering equation, using the Tracer
  * for ray intersection testing and the shading system for shading.
  *

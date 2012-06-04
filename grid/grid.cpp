@@ -394,20 +394,19 @@ bool Grid::intersect_ray(Ray &rayo, Intersection *intersection)
 
 /* Returns (calculating if necessary) the bounding box of the grid.
 */
-BBox &Grid::bounds()
+BBoxT &Grid::bounds()
 {
 	if (!has_bounds) {
-		bbox.bmin.init(time_count);
-		bbox.bmax.init(time_count);
+		bbox.init(time_count);
 
-		for (int32 time=0; time < time_count; time++) {
-			bbox.bmin[time] = verts[time][0].p;
-			bbox.bmax[time] = verts[time][0].p;
+		for (int time=0; time < time_count; time++) {
+			bbox[time].min = verts[time][0].p;
+			bbox[time].max = verts[time][0].p;
 
-			for (int32 i = 0; i < res_u*res_v; i++) {
-				for (int32 n=0; n < 3; n++) {
-					bbox.bmin[time][n] = verts[time][i].p[n] < bbox.bmin[time][n] ? verts[time][i].p[n] : bbox.bmin[time][n];
-					bbox.bmax[time][n] = verts[time][i].p[n] > bbox.bmax[time][n] ? verts[time][i].p[n] : bbox.bmax[time][n];
+			for (int i = 0; i < res_u*res_v; i++) {
+				for (int n=0; n < 3; n++) {
+					bbox[time].min[n] = verts[time][i].p[n] < bbox[time].min[n] ? verts[time][i].p[n] : bbox[time].min[n];
+					bbox[time].max[n] = verts[time][i].p[n] > bbox[time].max[n] ? verts[time][i].p[n] : bbox[time].max[n];
 				}
 			}
 		}
@@ -484,9 +483,9 @@ bool Grid::finalize()
 	quant_info.resize(time_count);
 	for (int32 time = 0; time < time_count; time++) {
 		for (int32 i = 0; i < 3; i++) {
-			quant_info[time].offset[i] = bbox.bmin[time][i];
+			quant_info[time].offset[i] = bbox[time].min[i];
 
-			float32 f = bbox.bmax[time][i] - bbox.bmin[time][i];
+			float32 f = bbox[time].max[i] - bbox[time].min[i];
 			if (f < 0.000001)
 				f = 0.000001;
 

@@ -7,7 +7,9 @@
 
 #include "numtype.h"
 
-/*
+/**
+ * @brief Traces rays in a scene.
+ *
  * The Tracer is responsible for doing the actual ray-tracing in a scene.
  * It does _not_ manage the specific integration algorithm, or shading.  Only
  * the tracing of rays and calculating the relevant information about ray

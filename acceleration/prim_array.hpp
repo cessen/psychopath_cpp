@@ -16,7 +16,7 @@
 class PrimArray: public Aggregate
 {
 private:
-	BBox bbox;
+	BBoxT bbox;
 	std::vector<Primitive *> children;
 
 public:
@@ -26,7 +26,7 @@ public:
 	virtual void add_primitives(std::vector<Primitive *> &primitives);
 	virtual bool finalize();
 
-	virtual BBox &bounds();
+	virtual BBoxT &bounds();
 	virtual bool intersect_ray(Ray &ray, Intersection *intersection=NULL);
 };
 

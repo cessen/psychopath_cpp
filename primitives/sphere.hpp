@@ -19,7 +19,7 @@ public:
 	TimeBox<Vec3> center;
 	TimeBox<float32> radius;
 
-	BBox bbox;
+	BBoxT bbox;
 	bool has_bounds;
 
 
@@ -30,7 +30,7 @@ public:
 	void add_time_sample(int samp, Vec3 center_, float32 radius_);
 
 	virtual bool intersect_ray(Ray &ray, Intersection *intersection=NULL);
-	virtual BBox &bounds();
+	virtual BBoxT &bounds();
 	bool is_traceable(float32 ray_width) {
 		return true;
 	}
