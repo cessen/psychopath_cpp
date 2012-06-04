@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <math.h>
 #include <iostream>
+#include <assert.h>
 
 
 #define NUM_DIFFERENTIALS 4
@@ -96,15 +97,10 @@ struct Ray {
 	}
 
 
-	/*
-	 * Computes data for accelerated ray intersection.
-	 * Must be called after any ray modification, before
-	 * tracing/intersection testing.
+	/**
+	 * Computes the acceleration data for speedy bbox intersection testing.
 	 */
-	void finalize() {
-		// TODO: will normalizing things here mess anything up elsewhere?
-		d.normalize();
-
+	void update_accel() {
 		inv_d.x = 1.0 / d.x;
 		inv_d.y = 1.0 / d.y;
 		inv_d.z = 1.0 / d.z;
@@ -112,7 +108,12 @@ struct Ray {
 		d_is_neg[0] = d.x < 0;
 		d_is_neg[1] = d.y < 0;
 		d_is_neg[2] = d.z < 0;
+	}
 
+	/**
+	 * Pre-computes some useful data about the ray differentials.
+	 */
+	void update_differentials() {
 		if (has_differentials) {
 			for (int32 i = 0; i < NUM_DIFFERENTIALS; i++) {
 				diff_rate[i] = dd[i].length();
@@ -122,8 +123,29 @@ struct Ray {
 
 
 	/*
+	 * Finalizes the ray after first initialization.
+	 * Should only be called once, prior to tracing with the ray.
+	 */
+	void finalize() {
+		// TODO: will normalizing things here mess anything up elsewhere?
+		assert(d.length() > 0.0);
+		float32 linv = 1.0 / d.normalize();
+
+		// Adjust the ray differentials for the normalized ray
+		if (has_differentials) {
+			for (int32 i = 0; i < NUM_DIFFERENTIALS; i++) {
+				od[i] = od[i] * linv;
+				dd[i] = dd[i] * linv;
+			}
+		}
+
+		update_accel();
+		update_differentials();
+	}
+
+
+	/*
 	 * Applies a matrix transform.
-	 * finalize() needs to be manually called after this.
 	 */
 	void apply_matrix(const Matrix44 &m) {
 		// Origin and direction
@@ -138,6 +160,9 @@ struct Ray {
 				dd[i] = m.mult_dir(dd[i]);
 			}
 		}
+
+		update_accel();
+		update_differentials();
 	}
 
 

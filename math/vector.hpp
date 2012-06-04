@@ -6,6 +6,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <math.h>
+#include <assert.h>
 
 struct Vec3 {
 	float32 x, y, z;
@@ -53,10 +54,12 @@ struct Vec3 {
 	}
 
 	float32 &operator[](const int &i) {
+		assert(i >= 0 && i <= 2);
 		return (&x)[i];
 	}
 
 	float32 const &operator[](const int &i) const {
+		assert(i >= 0 && i <= 2);
 		return (&x)[i];
 	}
 };

@@ -86,14 +86,6 @@ struct BBox {
 	}
 
 	/**
-	 * @brief Sets this bbox to be equal to the given bbox.
-	 */
-	void operator=(const BBox &b) {
-		min = b.min;
-		max = b.max;
-	}
-
-	/**
 	 * @brief Merge another BBox into this one.
 	 *
 	 * Merges another BBox into this one, resulting in a BBox that fully
@@ -146,8 +138,8 @@ struct BBox {
 			tmax = tzmax;
 
 		if ((tmin < tmax) && (tmin < ray.max_t) && (tmax > ray.min_t)) {
-			*hitt0 = tmin;
-			*hitt1 = tmax;
+			*hitt0 = tmin > ray.min_t ? tmin : ray.min_t;
+			*hitt1 = tmax < ray.max_t ? tmax : ray.max_t;
 			return true;
 		} else {
 			return false;
@@ -228,15 +220,17 @@ public:
 		return bbox.states[i];
 	}
 
-	/*
-	 * Copies another BBox into this one, overwriting any bounds
-	 * that were already there.
+	/**
+	 * @brief Copies another BBox into this one.
+	 *
+	 * Overwrites any bounds that were already there.
 	 */
 	void copy(const BBoxT &b);
 
 	/**
-	 * Merges another BBox into this one, resulting in a new minimal BBox
-	 * that contains both the originals.
+	 * @brief Merges another BBox into this one.
+	 *
+	 * Results in a new minimal BBox that contains both the originals.
 	 */
 	void merge_with(const BBoxT &b) {
 		// BBoxes have the same state count, so we
@@ -287,111 +281,5 @@ public:
 	}
 };
 
+#endif // BBOX_HPP
 
-
-
-
-
-
-
-
-
-#if 0
-static inline bool fast_intersect_test_bbox(const BBox &b, const Ray &ray, float32 &tmin, float32 &tmax)
-{
-	//std::cout << "Hi" << std::endl;
-	int32 ia=0, ib=0;
-	float32 alpha=0.0;
-	__m128 bmin, bmax;
-
-	// Calculate bounds in time
-	if (b.bmin.query_time(ray.time, &ia, &ib, &alpha)) {
-		bmin = _mm_setr_ps(lerp(alpha, b.bmin[ia].x, b.bmin[ib].x),
-		                   lerp(alpha, b.bmin[ia].y, b.bmin[ib].y),
-		                   lerp(alpha, b.bmin[ia].z, b.bmin[ib].z),
-		                   0.0);
-		bmax = _mm_setr_ps(lerp(alpha, b.bmax[ia].x, b.bmax[ib].x),
-		                   lerp(alpha, b.bmax[ia].y, b.bmax[ib].y),
-		                   lerp(alpha, b.bmax[ia].z, b.bmax[ib].z),
-		                   0.0);
-	} else {
-		bmin = _mm_setr_ps(b.bmin[0].x, b.bmin[0].y, b.bmin[0].z, 0.0);
-		bmax = _mm_setr_ps(b.bmax[0].x, b.bmax[0].y, b.bmax[0].z, 0.0);
-	}
-
-	// Fetch the ray origin and inverse direction
-	const __m128 o = _mm_setr_ps(ray.o.x, ray.o.y, ray.o.z, 0.0);
-	const __m128 invd = _mm_setr_ps(ray.inv_d.x, ray.inv_d.y, ray.inv_d.z, 0.0);
-
-
-
-
-	// Calculate hit distances
-	const __m128 temp1 = _mm_mul_ps(_mm_sub_ps(bmin, o), invd);
-	const __m128 temp2 = _mm_mul_ps(_mm_sub_ps(bmax, o), invd);
-
-	// Calculate near and far hit distances
-	V4 t_nears, t_fars;
-	t_nears.b = _mm_min_ps(temp1, temp2);
-	t_fars.b = _mm_max_ps(temp1, temp2);
-
-	const float32 temp3 = t_nears.a[0] > t_nears.a[1] ? t_nears.a[0] : t_nears.a[1];
-	tmin = temp3 > t_nears.a[2] ? temp3 : t_nears.a[2];
-
-	const float32 temp4 = t_fars.a[0] < t_fars.a[1] ? t_fars.a[0] : t_fars.a[1];
-	tmax = temp4 < t_fars.a[2] ? temp4 : t_fars.a[2];
-
-	//std::cout << (tmin < tmax) << " " << tmin << " " << tmax << std::endl;
-	//float32 tmin2 = tmin;
-	//float32 tmax2 = tmax;
-	//bool hit = fast_intersect_test_bbox2(b, ray, tmin2, tmax2);
-	//std::cout << hit << " " << tmin2 << " " << tmax2 << std::endl;
-
-	return (tmin < tmax) && (tmin < ray.max_t) && (tmax > ray.min_t);
-}
-
-static inline bool fast_intersect_test_bbox(const BBox &b, const Ray &ray, float32 &tmin, float32 &tmax)
-{
-	int32 ia=0, ib=0;
-	float32 alpha=0.0;
-	Vec3 bounds[2];
-
-	// Calculate bounds in time
-	if (b.bmin.query_time(ray.time, &ia, &ib, &alpha)) {
-		bounds[0].x = lerp(alpha, b.bmin[ia].x, b.bmin[ib].x);
-		bounds[1].x = lerp(alpha, b.bmax[ia].x, b.bmax[ib].x);
-		bounds[0].y = lerp(alpha, b.bmin[ia].y, b.bmin[ib].y);
-		bounds[1].y = lerp(alpha, b.bmax[ia].y, b.bmax[ib].y);
-		bounds[0].z = lerp(alpha, b.bmin[ia].z, b.bmin[ib].z);
-		bounds[1].z = lerp(alpha, b.bmax[ia].z, b.bmax[ib].z);
-	} else {
-		bounds[0] = b.bmin[0];
-		bounds[1] = b.bmax[0];
-	}
-
-	tmin = (bounds[ray.d_is_neg[0]].x - ray.o.x) * ray.inv_d.x;
-	tmax = (bounds[1-ray.d_is_neg[0]].x - ray.o.x) * ray.inv_d.x;
-	const float32 tymin = (bounds[ray.d_is_neg[1]].y - ray.o.y) * ray.inv_d.y;
-	const float32 tymax = (bounds[1-ray.d_is_neg[1]].y - ray.o.y) * ray.inv_d.y;
-	const float32 tzmin = (bounds[ray.d_is_neg[2]].z - ray.o.z) * ray.inv_d.z;
-	const float32 tzmax = (bounds[1-ray.d_is_neg[2]].z - ray.o.z) * ray.inv_d.z;
-
-	// The if statement version seems to be slightly faster for some reason.
-	//tmin = tmin > tymin ? tmin : tymin;
-	//tmin = tmin > tzmin ? tmin : tzmin;
-	//tmax = tmax < tymax ? tmax : tymax;
-	//tmax = tmax < tzmax ? tmax : tzmax;
-	if (tymin > tmin)
-		tmin = tymin;
-	if (tzmin > tmin)
-		tmin = tzmin;
-	if (tymax < tmax)
-		tmax = tymax;
-	if (tzmax < tmax)
-		tmax = tzmax;
-
-	return (tmin < tmax) && (tmin < ray.max_t) && (tmax > ray.min_t);
-}
-#endif
-
-#endif
