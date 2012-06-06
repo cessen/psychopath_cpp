@@ -1,7 +1,7 @@
 - Refactor:
-	- Step 1: Refactor code to use Integrator for rendering
-	  and ray tracing
-	- Step 2: Refactor code to use Tracer for ray tracing
+	//- Step 1: Refactor code to use Integrator for rendering
+	//  and ray tracing
+	//- Step 2: Refactor code to use Tracer for ray tracing
 	- Step 3: Refactor code to use Renderer to manage rendering
 
 //- Sphere primitive

@@ -7,6 +7,10 @@
 
 #include "numtype.h"
 
+#include "raster.hpp"
+#include "scene.hpp"
+#include "tracer.hpp"
+
 /**
  * @brief An integrator for the rendering equation.
  *
@@ -22,8 +26,42 @@
 class Integrator
 {
 public:
+	Scene *scene;
+	Tracer *tracer;
+	Raster *image;
+	Raster *accum;
+	int spp;
 
-}
+	/**
+	 * @brief Constructor.
+	 *
+	 * @param[in] scene_ A pointer to the scene to render.  Should be fully
+	 *                   finalized for rendering.
+	 * @param[in] tracer_ A Tracer instance to use for the ray tracing.  It
+	 *                    should already be fully initialized.
+	 * @param[out] image_ The image to render to.  Should be already
+	 *                    initialized with 3 channels, for rgb.
+	 * @param spp_ The number of samples to take per pixel for integration.
+	 */
+	Integrator(Scene *scene_, Tracer *tracer_, Raster *image_, int spp_) {
+		scene = scene_;
+		tracer = tracer_;
+		image = image_;
+		spp = spp_;
+
+		accum = new Raster(image->width, image->height, 1, image->min_x, image->min_y, image->max_x, image->max_y);
+	}
+
+	~Integrator() {
+		delete accum;
+	}
+
+	/**
+	 * @brief Begins integration.
+	 */
+	void integrate();
+
+};
 
 #endif // INTEGRATOR_H
 

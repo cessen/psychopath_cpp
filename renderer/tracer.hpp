@@ -7,6 +7,13 @@
 
 #include "numtype.h"
 
+#include <vector>
+
+#include "ray.hpp"
+#include "rayinter.hpp"
+#include "scene.hpp"
+
+
 /**
  * @brief Traces rays in a scene.
  *
@@ -25,25 +32,33 @@
  * efficient depending on the scene.
  *
  * The simplest usage is to add a bunch of rays to the Tracer's queue with
- * queue_ray(), and then trace them all by calling trace_rays().  The
+ * queue_rays(), and then trace them all by calling trace_rays().  The
  * resulting intersection data is stored in the rays' data structures directly.
  * Wash, rinse, repeat.
- *
- * TODO: add a more efficient method for queuing rays, e.g. en-mass instead of
- *       one-at-a-time.
  */
 class Tracer
 {
 public:
-	// Adds a single ray to the ray queue for tracing.
-	// Returns the number of rays currently queued for tracing (includes
-	// the ray queued with the call, so e.g. queuing the first ray will
-	// return 1).
-	uint32 queue_rays(Ray *ray);
+	Scene *scene;
+	std::vector<RayInter *> rayinters;
 
-	// Traces all queued rays, and returns the number of rays traced.
+	Tracer(Scene *scene_) {
+		scene = scene_;
+	}
+
+	/**
+	 * Adds a set of rays to the ray queue for tracing.
+	 * Returns the number of rays currently queued for tracing (includes
+	 * the rays queued with the call, so e.g. queuing the first five rays will
+	 * return 5, the second five rays will return 10, etc.).
+	 */
+	uint32 queue_rays(const std::vector<RayInter *> &rayinters_);
+
+	/**
+	 * Traces all queued rays, and returns the number of rays traced.
+	 */
 	uint32 trace_rays();
-}
+};
 
 #endif // TRACER_H
 

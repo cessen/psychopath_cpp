@@ -351,7 +351,7 @@ bool Grid::intersect_ray(Ray &rayo, Intersection *intersection)
 		float32 l = rayo.d.length();
 		Vec3 temp = rayo.d / l;
 		temp = temp * t;
-		intersection->d = t;
+		intersection->t = t;
 		intersection->p = rayo.o + temp;
 
 		// Calculate surface normal at intersection point

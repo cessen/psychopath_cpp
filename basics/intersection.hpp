@@ -12,7 +12,7 @@
 struct Intersection {
 	Vec3 p;  // Intersection postion
 	Vec3 n;  // Surface normal at the intersection
-	float32 d; // Distance along the ray to the intersection
+	float32 t; // T-parameter along the ray at the intersection
 
 	Color col;
 };

@@ -79,6 +79,7 @@ include_directories ("${PROJECT_BINARY_DIR}",
                      "${PROJECT_SOURCE_DIR}/math",
                      "${PROJECT_SOURCE_DIR}/primitives",
                      "${PROJECT_SOURCE_DIR}/raster",
+                     "${PROJECT_SOURCE_DIR}/renderer",
                      "${PROJECT_SOURCE_DIR}/sampling",
                      "${PROJECT_SOURCE_DIR}/scene",
                      "${PROJECT_SOURCE_DIR}/test")
@@ -93,6 +94,7 @@ add_subdirectory(grid)
 add_subdirectory(math)
 add_subdirectory(primitives)
 add_subdirectory(raster)
+add_subdirectory(renderer)
 add_subdirectory(sampling)
 
 add_library(config
@@ -100,13 +102,14 @@ add_library(config
 
 # Main library
 set (PSYCHO_LIB
-	config
+	renderer
 	raster
 	sampling
 	primitives
 	basics
 	grid
-	acceleration)
+	acceleration
+	config)
 
 # Main executable
 add_executable(psychopath
