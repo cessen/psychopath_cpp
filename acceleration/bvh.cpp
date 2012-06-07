@@ -81,8 +81,6 @@ struct CompareDim {
 #ifndef SAH
 uint32 BVH::split_primitives(uint32 first_prim, uint32 last_prim, int32 *axis)
 {
-	//std::cout << "First: " << first_prim << " Last: " << last_prim << std::endl;
-
 	// Find the minimum and maximum centroid values on each axis
 	Vec3 min, max;
 	min = bag[first_prim].c;
@@ -117,8 +115,6 @@ uint32 BVH::split_primitives(uint32 first_prim, uint32 last_prim, int32 *axis)
 	if (split < first_prim)
 		split = first_prim;
 
-	//std::cout << "First: " << first_prim << " Split: " << split << std::endl;
-
 	return split;
 }
 
@@ -127,8 +123,6 @@ uint32 BVH::split_primitives(uint32 first_prim, uint32 last_prim, int32 *axis)
 /* SAH-based split */
 uint32 BVH::split_primitives(uint32 first_prim, uint32 last_prim, int32 *axis)
 {
-	//std::cout << "First: " << first_prim << " Last: " << last_prim << std::endl;
-
 	uint32 split;
 
 	// Find the minimum and maximum centroid values on each axis
@@ -276,10 +270,7 @@ uint32 BVH::split_primitives(uint32 first_prim, uint32 last_prim, int32 *axis)
 		                                       CompareToMid(split_axis, pmid));
 
 		split = (mid_ptr - &bag.front());
-		//std::cout << "SAH: " << minCostSplit << " " << min[max_axis] << " " << pmid << " " << max[max_axis] << std::endl;
 	}
-
-	//std::cout << "First: " << first_prim << " Split: " << split << std::endl;
 
 	if (split > 0)
 		split--;
@@ -301,8 +292,6 @@ void BVH::recursive_build(uint32 me, uint32 first_prim, uint32 last_prim)
 	// Need to allocate more node space?
 	if (me >= nodes.size())
 		nodes.add_chunk();
-
-	//std::cout << "First: " << first_prim << " Last: " << last_prim << std::endl; std::cout.flush();
 
 	nodes[me].flags = 0;
 
@@ -361,14 +350,14 @@ bool BVH::intersect_ray(Ray &ray, Intersection *intersection)
 	std::vector<Primitive *> temp_prim;
 
 	// Traverse the BVH and check for intersections. Yay!
-	float32 tnear, tfar;
+	float32 hitt0, hitt1;
 	uint32 todo_offset = 0, node = 0;
 	uint32 todo[64];
 
 	while (true) {
-		if (nodes[node].b.intersect_ray(ray, &tnear, &tfar)) {
+		if (nodes[node].b.intersect_ray(ray, &hitt0, &hitt1)) {
 			if (nodes[node].flags & IS_LEAF) {
-				if (nodes[node].data->is_traceable(ray.min_width(tnear, tfar))) {
+				if (nodes[node].data->is_traceable(ray.min_width(hitt0, hitt1))) {
 					// Trace!
 					if (nodes[node].data->intersect_ray(ray, intersection))
 						hit = true;
@@ -379,7 +368,6 @@ bool BVH::intersect_ray(Ray &ray, Intersection *intersection)
 					node = todo[--todo_offset];
 				} else {
 					// Split!
-					//std::cout << "Split! " << node << std::endl; std::cout.flush();
 					nodes[node].data->refine(temp_prim);
 					add_primitives(temp_prim);
 					temp_prim.resize(0);

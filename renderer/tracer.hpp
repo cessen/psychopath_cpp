@@ -41,9 +41,11 @@ class Tracer
 public:
 	Scene *scene;
 	std::vector<RayInter *> rayinters;
+	int thread_count;
 
-	Tracer(Scene *scene_) {
+	Tracer(Scene *scene_, int thread_count_=1) {
 		scene = scene_;
+		thread_count = thread_count_;
 	}
 
 	/**
@@ -58,6 +60,9 @@ public:
 	 * Traces all queued rays, and returns the number of rays traced.
 	 */
 	uint32 trace_rays();
+
+private:
+	void tracey(uint32 start, uint32 end);
 };
 
 #endif // TRACER_H

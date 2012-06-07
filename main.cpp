@@ -6,11 +6,10 @@
 #include <iostream>
 #include <vector>
 
+
 #include "rng.hpp"
+#include "renderer.hpp"
 #include "scene.hpp"
-#include "integrator.hpp"
-#include "tracer.hpp"
-#include "raster.hpp"
 #include "vector.hpp"
 #include "matrix.hpp"
 #include "camera.hpp"
@@ -20,37 +19,149 @@
 
 #include "config.hpp"
 
-#include <OpenImageIO/imageio.h>
 #include <OSL/oslexec.h>
-OIIO_NAMESPACE_USING
 
-#define GAMMA 2.2
+#include <boost/program_options.hpp>
+namespace BPO = boost::program_options;
+
+#define THREADS 1
 #define SPP 16
 #define XRES 1280
 #define YRES 720
-#define ASPECT (((float32)(YRES))/XRES)
-#define IMAGE_CHANNELS 3
-#define NUM_RAND_PATCHES 1000
+#define NUM_RAND_PATCHES 000
 #define NUM_RAND_SPHERES 1000
 #define FRAC_MB 0.1
 
 
+// Holds a pair of integers
+struct IntPair {
+	int a;
+	int b;
+
+	IntPair() {
+		a = 0;
+		b = 0;
+	}
+
+	IntPair(int i1, int i2) {
+		a = i1;
+		b = i2;
+	}
+};
+
+// Called by program_options to parse a set of IntPair arguments
+void validate(boost::any& v, const std::vector<std::string>& values,
+              IntPair*, int)
+{
+	IntPair intpair;
+
+	//Extract tokens from values string vector and populate IntPair struct.
+	if (values.size() < 2) {
+		throw BPO::validation_error(BPO::validation_error::invalid_option_value,
+		                            "Invalid IntPair specification, requires two ints");
+	}
+
+	intpair.a = boost::lexical_cast<int>(values.at(0));
+	intpair.b = boost::lexical_cast<int>(values.at(1));
+
+	v = intpair;
+}
+
+
 int main(int argc, char **argv)
 {
-	// Print program information
+	RNG rng(42);
+	RNG rng2(865546);
+
+	/*
+	 **********************************************************************
+	 * Print program information
+	 **********************************************************************
+	 */
 	std::cout << "Psychopath v" << VERSION_MAJOR << "." << VERSION_MINOR << "." << VERSION_PATCH;
 #ifdef DEBUG
 	std::cout << " (DEBUG build)";
 #endif
 	std::cout << std::endl << std::endl;
 
-	RNG rng(42);
-	RNG rng2(865546);
+#ifdef DEBUG
+	std::cout << std::endl << "Struct sizes:" << std::endl;
+	std::cout << "Ray: " << sizeof(Ray) << std::endl;
+	std::cout << "BBounds: " << sizeof(BBox) << std::endl;
+	std::cout << "BBox: " << sizeof(BBoxT) << std::endl;
+	std::cout << "BVHNode: " << sizeof(BVHNode) << std::endl;
+	std::cout << "Grid: " << sizeof(Grid) << std::endl;
+	std::cout << "GridBVHNode: " << sizeof(GridBVHNode) << std::endl;
+	std::cout << "Primitive *: " << sizeof(Primitive *) << std::endl;
+	std::cout << "TimeBox<int32>: " << sizeof(std::vector<int32>) << std::endl;
+	std::cout << "std::vector<int32>: " << sizeof(std::vector<int32>) << std::endl;
+#endif
+
 
 	/*
-	 ******************************************************
+	 **********************************************************************
+	 * Command-line options.
+	 **********************************************************************
+	 */
+	int spp = SPP;
+	int threads = THREADS;
+	std::string output_path = "test.png";
+	IntPair resolution(XRES, YRES);
+
+	// Define them
+	BPO::options_description desc("Allowed options");
+	desc.add_options()
+	("help,h", "Print this help message")
+	("spp", BPO::value<int>(), "Number of samples to take per pixel")
+	("threads,t", BPO::value<int>(), "Number of threads to render with")
+	("output,o", BPO::value<std::string>(), "The PNG file to render to")
+	("resolution,r", BPO::value<IntPair>()->multitoken(), "The resolution to render at, e.g. 1280 720")
+	;
+
+	// Collect them
+	BPO::variables_map vm;
+	BPO::store(BPO::parse_command_line(argc, argv, desc), vm);
+	BPO::notify(vm);
+
+	// Help message
+	if (vm.count("help")) {
+		std::cout << desc << "\n";
+		return 1;
+	}
+
+	// Samples per pixel
+	if (vm.count("spp")) {
+		spp = vm["spp"].as<int>();
+		if (spp < 1)
+			spp = 1;
+		std::cout << "Samples per pixel: " << spp << "\n";
+	}
+
+	// Thread count
+	if (vm.count("threads")) {
+		threads = vm["threads"].as<int>();
+		if (threads < 1)
+			threads = 1;
+		std::cout << "Threads: " << threads << "\n";
+	}
+
+	// Output file
+	if (vm.count("output")) {
+		output_path = vm["output"].as<std::string>();
+		std::cout << "Output path: " << output_path << "\n";
+	}
+
+	// Resolution
+	if (vm.count("resolution")) {
+		resolution = vm["resolution"].as<IntPair>();
+		std::cout << "Resolution: " << resolution.a << " " << resolution.b << "\n";
+	}
+
+
+	/*
+	 **********************************************************************
 	 * Build scene
-	 ******************************************************
+	 **********************************************************************
 	 */
 	Scene scene;
 
@@ -170,70 +281,23 @@ int main(int argc, char **argv)
 	std::cout << " done." << std::endl;
 	std::cout.flush();
 
-	std::cout << "Building acceleration structure... ";
+	std::cout << "Finalizing scene... ";
 	std::cout.flush();
 	scene.finalize();
 	std::cout << " done." << std::endl;
 	std::cout.flush();
-	//return 0;
 
 
 	/*
-	 ******************************************************
+	 **********************************************************************
 	 * Generate image
-	 ******************************************************
+	 **********************************************************************
 	 */
 
-	Raster *image = new Raster(XRES, YRES, IMAGE_CHANNELS, -1.0, -ASPECT, 1.0, ASPECT);
-	Tracer tracer(&scene);
-	Integrator integrator(&scene, &tracer, image, SPP);
-	integrator.integrate();
-
-	int i;
-	// Gamma correction + dithering(256)
-	for (int y = 0; y < image->height; y++) {
-		for (int x = 0; x < image->width; x++) {
-			i = x + (y*image->width);
-
-			image->pixels[(i*IMAGE_CHANNELS)] = pow(image->pixels[(i*IMAGE_CHANNELS)], 1.0/GAMMA);
-			image->pixels[(i*IMAGE_CHANNELS)] += rng.next_float_c() / 256;
-			image->pixels[(i*IMAGE_CHANNELS)] = image->pixels[(i*IMAGE_CHANNELS)] < 0.0 ? 0.0 : image->pixels[(i*IMAGE_CHANNELS)];
-
-			image->pixels[(i*IMAGE_CHANNELS)+1] = pow(image->pixels[(i*IMAGE_CHANNELS)+1], 1.0/GAMMA);
-			image->pixels[(i*IMAGE_CHANNELS)+1] += rng.next_float_c() / 256;
-			image->pixels[(i*IMAGE_CHANNELS)+1] = image->pixels[(i*IMAGE_CHANNELS)+1] < 0.0 ? 0.0 : image->pixels[(i*IMAGE_CHANNELS)+1];
-
-			image->pixels[(i*IMAGE_CHANNELS)+2] = pow(image->pixels[(i*IMAGE_CHANNELS)+2], 1.0/GAMMA);
-			image->pixels[(i*IMAGE_CHANNELS)+2] += rng.next_float_c() / 256;
-			image->pixels[(i*IMAGE_CHANNELS)+2] = image->pixels[(i*IMAGE_CHANNELS)+2] < 0.0 ? 0.0 : image->pixels[(i*IMAGE_CHANNELS)+2];
-		}
-	}
-
-	// Save image
-	ImageOutput *out = ImageOutput::create(".png");
-	if (!out)
-		return -1;
-
-	ImageSpec spec(image->width, image->height, IMAGE_CHANNELS, TypeDesc::UINT8);
-
-	out->open("test.png", spec);
-	out->write_image(TypeDesc::FLOAT, image->pixels);
-	out->close();
-
-	// Cleanup
-	delete out;
-	delete image;
-
-	std::cout << std::endl << "Struct sizes:" << std::endl;
-	std::cout << "Ray: " << sizeof(Ray) << std::endl;
-	std::cout << "BBounds: " << sizeof(BBox) << std::endl;
-	std::cout << "BBox: " << sizeof(BBoxT) << std::endl;
-	std::cout << "BVHNode: " << sizeof(BVHNode) << std::endl;
-	std::cout << "Grid: " << sizeof(Grid) << std::endl;
-	std::cout << "GridBVHNode: " << sizeof(GridBVHNode) << std::endl;
-	std::cout << "Primitive *: " << sizeof(Primitive *) << std::endl;
-	std::cout << "TimeBox<int32>: " << sizeof(std::vector<int32>) << std::endl;
-	std::cout << "std::vector<int32>: " << sizeof(std::vector<int32>) << std::endl;
+	std::cout << "\nStarting render: \n";
+	std::cout.flush();
+	Renderer r(&scene, resolution.a, resolution.b, spp, output_path);
+	r.render(threads);
 
 	return 0;
 }

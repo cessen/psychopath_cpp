@@ -28,7 +28,7 @@ public:
 	 * Initializing an RNG this way is not recommended.
 	 */
 	RNG() {
-		tinymt32_init(&state, time(NULL) + clock());
+		seed(time(NULL) + clock());
 	}
 
 	/**
@@ -37,15 +37,25 @@ public:
 	 * Initializes the RNG with the given seed.  This is the
 	 * recommended way to initialize an RNG.
 	 */
-	RNG(uint32_t seed) {
-		tinymt32_init(&state, seed);
+	RNG(uint32_t seed_) {
+		seed(seed_);
 	}
 
 	/**
 	 * @brief Sets the seed of the RNG.
 	 */
-	void seed(uint32_t seed) {
-		tinymt32_init(&state, seed);
+	void seed(uint32_t seed_) {
+		// Clear state
+		state.status[0] = 0;
+		state.status[1] = 0;
+		state.status[2] = 0;
+		state.status[3] = 0;
+		state.mat1 = 0;
+		state.mat2 = 0;
+		state.tmat = 0;
+
+		// Seed state
+		tinymt32_init(&state, seed_);
 	}
 
 	/**

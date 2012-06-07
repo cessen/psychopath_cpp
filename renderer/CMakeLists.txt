@@ -1,2 +1,2 @@
 add_library(renderer
-            integrator tracer)
+            renderer integrator tracer)

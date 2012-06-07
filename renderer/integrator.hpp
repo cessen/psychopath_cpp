@@ -31,6 +31,7 @@ public:
 	Raster *image;
 	Raster *accum;
 	int spp;
+	int thread_count;
 
 	/**
 	 * @brief Constructor.
@@ -43,11 +44,12 @@ public:
 	 *                    initialized with 3 channels, for rgb.
 	 * @param spp_ The number of samples to take per pixel for integration.
 	 */
-	Integrator(Scene *scene_, Tracer *tracer_, Raster *image_, int spp_) {
+	Integrator(Scene *scene_, Tracer *tracer_, Raster *image_, int spp_, int thread_count_=1) {
 		scene = scene_;
 		tracer = tracer_;
 		image = image_;
 		spp = spp_;
+		thread_count = thread_count_;
 
 		accum = new Raster(image->width, image->height, 1, image->min_x, image->min_y, image->max_x, image->max_y);
 	}

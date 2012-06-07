@@ -8,6 +8,9 @@
 #include "numtype.h"
 #include <string>
 #include <vector>
+#include <OpenImageIO/imageio.h>
+
+#include "scene.hpp"
 
 /**
  * @brief Manages a render.
@@ -33,14 +36,25 @@ class Renderer
 {
 private:
 	uint res_x, res_y;
-	string::string output_path;
+	uint spp;
+	std::string output_path;
 
 public:
+	Scene *scene;
+
+	Renderer(Scene *scene_, int res_x_, int res_y_, int spp_, std::string output_path_) {
+		scene = scene_;
+		res_x = res_x_;
+		res_y = res_y_;
+		spp = spp_;
+		output_path = output_path_;
+	}
+
 	// Starts a render with the given number of threads.
-	void render(int thread_count);
-}
+	bool render(int thread_count=1);
+};
 
 
 
-#endif // RENDERER_H
+#endif // RENDERER_HPP
 
