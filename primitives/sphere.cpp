@@ -144,12 +144,14 @@ bool Sphere::intersect_ray(Ray &ray, Intersection *intersection)
 	ray.max_t = t;
 
 	// Create our intersection data
-	intersection->p = ray.o + (ray.d * t);
-	intersection->n = intersection->p - cent;
-	intersection->n.normalize();
-	intersection->t = t;
+	if (intersection) {
+		intersection->p = ray.o + (ray.d * t);
+		intersection->n = intersection->p - cent;
+		intersection->n.normalize();
+		intersection->t = t;
 
-	intersection->col = Color((intersection->n.x+1.0)/2, (intersection->n.y+1.0)/2, (intersection->n.z+1.0)/2);
+		intersection->col = Color((intersection->n.x+1.0)/2, (intersection->n.y+1.0)/2, (intersection->n.z+1.0)/2);
+	}
 
 	return true;
 }

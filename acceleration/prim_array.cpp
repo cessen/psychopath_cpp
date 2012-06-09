@@ -28,6 +28,12 @@ void PrimArray::add_primitives(std::vector<Primitive *> &primitives)
 
 bool PrimArray::finalize()
 {
+	// Initialize primitive's bounding boxes
+	uint32 s = children.size();
+	for (uint32 i = 0; i < s; i++) {
+		children[i]->bounds();
+	}
+
 	return true;
 }
 
@@ -47,11 +53,12 @@ bool PrimArray::intersect_ray(Ray &ray, Intersection *intersection)
 		if (children[i]->bounds().intersect_ray(ray, &tnear, &tfar)) {
 			if (children[i]->is_traceable(ray.min_width(tnear, tfar))) {
 				// Trace!
-				if (children[i]->intersect_ray(ray, intersection))
-					hit = true;
+				hit |= children[i]->intersect_ray(ray, intersection);
+
+				// Early out for shadow rays
+				if (hit && ray.is_shadow_ray)
+					break;
 			} else {
-				std::cout << "Split! " << i << std::endl;
-				std::cout.flush();
 				// Split!
 				children[i]->refine(temp_prim);
 				delete children[i];

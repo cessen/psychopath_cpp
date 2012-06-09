@@ -11,7 +11,9 @@
 
 #include "camera.hpp"
 #include "bvh.hpp"
+#include "prim_array.hpp"
 #include "primitive.hpp"
+#include "light.hpp"
 
 /**
  * @brief A 3D scene for rendering.
@@ -26,11 +28,29 @@
 struct Scene {
 	Camera *camera;
 	std::vector<Primitive *> primitives;
+	std::vector<FiniteLight *> finite_lights;
 	BVH world;
+
+	~Scene() {
+		uint32 s;
+
+		// Delete finite lights
+		s = finite_lights.size();
+		for (uint32 i = 0; i < s; i++) {
+			delete finite_lights[i];
+		}
+
+		// Delete camera
+		delete camera;
+	}
 
 
 	void add_primitive(Primitive *primitive) {
 		primitives.push_back(primitive);
+	}
+
+	void add_finite_light(FiniteLight *light) {
+		finite_lights.push_back(light);
 	}
 
 	// Finalizes the scene for rendering

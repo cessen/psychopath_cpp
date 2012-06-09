@@ -1,19 +1,22 @@
-//- Refactor:
-	//- Step 1: Refactor code to use Integrator for rendering
-	//  and ray tracing
-	//- Step 2: Refactor code to use Tracer for ray tracing
-	//- Step 3: Refactor code to use Renderer to manage rendering
-
-//- Sphere primitive
 - Triangle primitive
 
 - Make min_t/max_t ray updating the responsibility of the Tracer, not the primitives
 
 - Two-stage ray tracing, similar to the Rayes (not Reyes) paper
+	- Create "Instance" class
+	- Modify Scene class so that only instances can be stored directly
+	  in the scene-level BVH.
+	- Implement an alternative BVH traversal which can be resumed for a ray.
+	  May require modifying rays to be traversal-aware.
+	- Implement BVH method to return "next n leaf node hits".
+	- Change Tracer to use this stuff in a naive useless way, to verify.
+	- ...
 
 - Simple scene-description format
 
-- Light sources with direct lighting
+//- Light sources with direct lighting
+
+- Basic path-tracing implementation, with simple lambert shader
 
 - Simple material system (for testing purposes
   only, eventually replace with OSL)

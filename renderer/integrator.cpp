@@ -7,6 +7,8 @@
 #include "tracer.hpp"
 #include "config.hpp"
 
+#include "light.hpp"
+
 #define RAYS_AT_A_TIME 1000000
 
 #define GAUSS_WIDTH 2.0 / 4
@@ -53,16 +55,15 @@ void Integrator::integrate()
 
 	bool last = false;
 	while (true) {
+		// Generate a bunch of samples and corresponding rays
 		std::cout << "\tGenerating rays" << std::endl;
 		std::cout.flush();
-		// Generate a bunch of samples and corresponding rays
 		for (int i = 0; i < RAYS_AT_A_TIME; i++) {
 			if (image_sampler.get_next_sample(&(samps[i]))) {
 				float32 rx = (samps[i].x - 0.5) * (image->max_x - image->min_x);
 				float32 ry = (0.5 - samps[i].y) * (image->max_y - image->min_y);
 				float32 dx = (image->max_x - image->min_x) / image->width;
 				float32 dy = (image->max_y - image->min_y) / image->height;
-
 				rayinters[i]->ray = scene->camera->generate_ray(rx, ry, dx, dy, samps[i].t, samps[i].u, samps[i].v);
 				rayinters[i]->ray.finalize();
 				rayinters[i]->hit = false;
@@ -76,21 +77,57 @@ void Integrator::integrate()
 			}
 		}
 
-		std::cout << "\tTracing rays" << std::endl;
-		std::cout.flush();
 
 		// Trace the rays
+		std::cout << "\tTracing rays" << std::endl;
+		std::cout.flush();
 		tracer->queue_rays(rayinters);
 		tracer->trace_rays();
 
-		std::cout << "\tAccumulating samples" << std::endl;
-		std::cout.flush();
 
 		// Accumulate their samples
+		std::cout << "\tAccumulating samples" << std::endl;
+		std::cout.flush();
 		float32 x, y;
 		int32 i2;
 		int s = rayinters.size();
 		for (int i = 0; i < s; i++) {
+			Color lc;
+			Ray s_ray;
+			bool s_hit = false;
+
+			if (rayinters[i]->hit) {
+				// Lighting
+				Vec3 lp = scene->finite_lights[0]->get_sample_position(0.0, 0.0, rayinters[i]->ray.time);
+				Vec3 ld = rayinters[i]->inter.p - lp;
+				float d = ld.length();
+
+				s_ray.o = rayinters[i]->inter.p;
+				s_ray.d = ld * -1.0;
+				s_ray.time = rayinters[i]->ray.time;
+				s_ray.is_shadow_ray = true;
+				s_ray.has_differentials = false;
+				//s_ray.min_t = rayinters[i]->ray.width(rayinters[i]->inter.t);
+				s_ray.min_t = 0.01;
+				s_ray.max_t = d;
+				s_ray.finalize();
+
+				s_hit = scene->intersect_ray(s_ray, NULL);
+
+
+				if (!s_hit) {
+					lc = scene->finite_lights[0]->outgoing_light(ld, 0.0, 0.0, rayinters[i]->ray.time);
+
+					ld.normalize();
+					rayinters[i]->inter.n.normalize();
+					float lambert = dot(ld * -1, rayinters[i]->inter.n);
+					if (lambert < 0.0) lambert = 0.0;
+
+					lc = (lc * lambert) / (d*d);
+				}
+			}
+
+
 			x = (samps[i].x * image->width) - 0.5;
 			y = (samps[i].y * image->height) - 0.5;
 			for (int j=-2; j <= 2; j++) {
@@ -106,10 +143,14 @@ void Integrator::integrate()
 					if (contrib == 0)
 						continue;
 
-					if (rayinters[i]->hit) {
-						image->pixels[i2*image->channels] += rayinters[i]->inter.col.spectrum[0] * contrib;
-						image->pixels[(i2*image->channels)+1] += rayinters[i]->inter.col.spectrum[1] * contrib;
-						image->pixels[(i2*image->channels)+2] += rayinters[i]->inter.col.spectrum[2] * contrib;
+					if (rayinters[i]->hit && !s_hit) {
+						image->pixels[i2*image->channels] += lc.spectrum[0] * contrib;
+						image->pixels[(i2*image->channels)+1] += lc.spectrum[1] * contrib;
+						image->pixels[(i2*image->channels)+2] += lc.spectrum[2] * contrib;
+
+						//image->pixels[i2*image->channels] += 1.0 * contrib;
+						//image->pixels[(i2*image->channels)+1] += 1.0 * contrib;
+						//image->pixels[(i2*image->channels)+2] += 1.0 * contrib;
 					}
 				}
 			}

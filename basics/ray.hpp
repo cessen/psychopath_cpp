@@ -52,6 +52,9 @@ struct Ray {
 	float32 min_t;
 	float32 max_t;
 
+	// Shadow ray or not
+	bool is_shadow_ray;
+
 	// Differentials for origin and direction
 	// 0: Image X
 	// 1: Image Y
@@ -62,17 +65,15 @@ struct Ray {
 
 	bool has_differentials;
 
-	// Ray tracing tracking data
-	uint32 depth;
-	bool is_shadow_ray;
-
 	// Pre-computed data for accelerating ray intersection
 	Vec3 inv_d;                 // 1.0/d
 	uint32 d_is_neg[3];  // Whether each component of d is negative
-	float32 diff_rate[NUM_DIFFERENTIALS];  // Rates of ray differentials change, as a function of distance
+
+	// Rates of ray differentials' change, as a function of distance
 	// along the ray.  This is useful for determining if
 	// the range of micropolygon sizes across a surface
 	// is going to be too broad for dicing.
+	float32 diff_rate[NUM_DIFFERENTIALS];
 
 
 
@@ -90,10 +91,8 @@ struct Ray {
 		min_t = 0.0;
 		max_t = 99999999999999999999999999.0;
 
-		has_differentials = false;
-
-		depth = 0;
 		is_shadow_ray = false;
+		has_differentials = false;
 	}
 
 

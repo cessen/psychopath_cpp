@@ -25,6 +25,7 @@ struct Color {
 	Color operator-(Color &b);
 	Color operator*(Color &b);
 	Color operator*(float32 b);
+	Color operator/(float32 b);
 };
 
 #endif

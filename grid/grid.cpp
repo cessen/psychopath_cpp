@@ -1,5 +1,6 @@
 #include "numtype.h"
 
+#include <assert.h>
 #include <iostream>
 #include <stdlib.h>
 #include <math.h>
@@ -40,11 +41,8 @@ Grid::Grid(int32 ru, int32 rv, int32 rt, int32 vc)
 	var_count = vc;
 	time_count = rt;
 
-	if (res_u < 2 || res_v < 2 || rt < 1) {
-		std::cout << "Error: attempt to initialize grid with degenerate resolution: "
-		          << res_u << " " << res_v << " " << res_time << std::endl;
-		exit(1);
-	}
+	// Assert that we aren't using a degenerate grid resolution
+	assert(res_u >= 2 && res_v >= 2 && rt >= 1);
 
 	// Initialize vertex list
 	verts.init(rt);
@@ -135,7 +133,7 @@ void Grid::calc_normals()
 }
 
 
-bool Grid::intersect_ray_upoly(Ray &ray, int32 upoly_i, float32 *u, float32 *v, float32 *t)
+bool Grid::intersect_ray_upoly(const Ray &ray, int32 upoly_i, float32 *u, float32 *v, float32 *t)
 {
 	UTriangle tri;
 	int32 v1, v2, v3, v4;
@@ -162,9 +160,11 @@ bool Grid::intersect_ray_upoly(Ray &ray, int32 upoly_i, float32 *u, float32 *v, 
 		tri.verts[2] = verts[0][v4].p;
 	}
 
+	*t = ray.max_t;
+
 	// Test first triangle
 	if (tri.intersect_ray_(ray, &tb, &ub, &vb)) {
-		if (tb < *t) {
+		if (tb < *t && tb > ray.min_t && tb < ray.max_t) {
 			*t = tb;
 			*u = ub;
 			*v = vb;
@@ -181,7 +181,7 @@ bool Grid::intersect_ray_upoly(Ray &ray, int32 upoly_i, float32 *u, float32 *v, 
 
 	// Test second triangle
 	if (tri.intersect_ray_(ray, &tb, &ub, &vb)) {
-		if (tb < *t) {
+		if (tb < *t && tb > ray.min_t && tb < ray.max_t) {
 			*t = tb;
 			*u = 1.0 - vb;
 			*v = 1.0 - ub;
@@ -302,7 +302,6 @@ bool Grid::intersect_ray(Ray &rayo, Intersection *intersection)
 			q.offset[i] = quant_info[0].offset[i];
 		}
 	}
-	//float32 tscale = sqrtf((q.factor[0]*q.factor[0]) + (q.factor[1]*q.factor[1]) + (q.factor[2]*q.factor[2]));
 
 	// Transform the ray into quant space
 	Ray ray;
@@ -312,8 +311,8 @@ bool Grid::intersect_ray(Ray &rayo, Intersection *intersection)
 		ray.d[i] = grid_quantd(rayo.d[i], q.offset[i], q.factor[i]);
 	}
 
-	ray.finalize();
-
+	ray.update_accel();
+	float32 tscale = ray.d.length() / rayo.d.length();
 
 	// Traverse the BVH and check for intersections. Yay!
 	uint32 todo_offset = 0, node = 0;
@@ -323,10 +322,15 @@ bool Grid::intersect_ray(Ray &rayo, Intersection *intersection)
 		if (intersect_grid_bvh_node(time_count, &(bvh_nodes[node]), ray, ia, alpha, q, quant_info, tnear, tfar)) {
 			if (bvh_nodes[node].flags & IS_LEAF) {
 				//Intersect ray with upoly in leaf BVH node
-				if (intersect_ray_upoly(rayo, bvh_nodes[node].upoly_index, &u, &v, &(rayo.max_t))) {
+				if (intersect_ray_upoly(rayo, bvh_nodes[node].upoly_index, &u, &v, &t)) {
 					hit = true;
 					upoly_i = bvh_nodes[node].upoly_index;
-					//ray.max_t = rayo.max_t * tscale;
+					rayo.max_t = t;
+					ray.max_t = t * tscale;
+
+					// Early out for shadow rays
+					if (ray.is_shadow_ray)
+						break;
 				}
 
 				if (todo_offset == 0)
@@ -347,12 +351,9 @@ bool Grid::intersect_ray(Ray &rayo, Intersection *intersection)
 
 
 	// Fill in intersection structure
-	if (hit && intersection) {
-		float32 l = rayo.d.length();
-		Vec3 temp = rayo.d / l;
-		temp = temp * t;
+	if (hit && intersection && !rayo.is_shadow_ray) {
 		intersection->t = t;
-		intersection->p = rayo.o + temp;
+		intersection->p = rayo.o + (rayo.d * t);
 
 		// Calculate surface normal at intersection point
 		Vec3 n1, n2, n3, n4;

@@ -13,24 +13,31 @@
 #include "vector.hpp"
 #include "matrix.hpp"
 #include "camera.hpp"
+
+#include "primitive.hpp"
 #include "bilinear.hpp"
 #include "sphere.hpp"
-#include "primitive.hpp"
+
+#include "light.hpp"
+#include "point_light.hpp"
+
 
 #include "config.hpp"
 
-#include <OSL/oslexec.h>
+//#include <OSL/oslexec.h>
 
 #include <boost/program_options.hpp>
 namespace BPO = boost::program_options;
 
 #define THREADS 1
-#define SPP 16
-#define XRES 1280
-#define YRES 720
-#define NUM_RAND_PATCHES 000
+#define SPP 1
+#define XRES 512
+#define YRES 288
+#define NUM_RAND_PATCHES 1000
 #define NUM_RAND_SPHERES 1000
 #define FRAC_MB 0.1
+#define CAMERA_SPIN 10.0
+#define LENS_DIAM 1.0
 
 
 // Holds a pair of integers
@@ -169,7 +176,7 @@ int main(int argc, char **argv)
 	std::vector<Matrix44> cam_mats;
 	cam_mats.resize(4);
 
-	float angle = 0 * (3.14159 / 180.0);
+	float angle = CAMERA_SPIN * (3.14159 / 180.0);
 	Vec3 axis(0.0, 0.0, 1.0);
 
 	cam_mats[0].translate(Vec3(0.0, 0.0, -40.0));
@@ -188,10 +195,15 @@ int main(int argc, char **argv)
 	cam_mats[3].rotate((angle/3)*3, axis);
 	cam_mats[3].translate(Vec3(0.0, 0.0, 20.0));
 
-#define LENS_DIAM 1.0
 #define FOCUS_DISTANCE 40.0
 #define FOV 55
 	scene.camera = new Camera(cam_mats, (3.14159/180.0)*FOV, LENS_DIAM, FOCUS_DISTANCE);
+
+
+	// Add lights
+	PointLight *pl = new PointLight(Vec3(10.0, 10.0, -10.0),
+	                                Color(200.0));
+	scene.add_finite_light(pl);
 
 
 	// Add random patches
@@ -212,9 +224,9 @@ int main(int argc, char **argv)
 			ms = 2;
 
 		// Flipped?
-		bool flip = false;
-		if (rng.next_float() < 0.5)
-			flip = true;
+		bool flip = true;
+		//if (rng.next_float() < 0.5)
+		//	flip = false;
 
 		patch = new Bilinear(ms);
 
@@ -254,25 +266,25 @@ int main(int argc, char **argv)
 	Sphere *sphere;
 	for (int i=0; i < NUM_RAND_SPHERES; i++) {
 		float32 x, y, z;
-		z = 15 + (rng.next_float() * NUM_RAND_SPHERES / 4) * radius;
+		z = 15 + (rng2.next_float() * NUM_RAND_SPHERES / 4) * radius;
 		float32 s = z / 15;
-		x = rng.next_float_c() * 40;
-		y = rng.next_float_c() * 20;
+		x = rng2.next_float_c() * 40;
+		y = rng2.next_float_c() * 20;
 
 		// Motion?
 		int ms = 1;
-		if (rng.next_float() < FRAC_MB)
+		if (rng2.next_float() < FRAC_MB)
 			ms = 2;
 
 		sphere = new Sphere(ms);
 
 		for (int j = 0; j < ms; j++) {
-			x += (rng.next_float_c() * j * 4) / s;
-			y += (rng.next_float_c() * j * 4) / s;
-			z += (rng.next_float_c() * j * 4) / s;
+			x += (rng2.next_float_c() * j * 4) / s;
+			y += (rng2.next_float_c() * j * 4) / s;
+			z += (rng2.next_float_c() * j * 4) / s;
 
 			sphere->add_time_sample(j,
-			                        Vec3(x*s, y*s, z+(rng.next_float_c()*2)),
+			                        Vec3(x*s, y*s, z+(rng2.next_float_c()*2)),
 			                        1.0f);
 		}
 

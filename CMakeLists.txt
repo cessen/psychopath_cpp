@@ -59,13 +59,13 @@ include_directories (${OIIO_INCLUDE})
 #--------------------------------------
 # Open Shading Language
 #--------------------------------------
-set(OSL_DIR ${PROJECT_SOURCE_DIR}/../libs/osl/dist/linux64)
-set(OSL_LIBRARYS ${OSL_DIR}/lib/liboslcomp.so
-                   ${OSL_DIR}/lib/liboslexec.so
-                   ${OSL_DIR}/lib/liboslquery.so)
-set(OSL_INCLUDE ${OSL_DIR}/include)
-
-include_directories (${OSL_INCLUDE})
+#set(OSL_DIR ${PROJECT_SOURCE_DIR}/../libs/osl/dist/linux64)
+#set(OSL_LIBRARYS ${OSL_DIR}/lib/liboslcomp.so
+#                   ${OSL_DIR}/lib/liboslexec.so
+#                   ${OSL_DIR}/lib/liboslquery.so)
+#set(OSL_INCLUDE ${OSL_DIR}/include)
+#
+#include_directories (${OSL_INCLUDE})
 
 
 #--------------------------------------
@@ -76,6 +76,7 @@ include_directories ("${PROJECT_BINARY_DIR}",
                      "${PROJECT_SOURCE_DIR}/acceleration",
                      "${PROJECT_SOURCE_DIR}/basics",
                      "${PROJECT_SOURCE_DIR}/grid",
+                     "${PROJECT_SOURCE_DIR}/lights",
                      "${PROJECT_SOURCE_DIR}/math",
                      "${PROJECT_SOURCE_DIR}/primitives",
                      "${PROJECT_SOURCE_DIR}/raster",
@@ -118,7 +119,8 @@ target_link_libraries(psychopath
 	${PSYCHO_LIB}
     ${Boost_LIBRARIES}
     ${OIIO_LIBRARY}
-    ${OSL_LIBRARYS})
+    #${OSL_LIBRARYS}
+    )
 
 # Unit-test executable
 file(GLOB_RECURSE TEST_FILES *_test.cpp) # Find all tests

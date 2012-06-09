@@ -73,7 +73,6 @@ bool UTriangle::intersect_ray_(const Ray &ray,
 		return false;  /* ray is parallell to the plane of the triangle */
 
 	/* calculate t, ray intersects triangle */
-	//*t = DOT(edge2, qvec) * inv_det;
 	if (t_)
 		(*t_) = dot(edge2, qvec) * inv_det;
 	if (u_)

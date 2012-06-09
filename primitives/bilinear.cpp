@@ -55,15 +55,19 @@ void Bilinear::add_time_sample(int samp, Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4)
 
 int Bilinear::dice_rate(float32 upoly_width)
 {
-	// Approximate size of the patch
-	float32 size = (bounds()[0].max - bounds()[0].min).length() / 1.4;
+	if (upoly_width <= 0.0f) {
+		return 1+8;
+	} else {
+		// Approximate size of the patch
+		float32 size = (bounds()[0].max - bounds()[0].min).length() / 1.4;
 
-	// Dicing rate based on ray width
-	int rate = 1 + (size / (upoly_width * Config::dice_rate));
-	if (rate < 2)
-		rate = 2;
+		// Dicing rate based on ray width
+		int rate = 1 + (size / (upoly_width * Config::dice_rate));
+		if (rate < 2)
+			rate = 2;
 
-	return rate;
+		return rate;
+	}
 }
 
 
@@ -78,7 +82,6 @@ bool Bilinear::intersect_ray(Ray &ray, Intersection *intersection)
 
 		// Get dicing rate
 		int rate = dice_rate(ray.min_width(tnear, tfar));
-		//std::cout << "Rate: " << rate << std::endl;
 
 		// Dice away!
 		dice(rate, rate);
@@ -120,7 +123,7 @@ BBoxT &Bilinear::bounds()
 
 bool Bilinear::is_traceable(float32 ray_width)
 {
-	if (ray_width < last_rayw) {
+	if (ray_width < last_rayw && ray_width > 0.0f) {
 		float32 lu = (verts[0][0] - verts[0][1]).length() + (verts[0][3] - verts[0][2]).length();
 		float32 lv = (verts[0][0] - verts[0][3]).length() + (verts[0][1] - verts[0][2]).length();
 		float32 edge_ratio = lu / lv;

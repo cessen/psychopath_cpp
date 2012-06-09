@@ -96,7 +96,7 @@ public:
 	virtual bool intersect_ray(Ray &ray, Intersection *intersection=NULL);
 	virtual BBoxT &bounds();
 
-	bool intersect_ray_upoly(Ray &ray, int32 upoly_i, float32 *u, float32 *v, float32 *t);
+	bool intersect_ray_upoly(const Ray &ray, int32 upoly_i, float32 *u, float32 *v, float32 *t);
 
 	void calc_normals();
 

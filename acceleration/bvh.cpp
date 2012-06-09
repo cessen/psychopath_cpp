@@ -359,8 +359,11 @@ bool BVH::intersect_ray(Ray &ray, Intersection *intersection)
 			if (nodes[node].flags & IS_LEAF) {
 				if (nodes[node].data->is_traceable(ray.min_width(hitt0, hitt1))) {
 					// Trace!
-					if (nodes[node].data->intersect_ray(ray, intersection))
-						hit = true;
+					hit |= nodes[node].data->intersect_ray(ray, intersection);
+
+					// Early out for shadow rays
+					if (hit && ray.is_shadow_ray)
+						break;
 
 					if (todo_offset == 0)
 						break;
