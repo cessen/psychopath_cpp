@@ -2,14 +2,17 @@
  * This file and integrator.cpp define a Integrator class, which decides where
  * to shoot rays and how to combine their results into a final image or images.
  */
-#ifndef INTEGRATOR_HPP
-#define INTEGRATOR_HPP
+#ifndef DIRECT_LIGHTING_INTEGRATOR_HPP
+#define DIRECT_LIGHTING_INTEGRATOR_HPP
+
+#include "integrator.hpp"
 
 #include "numtype.h"
 
 #include "raster.hpp"
 #include "scene.hpp"
 #include "tracer.hpp"
+#include "color.hpp"
 
 /**
  * @brief An integrator for the rendering equation.
@@ -23,7 +26,7 @@
  * Although markov chain algorithms may play poorly with the Tracer, which is
  * designed to trace rays in bulk.
  */
-class Integrator
+class DirectLightingIntegrator: Integrator
 {
 public:
 	Scene *scene;
@@ -44,7 +47,7 @@ public:
 	 *                    initialized with 3 channels, for rgb.
 	 * @param spp_ The number of samples to take per pixel for integration.
 	 */
-	Integrator(Scene *scene_, Tracer *tracer_, Raster *image_, int spp_, int thread_count_=1) {
+	DirectLightingIntegrator(Scene *scene_, Tracer *tracer_, Raster *image_, int spp_, int thread_count_=1) {
 		scene = scene_;
 		tracer = tracer_;
 		image = image_;
@@ -54,16 +57,28 @@ public:
 		accum = new Raster(image->width, image->height, 1, image->min_x, image->min_y, image->max_x, image->max_y);
 	}
 
-	~Integrator() {
+	virtual ~DirectLightingIntegrator() {
 		delete accum;
 	}
 
 	/**
 	 * @brief Begins integration.
 	 */
-	void integrate();
+	virtual void integrate();
 
 };
 
-#endif // INTEGRATOR_H
+
+/*
+ * A direct lighting path.
+ * Stores state of a path in progress.
+ */
+struct DLPath
+{
+	Intersection inter;
+	Color col, lcol;
+	bool done;
+};
+
+#endif // DIRECT_LIGHTING_INTEGRATOR_H
 

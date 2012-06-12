@@ -5,6 +5,7 @@
 
 #include "rng.hpp"
 #include "integrator.hpp"
+#include "direct_lighting_integrator.hpp"
 #include "tracer.hpp"
 #include "scene.hpp"
 
@@ -19,7 +20,7 @@ bool Renderer::render(int thread_count)
 	                           -1.0, -(((float32)(res_y))/res_x),
 	                           1.0, (((float32)(res_y))/res_x));
 	Tracer tracer(scene, thread_count);
-	Integrator integrator(scene, &tracer, image, spp, thread_count);
+	DirectLightingIntegrator integrator(scene, &tracer, image, spp, thread_count);
 	integrator.integrate();
 
 	int i;

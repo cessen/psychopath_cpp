@@ -76,6 +76,7 @@ include_directories ("${PROJECT_BINARY_DIR}",
                      "${PROJECT_SOURCE_DIR}/acceleration",
                      "${PROJECT_SOURCE_DIR}/basics",
                      "${PROJECT_SOURCE_DIR}/grid",
+                     "${PROJECT_SOURCE_DIR}/integrator",
                      "${PROJECT_SOURCE_DIR}/lights",
                      "${PROJECT_SOURCE_DIR}/math",
                      "${PROJECT_SOURCE_DIR}/primitives",
@@ -83,7 +84,8 @@ include_directories ("${PROJECT_BINARY_DIR}",
                      "${PROJECT_SOURCE_DIR}/renderer",
                      "${PROJECT_SOURCE_DIR}/sampling",
                      "${PROJECT_SOURCE_DIR}/scene",
-                     "${PROJECT_SOURCE_DIR}/test")
+                     "${PROJECT_SOURCE_DIR}/test",
+                     "${PROJECT_SOURCE_DIR}/tracer",)
 
 
 #--------------------------------------
@@ -92,11 +94,13 @@ include_directories ("${PROJECT_BINARY_DIR}",
 add_subdirectory(acceleration)
 add_subdirectory(basics)
 add_subdirectory(grid)
+add_subdirectory(integrator)
 add_subdirectory(math)
 add_subdirectory(primitives)
 add_subdirectory(raster)
 add_subdirectory(renderer)
 add_subdirectory(sampling)
+add_subdirectory(tracer)
 
 add_library(config
 	config)
@@ -104,6 +108,8 @@ add_library(config
 # Main library
 set (PSYCHO_LIB
 	renderer
+	integrator
+	tracer
 	raster
 	sampling
 	primitives

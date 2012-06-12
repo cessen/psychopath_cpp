@@ -15,6 +15,7 @@ struct RayInter {
 	Ray ray;
 	Intersection inter;
 	bool hit;
+	uint32 id;
 };
 
 #endif // RAYINTER_HPP

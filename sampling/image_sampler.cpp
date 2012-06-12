@@ -65,7 +65,7 @@ ImageSampler::~ImageSampler()
 }
 
 
-bool ImageSampler::get_next_sample(Sample *sample)
+bool ImageSampler::get_next_sample(Sample *sample, uint32 ns)
 {
 	//std::cout << s << " " << x << " " << y << std::endl;
 	// Check if we're done
@@ -73,22 +73,16 @@ bool ImageSampler::get_next_sample(Sample *sample)
 		return false;
 
 	// Using sobol
-	///*
 	sample->x = (sobol::sample(samp_taken, 0) + x) / res_x;
 	sample->y = (sobol::sample(samp_taken, 1) + y) / res_y;
 	sample->u = sobol::sample(samp_taken, 2);
 	sample->v = sobol::sample(samp_taken, 3);
 	sample->t = sobol::sample(samp_taken, 4);
-	//*/
 
-	// Using random
-	/*
-	sample->x = (rng.next_float() + x) / res_x;
-	sample->y = (rng.next_float() + y) / res_y;
-	sample->u = rng.next_float();
-	sample->v = rng.next_float();
-	sample->t = rng.next_float();
-	*/
+	if (sample->ns.size() != ns)
+		sample->ns.resize(ns);
+	for (uint32 i = 0; i < ns; i++)
+		sample->ns[i] = sobol::sample(samp_taken, i+5);
 
 	// increment to next sample
 	samp_taken++;

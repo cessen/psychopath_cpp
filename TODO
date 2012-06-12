@@ -14,8 +14,6 @@
 
 - Simple scene-description format
 
-//- Light sources with direct lighting
-
 - Basic path-tracing implementation, with simple lambert shader
 
 - Simple material system (for testing purposes

@@ -1,0 +1,2 @@
+add_library(integrator
+	direct_lighting_integrator)
