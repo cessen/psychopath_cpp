@@ -73,8 +73,7 @@ public:
  * A direct lighting path.
  * Stores state of a path in progress.
  */
-struct DLPath
-{
+struct DLPath {
 	Intersection inter;
 	Color col, lcol;
 	bool done;

@@ -203,8 +203,8 @@ int main(int argc, char **argv)
 
 	// Add lights
 	SphereLight *sl = new SphereLight(Vec3(10.0, 10.0, -10.0),
-	                                2.0,
-	                                Color(200.0));
+	                                  2.0,
+	                                  Color(200.0));
 	scene.add_finite_light(sl);
 	PointLight *pl = new PointLight(Vec3(-10.0, 0.0, -10.0),
 	                                Color(20.0));

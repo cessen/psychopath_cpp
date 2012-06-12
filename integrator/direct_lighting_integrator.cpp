@@ -67,7 +67,7 @@ void DirectLightingIntegrator::integrate()
 	// Sample array
 	std::vector<Sample> samps;
 	samps.resize(RAYS_AT_A_TIME);
-	
+
 	// Light path array
 	std::vector<DLPath> paths;
 	paths.resize(RAYS_AT_A_TIME);
@@ -92,11 +92,11 @@ void DirectLightingIntegrator::integrate()
 			}
 		}
 		uint32 ssize = samps.size();
-		
-		
+
+
 		// Size the ray buffer appropriately
 		resize_rayinters(rayinters, ssize);
-		
+
 
 		// Generate a bunch of camera rays
 		std::cout << "\tGenerating camera rays" << std::endl;
@@ -118,8 +118,8 @@ void DirectLightingIntegrator::integrate()
 		std::cout.flush();
 		tracer->queue_rays(rayinters);
 		tracer->trace_rays();
-		
-		
+
+
 		// Update paths
 		std::cout << "\tUpdating paths" << std::endl;
 		std::cout.flush();
@@ -134,8 +134,8 @@ void DirectLightingIntegrator::integrate()
 				paths[rayinters[i]->id].col = Color(0.0, 0.0, 0.0);
 			}
 		}
-		
-		
+
+
 		// Generate a bunch of shadow rays
 		std::cout << "\tGenerating shadow rays" << std::endl;
 		std::cout.flush();
@@ -145,14 +145,14 @@ void DirectLightingIntegrator::integrate()
 				// Select a light and store the normalization factor for it's output
 				Light *lighty = scene->finite_lights[(uint32)(samps[i].ns[0] * scene->finite_lights.size()) % scene->finite_lights.size()];
 				//Light *lighty = scene->finite_lights[rng.next_uint() % scene->finite_lights.size()];
-				
+
 				// Sample the light source
 				Vec3 ld;
 				paths[i].lcol = lighty->sample(rayinters[i]->inter.p, samps[i].ns[1], samps[i].ns[2], rayinters[i]->ray.time, &ld)
 				                * (float32)(scene->finite_lights.size());
 				//paths[i].lcol = lighty->sample(rayinters[i]->inter.p, rng.next_float(), rng.next_float(), rayinters[i]->ray.time, &ld)
 				//                * (float32)(scene->finite_lights.size());
-				
+
 				// Create a shadow ray for this path
 				float d = ld.normalize();
 				rayinters[sri]->ray.o = paths[i].inter.p;
@@ -165,14 +165,14 @@ void DirectLightingIntegrator::integrate()
 				rayinters[sri]->ray.finalize();
 				rayinters[sri]->hit = false;
 				rayinters[sri]->id = i;
-				
+
 				// Increment shadow ray index
 				sri++;
 			}
 		}
 		resize_rayinters(rayinters, sri);
-		
-		
+
+
 		// Trace the shadow rays
 		std::cout << "\tTracing shadow rays" << std::endl;
 		std::cout.flush();

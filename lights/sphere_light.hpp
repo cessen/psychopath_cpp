@@ -26,17 +26,17 @@ public:
 
 	virtual Color sample(const Vec3 &arr, float32 u, float32 v, float32 time,
 	                     Vec3 *shadow_vec) const {
-	    Vec3 n = uniform_sample_sphere(u, v);
-	    Vec3 p = (n * radius) + pos;
-	    
+		Vec3 n = uniform_sample_sphere(u, v);
+		Vec3 p = (n * radius) + pos;
+
 		*shadow_vec = p - arr;
 		Vec3 out = *shadow_vec * -1.f;
 		out.normalize();
 		float d2 = shadow_vec->length2();
-		
+
 		// Convert to solid angle
 		float ndot = std::abs(dot(n, out)) * 2.f;
-		
+
 		if (d2 > 0)
 			return col * ndot / d2;
 		else
@@ -46,11 +46,11 @@ public:
 	virtual Color outgoing(const Vec3 &dir, float32 u, float32 v, float32 time) const {
 		return col;
 	}
-	
+
 	virtual bool is_delta() const {
 		return true;
 	}
-	
+
 	virtual bool is_infinite() const {
 		return false;
 	}

@@ -33,11 +33,11 @@ public:
 	virtual Color outgoing(const Vec3 &dir, float32 u, float32 v, float32 time) const {
 		return col;
 	}
-	
+
 	virtual bool is_delta() const {
 		return true;
 	}
-	
+
 	virtual bool is_infinite() const {
 		return false;
 	}

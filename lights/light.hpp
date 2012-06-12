@@ -43,8 +43,8 @@ public:
 	 * @param time The time to sample at.
 	 */
 	virtual Color outgoing(const Vec3 &dir, float32 u, float32 v, float32 time) const = 0;
-	
-	
+
+
 	/**
 	 * @brief Returns the color that will arrive at the given point from the
 	 * given parameters of the light source.
@@ -62,8 +62,8 @@ public:
 		Vec3 temp;
 		return sample(arr, u, v, time, &temp);
 	}
-	
-	
+
+
 	/**
 	 * @brief Returns whether the light has a delta distribution.
 	 *
@@ -72,8 +72,8 @@ public:
 	 * lights that only emit in a single direction, etc.
 	 */
 	virtual bool is_delta() const = 0;
-	
-	
+
+
 	/**
 	 * @brief Returns whether the light is infinite.
 	 *
