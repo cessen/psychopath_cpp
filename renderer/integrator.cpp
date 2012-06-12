@@ -42,6 +42,7 @@ float32 mitchell_2d(float32 x, float32 y, float32 C)
 
 void Integrator::integrate()
 {
+	RNG rng(43643);
 	ImageSampler image_sampler(spp, image->width, image->height, 2.0);
 
 	std::vector<Sample> samps;
@@ -93,17 +94,19 @@ void Integrator::integrate()
 		int s = rayinters.size();
 		for (int i = 0; i < s; i++) {
 			Color lc;
+			Vec3 s_vec;
 			Ray s_ray;
 			bool s_hit = false;
 
 			if (rayinters[i]->hit) {
 				// Lighting
-				Vec3 lp = scene->finite_lights[0]->get_sample_position(0.0, 0.0, rayinters[i]->ray.time);
-				Vec3 ld = rayinters[i]->inter.p - lp;
-				float d = ld.length();
+				Light *lighty = scene->finite_lights[rng.next_uint() % scene->finite_lights.size()];
+				Vec3 ld;
+				lc = lighty->sample(rayinters[i]->inter.p, rng.next_float(), rng.next_float(), rayinters[i]->ray.time, &ld);
+				float d = ld.normalize();
 
 				s_ray.o = rayinters[i]->inter.p;
-				s_ray.d = ld * -1.0;
+				s_ray.d = ld;
 				s_ray.time = rayinters[i]->ray.time;
 				s_ray.is_shadow_ray = true;
 				s_ray.has_differentials = false;
@@ -116,14 +119,11 @@ void Integrator::integrate()
 
 
 				if (!s_hit) {
-					lc = scene->finite_lights[0]->outgoing_light(ld, 0.0, 0.0, rayinters[i]->ray.time);
-
-					ld.normalize();
 					rayinters[i]->inter.n.normalize();
-					float lambert = dot(ld * -1, rayinters[i]->inter.n);
+					float lambert = dot(ld, rayinters[i]->inter.n);
 					if (lambert < 0.0) lambert = 0.0;
 
-					lc = (lc * lambert) / (d*d);
+					lc = lc * lambert * scene->finite_lights.size();
 				}
 			}
 

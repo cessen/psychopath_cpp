@@ -3,6 +3,8 @@
 
 #include "numtype.h"
 
+#include "vector.hpp"
+
 #include <math.h>
 
 /*
@@ -60,6 +62,16 @@ static inline void square_to_circle(float32 *x, float32 *y)
 	*y = radius * sin(angle);
 
 	//std::cout << "Out: " << *x << " " << *y << std::endl;
+}
+
+static inline Vec3 uniform_sample_sphere(float32 u, float32 v)
+{
+	float32 z = 1.f - 2.f * u;
+	float32 r = std::sqrt(std::max(0.f, 1.f - z*z));
+	float32 phi = 2.f * M_PI * v;
+	float32 x = r * std::cos(phi);
+	float32 y = r * std::sin(phi);
+	return Vec3(x, y, z);
 }
 
 

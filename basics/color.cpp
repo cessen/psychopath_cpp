@@ -3,7 +3,7 @@
 
 #include "color.hpp"
 
-Color Color::operator+(Color &b)
+Color Color::operator+(const Color &b) const
 {
 	Color col;
 	for (int i=0; i < SPECTRUM_COUNT; i++) {
@@ -13,7 +13,7 @@ Color Color::operator+(Color &b)
 	return col;
 }
 
-Color Color::operator-(Color &b)
+Color Color::operator-(const Color &b) const
 {
 	Color col;
 	for (int i=0; i < SPECTRUM_COUNT; i++) {
@@ -23,7 +23,7 @@ Color Color::operator-(Color &b)
 	return col;
 }
 
-Color Color::operator*(Color &b)
+Color Color::operator*(const Color &b) const
 {
 	Color col;
 	for (int i=0; i < SPECTRUM_COUNT; i++) {
@@ -33,7 +33,7 @@ Color Color::operator*(Color &b)
 	return col;
 }
 
-Color Color::operator*(float32 b)
+Color Color::operator*(const float32 b) const
 {
 	Color col;
 	for (int i=0; i < SPECTRUM_COUNT; i++) {
@@ -43,7 +43,7 @@ Color Color::operator*(float32 b)
 	return col;
 }
 
-Color Color::operator/(float32 b)
+Color Color::operator/(const float32 b) const
 {
 	assert(b != 0.0f);
 	Color col;

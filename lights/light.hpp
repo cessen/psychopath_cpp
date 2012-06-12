@@ -5,24 +5,32 @@
 #include "color.hpp"
 
 /**
- * @brief An interface for finite light sources.
+ * @brief An interface for light sources.
  */
-class FiniteLight
+class Light
 {
 public:
-	virtual ~FiniteLight() {}
+	virtual ~Light() {}
 
 	/**
-	 * @brief Returns a 3d point 3d that lies on the light source.
+	 * @brief Samples the light source for a given point to be illuminated.
 	 *
-	 * The point returned is generated based on the parameters u, v, and time.
-	 * The same input parameters will always result in the same point.
-	 *
-	 * @param u Surface parameter U.
-	 * @param u Surface parameter V.
+	 * @param arr The point to be illuminated.
+	 * @param u Random parameter U.
+	 * @param v Random parameter V.
 	 * @param time The time to sample at.
+	 * @param[out] shadow_vec The world-space direction to cast a shadow ray
+	 *               for visibility testing.  It's length determines the extent
+	 *               that the shadow ray should have, unless the light source
+	 *               is infinite (see is_infinite()) in which case the extent
+	 *               should be infinite.  This vector also doubles to inform
+	 *               What direction the light is arriving from (just invert
+	 *               the vector).
+	 *
+	 * @returns The light arriving at the point arr.
 	 */
-	virtual Vec3 get_sample_position(float u, float v, float time) const = 0;
+	virtual Color sample(const Vec3 &arr, float32 u, float32 v, float32 time,
+	                     Vec3 *shadow_vec) const = 0;
 
 
 	/**
@@ -30,44 +38,50 @@ public:
 	 * given parameters on the light.
 	 *
 	 * @param dir The direction of the outgoing light.
-	 * @param u Surface parameter U.
-	 * @param u Surface parameter V.
+	 * @param u Random parameter U.
+	 * @param v Random parameter V.
 	 * @param time The time to sample at.
 	 */
-	virtual Color outgoing_light(Vec3 dir, float u, float v, float time) const = 0;
-};
-
-
-/**
- * @brief An interface for infinite light sources.
- */
-class InfiniteLight
-{
-public:
-	virtual ~InfiniteLight() {}
-
+	virtual Color outgoing(const Vec3 &dir, float32 u, float32 v, float32 time) const = 0;
+	
+	
 	/**
-	 * @brief Returns a 3d direction coming from the light source.
+	 * @brief Returns the color that will arrive at the given point from the
+	 * given parameters of the light source.
 	 *
-	 * The direction returned is generated based on the parameters u, v, and
-	 * time.  The same input parameters will always result in the same
-	 * direction.
+	 * This does _not_ account for shadowing at all.  It presumes the point
+	 * is fully visible to the light source.
 	 *
-	 * @param u Surface parameter U.
-	 * @param u Surface parameter V.
+	 * @param arr The point that the light is arriving at.
+	 * @param u Random parameter U.
+	 * @param v Random parameter V.
 	 * @param time The time to sample at.
 	 */
-	virtual Vec3 get_sample_direction(float u, float v, float time) const = 0;
-
-
+	virtual Color arriving(const Vec3 &arr, float32 u, float32 v, float32 time) const {
+		// Default implementation
+		Vec3 temp;
+		return sample(arr, u, v, time, &temp);
+	}
+	
+	
 	/**
-	 * @brief Returns the color emitted in the given direction from the light.
+	 * @brief Returns whether the light has a delta distribution.
 	 *
-	 * @param u Surface parameter U.
-	 * @param u Surface parameter V.
-	 * @param time The time to sample at.
+	 * If a light has not chance of a ray hitting it through random process
+	 * then it is a delta light source.  For example, point light sources,
+	 * lights that only emit in a single direction, etc.
 	 */
-	virtual Color outgoing_light(float u, float v, float time) const = 0;
+	virtual bool is_delta() const = 0;
+	
+	
+	/**
+	 * @brief Returns whether the light is infinite.
+	 *
+	 * Sun light sources, sky dome lights, etc.  Basically, any light that
+	 * cannot be thought of as existing within the 3d scene, and thus where
+	 * only the direction of the light matters.
+	 */
+	virtual bool is_infinite() const = 0;
 };
 
 #endif // LIGHT_HPP

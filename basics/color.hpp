@@ -21,11 +21,11 @@ struct Color {
 		spectrum[2] = b_;
 	}
 
-	Color operator+(Color &b);
-	Color operator-(Color &b);
-	Color operator*(Color &b);
-	Color operator*(float32 b);
-	Color operator/(float32 b);
+	Color operator+(const Color &b) const;
+	Color operator-(const Color &b) const;
+	Color operator*(const Color &b) const;
+	Color operator*(const float32 b) const;
+	Color operator/(const float32 b) const;
 };
 
 #endif

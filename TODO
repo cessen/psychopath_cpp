@@ -30,5 +30,6 @@
 - More compact and/or faster BVH:
 	- Quantized BVH?
 	- MSBVH?
-	- QuadBVH?
+	- QBVH?
+	- Quantized MSQBVH?  Ha ha ha.
 

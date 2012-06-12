@@ -20,6 +20,7 @@
 
 #include "light.hpp"
 #include "point_light.hpp"
+#include "sphere_light.hpp"
 
 
 #include "config.hpp"
@@ -36,7 +37,7 @@ namespace BPO = boost::program_options;
 #define NUM_RAND_PATCHES 1000
 #define NUM_RAND_SPHERES 1000
 #define FRAC_MB 0.1
-#define CAMERA_SPIN 10.0
+#define CAMERA_SPIN 0.0
 #define LENS_DIAM 1.0
 
 
@@ -119,7 +120,7 @@ int main(int argc, char **argv)
 	BPO::options_description desc("Allowed options");
 	desc.add_options()
 	("help,h", "Print this help message")
-	("spp", BPO::value<int>(), "Number of samples to take per pixel")
+	("spp,s", BPO::value<int>(), "Number of samples to take per pixel")
 	("threads,t", BPO::value<int>(), "Number of threads to render with")
 	("output,o", BPO::value<std::string>(), "The PNG file to render to")
 	("resolution,r", BPO::value<IntPair>()->multitoken(), "The resolution to render at, e.g. 1280 720")
@@ -201,8 +202,12 @@ int main(int argc, char **argv)
 
 
 	// Add lights
-	PointLight *pl = new PointLight(Vec3(10.0, 10.0, -10.0),
+	SphereLight *sl = new SphereLight(Vec3(10.0, 10.0, -10.0),
+	                                2.0,
 	                                Color(200.0));
+	scene.add_finite_light(sl);
+	PointLight *pl = new PointLight(Vec3(-10.0, 0.0, -10.0),
+	                                Color(20.0));
 	scene.add_finite_light(pl);
 
 

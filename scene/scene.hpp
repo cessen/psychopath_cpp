@@ -28,7 +28,7 @@
 struct Scene {
 	Camera *camera;
 	std::vector<Primitive *> primitives;
-	std::vector<FiniteLight *> finite_lights;
+	std::vector<Light *> finite_lights;
 	BVH world;
 
 	~Scene() {
@@ -49,7 +49,7 @@ struct Scene {
 		primitives.push_back(primitive);
 	}
 
-	void add_finite_light(FiniteLight *light) {
+	void add_finite_light(Light *light) {
 		finite_lights.push_back(light);
 	}
 
