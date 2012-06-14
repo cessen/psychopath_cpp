@@ -12,9 +12,15 @@
 	- Change Tracer to use this stuff in a naive useless way, to verify.
 	- ...
 
+- Migrate all render configuration data to Renderer
+
 - Simple scene-description format
 
-- Basic path-tracing implementation, with simple lambert shader
+- Propagation of ray differentials on bounces
+
+- Adaptive sampling scheme
+
+//- Basic path-tracing implementation, with simple lambert shader
 
 - Simple material system (for testing purposes
   only, eventually replace with OSL)

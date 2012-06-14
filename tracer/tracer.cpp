@@ -1,15 +1,17 @@
 #include "tracer.hpp"
 
 #include <vector>
+#include <iostream>
 #include <assert.h>
 #include <boost/thread.hpp>
+#include "array.hpp"
 
 #include "ray.hpp"
 #include "scene.hpp"
 #include "rayinter.hpp"
 
 
-uint32 Tracer::queue_rays(const std::vector<RayInter *> &rayinters_)
+uint32 Tracer::queue_rays(const Array<RayInter *> &rayinters_)
 {
 	const uint32 size = rayinters.size() + rayinters_.size();
 	rayinters.reserve(size);
@@ -18,7 +20,6 @@ uint32 Tracer::queue_rays(const std::vector<RayInter *> &rayinters_)
 	for (uint32 i = 0; i < s; i++) {
 		rayinters.push_back(rayinters_[i]);
 	}
-
 	return size;
 }
 
@@ -35,10 +36,11 @@ void Tracer::tracey(uint32 start, uint32 end)
 uint32 Tracer::trace_rays()
 {
 	uint32 s = rayinters.size();
+	std::cout << "\tTracing " << s << " rays" << std::endl;
 
 	boost::thread traceys[thread_count];
 
-	if (s >= (uint32)(thread_count)) {
+	if (s >= (uint32)(thread_count) && (thread_count > 1)) {
 		// Start threads
 		for (int i=0; i < thread_count; i++) {
 			uint32 start = (s*i) / thread_count;

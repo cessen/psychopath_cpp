@@ -1,30 +1,17 @@
 #include "numtype.h"
 
 #include "sobol.hpp"
+#include "halton.hpp"
 #include "rng.hpp"
 #include "image_sampler.hpp"
 #include "sample.hpp"
-#include "hilbert_curve.h"
+#include "hilbert_curve.hpp"
 
 #include <limits.h>
 #include <stdlib.h>
 #include <iostream>
 #include <math.h>
 #include <algorithm>
-
-inline float32 radical_inverse(int n, int base)
-{
-	float32 val = 0;
-	float32 inv_base = 1.0 / base;
-	float32 inv_bi = inv_base;
-	while (n > 0) {
-		int d_i = (n % base);
-		val += d_i * inv_bi;
-		n /= base;
-		inv_bi *= inv_base;
-	}
-	return val;
-}
 
 
 ImageSampler::ImageSampler(uint spp_,
@@ -45,10 +32,10 @@ ImageSampler::ImageSampler(uint spp_,
 	samp_taken = 0;
 	tot_samp = spp * res_x * res_y;
 
-	// Determine hilbert order to cover entire image
+	// Determine hilbert resolution to cover entire image
 	uint dim = res_x > res_y ? res_x : res_y;
 	dim += f_width;
-	hilbert_order = 1;
+	uint hilbert_order = 1;
 	hilbert_res = 2;
 	while (hilbert_res < dim) {
 		hilbert_res <<= 1;
@@ -65,6 +52,39 @@ ImageSampler::~ImageSampler()
 }
 
 
+#define LARGE_PRIME 5023
+
+void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, Sample *sample, uint32 ns)
+{
+	// Offset LDS
+	const uint32 samp_i = (Hilbert::xytod(hilbert_res, x, y) * LARGE_PRIME) + d;
+
+	// Halton bases 3-13 for main samples
+	sample->x = Halton::halton(samp_i, 1);
+	sample->y = Halton::halton(samp_i, 2);
+	sample->u = Halton::halton(samp_i, 3);
+	sample->v = Halton::halton(samp_i, 4);
+	sample->t = Halton::halton(samp_i, 5);
+
+	// Sobol for everything else (Sobol is base 2,
+	// so it works well with Halton > base 2
+	if (sample->ns.size() != ns)
+		sample->ns.resize(ns);
+	for (uint32 i = 0; i < ns; i++)
+		sample->ns[i] = sobol::sample(samp_i, i);
+}
+
+
+/**
+ * @brief Itteratively produces samples for an image.
+ *
+ * It provides x, y, u, v, and t coordinates always.
+ * On top of that, additional coordinates can be requested via the ns
+ * parameter.
+ *
+ * @param[out] sample A pointer where the sample is stored.
+ * @param ns The number of additional coordinates to provide.
+ */
 bool ImageSampler::get_next_sample(Sample *sample, uint32 ns)
 {
 	//std::cout << s << " " << x << " " << y << std::endl;
@@ -72,17 +92,9 @@ bool ImageSampler::get_next_sample(Sample *sample, uint32 ns)
 	if (x >= res_x+f_width || y >= res_y+f_width || points_traversed >= (hilbert_res*hilbert_res))
 		return false;
 
-	// Using sobol
-	sample->x = (sobol::sample(samp_taken, 0) + x) / res_x;
-	sample->y = (sobol::sample(samp_taken, 1) + y) / res_y;
-	sample->u = sobol::sample(samp_taken, 2);
-	sample->v = sobol::sample(samp_taken, 3);
-	sample->t = sobol::sample(samp_taken, 4);
-
-	if (sample->ns.size() != ns)
-		sample->ns.resize(ns);
-	for (uint32 i = 0; i < ns; i++)
-		sample->ns[i] = sobol::sample(samp_taken, i+5);
+	get_sample(x, y, s, sample, ns);
+	sample->x = (sample->x + x) / res_x;
+	sample->y = (sample->y + y) / res_y;
 
 	// increment to next sample
 	samp_taken++;
@@ -92,7 +104,7 @@ bool ImageSampler::get_next_sample(Sample *sample, uint32 ns)
 
 		// Hilbert curve traverses pixels
 		do {
-			hil_inc_xy(&x, &y, hilbert_order);
+			Hilbert::dtoxy(hilbert_res, points_traversed, &x, &y);
 			points_traversed++;
 		} while (x >= res_x || y >= res_y);
 	}

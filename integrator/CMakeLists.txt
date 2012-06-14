@@ -1,2 +1,3 @@
 add_library(integrator
-	direct_lighting_integrator)
+	direct_lighting_integrator
+	path_trace_integrator)

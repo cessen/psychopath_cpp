@@ -353,6 +353,7 @@ bool Grid::intersect_ray(Ray &rayo, Intersection *intersection)
 	// Fill in intersection structure
 	if (hit && intersection && !rayo.is_shadow_ray) {
 		intersection->t = t;
+		intersection->in = rayo.d;
 		intersection->p = rayo.o + (rayo.d * t);
 
 		// Calculate surface normal at intersection point

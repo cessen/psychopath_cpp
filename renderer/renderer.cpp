@@ -6,6 +6,7 @@
 #include "rng.hpp"
 #include "integrator.hpp"
 #include "direct_lighting_integrator.hpp"
+#include "path_trace_integrator.hpp"
 #include "tracer.hpp"
 #include "scene.hpp"
 
@@ -16,11 +17,11 @@ bool Renderer::render(int thread_count)
 {
 	RNG rng(123456);
 
-	Raster *image = new Raster(res_x, res_y, IMAGE_CHANNELS,
-	                           -1.0, -(((float32)(res_y))/res_x),
-	                           1.0, (((float32)(res_y))/res_x));
+	Raster<float32> *image = new Raster<float32>(res_x, res_y, IMAGE_CHANNELS,
+	        -1.0, -(((float32)(res_y))/res_x),
+	        1.0, (((float32)(res_y))/res_x));
 	Tracer tracer(scene, thread_count);
-	DirectLightingIntegrator integrator(scene, &tracer, image, spp, thread_count);
+	PathTraceIntegrator integrator(scene, &tracer, image, spp, thread_count);
 	integrator.integrate();
 
 	int i;

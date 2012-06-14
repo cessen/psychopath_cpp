@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <assert.h>
+#include "array.hpp"
 #include "image_sampler.hpp"
 #include "intersection.hpp"
 #include "tracer.hpp"
@@ -40,7 +41,7 @@ float32 mitchell_2d(float32 x, float32 y, float32 C)
 }
 
 
-void resize_rayinters(std::vector<RayInter *> &rayinters, uint32 size)
+void resize_rayinters(Array<RayInter *> &rayinters, uint32 size)
 {
 	if (size > rayinters.size()) {
 		// Too small: enlarge
@@ -65,15 +66,15 @@ void DirectLightingIntegrator::integrate()
 	ImageSampler image_sampler(spp, image->width, image->height, 2.0);
 
 	// Sample array
-	std::vector<Sample> samps;
+	Array<Sample> samps;
 	samps.resize(RAYS_AT_A_TIME);
 
 	// Light path array
-	std::vector<DLPath> paths;
+	Array<DLPath> paths;
 	paths.resize(RAYS_AT_A_TIME);
 
 	// Ray array
-	std::vector<RayInter *> rayinters;
+	Array<RayInter *> rayinters;
 	rayinters.reserve(RAYS_AT_A_TIME);
 
 	bool last = false;

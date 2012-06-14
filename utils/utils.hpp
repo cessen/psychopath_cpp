@@ -64,14 +64,75 @@ static inline void square_to_circle(float32 *x, float32 *y)
 	//std::cout << "Out: " << *x << " " << *y << std::endl;
 }
 
+static inline Vec3 cosine_sample_hemisphere(float32 u, float32 v)
+{
+	Vec3 ret(u, v, 0.f);
+	square_to_circle(&(ret.x), &(ret.y));
+	ret.z = std::sqrt(std::max(0.f, 1.f - (ret.x*ret.x) - (ret.y*ret.y)));
+	return ret;
+}
+
+static inline Vec3 uniform_sample_hemisphere(float32 u, float32 v)
+{
+	float32 z = u;
+	float32 r = std::sqrt(std::max(0.f, 1.f - z*z));
+	float32 phi = 2 * M_PI * v;
+	float32 x = r * std::cos(phi);
+	float32 y = r * std::sin(phi);
+	return Vec3(x, y, z);
+}
+
 static inline Vec3 uniform_sample_sphere(float32 u, float32 v)
 {
-	float32 z = 1.f - 2.f * u;
+	float32 z = 1.f - (2.f * u);
 	float32 r = std::sqrt(std::max(0.f, 1.f - z*z));
 	float32 phi = 2.f * M_PI * v;
 	float32 x = r * std::cos(phi);
 	float32 y = r * std::sin(phi);
 	return Vec3(x, y, z);
+}
+
+/**
+ * Simple mapping of a vector that exists in a z-up space to
+ * the space of another vector who's direction is considered
+ * z-up for the purpose.
+ * Obviously this doesn't care about the direction _around_
+ * the z-up, although it will be sufficiently consistent for
+ * most purposes.
+ *
+ * @param from The vector we're transforming.
+ * @param toz The vector whose space we are transforming "from" into.
+ *
+ * @return The transformed vector.
+ */
+static inline Vec3 zup_to_vec(Vec3 from, Vec3 toz)
+{
+	toz.normalize();
+
+	// Find the smallest axis of "to"
+	int li = 0;
+	float32 least = std::abs(toz.x);
+	if (least > std::abs(toz.y)) {
+		least = std::abs(toz.y);
+		li = 1;
+	}
+	if (least > std::abs(toz.z))
+		li = 2;
+
+	// Find a perpendicular vector with "to"
+	Vec3 tox(0.0, 0.0, 0.0);
+	tox[li] = 1.0;
+	tox = cross(toz, tox);
+	tox.normalize();
+
+	// Find a third vector perpendicular to both
+	Vec3 toy = cross(toz, tox);
+	toy.normalize();
+
+	// Use simple linear algebra to convert the "from"
+	// vector to a space composed of tox, toy, and toz
+	// as the x, y, and z axes.
+	return (tox * from.x) + (toy * from.y) + (toz * from.z);
 }
 
 

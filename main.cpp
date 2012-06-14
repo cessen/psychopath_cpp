@@ -34,45 +34,49 @@ namespace BPO = boost::program_options;
 #define SPP 1
 #define XRES 512
 #define YRES 288
+//#define XRES 1280
+//#define YRES 720
 #define NUM_RAND_PATCHES 1000
 #define NUM_RAND_SPHERES 1000
+#define SPHERE_RADIUS 1.0
 #define FRAC_MB 0.1
 #define CAMERA_SPIN 0.0
 #define LENS_DIAM 1.0
 
 
-// Holds a pair of integers
-struct IntPair {
-	int a;
-	int b;
+// Holds a pair of integers as a resolution
+// For use by boost program options
+struct Resolution {
+	int x;
+	int y;
 
-	IntPair() {
-		a = 0;
-		b = 0;
+	Resolution() {
+		x = 0;
+		y = 0;
 	}
 
-	IntPair(int i1, int i2) {
-		a = i1;
-		b = i2;
+	Resolution(int x_, int y_) {
+		x = x_;
+		y = y_;
 	}
 };
 
-// Called by program_options to parse a set of IntPair arguments
+// Called by program_options to parse a set of Resolution arguments
 void validate(boost::any& v, const std::vector<std::string>& values,
-              IntPair*, int)
+              Resolution*, int)
 {
-	IntPair intpair;
+	Resolution res;
 
 	//Extract tokens from values string vector and populate IntPair struct.
 	if (values.size() < 2) {
 		throw BPO::validation_error(BPO::validation_error::invalid_option_value,
-		                            "Invalid IntPair specification, requires two ints");
+		                            "Invalid Resolution specification, requires two ints");
 	}
 
-	intpair.a = boost::lexical_cast<int>(values.at(0));
-	intpair.b = boost::lexical_cast<int>(values.at(1));
+	res.x = boost::lexical_cast<int>(values.at(0));
+	res.y = boost::lexical_cast<int>(values.at(1));
 
-	v = intpair;
+	v = res;
 }
 
 
@@ -114,7 +118,7 @@ int main(int argc, char **argv)
 	int spp = SPP;
 	int threads = THREADS;
 	std::string output_path = "test.png";
-	IntPair resolution(XRES, YRES);
+	Resolution resolution(XRES, YRES);
 
 	// Define them
 	BPO::options_description desc("Allowed options");
@@ -123,7 +127,7 @@ int main(int argc, char **argv)
 	("spp,s", BPO::value<int>(), "Number of samples to take per pixel")
 	("threads,t", BPO::value<int>(), "Number of threads to render with")
 	("output,o", BPO::value<std::string>(), "The PNG file to render to")
-	("resolution,r", BPO::value<IntPair>()->multitoken(), "The resolution to render at, e.g. 1280 720")
+	("resolution,r", BPO::value<Resolution>()->multitoken(), "The resolution to render at, e.g. 1280 720")
 	;
 
 	// Collect them
@@ -161,8 +165,8 @@ int main(int argc, char **argv)
 
 	// Resolution
 	if (vm.count("resolution")) {
-		resolution = vm["resolution"].as<IntPair>();
-		std::cout << "Resolution: " << resolution.a << " " << resolution.b << "\n";
+		resolution = vm["resolution"].as<Resolution>();
+		std::cout << "Resolution: " << resolution.x << " " << resolution.y << "\n";
 	}
 
 
@@ -204,11 +208,11 @@ int main(int argc, char **argv)
 	// Add lights
 	SphereLight *sl = new SphereLight(Vec3(10.0, 10.0, -10.0),
 	                                  2.0,
-	                                  Color(200.0));
+	                                  Color(250.0));
 	scene.add_finite_light(sl);
-	PointLight *pl = new PointLight(Vec3(-10.0, 0.0, -10.0),
-	                                Color(20.0));
-	scene.add_finite_light(pl);
+	//PointLight *pl = new PointLight(Vec3(-10.0, 0.0, -10.0),
+	//                                Color(20.0));
+	//scene.add_finite_light(pl);
 
 
 	// Add random patches
@@ -290,7 +294,7 @@ int main(int argc, char **argv)
 
 			sphere->add_time_sample(j,
 			                        Vec3(x*s, y*s, z+(rng2.next_float_c()*2)),
-			                        1.0f);
+			                        SPHERE_RADIUS);
 		}
 
 		scene.add_primitive(sphere);
@@ -313,7 +317,7 @@ int main(int argc, char **argv)
 
 	std::cout << "\nStarting render: \n";
 	std::cout.flush();
-	Renderer r(&scene, resolution.a, resolution.b, spp, output_path);
+	Renderer r(&scene, resolution.x, resolution.y, spp, output_path);
 	r.render(threads);
 
 	return 0;

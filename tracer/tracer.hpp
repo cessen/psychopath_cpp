@@ -6,6 +6,7 @@
 #define TRACER_HPP
 
 #include "numtype.h"
+#include "array.hpp"
 
 #include <vector>
 
@@ -40,7 +41,7 @@ class Tracer
 {
 public:
 	Scene *scene;
-	std::vector<RayInter *> rayinters;
+	Array<RayInter *> rayinters;
 	int thread_count;
 
 	Tracer(Scene *scene_, int thread_count_=1) {
@@ -54,7 +55,7 @@ public:
 	 * the rays queued with the call, so e.g. queuing the first five rays will
 	 * return 5, the second five rays will return 10, etc.).
 	 */
-	uint32 queue_rays(const std::vector<RayInter *> &rayinters_);
+	uint32 queue_rays(const Array<RayInter *> &rayinters_);
 
 	/**
 	 * Traces all queued rays, and returns the number of rays traced.

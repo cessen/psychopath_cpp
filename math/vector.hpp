@@ -53,12 +53,12 @@ struct Vec3 {
 		return l;
 	}
 
-	float32 &operator[](const int &i) {
+	float32& operator[](const int &i) {
 		assert(i >= 0 && i <= 2);
 		return (&x)[i];
 	}
 
-	float32 const &operator[](const int &i) const {
+	const float32& operator[](const int &i) const {
 		assert(i >= 0 && i <= 2);
 		return (&x)[i];
 	}

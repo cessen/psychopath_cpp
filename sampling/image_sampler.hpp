@@ -28,9 +28,9 @@ private:
 	int bucket_size;  // Width and height of each bucket in pixels
 
 	/* State information. */
-	uint hilbert_order, hilbert_res;
+	uint hilbert_res;
 	uint points_traversed;
-	uint x, y, s;
+	uint32 x, y, s;
 
 	/* For reporting percentages. */
 	uint samp_taken;
@@ -48,6 +48,7 @@ public:
 	~ImageSampler();
 
 	void init_tile();
+	void get_sample(uint32 x, uint32 y, uint32 d, Sample *sample, uint32 ns);
 	bool get_next_sample(Sample *sample, uint32 ns);
 
 	float percentage() const {

@@ -25,8 +25,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
 # Profiling
-#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
 
 # Define "DEBUG" in debug builds
 set (CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DDEBUG")
@@ -85,7 +85,8 @@ include_directories ("${PROJECT_BINARY_DIR}",
                      "${PROJECT_SOURCE_DIR}/sampling",
                      "${PROJECT_SOURCE_DIR}/scene",
                      "${PROJECT_SOURCE_DIR}/test",
-                     "${PROJECT_SOURCE_DIR}/tracer",)
+                     "${PROJECT_SOURCE_DIR}/tracer",
+                     "${PROJECT_SOURCE_DIR}/utils",)
 
 
 #--------------------------------------
@@ -97,7 +98,6 @@ add_subdirectory(grid)
 add_subdirectory(integrator)
 add_subdirectory(math)
 add_subdirectory(primitives)
-add_subdirectory(raster)
 add_subdirectory(renderer)
 add_subdirectory(sampling)
 add_subdirectory(tracer)
@@ -110,10 +110,9 @@ set (PSYCHO_LIB
 	renderer
 	integrator
 	tracer
-	raster
 	sampling
 	primitives
-	basics
+	#basics
 	grid
 	acceleration
 	config)

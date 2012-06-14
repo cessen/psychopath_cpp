@@ -21,11 +21,81 @@ struct Color {
 		spectrum[2] = b_;
 	}
 
-	Color operator+(const Color &b) const;
-	Color operator-(const Color &b) const;
-	Color operator*(const Color &b) const;
-	Color operator*(const float32 b) const;
-	Color operator/(const float32 b) const;
+	Color operator+(const Color &b) const {
+		Color col;
+		for (int i=0; i < SPECTRUM_COUNT; i++) {
+			col.spectrum[i] = spectrum[i] + b.spectrum[i];
+		}
+
+		return col;
+	}
+
+	void operator+=(const Color &b) {
+		for (int i=0; i < SPECTRUM_COUNT; i++) {
+			spectrum[i] += b.spectrum[i];
+		}
+	}
+
+	Color operator-(const Color &b) const {
+		Color col;
+		for (int i=0; i < SPECTRUM_COUNT; i++) {
+			col.spectrum[i] = spectrum[i] - b.spectrum[i];
+		}
+
+		return col;
+	}
+
+	void operator-=(const Color &b) {
+		for (int i=0; i < SPECTRUM_COUNT; i++) {
+			spectrum[i] -= b.spectrum[i];
+		}
+	}
+
+	Color operator*(const Color &b) const {
+		Color col;
+		for (int i=0; i < SPECTRUM_COUNT; i++) {
+			col.spectrum[i] = spectrum[i] * b.spectrum[i];
+		}
+
+		return col;
+	}
+
+	void operator*=(const Color &b) {
+		for (int i=0; i < SPECTRUM_COUNT; i++) {
+			spectrum[i] *= b.spectrum[i];
+		}
+	}
+
+	Color operator*(const float32 b) const {
+		Color col;
+		for (int i=0; i < SPECTRUM_COUNT; i++) {
+			col.spectrum[i] = spectrum[i] * b;
+		}
+
+		return col;
+	}
+
+	void operator*=(const float32 b) {
+		for (int i=0; i < SPECTRUM_COUNT; i++) {
+			spectrum[i] *= b;
+		}
+	}
+
+	Color operator/(const float32 b) const {
+		assert(b != 0.0f);
+		Color col;
+		for (int i=0; i < SPECTRUM_COUNT; i++) {
+			col.spectrum[i] = spectrum[i] / b;
+		}
+
+		return col;
+	}
+
+	void operator/=(const float32 b) {
+		for (int i=0; i < SPECTRUM_COUNT; i++) {
+			spectrum[i] /= b;
+		}
+	}
 };
 
 #endif

@@ -1,2 +1,1 @@
-add_library(basics
-    color)
+#add_library(basics)

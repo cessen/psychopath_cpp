@@ -104,9 +104,9 @@ struct Ray {
 		inv_d.y = 1.0 / d.y;
 		inv_d.z = 1.0 / d.z;
 
-		d_is_neg[0] = d.x < 0;
-		d_is_neg[1] = d.y < 0;
-		d_is_neg[2] = d.z < 0;
+		d_is_neg[0] = d.x < 0 ? 1 : 0;
+		d_is_neg[1] = d.y < 0 ? 1 : 0;
+		d_is_neg[2] = d.z < 0 ? 1 : 0;
 	}
 
 	/**
