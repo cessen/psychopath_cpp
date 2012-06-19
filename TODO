@@ -20,7 +20,8 @@
 
 - Adaptive sampling scheme
 
-//- Basic path-tracing implementation, with simple lambert shader
+- Refactor Raster class to handle all raster-related processing, such as
+  accumulating samples, saving images to disk, etc.
 
 - Simple material system (for testing purposes
   only, eventually replace with OSL)

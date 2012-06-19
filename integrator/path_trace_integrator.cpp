@@ -13,7 +13,7 @@
 
 #include "hilbert_curve.hpp"
 
-#define RAYS_AT_A_TIME 1000000
+#define RAYS_AT_A_TIME 500000
 
 #define GAUSS_WIDTH 2.0 / 4
 float32 gaussian(float32 x, float32 y)
@@ -68,11 +68,14 @@ void PathTraceIntegrator::integrate()
 	Array<PTPath> paths;
 	paths.resize(RAYS_AT_A_TIME);
 
-	// Ray array
+	// Allocate the RayInter structures in contiguous storage
+	RayInter *rayinters_ = new RayInter[RAYS_AT_A_TIME];
+
+	// RayInter pointer array, points to contiguous storage above
 	Array<RayInter *> rayinters;
 	rayinters.reserve(RAYS_AT_A_TIME);
 	for (uint32 i=0; i < RAYS_AT_A_TIME; i++) {
-		rayinters.push_back(new RayInter);
+		rayinters.push_back(&rayinters_[i]);
 	}
 
 	bool last = false;
@@ -81,16 +84,15 @@ void PathTraceIntegrator::integrate()
 		std::cout << "\t--------\n\tGenerating samples" << std::endl;
 		std::cout.flush();
 		for (int i = 0; i < RAYS_AT_A_TIME; i++) {
+			paths[i].done = false;
+			paths[i].col = Color(0.0);
+			paths[i].fcol = Color(1.0);
+
 			if (!image_sampler.get_next_sample(&(samps[i]), path_length*5)) {
 				samps.resize(i);
 				paths.resize(i);
 				last = true;
 				break;
-			} else {
-				paths[i].done = false;
-				paths[i].col = Color(0.0);
-				paths[i].fcol = Color(1.0);
-
 			}
 		}
 		uint32 samp_size = samps.size();
@@ -128,14 +130,21 @@ void PathTraceIntegrator::integrate()
 						// Generate a random ray direction in the hemisphere
 						// of the surface.
 						// TODO: use BxDF distribution here
-						Vec3 dir = uniform_sample_hemisphere(samps[i].ns[so], samps[i].ns[so+1]);
-						//Vec3 dir = uniform_sample_hemisphere(rng.next_float(), rng.next_float());
+						// TODO: use proper PDF here
+						Vec3 dir = cosine_sample_hemisphere(samps[i].ns[so], samps[i].ns[so+1]);
+						float32 pdf = dir.z * 2;
+						if (pdf < 0.001)
+							pdf = 0.001;
 						dir = zup_to_vec(dir, paths[i].inter.n);
 
 						// Calculate the color filtering effect that the
 						// bounce from the current intersection will create.
 						// TODO: use actual shaders here.
-						paths[i].fcol *= Color(1.0) * lambert(dir, paths[i].inter.n);
+						paths[i].fcol *= lambert(dir, paths[i].inter.n) / pdf;
+
+						// Clear out the rayinter structure
+						rayinters[pri]->hit = false;
+						rayinters[pri]->id = i;
 
 						// Create a bounce ray for this path
 						rayinters[pri]->ray.o = paths[i].inter.p;
@@ -146,8 +155,6 @@ void PathTraceIntegrator::integrate()
 						rayinters[pri]->ray.min_t = 0.01;
 						rayinters[pri]->ray.max_t = 999999999999.0;
 						rayinters[pri]->ray.finalize();
-						rayinters[pri]->hit = false;
-						rayinters[pri]->id = i;
 
 						// Increment path ray index
 						pri++;
@@ -167,13 +174,14 @@ void PathTraceIntegrator::integrate()
 			std::cout.flush();
 			uint32 rsize = rayinters.size();
 			for (uint32 i = 0; i < rsize; i++) {
+				const uint32 id = rayinters[i]->id;
 				if (rayinters[i]->hit) {
 					// Ray hit something!  Store intersection data
-					paths[rayinters[i]->id].inter = rayinters[i]->inter;
+					paths[id].inter = rayinters[i]->inter;
 				} else {
 					// Ray didn't hit anything, done and black background
-					paths[rayinters[i]->id].done = true;
-					paths[rayinters[i]->id].col += Color(0.0, 0.0, 0.0);
+					paths[id].done = true;
+					paths[id].col += Color(0.0);
 				}
 			}
 
@@ -182,7 +190,7 @@ void PathTraceIntegrator::integrate()
 			std::cout << "\tGenerating shadow rays" << std::endl;
 			std::cout.flush();
 			uint32 sri = 0; // Shadow ray index
-			for (uint32 i = 0; i < samp_size; i++) {
+			for (uint32 i = 0; i < paths.size(); i++) {
 				if (!paths[i].done) {
 					// Select a light and store the normalization factor for it's output
 					Light *lighty = scene->finite_lights[(uint32)(samps[i].ns[so+2] * scene->finite_lights.size()) % scene->finite_lights.size()];
@@ -190,9 +198,9 @@ void PathTraceIntegrator::integrate()
 
 					// Sample the light source
 					Vec3 ld;
-					paths[i].lcol = lighty->sample(rayinters[i]->inter.p, samps[i].ns[so+3], samps[i].ns[so+4], rayinters[i]->ray.time, &ld)
+					paths[i].lcol = lighty->sample(paths[i].inter.p, samps[i].ns[so+3], samps[i].ns[so+4], samps[i].t, &ld)
 					                * (float32)(scene->finite_lights.size());
-					//paths[i].lcol = lighty->sample(rayinters[i]->inter.p, rng.next_float(), rng.next_float(), rayinters[i]->ray.time, &ld)
+					//paths[i].lcol = lighty->sample(paths[i].inter.p, rng.next_float(), rng.next_float(), samps[i].t, &ld)
 					//                * (float32)(scene->finite_lights.size());
 
 					// Create a shadow ray for this path
@@ -207,8 +215,6 @@ void PathTraceIntegrator::integrate()
 					rayinters[sri]->ray.finalize();
 					rayinters[sri]->hit = false;
 					rayinters[sri]->id = i;
-
-					// Increment shadow ray index
 					sri++;
 				}
 			}
@@ -225,7 +231,7 @@ void PathTraceIntegrator::integrate()
 			std::cout.flush();
 			rsize = rayinters.size();
 			for (uint32 i = 0; i < rsize; i++) {
-				uint32 id = rayinters[i]->id;
+				const uint32 id = rayinters[i]->id;
 				if (!rayinters[i]->hit) {
 					// Sample was lit
 					// TODO: use actual shaders here
@@ -241,8 +247,7 @@ void PathTraceIntegrator::integrate()
 		std::cout.flush();
 		float32 x, y;
 		int32 i2;
-		int s = paths.size();
-		for (int i = 0; i < s; i++) {
+		for (uint32 i = 0; i < samp_size; i++) {
 			x = (samps[i].x * image->width) - 0.5;
 			y = (samps[i].y * image->height) - 0.5;
 			for (int j=-2; j <= 2; j++) {
@@ -277,9 +282,8 @@ void PathTraceIntegrator::integrate()
 			break;
 	}
 
-	for (uint32 i = 0; i < rayinters.size(); i++) {
-		delete rayinters[i];
-	}
+	// Delete the RayInter structures
+	delete [] rayinters_;
 
 
 	// Combine all the accumulated sample
