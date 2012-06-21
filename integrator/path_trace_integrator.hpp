@@ -8,6 +8,7 @@
 #include "integrator.hpp"
 
 #include "numtype.h"
+#include "functor.hpp"
 
 #include "film.hpp"
 #include "scene.hpp"
@@ -35,6 +36,7 @@ public:
 	int spp;
 	int path_length;
 	int thread_count;
+	Functor *callback;
 
 	/**
 	 * @brief Constructor.
@@ -47,13 +49,14 @@ public:
 	 *                    initialized with 3 channels, for rgb.
 	 * @param spp_ The number of samples to take per pixel for integration.
 	 */
-	PathTraceIntegrator(Scene *scene_, Tracer *tracer_, Film<Color> *image_, int spp_, int thread_count_=1) {
+	PathTraceIntegrator(Scene *scene_, Tracer *tracer_, Film<Color> *image_, int spp_, int thread_count_=1, Functor *callback_=NULL) {
 		scene = scene_;
 		tracer = tracer_;
 		image = image_;
 		spp = spp_;
 		thread_count = thread_count_;
 		path_length = 3;
+		callback = callback_;
 	}
 
 	//virtual ~PathTraceIntegrator() {

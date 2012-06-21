@@ -232,6 +232,10 @@ void PathTraceIntegrator::integrate()
 			last_perc = perc;
 		}
 
+		// Callback
+		if (callback)
+			(*callback)();
+
 		if (last)
 			break;
 	}
