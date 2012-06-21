@@ -21,6 +21,14 @@ struct Color {
 		spectrum[2] = b_;
 	}
 
+	float32 &operator[](int i) {
+		return spectrum[i];
+	}
+
+	const float32 &operator[](int i) const {
+		return spectrum[i];
+	}
+
 	Color operator+(const Color &b) const {
 		Color col;
 		for (int i=0; i < SPECTRUM_COUNT; i++) {

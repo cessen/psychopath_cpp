@@ -16,13 +16,11 @@
 
 ImageSampler::ImageSampler(uint spp_,
                            uint res_x_, uint res_y_,
-                           float32 f_width_,
                            uint bucket_size_)
 {
 	spp = spp_;
 	res_x = res_x_;
 	res_y = res_y_;
-	f_width = ceilf(f_width_) * 2;
 	bucket_size = bucket_size_;
 
 	x = 0;
@@ -34,7 +32,6 @@ ImageSampler::ImageSampler(uint spp_,
 
 	// Determine hilbert resolution to cover entire image
 	uint dim = res_x > res_y ? res_x : res_y;
-	dim += f_width;
 	uint hilbert_order = 1;
 	hilbert_res = 2;
 	while (hilbert_res < dim) {
@@ -89,11 +86,11 @@ bool ImageSampler::get_next_sample(Sample *sample, uint32 ns)
 {
 	//std::cout << s << " " << x << " " << y << std::endl;
 	// Check if we're done
-	if (x >= res_x+f_width || y >= res_y+f_width || points_traversed >= (hilbert_res*hilbert_res))
+	if (x >= res_x || y >= res_y || points_traversed >= (hilbert_res*hilbert_res))
 		return false;
 
 	get_sample(x, y, s, sample, ns);
-	sample->x = (sample->x + x) / res_x;
+	sample->x = (sample->x + x) / res_x;  // Return image x/y in normalized [0,1] range
 	sample->y = (sample->y + y) / res_y;
 
 	// increment to next sample

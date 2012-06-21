@@ -9,7 +9,7 @@
 
 #include "numtype.h"
 
-#include "raster.hpp"
+#include "film.hpp"
 #include "scene.hpp"
 #include "tracer.hpp"
 #include "color.hpp"
@@ -31,10 +31,7 @@ class PathTraceIntegrator: Integrator
 public:
 	Scene *scene;
 	Tracer *tracer;
-	Raster<uint16> *spp_count;
-	Raster<uint16> *spp_pass;
-	Raster<float32> *image;
-	Raster<float32> *accum;
+	Film<Color> *image;
 	int spp;
 	int path_length;
 	int thread_count;
@@ -50,20 +47,18 @@ public:
 	 *                    initialized with 3 channels, for rgb.
 	 * @param spp_ The number of samples to take per pixel for integration.
 	 */
-	PathTraceIntegrator(Scene *scene_, Tracer *tracer_, Raster<float32> *image_, int spp_, int thread_count_=1) {
+	PathTraceIntegrator(Scene *scene_, Tracer *tracer_, Film<Color> *image_, int spp_, int thread_count_=1) {
 		scene = scene_;
 		tracer = tracer_;
 		image = image_;
 		spp = spp_;
 		thread_count = thread_count_;
 		path_length = 3;
-
-		accum = new Raster<float32>(image->width, image->height, 1, image->min_x, image->min_y, image->max_x, image->max_y);
 	}
 
-	virtual ~PathTraceIntegrator() {
-		delete accum;
-	}
+	//virtual ~PathTraceIntegrator() {
+	//	delete accum;
+	//}
 
 	/**
 	 * @brief Begins integration.

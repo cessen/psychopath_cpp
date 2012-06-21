@@ -47,7 +47,7 @@ public:
 	/**
 	 * @brief Fetches a pointer to the requested pixel's data.
 	 */
-	float32 *pixel(int x, int y) {
+	PIXFMT *pixel(int x, int y) {
 		assert(x >= 0 && x < width && y >= 0 && y < height);
 		return &(pixels[(y*width + x)*channels]);
 	}
