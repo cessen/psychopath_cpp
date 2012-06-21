@@ -36,7 +36,7 @@ static inline void hil_rot(uint32 n, uint32 *x, uint32 *y, uint32 rx, uint32 ry)
  *
  * @returns The hilbert curve index corresponding to the (x,y) coordinates given.
  */
-static inline uint32 xytod(uint32 n, uint32 x, uint32 y)
+static inline uint32 xy2d(uint32 n, uint32 x, uint32 y)
 {
 	uint32 rx, ry, s, d=0;
 	for (s=n/2; s>0; s/=2) {
@@ -57,7 +57,7 @@ static inline uint32 xytod(uint32 n, uint32 x, uint32 y)
  * @param[out] x Pointer where the x coordinate will be stored.
  * @param[out] y Pointer where the y coordinate will be stored.
  */
-static inline void dtoxy(uint32 n, uint32 d, uint32 *x, uint32 *y)
+static inline void d2xy(uint32 n, uint32 d, uint32 *x, uint32 *y)
 {
 	uint32 rx, ry, s, t=d;
 	*x = *y = 0;

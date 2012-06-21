@@ -8,7 +8,9 @@
 
 #include "color.hpp"
 #include "rng.hpp"
+#include "blocked_array.hpp"
 
+#define LBS 5
 
 /**
  * @brief Pixel filter.
@@ -66,8 +68,8 @@ public:
 	float32 min_x_p, min_y_p; // Minimum x/y coordinates of the image after padding
 	float32 max_x_p, max_y_p; // Maximum x/y coordinates of the image after padding
 
-	PIXFMT *pixels; // Pixel data
-	float32 *accum; // Accumulation buffer
+	BlockedArray<PIXFMT, LBS> pixels; // Pixel data
+	BlockedArray<float32, LBS> accum; // Accumulation buffer
 	Filter filter;
 	uint8 filter_width;
 
@@ -95,13 +97,16 @@ public:
 		max_y_p = max_y + hd;
 
 		// Allocate pixel and accum data
-		pixels = new PIXFMT[width_p * height_p];
-		accum = new float32[width_p * height_p];
+		pixels = BlockedArray<PIXFMT, LBS>(width_p, height_p);
+		accum = BlockedArray<float32, LBS>(width_p, height_p);
 
 		// Zero out pixels and accum
-		for (uint32 i = 0; i < (uint32)(width_p*height_p); i++) {
-			pixels[i] = PIXFMT(0);
-			accum[i] = 0.0;
+		std::cout << "Clearing out\n";
+		for (uint32 u = 0; u < width_p; u++) {
+			for (uint32 v = 0; v < height_p; v++) {
+				pixels(u,v) = PIXFMT(0);
+				accum(u,v) = 0.0;
+			}
 		}
 
 		// Set up the pixel filter
@@ -112,10 +117,10 @@ public:
 		rng = RNG(7373546);
 	}
 
-	~Film() {
-		delete [] pixels;
-		delete [] accum;
-	}
+	//~Film() {
+	//	delete [] pixels;
+	//	delete [] accum;
+	//}
 
 	/**
 	 * @brief Adds a sample to the film.
@@ -137,9 +142,8 @@ public:
 				if (contrib == 0.0)
 					continue;
 
-				uint32 i = (width_p * b) + a;
-				accum[i] += contrib;
-				pixels[i] += samp * contrib;
+				accum(a,b) += contrib;
+				pixels(a,b) += samp * contrib;
 			}
 		}
 	}
@@ -159,17 +163,17 @@ public:
 
 		for (uint32 y=0; y < height; y++) {
 			for (uint32 x=0; x < width; x++) {
-				uint32 i1 = ((y+pad) * width_p) + (x+pad);
-				uint32 i2 = ((y * width) + x) * 3;
+				uint32 xx = x + pad;
+				uint32 yy = y + pad;
 
 				// Convert colors to 8bit gamma corrected color space
 				float32 r = 0.0;
 				float32 g = 0.0;
 				float32 b = 0.0;
-				if (accum[i1] != 0.0) {
-					r = pow(pixels[i1][0] / accum[i1], inv_gamma) * 255;
-					g = pow(pixels[i1][1] / accum[i1], inv_gamma) * 255;
-					b = pow(pixels[i1][2] / accum[i1], inv_gamma) * 255;
+				if (accum(xx,yy) != 0.0) {
+					r = pow(pixels(xx,yy)[0] / accum(xx,yy), inv_gamma) * 255;
+					g = pow(pixels(xx,yy)[1] / accum(xx,yy), inv_gamma) * 255;
+					b = pow(pixels(xx,yy)[2] / accum(xx,yy), inv_gamma) * 255;
 				}
 
 				// Add dither
@@ -183,9 +187,10 @@ public:
 				b = std::min(255.f, std::max(0.f, b));
 
 				// Record in the byte array
-				im[i2] = (uint8)(r);
-				im[i2+1] = (uint8)(g);
-				im[i2+2] = (uint8)(b);
+				uint32 i = ((y * width) + x) * 3;
+				im[i] = (uint8)(r);
+				im[i+1] = (uint8)(g);
+				im[i+2] = (uint8)(b);
 			}
 		}
 

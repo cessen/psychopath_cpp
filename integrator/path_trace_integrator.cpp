@@ -12,7 +12,7 @@
 
 #include "light.hpp"
 
-#include "hilbert_curve.hpp"
+#include "hilbert.hpp"
 
 #define RAYS_AT_A_TIME 500000
 

@@ -5,7 +5,7 @@
 #include "rng.hpp"
 #include "image_sampler.hpp"
 #include "sample.hpp"
-#include "hilbert_curve.hpp"
+#include "hilbert.hpp"
 
 #include <limits.h>
 #include <stdlib.h>
@@ -54,7 +54,7 @@ ImageSampler::~ImageSampler()
 void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, Sample *sample, uint32 ns)
 {
 	// Offset LDS
-	const uint32 samp_i = (Hilbert::xytod(hilbert_res, x, y) * LARGE_PRIME) + d;
+	const uint32 samp_i = (Hilbert::xy2d(hilbert_res, x, y) * LARGE_PRIME) + d;
 
 	// Halton bases 3-13 for main samples
 	sample->x = Halton::halton(samp_i, 1);
@@ -101,7 +101,7 @@ bool ImageSampler::get_next_sample(Sample *sample, uint32 ns)
 
 		// Hilbert curve traverses pixels
 		do {
-			Hilbert::dtoxy(hilbert_res, points_traversed, &x, &y);
+			Hilbert::d2xy(hilbert_res, points_traversed, &x, &y);
 			points_traversed++;
 		} while (x >= res_x || y >= res_y);
 	}
