@@ -25,7 +25,7 @@ private:
 	int bucket_size;  // Width and height of each bucket in pixels
 
 	/* State information. */
-	uint hilbert_res;
+	uint curve_res; // Space filling curve resolution
 	uint points_traversed;
 	uint32 x, y, s;
 

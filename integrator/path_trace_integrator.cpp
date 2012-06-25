@@ -14,7 +14,7 @@
 
 #include "hilbert.hpp"
 
-#define RAYS_AT_A_TIME 500000
+#define RAYS_AT_A_TIME 1000000
 
 
 float32 lambert(Vec3 v1, Vec3 v2)
@@ -225,12 +225,11 @@ void PathTraceIntegrator::integrate()
 		}
 
 		// Print percentage complete
-		static int32 last_perc = -1;
-		int32 perc = image_sampler.percentage() * 100;
-		if (perc > last_perc) {
-			std::cout << perc << "%" << std::endl;
-			last_perc = perc;
-		}
+		float perc = image_sampler.percentage() * 100;
+		uint32 pr = std::cout.precision();
+		std::cout.precision(4);
+		std::cout << perc << "%" << std::endl;
+		std::cout.precision(pr);
 
 		// Callback
 		if (callback)

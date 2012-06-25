@@ -34,13 +34,36 @@ static inline uint32 xy2d(uint32 x, uint32 y)
 	y |= (y << 1);
 	x &= 0x55555555;
 	y &= 0x55555555;
-	return(x | (y << 1));
+	return x | (y << 1);
 }
 
 /**
- * @brief Decodes a 32-bit morton code index into x and y coordinates.
+ * @brief Decodes a morton code index into x and y coordinates.
  */
 static inline void d2xy(uint32 d, uint32 *x, uint32 *y)
+{
+	*x = d;
+	*y = (*x >> 1);
+	*x &= 0x55555555;
+	*y &= 0x55555555;
+	*x |= (*x >> 1);
+	*y |= (*y >> 1);
+	*x &= 0x33333333;
+	*y &= 0x33333333;
+	*x |= (*x >> 2);
+	*y |= (*y >> 2);
+	*x &= 0x0f0f0f0f;
+	*y &= 0x0f0f0f0f;
+	*x |= (*x >> 4);
+	*y |= (*y >> 4);
+	*x &= 0x00ff00ff;
+	*y &= 0x00ff00ff;
+	*x |= (*x >> 8);
+	*y |= (*y >> 8);
+	*x &= 0x0000ffff;
+	*y &= 0x0000ffff;
+}
+/*static inline void d2xy(uint32 d, uint32 *x, uint32 *y)
 {
 	uint32 v = (d >> 1);
 	d &= 0x55555555;
@@ -63,7 +86,7 @@ static inline void d2xy(uint32 d, uint32 *x, uint32 *y)
 	v &= 0x0000ffff;
 	*x = d;
 	*y = v;
-}
+}*/
 
 }
 

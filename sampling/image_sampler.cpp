@@ -6,6 +6,7 @@
 #include "image_sampler.hpp"
 #include "sample.hpp"
 #include "hilbert.hpp"
+#include "morton.hpp"
 
 #include <limits.h>
 #include <stdlib.h>
@@ -30,17 +31,17 @@ ImageSampler::ImageSampler(uint spp_,
 	samp_taken = 0;
 	tot_samp = spp * res_x * res_y;
 
-	// Determine hilbert resolution to cover entire image
+	// Determine square power of two resolution to cover entire image
 	uint dim = res_x > res_y ? res_x : res_y;
-	uint hilbert_order = 1;
-	hilbert_res = 2;
-	while (hilbert_res < dim) {
-		hilbert_res <<= 1;
-		hilbert_order++;
+	uint curve_order = 1;
+	curve_res = 2;
+	while (curve_res < dim) {
+		curve_res <<= 1;
+		curve_order++;
 	}
 	points_traversed = 0;
 
-	rng.seed(17);
+	rng.seed(8758796);
 }
 
 
@@ -49,26 +50,32 @@ ImageSampler::~ImageSampler()
 }
 
 
-#define LARGE_PRIME 5023
-
 void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, Sample *sample, uint32 ns)
 {
-	// Offset LDS
-	const uint32 samp_i = (Hilbert::xy2d(hilbert_res, x, y) * LARGE_PRIME) + d;
+	// These gymnastics are so that different pixels map to very different
+	// and random-ish LDS indices.  It gives the image a more random appearance
+	// before converging, which is less distracting than the LDS patterns.
+	// But since within each pixel the samples are contiguous LDS sequences
+	// this still gives very good convergence properties.
+	// This also means that each pixel can keep drawing samples in a
+	// "bottomless" kind of way, which is nice for e.g. adaptive sampling.
+	const uint32 temp = (y*73571) + x;
+	const uint32 index = ((temp*2333)^(temp*6203));
+	const uint32 samp_i = index + d;
 
-	// Halton bases 3-13 for main samples
-	sample->x = Halton::halton(samp_i, 1);
-	sample->y = Halton::halton(samp_i, 2);
+	// Generate the sample
+	sample->x = Halton::halton(samp_i, 5);;
+	sample->y = Halton::halton(samp_i, 4);;
 	sample->u = Halton::halton(samp_i, 3);
-	sample->v = Halton::halton(samp_i, 4);
-	sample->t = Halton::halton(samp_i, 5);
-
-	// Sobol for everything else (Sobol is base 2,
-	// so it works well with Halton > base 2
+	sample->v = Halton::halton(samp_i, 2);
+	sample->t = Halton::halton(samp_i, 1);
 	if (sample->ns.size() != ns)
 		sample->ns.resize(ns);
 	for (uint32 i = 0; i < ns; i++)
 		sample->ns[i] = sobol::sample(samp_i, i);
+
+	sample->x = (sample->x + x) / res_x;  // Return image x/y in normalized [0,1] range
+	sample->y = (sample->y + y) / res_y;
 }
 
 
@@ -82,16 +89,16 @@ void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, Sample *sample, uint
  * @param[out] sample A pointer where the sample is stored.
  * @param ns The number of additional coordinates to provide.
  */
+//#define PROGRESSIVE_SAMPLING
+#ifndef PROGRESSIVE_SAMPLING
 bool ImageSampler::get_next_sample(Sample *sample, uint32 ns)
 {
 	//std::cout << s << " " << x << " " << y << std::endl;
 	// Check if we're done
-	if (x >= res_x || y >= res_y || points_traversed >= (hilbert_res*hilbert_res))
+	if (points_traversed >= (curve_res*curve_res))
 		return false;
 
 	get_sample(x, y, s, sample, ns);
-	sample->x = (sample->x + x) / res_x;  // Return image x/y in normalized [0,1] range
-	sample->y = (sample->y + y) / res_y;
 
 	// increment to next sample
 	samp_taken++;
@@ -99,12 +106,44 @@ bool ImageSampler::get_next_sample(Sample *sample, uint32 ns)
 	if (s >= spp) {
 		s = 0;
 
-		// Hilbert curve traverses pixels
+		// Space-filling curve traverses pixels
 		do {
-			Hilbert::d2xy(hilbert_res, points_traversed, &x, &y);
+			Morton::d2xy(points_traversed, &x, &y);
 			points_traversed++;
+			if (points_traversed >= (curve_res*curve_res))
+				return false;
 		} while (x >= res_x || y >= res_y);
 	}
 
 	return true;
 }
+#else
+bool ImageSampler::get_next_sample(Sample *sample, uint32 ns)
+{
+	//std::cout << s << " " << x << " " << y << std::endl;
+	// Check if we're done
+	if (points_traversed >= (curve_res*curve_res) && s >= spp)
+		return false;
+
+	get_sample(x, y, s, sample, ns);
+
+	samp_taken++;
+
+	// Space-filling curve traverses pixels
+	do {
+		Morton::d2xy(points_traversed, &x, &y);
+		points_traversed++;
+		if (points_traversed >= (curve_res*curve_res)) {
+			x = y = points_traversed = 0;
+
+			// increment to next sample
+			s++;
+			if (s >= spp)
+				return false;
+		}
+	} while (x >= res_x || y >= res_y);
+
+
+	return true;
+}
+#endif
