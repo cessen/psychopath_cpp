@@ -23,7 +23,7 @@
 
 #include <cassert>
 
-namespace sobol
+namespace Sobol
 {
 
 struct Matrices {
@@ -39,8 +39,8 @@ struct Matrices {
 // generate a randomized QMC sequence. Only the Matrices::size least
 // significant bits of the scramble value are used.
 inline double sample(
-    unsigned long long index,
     const unsigned dimension,
+    unsigned long long index,
     const unsigned long long scramble = 0ULL)
 {
 	assert(dimension < Matrices::num_dimensions);

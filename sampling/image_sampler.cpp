@@ -59,20 +59,21 @@ void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, Sample *sample, uint
 	// this still gives very good convergence properties.
 	// This also means that each pixel can keep drawing samples in a
 	// "bottomless" kind of way, which is nice for e.g. adaptive sampling.
-	const uint32 temp = (y*73571) + x;
-	const uint32 index = ((temp*2333)^(temp*6203));
+	const uint32 temp = ((y*73571) + x) * 3885701021;
+	const uint32 index = ((temp*1936502639)^(temp*1264700623));
 	const uint32 samp_i = index + d;
 
 	// Generate the sample
-	sample->x = Halton::halton(samp_i, 5);;
-	sample->y = Halton::halton(samp_i, 4);;
-	sample->u = Halton::halton(samp_i, 3);
-	sample->v = Halton::halton(samp_i, 2);
-	sample->t = Halton::halton(samp_i, 1);
+	sample->x = Halton::sample(5, samp_i);
+	sample->y = Halton::sample(4, samp_i);
+	sample->u = Halton::sample(3, samp_i);
+	sample->v = Halton::sample(2, samp_i);
+	sample->t = Halton::sample(1, samp_i);
 	if (sample->ns.size() != ns)
 		sample->ns.resize(ns);
-	for (uint32 i = 0; i < ns; i++)
-		sample->ns[i] = sobol::sample(samp_i, i);
+	for (uint32 i = 0; i < ns; i++) {
+		sample->ns[i] = Sobol::sample(i, samp_i);
+	}
 
 	sample->x = (sample->x + x) / res_x;  // Return image x/y in normalized [0,1] range
 	sample->y = (sample->y + y) / res_y;
@@ -89,7 +90,7 @@ void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, Sample *sample, uint
  * @param[out] sample A pointer where the sample is stored.
  * @param ns The number of additional coordinates to provide.
  */
-//#define PROGRESSIVE_SAMPLING
+#define PROGRESSIVE_SAMPLING
 #ifndef PROGRESSIVE_SAMPLING
 bool ImageSampler::get_next_sample(Sample *sample, uint32 ns)
 {

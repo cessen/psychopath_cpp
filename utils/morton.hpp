@@ -63,30 +63,6 @@ static inline void d2xy(uint32 d, uint32 *x, uint32 *y)
 	*x &= 0x0000ffff;
 	*y &= 0x0000ffff;
 }
-/*static inline void d2xy(uint32 d, uint32 *x, uint32 *y)
-{
-	uint32 v = (d >> 1);
-	d &= 0x55555555;
-	v &= 0x55555555;
-	d |= (d >> 1);
-	v |= (v >> 1);
-	d &= 0x33333333;
-	v &= 0x33333333;
-	d |= (d >> 2);
-	v |= (v >> 2);
-	d &= 0x0f0f0f0f;
-	v &= 0x0f0f0f0f;
-	d |= (d >> 4);
-	v |= (v >> 4);
-	d &= 0x00ff00ff;
-	v &= 0x00ff00ff;
-	d |= (d >> 8);
-	v |= (v >> 8);
-	d &= 0x0000ffff;
-	v &= 0x0000ffff;
-	*x = d;
-	*y = v;
-}*/
 
 }
 
