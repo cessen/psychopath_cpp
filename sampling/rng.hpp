@@ -62,6 +62,9 @@ public:
 
 	/**
 	 * @brief Returns a random unsigned 32-bit integer.
+	 *
+	 * This is the work-horse method of the RNG.  All the other next_XXX()
+	 * methods call this.
 	 */
 	uint32 next_uint() {
 		uint64 t;

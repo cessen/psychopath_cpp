@@ -41,7 +41,7 @@ ImageSampler::ImageSampler(uint spp_,
 	}
 	points_traversed = 0;
 
-	rng.seed(8758796);
+	rng.seed(657457543);
 }
 
 
@@ -52,6 +52,8 @@ ImageSampler::~ImageSampler()
 
 void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, Sample *sample, uint32 ns)
 {
+#define LDS_SAMP
+#ifdef LDS_SAMP
 	// These gymnastics are so that different pixels map to very different
 	// and random-ish LDS indices.  It gives the image a more random appearance
 	// before converging, which is less distracting than the LDS patterns.
@@ -74,6 +76,19 @@ void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, Sample *sample, uint
 	for (uint32 i = 0; i < ns; i++) {
 		sample->ns[i] = Sobol::sample(i, samp_i);
 	}
+#else
+	// Generate the sample
+	sample->x = rng.next_float();
+	sample->y = rng.next_float();
+	sample->u = rng.next_float();
+	sample->v = rng.next_float();
+	sample->t = rng.next_float();
+	if (sample->ns.size() != ns)
+		sample->ns.resize(ns);
+	for (uint32 i = 0; i < ns; i++) {
+		sample->ns[i] = rng.next_float();
+	}
+#endif
 
 	sample->x = (sample->x + x) / res_x;  // Return image x/y in normalized [0,1] range
 	sample->y = (sample->y + y) / res_y;
@@ -90,7 +105,7 @@ void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, Sample *sample, uint
  * @param[out] sample A pointer where the sample is stored.
  * @param ns The number of additional coordinates to provide.
  */
-#define PROGRESSIVE_SAMPLING
+//#define PROGRESSIVE_SAMPLING
 #ifndef PROGRESSIVE_SAMPLING
 bool ImageSampler::get_next_sample(Sample *sample, uint32 ns)
 {
