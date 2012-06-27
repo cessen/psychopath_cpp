@@ -13,7 +13,7 @@ BOOST_AUTO_TEST_SUITE(vec3)
 // Test for the constructor
 BOOST_AUTO_TEST_CASE(constructor)
 {
-	Vec3 v1;
+	Vec3 v1(0.0, 0.0, 0.0);
 	Vec3 v2(1.5, 0.0, -64.0);
 
 	BOOST_CHECK(v1.x == 0.0 && v1.y == 0.0 && v1.z == 0.0);
@@ -108,7 +108,8 @@ BOOST_AUTO_TEST_CASE(normalize)
 {
 	Vec3 v(1.2, -2.6, 1.0);
 
-	float32 l = v.normalize();
+	float32 l = v.length();
+	v.normalize();
 
 	BOOST_CHECK_CLOSE(l,    3.03315017762062, 0.0001);
 	BOOST_CHECK_CLOSE(v.x,  0.39562828403747, 0.0001);

@@ -127,7 +127,8 @@ void DirectLightingIntegrator::integrate()
 				//                * (float32)(scene->finite_lights.size());
 
 				// Create a shadow ray for this path
-				float d = ld.normalize();
+				float d = ld.length();
+				ld.normalize();
 				rayinters[sri]->ray.o = paths[i].inter.p;
 				rayinters[sri]->ray.d = ld;
 				rayinters[sri]->ray.time = samps[i].t;

@@ -128,7 +128,8 @@ struct Ray {
 	void finalize() {
 		// TODO: will normalizing things here mess anything up elsewhere?
 		assert(d.length() > 0.0);
-		float32 linv = 1.0 / d.normalize();
+		float32 linv = 1.0 / d.length();
+		d.normalize();
 
 		// Adjust the ray differentials for the normalized ray
 		if (has_differentials) {
@@ -148,15 +149,15 @@ struct Ray {
 	 */
 	void apply_matrix(const Matrix44 &m) {
 		// Origin and direction
-		o = m.mult_pos(o);
-		d = m.mult_dir(d);
+		m.multVecMatrix(o, o);
+		m.multDirMatrix(d, d);
 
 		// Differentials
 		// These can be transformed as directional vectors...?
 		if (has_differentials) {
 			for (int32 i = 0; i < NUM_DIFFERENTIALS; i++) {
-				od[i] = m.mult_dir(od[i]);
-				dd[i] = m.mult_dir(dd[i]);
+				m.multDirMatrix(od[i], od[i]);
+				m.multDirMatrix(dd[i], od[i]);
 			}
 		}
 

@@ -40,7 +40,7 @@ namespace BPO = boost::program_options;
 #define NUM_RAND_SPHERES 1000
 #define SPHERE_RADIUS 1.0
 #define FRAC_MB 0.1
-#define CAMERA_SPIN 0.0
+#define CAMERA_SPIN 20.0
 #define LENS_DIAM 1.0
 
 
@@ -185,19 +185,19 @@ int main(int argc, char **argv)
 	Vec3 axis(0.0, 0.0, 1.0);
 
 	cam_mats[0].translate(Vec3(0.0, 0.0, -40.0));
-	cam_mats[0].rotate(0.0, axis);
+	cam_mats[0].rotate(Vec3(0.0, 0.0, 0.0));
 	cam_mats[0].translate(Vec3(0.0, 0.0, 20.0));
 
 	cam_mats[1].translate(Vec3(0.0, 0.0, -40.0));
-	cam_mats[1].rotate((angle/3)*1, axis);
+	cam_mats[1].rotate(Vec3(0.0, 0.0, (angle/3)*1));
 	cam_mats[1].translate(Vec3(0.0, 0.0, 20.0));
 
 	cam_mats[2].translate(Vec3(0.0, 0.0, -40.0));
-	cam_mats[2].rotate((angle/3)*2, axis);
+	cam_mats[2].rotate(Vec3(0.0, 0.0, (angle/3)*2));
 	cam_mats[2].translate(Vec3(0.0, 0.0, 20.0));
 
 	cam_mats[3].translate(Vec3(0.0, 0.0, -40.0));
-	cam_mats[3].rotate((angle/3)*3, axis);
+	cam_mats[3].rotate(Vec3(0.0, 0.0, (angle/3)*3));
 	cam_mats[3].translate(Vec3(0.0, 0.0, 20.0));
 
 #define FOCUS_DISTANCE 40.0

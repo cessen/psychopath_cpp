@@ -5,7 +5,8 @@
 
 #include "vector.hpp"
 
-#include <math.h>
+#include <cmath>
+#include <assert.h>
 
 /*
    linear interpolation
