@@ -11,6 +11,7 @@
 #include "timebox.hpp"
 #include "vector.hpp"
 #include "matrix.hpp"
+#include "transform.hpp"
 #include "ray.hpp"
 
 /*
@@ -19,11 +20,11 @@
 class Camera
 {
 public:
-	TimeBox<Matrix44> transforms;
+	TimeBox<Transform> transforms;
 	float32 fov, tfov;
 	float32 lens_diameter, focus_distance;
 
-	Camera(std::vector<Matrix44> &trans, float32 fov_, float32 lens_diameter_, float32 focus_distance_) {
+	Camera(std::vector<Transform> &trans, float32 fov_, float32 lens_diameter_, float32 focus_distance_) {
 		transforms.init(trans.size());
 		for (uint32 i=0; i < trans.size(); i++)
 			transforms[i] = trans[i];
@@ -74,12 +75,12 @@ public:
 		float32 alpha;
 
 		if (calc_time_interp(transforms.state_count, time, &ia, &alpha)) {
-			Matrix44 trans;
+			Transform trans;
 			trans = lerp(alpha, transforms[ia], transforms[ia+1]);
 
-			ray.apply_matrix(trans);
+			ray.apply_transform(trans);
 		} else {
-			ray.apply_matrix(transforms[0]);
+			ray.apply_transform(transforms[0]);
 		}
 
 		return ray;

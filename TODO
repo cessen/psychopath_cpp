@@ -20,8 +20,7 @@
 
 - Adaptive sampling scheme
 
-//- Change Film class to use block storage for image data, to improve cache
-//  coherency.
+//- Create Transform class
 
 - Simple material system (for testing purposes
   only, eventually replace with OSL)

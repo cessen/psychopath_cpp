@@ -12,6 +12,7 @@
 #include "scene.hpp"
 #include "vector.hpp"
 #include "matrix.hpp"
+#include "transform.hpp"
 #include "camera.hpp"
 
 #include "primitive.hpp"
@@ -178,31 +179,40 @@ int main(int argc, char **argv)
 	Scene scene;
 
 	// Add camera
-	std::vector<Matrix44> cam_mats;
-	cam_mats.resize(4);
+	Matrix44 mat;
+	std::vector<Transform> cam_tra;
+	cam_tra.resize(4);
 
 	float angle = CAMERA_SPIN * (3.14159 / 180.0);
 	Vec3 axis(0.0, 0.0, 1.0);
 
-	cam_mats[0].translate(Vec3(0.0, 0.0, -40.0));
-	cam_mats[0].rotate(Vec3(0.0, 0.0, 0.0));
-	cam_mats[0].translate(Vec3(0.0, 0.0, 20.0));
+	mat.makeIdentity();
+	mat.translate(Vec3(0.0, 0.0, -40.0));
+	mat.rotate(Vec3(0.0, 0.0, 0.0));
+	mat.translate(Vec3(0.0, 0.0, 20.0));
+	cam_tra[0] = mat;
 
-	cam_mats[1].translate(Vec3(0.0, 0.0, -40.0));
-	cam_mats[1].rotate(Vec3(0.0, 0.0, (angle/3)*1));
-	cam_mats[1].translate(Vec3(0.0, 0.0, 20.0));
+	mat.makeIdentity();
+	mat.translate(Vec3(0.0, 0.0, -40.0));
+	mat.rotate(Vec3(0.0, 0.0, (angle/3)*1));
+	mat.translate(Vec3(0.0, 0.0, 20.0));
+	cam_tra[1] = mat;
 
-	cam_mats[2].translate(Vec3(0.0, 0.0, -40.0));
-	cam_mats[2].rotate(Vec3(0.0, 0.0, (angle/3)*2));
-	cam_mats[2].translate(Vec3(0.0, 0.0, 20.0));
+	mat.makeIdentity();
+	mat.translate(Vec3(0.0, 0.0, -40.0));
+	mat.rotate(Vec3(0.0, 0.0, (angle/3)*2));
+	mat.translate(Vec3(0.0, 0.0, 20.0));
+	cam_tra[2] = mat;
 
-	cam_mats[3].translate(Vec3(0.0, 0.0, -40.0));
-	cam_mats[3].rotate(Vec3(0.0, 0.0, (angle/3)*3));
-	cam_mats[3].translate(Vec3(0.0, 0.0, 20.0));
+	mat.makeIdentity();
+	mat.translate(Vec3(0.0, 0.0, -40.0));
+	mat.rotate(Vec3(0.0, 0.0, (angle/3)*3));
+	mat.translate(Vec3(0.0, 0.0, 20.0));
+	cam_tra[3] = mat;
 
 #define FOCUS_DISTANCE 40.0
 #define FOV 55
-	scene.camera = new Camera(cam_mats, (3.14159/180.0)*FOV, LENS_DIAM, FOCUS_DISTANCE);
+	scene.camera = new Camera(cam_tra, (3.14159/180.0)*FOV, LENS_DIAM, FOCUS_DISTANCE);
 
 
 	// Add lights

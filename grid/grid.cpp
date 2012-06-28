@@ -68,10 +68,10 @@ Grid::~Grid()
 
 void Grid::calc_normals()
 {
-	Vec3 p;
-	Vec3 vec[4];
+	Vec3 p(0,0,0);
+	Vec3 vec[4] = {Vec3(0,0,0), Vec3(0,0,0), Vec3(0,0,0), Vec3(0,0,0)};
 	bool v_avail[4] = {false, false, false, false};
-	Vec3 n[4];
+	Vec3 n[4] = {Vec3(0,0,0), Vec3(0,0,0), Vec3(0,0,0), Vec3(0,0,0)};
 	bool n_avail[4] = {false, false, false, false};
 
 	int32 upoly_i;

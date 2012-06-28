@@ -3,7 +3,7 @@
 
 #include "numtype.h"
 
-#include "OSL/Imathx.h"
+#include "ImathVec.h"
 
 // 3D vector
 typedef Imath::Vec3<float32> Vec3;

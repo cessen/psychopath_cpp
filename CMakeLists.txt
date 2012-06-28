@@ -3,6 +3,11 @@
 #--------------------------------------
 cmake_minimum_required (VERSION 2.8)
 
+# Custom modules
+set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
+	"${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+
 
 #--------------------------------------
 # Build configuration
@@ -21,12 +26,12 @@ configure_file ("${PROJECT_SOURCE_DIR}/config.h.in"
                 "${PROJECT_BINARY_DIR}/config.h")
 
 # Warnings
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+set (CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
 # Profiling
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
 
 # Define "DEBUG" in debug builds
 set (CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DDEBUG")
@@ -44,6 +49,14 @@ find_package (Boost 1.48 COMPONENTS program_options thread unit_test_framework R
 
 include_directories (${Boost_INCLUDE_DIRS})
 link_directories (${Boost_LIBRARY_DIRS})
+
+
+#--------------------------------------
+# IlmBase
+#--------------------------------------
+find_package(IlmBase REQUIRED)
+
+include_directories ("${ILMBASE_INCLUDE_DIR}/OpenEXR")
 
 
 #--------------------------------------
@@ -123,6 +136,7 @@ add_executable(psychopath
 target_link_libraries(psychopath
 	${PSYCHO_LIB}
     ${Boost_LIBRARIES}
+    ${ILMBASE_LIBRARIES}
     ${OIIO_LIBRARY}
     ${OSL_LIBRARYS}
     )
@@ -134,5 +148,9 @@ add_executable(unit_tests
 	"test/test_main" ${TEST_FILES})
 target_link_libraries(unit_tests
 	${PSYCHO_LIB}
-	${Boost_LIBRARIES})
+	${Boost_LIBRARIES}
+	${ILMBASE_LIBRARIES}
+	${OIIO_LIBRARY}
+	${OSL_LIBRARYS}
+    )
 

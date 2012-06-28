@@ -5,6 +5,7 @@
 
 #include "vector.hpp"
 #include "matrix.hpp"
+#include "transform.hpp"
 #include "config.hpp"
 #include <algorithm>
 #include <math.h>
@@ -144,7 +145,7 @@ struct Ray {
 	}
 
 
-	/*
+	/**
 	 * Applies a matrix transform.
 	 */
 	void apply_matrix(const Matrix44 &m) {
@@ -158,6 +159,49 @@ struct Ray {
 			for (int32 i = 0; i < NUM_DIFFERENTIALS; i++) {
 				m.multDirMatrix(od[i], od[i]);
 				m.multDirMatrix(dd[i], od[i]);
+			}
+		}
+
+		update_accel();
+		update_differentials();
+	}
+
+
+	/**
+	 * Applies a Transform.
+	 */
+	void apply_transform(const Transform &t) {
+		// Origin and direction
+		o = t.pos_to(o);
+		d = t.dir_to(d);
+
+		// Differentials
+		// These can be transformed as directional vectors...?
+		if (has_differentials) {
+			for (int32 i = 0; i < NUM_DIFFERENTIALS; i++) {
+				od[i] = t.dir_to(od[i]);
+				dd[i] = t.dir_to(dd[i]);
+			}
+		}
+
+		update_accel();
+		update_differentials();
+	}
+
+	/**
+	 * Applies a Transform's inverse.
+	 */
+	void reverse_transform(const Transform &t) {
+		// Origin and direction
+		o = t.pos_from(o);
+		d = t.dir_from(d);
+
+		// Differentials
+		// These can be transformed as directional vectors...?
+		if (has_differentials) {
+			for (int32 i = 0; i < NUM_DIFFERENTIALS; i++) {
+				od[i] = t.dir_from(od[i]);
+				dd[i] = t.dir_from(dd[i]);
 			}
 		}
 
