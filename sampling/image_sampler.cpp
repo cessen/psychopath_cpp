@@ -54,16 +54,20 @@ void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, Sample *sample, uint
 {
 #define LDS_SAMP
 #ifdef LDS_SAMP
-	// These gymnastics are so that different pixels map to very different
-	// and random-ish LDS indices.  It gives the image a more random appearance
+	// Hash the x and y indices of the pixel and use that as an offset
+	// into the LDS sequence.  This gives the image a more random appearance
 	// before converging, which is less distracting than the LDS patterns.
 	// But since within each pixel the samples are contiguous LDS sequences
 	// this still gives very good convergence properties.
 	// This also means that each pixel can keep drawing samples in a
 	// "bottomless" kind of way, which is nice for e.g. adaptive sampling.
-	const uint32 temp = ((y*73571) + x) * 3885701021;
-	const uint32 index = ((temp*1936502639)^(temp*1264700623));
-	const uint32 samp_i = index + d;
+	uint32 hash = x ^ ((y>>16) | (y<<16));
+	hash *= 1936502639;
+	hash ^= hash >> 16;
+	hash *= 1936502639;
+	hash ^= hash >> 16;
+	const uint32 samp_i = hash + d;
+	
 
 	// Generate the sample
 	sample->x = Halton::sample(5, samp_i);
