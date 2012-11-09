@@ -6,9 +6,10 @@
 #include <algorithm>
 #include <assert.h>
 
+#include "morton.hpp"
 #include "color.hpp"
 #include "rng.hpp"
-#include "blocked_array.hpp"
+#include "blocked_array_disk_cache.hpp"
 
 #define LBS 5
 
@@ -68,8 +69,8 @@ public:
 	float32 min_x_p, min_y_p; // Minimum x/y coordinates of the image after padding
 	float32 max_x_p, max_y_p; // Maximum x/y coordinates of the image after padding
 
-	BlockedArray<PIXFMT, LBS> pixels; // Pixel data
-	BlockedArray<float32, LBS> accum; // Accumulation buffer
+	BlockedArrayDiskCache<PIXFMT, LBS> pixels; // Pixel data
+	BlockedArrayDiskCache<float32, LBS> accum; // Accumulation buffer
 	Filter filter;
 	uint8 filter_width;
 
@@ -97,13 +98,16 @@ public:
 		max_y_p = max_y + hd;
 
 		// Allocate pixel and accum data
-		pixels = BlockedArray<PIXFMT, LBS>(width_p, height_p);
-		accum = BlockedArray<float32, LBS>(width_p, height_p);
+		pixels.init(width_p, height_p);
+		accum.init(width_p, height_p);
 
 		// Zero out pixels and accum
 		std::cout << "Clearing out\n";
-		for (uint32 u = 0; u < width_p; u++) {
-			for (uint32 v = 0; v < height_p; v++) {
+		uint32 u = 0;
+		uint32 v = 0;
+		for (uint32 i = 0; u < width_p || v < height_p; i++) {
+			Morton::d2xy(i, &u, &v);
+			if (u < width_p && v < height_p) {
 				pixels(u,v) = PIXFMT(0);
 				accum(u,v) = 0.0;
 			}

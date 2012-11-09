@@ -31,7 +31,7 @@ public:
 		to = to_;
 	}
 
-	
+
 	/*
 	 * Get inverse of this transform.
 	 */

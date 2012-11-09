@@ -61,13 +61,13 @@ void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, Sample *sample, uint
 	// this still gives very good convergence properties.
 	// This also means that each pixel can keep drawing samples in a
 	// "bottomless" kind of way, which is nice for e.g. adaptive sampling.
-	uint32 hash = x ^ ((y>>16) | (y<<16));
+	uint32 hash = x ^((y>>16) | (y<<16));
 	hash *= 1936502639;
 	hash ^= hash >> 16;
 	hash *= 1936502639;
 	hash ^= hash >> 16;
 	const uint32 samp_i = hash + d;
-	
+
 
 	// Generate the sample
 	sample->x = Halton::sample(5, samp_i);

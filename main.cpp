@@ -41,7 +41,7 @@ namespace BPO = boost::program_options;
 #define NUM_RAND_SPHERES 1000
 #define SPHERE_RADIUS 1.0
 #define FRAC_MB 0.1
-#define CAMERA_SPIN 20.0
+#define CAMERA_SPIN 10.0
 #define LENS_DIAM 1.0
 
 
