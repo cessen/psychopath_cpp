@@ -11,15 +11,79 @@
 
 #include "numtype.h"
 
+namespace DiskCache
+{
+
+/**
+ * A temporary file, with an interface that resembles a subset of fstream.
+ */
+class TemporaryFile
+{
+private:
+	FILE* f;
+public:
+	TemporaryFile() {}
+
+	~TemporaryFile() {}
+
+	/**
+	 * Opens the file.  Must be called before using the file.
+	 */
+	int open() {
+		f = tmpfile();
+		if (f) {
+			setbuf(f, NULL);
+			return 1;
+		} else
+			return 0;
+	}
+
+	/**
+	 * Closes the file.
+	 */
+	int close() {
+		return fclose(f);
+	}
+
+	void seek(long int i) {
+		fseek(f, i, SEEK_SET);
+	}
+
+	void seekp(long int i) {
+		seek(i);
+	}
+
+	void seekg(long int i) {
+		seek(i);
+	}
+
+	unsigned int read(char* s, unsigned int n) {
+		return fread(s, 1, n, f);
+	}
+
+	unsigned int write(const char* s, unsigned int n) {
+		return fwrite(s, 1, n, f);
+	}
+
+	void put(char c) {
+		putc(c, f);
+	}
+
+	void flush() {
+		fflush(f);
+	}
+};
+
 
 /**
  * @brief Information about a block loaded in the cache.
  */
 struct BlockInfo {
-	uint64 priority; // Priority in the LRU cache (0=unused block)
+	uint32 priority; // Priority in the LRU cache
 	uint32 index; // Index of the block
 	uint32 c_index; // Index to the first element of the cache block
 	bool modified; // Whether the block has been modified in RAM
+	bool used; // Whether the block is currently used
 };
 
 
@@ -43,10 +107,10 @@ struct BlockInfo {
  *
  */
 template <class T, uint32 BLOCK_SIZE>
-class DiskCache
+class Cache
 {
 private:
-	uint64 priority_tally;
+	uint32 priority_tally;
 
 	uint32 element_count;
 	uint32 block_count;
@@ -56,19 +120,17 @@ private:
 	std::vector<BlockInfo> cache_info; // Information about the cached blocks
 	std::vector<BlockInfo*> data_table; // Reference table for all data, including uncached data
 
-	char cache_file_path[L_tmpnam];
-	std::fstream data_file;
+	TemporaryFile data_file;
 
 public:
-	DiskCache() {}
+	Cache() {}
 
-	DiskCache(uint32 element_count_, uint32 cache_size_) {
+	Cache(uint32 element_count_, uint32 cache_size_) {
 		init(element_count_, cache_size_);
 	}
 
-	~DiskCache() {
+	~Cache() {
 		data_file.close();
-		remove(cache_file_path);
 	}
 
 
@@ -96,23 +158,19 @@ public:
 		// Set all cache blocks to "not used"
 		for (uint32 i=0; i < cache_size; i++) {
 			cache_info[i].priority = 0;
-			cache_info[i].modified = 0;
+			cache_info[i].modified = false;
+			cache_info[i].used = false;
 		}
 
 		// Clear out the data_table pointers
 		memset(&(data_table[0]), 0, sizeof(T*)*block_count);
 
-		// Get filename for the cache file
-		if (tmpnam(cache_file_path)) {
-			// Initialize the disk cache file with the appropriate size
-			data_file.open(cache_file_path, std::ios::out | std::ios::in | std::ios::binary | std::ios::trunc);
-			data_file.seekp((sizeof(T)*element_count)-1);
-			data_file.put('\0');
-			data_file.flush();
-		} else {
-			std::cerr << "Unable to create temporary file for DiskCache: exiting.\n";
-			exit(-1);
-		}
+		// Initialize the disk cache file with the appropriate size
+		data_file.open();
+		data_file.seekp((sizeof(T)*element_count)-1);
+		data_file.put('\0');
+		data_file.flush();
+
 	}
 
 
@@ -126,7 +184,7 @@ public:
 	/**
 	 * Returns and increments the priority tally.
 	 */
-	uint64 priot() {
+	uint32 priot() {
 		return priority_tally++;
 	}
 
@@ -139,11 +197,11 @@ public:
 		const uint32 b_index = cache_info[cb_index].index;
 
 		// Clear the reference from the table
-		if (cache_info[cb_index].priority > 0)
+		if (cache_info[cb_index].used)
 			data_table[b_index] = NULL;
 
 		// Check if the cache block is modified, and if so, write it to disk
-		if (cache_info[cb_index].modified) {
+		if (cache_info[cb_index].modified && cache_info[cb_index].used) {
 			// Seek to the correct place in the file
 			data_file.seekp(sizeof(T)*BLOCK_SIZE*b_index);
 
@@ -153,6 +211,7 @@ public:
 
 			// Clear modified tag
 			cache_info[cb_index].modified = false;
+			cache_info[cb_index].used = false;
 		}
 
 		// Set priority to zero
@@ -167,7 +226,7 @@ public:
 		if (!data_table[b_index]) {
 			// Find the least recently used block in the cache
 			uint32 cb_index = 0;
-			uint64 p = cache_info[0].priority;
+			uint32 p = cache_info[0].priority;
 			for (uint32 i=1; i < cache_size; i++) {
 				if (cache_info[i].priority < p) {
 					cb_index = i;
@@ -185,6 +244,7 @@ public:
 			data_table[b_index]->index = b_index;
 			data_table[b_index]->c_index = cb_index*BLOCK_SIZE;
 			data_table[b_index]->modified = false;
+			data_table[b_index]->used = true;
 
 			// Load block
 			data_file.seekg(sizeof(T)*BLOCK_SIZE*b_index);
@@ -247,16 +307,16 @@ public:
 
 
 /**
- * Dummy class to do everything without caching.
+ * Dummy class to do everything in RAM, without writing to disk.
  * For speed and accuracy comparisons.
  */
 template<class T, uint32 BLOCK_SIZE>
-class DummyDiskCache
+class DummyCache
 {
 public:
 	std::vector<T> data;
 
-	DummyDiskCache(uint32 block_count_, uint32 cache_size_) {
+	DummyCache(uint32 block_count_, uint32 cache_size_) {
 		data.resize(BLOCK_SIZE * block_count_);
 	}
 
@@ -272,6 +332,9 @@ public:
 		return data[i];
 	}
 };
+
+
+} // end namespace
 
 
 #endif // DISK_CACHE_HPP

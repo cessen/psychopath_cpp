@@ -25,7 +25,7 @@ private:
 	uint32 u_blocks, v_blocks;
 	uint32 block_elements;
 
-	DiskCache<T, (1<<LOG_BLOCK_SIZE)> data;
+	DiskCache::Cache<T, (1<<LOG_BLOCK_SIZE)> data;
 
 public:
 	uint32 width, height;
