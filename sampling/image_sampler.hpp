@@ -22,7 +22,7 @@ private:
 	/* General settings. */
 	uint spp;  // Approximate number of samples per pixel
 	uint res_x, res_y;  // Image resolution in pixels
-	int bucket_size;  // Width and height of each bucket in pixels
+	uint32 seed_offset;
 
 	/* State information. */
 	uint curve_res; // Space filling curve resolution
@@ -40,7 +40,7 @@ private:
 public:
 	ImageSampler(uint spp_,
 	             uint res_x_, uint res_y_,
-	             uint bucket_size_=0);
+	             uint seed=0);
 	~ImageSampler();
 
 	void init_tile();

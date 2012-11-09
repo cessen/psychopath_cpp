@@ -17,12 +17,11 @@
 
 ImageSampler::ImageSampler(uint spp_,
                            uint res_x_, uint res_y_,
-                           uint bucket_size_)
+                           uint seed)
 {
 	spp = spp_;
 	res_x = res_x_;
 	res_y = res_y_;
-	bucket_size = bucket_size_;
 
 	x = 0;
 	y = 0;
@@ -41,7 +40,9 @@ ImageSampler::ImageSampler(uint spp_,
 	}
 	points_traversed = 0;
 
-	rng.seed(657457543);
+	rng.seed(seed);
+
+	seed_offset = rng.next_uint();
 }
 
 
@@ -64,8 +65,10 @@ void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, Sample *sample, uint
 	uint32 hash = x ^((y>>16) | (y<<16));
 	hash *= 1936502639;
 	hash ^= hash >> 16;
+	hash += seed_offset;
 	hash *= 1936502639;
 	hash ^= hash >> 16;
+	hash += seed_offset;
 	const uint32 samp_i = hash + d;
 
 
