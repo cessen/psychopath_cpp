@@ -13,42 +13,66 @@
 
 #define LBS 5
 
-/**
- * @brief Pixel filter.
- *
- * Currently just implements a mitchel filter.
- */
-class Filter
-{
-	float32 B, C;
+///**
+// * @brief Pixel filter.
+// *
+// * Implements a mitchel filter and a box filter, switched with a define.
+// */
+//class Filter
+//{
+//#define MITCHEL
+//#ifdef MITCHEL
+//	float32 B, C;
 
-public:
-	Filter(float32 C_ = 0.5) {
-		C = C_;
-		B = 1.0 - (2*C);
-	}
+//public:
+//	Filter(float32 C_ = 0.5) {
+//		C = C_;
+//		B = 1.0 - (2*C);
+//	}
 
-	float32 width() {
-		return 2.0;
-	}
+//	float32 width() {
+//		return 2.0;
+//	}
 
-	float32 samp_1d(float32 x) {
-		x = std::abs(x);
-		if (x > 2.f)
-			return 0.f;
-		if (x > 1.f)
-			return ((-B - 6*C) * x*x*x + (6*B + 30*C) * x*x +
-			        (-12*B - 48*C) * x + (8*B + 24*C)) * (1.f/6.f);
-		else
-			return ((12 - 9*B - 6*C) * x*x*x +
-			        (-18 + 12*B + 6*C) * x*x +
-			        (6 - 2*B)) * (1.f/6.f);
-	}
+//	float32 samp_1d(float32 x) {
+//		x = std::abs(x);
+//		if (x > 2.f)
+//			return 0.f;
+//		if (x > 1.f)
+//			return ((-B - 6*C) * x*x*x + (6*B + 30*C) * x*x +
+//			        (-12*B - 48*C) * x + (8*B + 24*C)) * (1.f/6.f);
+//		else
+//			return ((12 - 9*B - 6*C) * x*x*x +
+//			        (-18 + 12*B + 6*C) * x*x +
+//			        (6 - 2*B)) * (1.f/6.f);
+//	}
 
-	float32 samp_2d(float32 x, float32 y) {
-		return samp_1d(x) * samp_1d(y);
-	}
-};
+//	float32 samp_2d(float32 x, float32 y) {
+//		return samp_1d(x) * samp_1d(y);
+//	}
+//#else
+//	float32 W;
+//public:
+//	Filter(float32 W_ = 0.5) {
+//		W = W_;
+//	}
+
+//	float32 width() {
+//		return W;
+//	}
+
+//	float32 samp_1d(float32 x) {
+//		if(x > W || x < -W)
+//			return 0.0f;
+//		else
+//			return 1.0f;
+//	}
+
+//	float32 samp_2d(float32 x, float32 y) {
+//		return samp_1d(x) * samp_1d(y);
+//	}
+//#endif
+//};
 
 
 /**
@@ -63,16 +87,8 @@ public:
 	float32 min_x, min_y; // Minimum x/y coordinates of the image
 	float32 max_x, max_y; // Maximum x/y coordinates of the image
 
-	uint16 pad; // Amount of pixel padding added around the primary
-	// resolution of the image.
-	uint16 width_p, height_p; // Resolution in pixels after padding
-	float32 min_x_p, min_y_p; // Minimum x/y coordinates of the image after padding
-	float32 max_x_p, max_y_p; // Maximum x/y coordinates of the image after padding
-
 	BlockedArrayDiskCache<PIXFMT, LBS> pixels; // Pixel data
-	BlockedArrayDiskCache<float32, LBS> accum; // Accumulation buffer
-	Filter filter;
-	uint8 filter_width;
+	BlockedArrayDiskCache<uint16, LBS> accum; // Accumulation buffer
 
 	/**
 	 * @brief Constructor.
@@ -81,75 +97,40 @@ public:
 	 */
 	Film(int w, int h, int padding, float32 x1, float32 y1, float32 x2, float32 y2) {
 		// Store meta data
-		pad = padding;
 		width = w;
 		height = h;
-		width_p = w + (pad * 2);
-		height_p = h + (pad * 2);
 		min_x = std::min(x1, x2);
 		min_y = std::min(y1, y2);
 		max_x = std::max(x1, x2);
 		max_y = std::max(y1, y2);
-		const float32 wd = ((max_x - min_x) * pad) / width;
-		const float32 hd = ((max_y - min_y) * pad) / height;
-		min_x_p = min_x - wd;
-		max_x_p = max_x + wd;
-		min_y_p = min_y - hd;
-		max_y_p = max_y + hd;
 
 		// Allocate pixel and accum data
-		pixels.init(width_p, height_p);
-		accum.init(width_p, height_p);
+		pixels.init(width, height);
+		accum.init(width, height);
 
 		// Zero out pixels and accum
 		std::cout << "Clearing out\n";
 		uint32 u = 0;
 		uint32 v = 0;
-		for (uint32 i = 0; u < width_p || v < height_p; i++) {
+		for (uint32 i = 0; u < width || v < height; i++) {
 			Morton::d2xy(i, &u, &v);
-			if (u < width_p && v < height_p) {
+			if (u < width && v < height) {
 				pixels(u,v) = PIXFMT(0);
-				accum(u,v) = 0.0;
+				accum(u,v) = 0;
 			}
 		}
-
-		// Set up the pixel filter
-		filter = Filter();
-		filter_width = std::ceil(filter.width());
 
 		// Set up RNG
 		rng = RNG(7373546);
 	}
 
-	//~Film() {
-	//	delete [] pixels;
-	//	delete [] accum;
-	//}
 
 	/**
 	 * @brief Adds a sample to the film.
 	 */
-	void add_sample(PIXFMT samp, float32 x, float32 y) {
-		// Convert to pixel-space coordinates
-		x = (x * width_p) - 0.5;
-		y = (y * height_p) - 0.5;
-
-		for (int j=-filter_width; j <= filter_width; j++) {
-			for (int k=-filter_width; k <= filter_width; k++) {
-				int a = x + j;
-				int b = y + k;
-
-				if (a < 0 || a >= width_p || b < 0 || b >= height_p)
-					continue;
-
-				float32 contrib = filter.samp_2d(a-x, b-y);
-				if (contrib == 0.0)
-					continue;
-
-				accum(a,b) += contrib;
-				pixels(a,b) += samp * contrib;
-			}
-		}
+	void add_sample(PIXFMT samp, uint x, uint y) {
+		accum(x,y)++;
+		pixels(x,y) += samp;
 	}
 
 	/**
@@ -167,17 +148,14 @@ public:
 
 		for (uint32 y=0; y < height; y++) {
 			for (uint32 x=0; x < width; x++) {
-				uint32 xx = x + pad;
-				uint32 yy = y + pad;
-
 				// Convert colors to 8bit gamma corrected color space
 				float32 r = 0.0;
 				float32 g = 0.0;
 				float32 b = 0.0;
-				if (accum(xx,yy) != 0.0) {
-					r = pow(pixels(xx,yy)[0] / accum(xx,yy), inv_gamma) * 255;
-					g = pow(pixels(xx,yy)[1] / accum(xx,yy), inv_gamma) * 255;
-					b = pow(pixels(xx,yy)[2] / accum(xx,yy), inv_gamma) * 255;
+				if (accum(x,y) != 0.0) {
+					r = pow(pixels(x,y)[0] / accum(x,y), inv_gamma) * 255;
+					g = pow(pixels(x,y)[1] / accum(x,y), inv_gamma) * 255;
+					b = pow(pixels(x,y)[2] / accum(x,y), inv_gamma) * 255;
 				}
 
 				// Add dither

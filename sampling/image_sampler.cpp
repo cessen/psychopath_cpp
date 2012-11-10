@@ -51,6 +51,20 @@ ImageSampler::~ImageSampler()
 }
 
 
+/**
+ * The logit function, scaled to approximate the probit function.
+ *
+ * We're using it as a close approximation to the gaussian inverse CDF,
+ * since the gaussian inverse CDF (probit) has no analytic formula.
+ */
+float logit(float p, float width = 1.5f)
+{
+	p = 0.001f + (p * 0.998f);
+	p = logf(p/(1.0f-p)) * width * (0.6266f/4);
+
+	return p;
+}
+
 void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, Sample *sample, uint32 ns)
 {
 #define LDS_SAMP
@@ -73,6 +87,8 @@ void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, Sample *sample, uint
 
 
 	// Generate the sample
+	sample->ix = x;
+	sample->iy = y;
 	sample->x = Halton::sample(5, samp_i);
 	sample->y = Halton::sample(4, samp_i);
 	sample->u = Halton::sample(3, samp_i);
@@ -97,6 +113,9 @@ void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, Sample *sample, uint
 	}
 #endif
 
+#define WIDTH 1.5f
+	sample->x = logit(sample->x, WIDTH);
+	sample->y = logit(sample->y, WIDTH);
 	sample->x = (sample->x + x) / res_x;  // Return image x/y in normalized [0,1] range
 	sample->y = (sample->y + y) / res_y;
 }

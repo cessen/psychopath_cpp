@@ -35,7 +35,7 @@ void resize_rayinters(Array<RayInter *> &rayinters, uint32 size)
 void DirectLightingIntegrator::integrate()
 {
 	RNG rng(43643);
-	ImageSampler image_sampler(spp, image->width_p, image->height_p);
+	ImageSampler image_sampler(spp, image->width, image->height);
 
 	// Sample array
 	Array<Sample> samps;
@@ -75,10 +75,10 @@ void DirectLightingIntegrator::integrate()
 		std::cout << "\tGenerating camera rays" << std::endl;
 		std::cout.flush();
 		for (uint32 i = 0; i < ssize; i++) {
-			float32 rx = (samps[i].x - 0.5) * (image->max_x_p - image->min_x_p);
-			float32 ry = (0.5 - samps[i].y) * (image->max_y_p - image->min_y_p);
-			float32 dx = (image->max_x_p - image->min_x_p) / image->width_p;
-			float32 dy = (image->max_y_p - image->min_y_p) / image->height_p;
+			float32 rx = (samps[i].x - 0.5) * (image->max_x - image->min_x);
+			float32 ry = (0.5 - samps[i].y) * (image->max_y - image->min_y);
+			float32 dx = (image->max_x - image->min_x) / image->width;
+			float32 dy = (image->max_y - image->min_y) / image->height;
 			rayinters[i]->ray = scene->camera->generate_ray(rx, ry, dx, dy, samps[i].t, samps[i].u, samps[i].v);
 			rayinters[i]->ray.finalize();
 			rayinters[i]->hit = false;
