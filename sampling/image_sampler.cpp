@@ -114,8 +114,8 @@ void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, Sample *sample, uint
 #endif
 
 #define WIDTH 1.5f
-	sample->x = logit(sample->x, WIDTH);
-	sample->y = logit(sample->y, WIDTH);
+	sample->x = logit(sample->x, WIDTH) + 0.5f;
+	sample->y = logit(sample->y, WIDTH) + 0.5f;
 	sample->x = (sample->x + x) / res_x;  // Return image x/y in normalized [0,1] range
 	sample->y = (sample->y + y) / res_y;
 }
