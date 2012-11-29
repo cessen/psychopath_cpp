@@ -1,6 +1,3 @@
-- Switch to pixel filtering by importance sampling, as in the paper
-  "Filter Importance Sampling" by Ernst et al.
-
 - Add unit tests for the disk cache class
 
 - Triangle primitive

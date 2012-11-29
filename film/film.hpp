@@ -1,6 +1,8 @@
 #ifndef FILM_HPP
 #define FILM_HPP
 
+#include <stdlib.h>
+
 #include "numtype.h"
 
 #include <algorithm>
@@ -13,70 +15,65 @@
 
 #define LBS 5
 
-///**
-// * @brief Pixel filter.
-// *
-// * Implements a mitchel filter and a box filter, switched with a define.
-// */
-//class Filter
-//{
-//#define MITCHEL
-//#ifdef MITCHEL
-//	float32 B, C;
 
-//public:
-//	Filter(float32 C_ = 0.5) {
-//		C = C_;
-//		B = 1.0 - (2*C);
-//	}
+/**
+ * @brief Maps a linear brightness range to a range that approximates
+ * the human eye's sensitivity to brightness.
+ */
+static float32 hcol(float32 n)
+{
+	if (n < 0.0f)
+		n = 0.0f;
+	return log((n*100)+1) / log(101);
+}
+static Color hcol(Color n)
+{
+	return Color(hcol(n[0]), hcol(n[1]), hcol(n[2]));
+}
 
-//	float32 width() {
-//		return 2.0;
-//	}
 
-//	float32 samp_1d(float32 x) {
-//		x = std::abs(x);
-//		if (x > 2.f)
-//			return 0.f;
-//		if (x > 1.f)
-//			return ((-B - 6*C) * x*x*x + (6*B + 30*C) * x*x +
-//			        (-12*B - 48*C) * x + (8*B + 24*C)) * (1.f/6.f);
-//		else
-//			return ((12 - 9*B - 6*C) * x*x*x +
-//			        (-18 + 12*B + 6*C) * x*x +
-//			        (6 - 2*B)) * (1.f/6.f);
-//	}
+/**
+ * @brief Calculates the absolute difference between two values.
+ */
+static float32 diff(float32 n1, float32 n2)
+{
+	return fabs(n1-n2);
+}
+static Color diff(Color c1, Color c2)
+{
+	Color c = Color(diff(c1[0], c2[0]),
+	                diff(c1[1], c2[1]),
+	                diff(c1[2], c2[2]));
+	return c;
+}
 
-//	float32 samp_2d(float32 x, float32 y) {
-//		return samp_1d(x) * samp_1d(y);
-//	}
-//#else
-//	float32 W;
-//public:
-//	Filter(float32 W_ = 0.5) {
-//		W = W_;
-//	}
 
-//	float32 width() {
-//		return W;
-//	}
-
-//	float32 samp_1d(float32 x) {
-//		if(x > W || x < -W)
-//			return 0.0f;
-//		else
-//			return 1.0f;
-//	}
-
-//	float32 samp_2d(float32 x, float32 y) {
-//		return samp_1d(x) * samp_1d(y);
-//	}
-//#endif
-//};
+/**
+ * @brief Returns the maximum of two variables.
+ *
+ * In the case of multi-component variables, it returns a variable
+ * with each component being individually maximized.
+ */
+static float32 mmax(float32 a, float32 b)
+{
+	if (a > b)
+		return a;
+	else
+		return b;
+}
+static Color mmax(Color a, Color b)
+{
+	return Color(mmax(a[0], b[0]), mmax(a[1], b[1]), mmax(a[2], b[2]));
+}
 
 
 /**
  * Film that accumulates samples while rendering.
+ *
+ * Along with the mean of the samples, a "variance" value is also maintained.
+ * It's not proper variance in the Normal Distribution sense, but it seems to
+ * be better at representing the potential for noise in the image.
+ * See add_sample() for details.
  */
 template <class PIXFMT>
 class Film
@@ -89,13 +86,15 @@ public:
 
 	BlockedArrayDiskCache<PIXFMT, LBS> pixels; // Pixel data
 	BlockedArrayDiskCache<uint16, LBS> accum; // Accumulation buffer
+	BlockedArrayDiskCache<PIXFMT, LBS> var_p; // Entropy buffer "previous"
+	BlockedArrayDiskCache<PIXFMT, LBS> var_f; // Entropy buffer "final"
 
 	/**
 	 * @brief Constructor.
 	 *
 	 * Creates a new Film.  All pixel values are initialized to a zeroed state.
 	 */
-	Film(int w, int h, int padding, float32 x1, float32 y1, float32 x2, float32 y2) {
+	Film(int w, int h, float32 x1, float32 y1, float32 x2, float32 y2) {
 		// Store meta data
 		width = w;
 		height = h;
@@ -107,6 +106,8 @@ public:
 		// Allocate pixel and accum data
 		pixels.init(width, height);
 		accum.init(width, height);
+		var_p.init(width, height);
+		var_f.init(width, height);
 
 		// Zero out pixels and accum
 		std::cout << "Clearing out\n";
@@ -117,6 +118,8 @@ public:
 			if (u < width && v < height) {
 				pixels(u,v) = PIXFMT(0);
 				accum(u,v) = 0;
+				var_p(u,v) = PIXFMT(0);
+				var_f(u,v) = PIXFMT(0);
 			}
 		}
 
@@ -124,13 +127,74 @@ public:
 		rng = RNG(7373546);
 	}
 
-
 	/**
 	 * @brief Adds a sample to the film.
+	 *
+	 * The "variance" is calculated by keeping a running sum of how much each
+	 * sample changes the mean, compensating for the inherent lowering of that
+	 * effect as more samples are accumulated.  That sum is then divided by the
+	 * sample count minus one to get the "variance".
+	 * It's ad-hoc as far as I know, but the idea is that if on average the
+	 * samples are not changing the mean very much, then there isn't much
+	 * opportunity for noise to be introduced.
 	 */
 	void add_sample(PIXFMT samp, uint x, uint y) {
-		accum(x,y)++;
 		pixels(x,y) += samp;
+		accum(x,y)++;
+
+		// Update "variance"
+		const uint16 k = accum(x,y);
+		const PIXFMT avg = hcol(pixels(x,y) / k);
+		if (k > 1)
+			var_f(x,y) += diff(var_p(x,y), avg) * (k-1);
+		var_p(x,y) = avg;
+	}
+
+	/**
+	 * Returns a maximal estimate of the variance of the pixel.
+	 *
+	 * The intent is for this to give a good idea of the amount
+	 * of "noise" that a pixel contributes to the image, which
+	 * is useful for e.g. adaptive sampling.
+	 *
+	 * The estimate is calculated by taking the maximum
+	 * esimated variance from a surrounding block of pixels.
+	 * The size of the block depends on the sample count of
+	 * the current pixel: lower sample counts lead to larger
+	 * block sizes, to minimize the chances of underestimating
+	 * variance with low sample counts.
+	 * Finally, that maximum is divided by the square root of
+	 * the number of samples in the pixel, so that the estimate
+	 * decreases appropriately as the samples increase.
+	 */
+	PIXFMT variance_estimate(int32 x, int32 y) {
+		// Calculate block size
+		uint r;
+		if (accum(x,y) < 2)
+			r = 0;
+		else
+			r = (uint)(11.0f / sqrt(accum(x,y)) + 0.9f);
+
+		// Calculate block extents
+		uint i1, j1, i2, j2;
+		i1 = std::max((int32)(0), x-(int32)(r));
+		i2 = std::min((int32)(width), x+(int32)(r));
+		j1 = std::max((int32)(0), y-(int32)(r));
+		j2 = std::min((int32)(height), y+(int32)(r));
+
+		// Get the largest variance estimate within the block
+		PIXFMT result = PIXFMT(0);
+		for (uint i = i1; i <= i2; i++) {
+			for (uint j = j1; j <= j2; j++) {
+				if (accum(i,j) > 1) {
+					PIXFMT t = var_f(i,j) / (accum(i,j)-1);
+					result = mmax(result, t);
+				}
+			}
+		}
+
+		// Variance is reduced by increased number of samples
+		return result / sqrt(accum(x,y));
 	}
 
 	/**
@@ -148,15 +212,32 @@ public:
 
 		for (uint32 y=0; y < height; y++) {
 			for (uint32 x=0; x < width; x++) {
-				// Convert colors to 8bit gamma corrected color space
 				float32 r = 0.0;
 				float32 g = 0.0;
 				float32 b = 0.0;
+
+//#define VARIANCE
+#ifdef VARIANCE
+				const PIXFMT var_est = variance_estimate(x, y);
+				r = var_est[0];
+				g = var_est[1];
+				b = var_est[2];
+#else
+				// Get color and apply gamma correction
 				if (accum(x,y) != 0.0) {
-					r = pow(pixels(x,y)[0] / accum(x,y), inv_gamma) * 255;
-					g = pow(pixels(x,y)[1] / accum(x,y), inv_gamma) * 255;
-					b = pow(pixels(x,y)[2] / accum(x,y), inv_gamma) * 255;
+					r = pixels(x,y)[0] / accum(x,y);
+					g = pixels(x,y)[1] / accum(x,y);
+					b = pixels(x,y)[2] / accum(x,y);
+					r = pow(r, inv_gamma);
+					g = pow(g, inv_gamma);
+					b = pow(b, inv_gamma);
 				}
+#endif
+
+				// Map [0,1] to [0,255]
+				r *= 255;
+				g *= 255;
+				b *= 255;
 
 				// Add dither
 				r += rng.next_float_c();

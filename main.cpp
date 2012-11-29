@@ -32,16 +32,16 @@
 namespace BPO = boost::program_options;
 
 #define THREADS 1
-#define SPP 1
-#define XRES 512
-#define YRES 288
-//#define XRES 1280
-//#define YRES 720
+#define SPP 4
+//#define XRES 512
+//#define YRES 288
+#define XRES 1280
+#define YRES 720
 #define NUM_RAND_PATCHES 1000
 #define NUM_RAND_SPHERES 1000
 #define SPHERE_RADIUS 1.0
 #define FRAC_MB 0.1
-#define CAMERA_SPIN 10.0
+#define CAMERA_SPIN 5.0
 #define LENS_DIAM 1.0
 
 

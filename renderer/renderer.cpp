@@ -45,7 +45,7 @@ struct Yar: public Functor {
 bool Renderer::render(int thread_count)
 {
 	RNG rng(123456);
-	Film<Color> *image = new Film<Color>(res_x, res_y, 2,
+	Film<Color> *image = new Film<Color>(res_x, res_y,
 	                                     -1.0, -(((float32)(res_y))/res_x),
 	                                     1.0, (((float32)(res_y))/res_x));
 

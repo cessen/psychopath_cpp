@@ -60,13 +60,14 @@ ImageSampler::~ImageSampler()
 float logit(float p, float width = 1.5f)
 {
 	p = 0.001f + (p * 0.998f);
-	p = logf(p/(1.0f-p)) * width * (0.6266f/4);
-
-	return p;
+	return logf(p/(1.0f-p)) * width * (0.6266f/4);
 }
 
 void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, Sample *sample, uint32 ns)
 {
+	sample->ix = x;
+	sample->iy = y;
+
 #define LDS_SAMP
 #ifdef LDS_SAMP
 	// Hash the x and y indices of the pixel and use that as an offset
@@ -85,10 +86,7 @@ void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, Sample *sample, uint
 	hash += seed_offset;
 	const uint32 samp_i = hash + d;
 
-
 	// Generate the sample
-	sample->ix = x;
-	sample->iy = y;
 	sample->x = Halton::sample(5, samp_i);
 	sample->y = Halton::sample(4, samp_i);
 	sample->u = Halton::sample(3, samp_i);
@@ -112,6 +110,8 @@ void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, Sample *sample, uint
 		sample->ns[i] = rng.next_float();
 	}
 #endif
+
+
 
 #define WIDTH 1.5f
 	sample->x = logit(sample->x, WIDTH) + 0.5f;
