@@ -68,6 +68,7 @@ public:
 		uint32 child_index;
 		Primitive *data;
 	};
+	uint32 parent_index;
 
 	uint8 flags;
 
@@ -143,14 +144,14 @@ public:
 	virtual void add_primitives(std::vector<Primitive *> &primitives);
 	virtual bool finalize();
 	virtual Primitive &get_primitive(uint64 id);
-	virtual uint32 get_potential_intersections(Ray ray, uint32 max_potential, uint32 *ids, uint64 *restart);
+	virtual uint32 get_potential_intersections(const Ray &ray, uint32 max_potential, uint32 *ids, uint64 *state);
 
 
 	virtual BBoxT &bounds();
 	virtual bool intersect_ray(Ray &ray, Intersection *intersection=NULL);
 
 	unsigned split_primitives(uint32 first_prim, uint32 last_prim, int32 *axis=NULL);
-	void recursive_build(uint32 me, uint32 first_prim, uint32 last_prim);
+	void recursive_build(uint32 parent, uint32 me, uint32 first_prim, uint32 last_prim);
 };
 
 

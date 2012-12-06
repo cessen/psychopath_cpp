@@ -37,7 +37,7 @@ void BVH::add_primitives(std::vector<Primitive *> &primitives)
 bool BVH::finalize()
 {
 	next_node = 1;
-	recursive_build(0, 0, bag.size()-1);
+	recursive_build(0, 0, 0, bag.size()-1);
 	bbox.copy(nodes[0].b);
 	bag.resize(0);
 	return true;
@@ -292,13 +292,14 @@ uint32 BVH::split_primitives(uint32 first_prim, uint32 last_prim, int32 *axis)
  * Recursively builds the BVH starting at the given node with the given
  * first and last primitive indices (in bag).
  */
-void BVH::recursive_build(uint32 me, uint32 first_prim, uint32 last_prim)
+void BVH::recursive_build(uint32 parent, uint32 me, uint32 first_prim, uint32 last_prim)
 {
 	// Need to allocate more node space?
 	if (me >= nodes.size())
 		nodes.add_chunk();
 
 	nodes[me].flags = 0;
+	nodes[me].parent_index = parent;
 
 	// Leaf node?
 	if (first_prim == last_prim) {
@@ -335,8 +336,8 @@ void BVH::recursive_build(uint32 me, uint32 first_prim, uint32 last_prim)
 			break;
 	}
 
-	recursive_build(child1i, first_prim, split_index);
-	recursive_build(child2i, split_index+1, last_prim);
+	recursive_build(me, child1i, first_prim, split_index);
+	recursive_build(me, child2i, split_index+1, last_prim);
 
 	// Calculate bounds
 	nodes[me].b.copy(nodes[child1i].b);
@@ -381,7 +382,7 @@ bool BVH::intersect_ray(Ray &ray, Intersection *intersection)
 					temp_prim.resize(0);
 					delete nodes[node].data;
 
-					recursive_build(node, 0, bag.size()-1);
+					recursive_build(nodes[node].parent_index, node, 0, bag.size()-1);
 					bag.resize(0);
 				}
 			} else {
@@ -405,8 +406,132 @@ bool BVH::intersect_ray(Ray &ray, Intersection *intersection)
 	return hit;
 }
 
-uint32 BVH::get_potential_intersections(Ray ray, uint32 max_potential, uint32 *ids, uint64 *restart)
+#define FROM_PARENT 0
+#define FROM_SIBLING 1
+#define FROM_CHILD 2
+
+uint32 BVH::get_potential_intersections(const Ray &ray, uint32 max_potential, uint32 *ids, uint64 *state)
 {
-	return 0;
+	uint64 node;
+	uint8 node_state;
+	
+	// Initialize state
+	if (state == NULL) {
+		node = 0;
+		node_state = FROM_PARENT;
+	}
+	else {
+		node = state[0];
+		node_state = state[1];
+	}
+	
+	// Traverse the BVH
+	// TODO: traversal does not currently account for ray direction
+	// when choosing order of traversal.  Fix.
+	bool hit;
+	uint32 hits_so_far = 0;
+	float32 hitt0, hitt1;
+	bool finished = false;
+	while (hits_so_far < max_potential && !finished) {
+		switch (node_state) {
+			case FROM_PARENT:
+				hit = nodes[node].b.intersect_ray(ray, &hitt0, &hitt1);
+				
+				if (!hit) {
+					// If ray misses BBox
+					// Go to sibling node
+					node++;
+					
+					// State: from_sibling
+					node_state = FROM_SIBLING;
+				}
+				else if (nodes[node].flags & IS_LEAF) {
+					// If ray hits BBox and node is leaf
+					// Add primitive to ids
+					ids[hits_so_far] = node;
+					hits_so_far++;
+					
+					// Go to sibling node
+					node++;
+					
+					// State: from_sibling
+					node_state = FROM_SIBLING;
+				}
+				else {
+					// If ray hits BBox and node is not leaf
+					// Go to near child
+					node = nodes[node].child_index;
+					
+					// State: from_parent
+					node_state = FROM_PARENT;
+				}
+				
+				break;
+				
+			case FROM_SIBLING:
+				hit = nodes[node].b.intersect_ray(ray, &hitt0, &hitt1);
+				
+				if (!hit) {
+					// If ray misses BBox, go to parent node.
+					node = nodes[node].parent_index;
+					
+					// State: from_child
+					node_state = FROM_CHILD;
+				}
+				else if (nodes[node].flags & IS_LEAF) {
+					// If ray hits BBox and node is leaf
+					// Add primitive to ids
+					ids[hits_so_far] = node;
+					hits_so_far++;
+					
+					// Go to parent node
+					node = nodes[node].parent_index;
+					
+					// State: from_child
+					node_state = FROM_CHILD;
+				}
+				else {
+					// If ray hits BBox and node is not leaf
+					// Go to near child
+					node = nodes[node].child_index;
+					
+					// State: from_parent
+					node_state = FROM_PARENT;
+				}
+				
+				break;
+				
+			case FROM_CHILD:
+				if (node == 0) {
+					// If root node, finished
+					finished = true;
+				}
+				else if (node == nodes[nodes[node].parent_index].child_index) {
+					// If node is the near child of its parent
+					// Go to sibling
+					node++;
+					
+					// State: from_sibling
+					node_state = FROM_SIBLING;
+				}
+				else {
+					// If node is the far child of its parent
+					// Go to parent
+					node = nodes[node].parent_index;
+					
+					// State: from_child
+					node_state = FROM_CHILD;
+				}
+				
+				break;
+		}
+	}
+	
+	// Store state
+	state[0] = node;
+	state[1] = node_state;
+	
+	// Return the number of primitives accumulated
+	return hits_so_far;
 }
 

@@ -34,11 +34,9 @@ void Tracer::tracey(uint32 start, uint32 end)
 	for (uint32 i = start; i < end; i++) {
 		state[0] = 0;
 		state[1] = 0;
-		potint_count = 1;
 		bool shadow_hit = false;
 
 		do {
-
 			potint_count = scene->world.get_potential_intersections(rayinters[i]->ray, MAX_POTINT, potints, state);
 
 			for (uint32 i2 = 0; i2 < potint_count; i2++) {
@@ -53,7 +51,7 @@ void Tracer::tracey(uint32 start, uint32 end)
 				} else
 					rayinters[i]->hit |= scene->world.get_primitive(potints[i2]).intersect_ray(rayinters[i]->ray, &(rayinters[i]->inter));
 			}
-		} while (potint_count > 1 && !shadow_hit);
+		} while (potint_count > 0 && !shadow_hit);
 	}
 }
 

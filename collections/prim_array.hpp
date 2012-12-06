@@ -25,7 +25,7 @@ public:
 	// Inherited
 	virtual void add_primitives(std::vector<Primitive *> &primitives);
 	virtual bool finalize();
-	virtual uint32 get_potential_intersections(Ray ray, uint32 max_potential, uint32 *ids, uint64 *restart);
+	virtual uint32 get_potential_intersections(const Ray &ray, uint32 max_potential, uint32 *ids, uint64 *state);
 	virtual Primitive &get_primitive(uint64 id);
 
 	virtual BBoxT &bounds();

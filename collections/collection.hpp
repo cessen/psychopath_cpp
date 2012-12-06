@@ -45,13 +45,13 @@ public:
 	 * @param ray The ray.
 	 * @param max_potential The maximum number of results.
 	 * @param ids Output parameter, should be an array of ids at least as large as max_potential.
-	 * @param restart Input/output parameter.  Should point to an array of two 64-bit unsigned ints.
+	 * @param state Input/output parameter.  Should point to an array of two 64-bit unsigned ints.
 	 *                Encodes information about the traversal state.  NULL just gets the first N potentially
 	 *                intersecting primitives.  Array values of all zeros starts as default.
 	 *
 	 * @returns The number of results acquired.  If zero, that means there were no potential intersections.
 	 */
-	virtual uint32 get_potential_intersections(Ray ray, uint32 max_potential, uint32 *ids, uint64 *restart) = 0;
+	virtual uint32 get_potential_intersections(const Ray &ray, uint32 max_potential, uint32 *ids, uint64 *state) = 0;
 
 
 
