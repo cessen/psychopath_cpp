@@ -43,6 +43,11 @@ bool BVH::finalize()
 	return true;
 }
 
+Primitive &BVH::get_primitive(uint64 id)
+{
+	return *(nodes[id].data);
+}
+
 
 struct CompareToMid {
 	int32 dim;
@@ -399,3 +404,9 @@ bool BVH::intersect_ray(Ray &ray, Intersection *intersection)
 
 	return hit;
 }
+
+uint32 BVH::get_potential_intersections(Ray ray, uint32 max_potential, uint32 *ids, uint64 *restart)
+{
+	return 0;
+}
+

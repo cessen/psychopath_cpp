@@ -112,7 +112,7 @@ class Cache
 private:
 	uint32 priority_tally;
 
-	uint32 element_count;
+	uint32 e_count; // element_count
 	uint32 block_count;
 	uint32 cache_size;
 
@@ -147,7 +147,7 @@ public:
 		priority_tally = 1;
 
 		block_count = (element_count_ / BLOCK_SIZE) + 1;
-		element_count = block_count * BLOCK_SIZE;
+		e_count = block_count * BLOCK_SIZE;
 		cache_size = cache_size_;
 
 		// Initialize vectors
@@ -167,7 +167,7 @@ public:
 
 		// Initialize the disk cache file with the appropriate size
 		data_file.open();
-		data_file.seekp((sizeof(T)*element_count)-1);
+		data_file.seekp((sizeof(T)*e_count)-1);
 		data_file.put('\0');
 		data_file.flush();
 
@@ -179,6 +179,13 @@ public:
 	 */
 	uint32 block_size() {
 		return BLOCK_SIZE;
+	}
+
+	/**
+	 * @brief Returns the number of elements.
+	 */
+	uint32 element_count() {
+		return e_count;
 	}
 
 	/**

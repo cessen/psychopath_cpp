@@ -13,7 +13,7 @@
 #include <iostream>
 #include <vector>
 #include "primitive.hpp"
-#include "aggregate.hpp"
+#include "collection.hpp"
 #include "ray.hpp"
 #include "bbox.hpp"
 #include "utils.hpp"
@@ -128,7 +128,7 @@ public:
 /*
  * A bounding volume hierarchy.
  */
-class SSH: public Aggregate
+class SSH: public Collection
 {
 private:
 	BBox bbox;

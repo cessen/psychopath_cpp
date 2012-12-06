@@ -37,11 +37,11 @@ namespace BPO = boost::program_options;
 //#define YRES 288
 #define XRES 1280
 #define YRES 720
-#define NUM_RAND_PATCHES 1000
-#define NUM_RAND_SPHERES 1000
+#define NUM_RAND_PATCHES 000
+#define NUM_RAND_SPHERES 100
 #define SPHERE_RADIUS 1.0
 #define FRAC_MB 0.1
-#define CAMERA_SPIN 5.0
+#define CAMERA_SPIN 0.0
 #define LENS_DIAM 1.0
 
 
@@ -118,7 +118,7 @@ int main(int argc, char **argv)
 	 */
 	int spp = SPP;
 	int threads = THREADS;
-	std::string output_path = "test.png";
+	std::string output_path = "default.png";
 	Resolution resolution(XRES, YRES);
 
 	// Define them

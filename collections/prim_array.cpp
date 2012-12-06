@@ -37,6 +37,11 @@ bool PrimArray::finalize()
 	return true;
 }
 
+Primitive &PrimArray::get_primitive(uint64 id)
+{
+	return *(children[id]);
+}
+
 BBoxT &PrimArray::bounds()
 {
 	return bbox;
@@ -77,4 +82,31 @@ bool PrimArray::intersect_ray(Ray &ray, Intersection *intersection)
 	}
 
 	return hit;
+}
+
+
+uint32 PrimArray::get_potential_intersections(Ray ray, uint32 max_potential, uint32 *ids, uint64 *restart)
+{
+	const uint32 size = children.size();
+	float32 tnear, tfar;
+
+	// Fetch starting index
+	uint32 i = 0;
+	if (restart != NULL)
+		i = restart[0];
+
+	// Accumulate potential primitive intersections
+	uint32 hits_so_far = 0;
+	for (; i < size && hits_so_far < max_potential; i++) {
+		if (children[i]->bounds().intersect_ray(ray, &tnear, &tfar)) {
+			ids[hits_so_far] = i;
+			hits_so_far++;
+		}
+	}
+
+	// Write last index
+	if (restart != NULL)
+		restart[0] = i;
+
+	return hits_so_far;
 }

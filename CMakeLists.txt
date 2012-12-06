@@ -86,7 +86,7 @@ include_directories (${OSL_INCLUDE})
 #--------------------------------------
 include_directories ("${PROJECT_BINARY_DIR}",
                      "${PROJECT_SOURCE_DIR}",
-                     "${PROJECT_SOURCE_DIR}/acceleration",
+                     "${PROJECT_SOURCE_DIR}/collections",
                      "${PROJECT_SOURCE_DIR}/basics",
                      "${PROJECT_SOURCE_DIR}/grid",
                      "${PROJECT_SOURCE_DIR}/integrator",
@@ -105,7 +105,7 @@ include_directories ("${PROJECT_BINARY_DIR}",
 #--------------------------------------
 # Build
 #--------------------------------------
-add_subdirectory(acceleration)
+add_subdirectory(collections)
 add_subdirectory(basics)
 add_subdirectory(grid)
 add_subdirectory(integrator)
@@ -127,7 +127,7 @@ set (PSYCHO_LIB
 	primitives
 	#basics
 	grid
-	acceleration
+	collections
 	config)
 
 # Main executable

@@ -5,7 +5,7 @@
 
 #include <vector>
 #include "primitive.hpp"
-#include "aggregate.hpp"
+#include "collection.hpp"
 #include "ray.hpp"
 #include "bbox.hpp"
 
@@ -13,7 +13,7 @@
 /*
  * The simplest aggregate.  Just a list of primitives.
  */
-class PrimArray: public Aggregate
+class PrimArray: public Collection
 {
 private:
 	BBoxT bbox;
@@ -25,6 +25,8 @@ public:
 	// Inherited
 	virtual void add_primitives(std::vector<Primitive *> &primitives);
 	virtual bool finalize();
+	virtual uint32 get_potential_intersections(Ray ray, uint32 max_potential, uint32 *ids, uint64 *restart);
+	virtual Primitive &get_primitive(uint64 id);
 
 	virtual BBoxT &bounds();
 	virtual bool intersect_ray(Ray &ray, Intersection *intersection=NULL);

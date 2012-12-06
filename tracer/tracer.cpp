@@ -23,13 +23,37 @@ uint32 Tracer::queue_rays(const Array<RayInter *> &rayinters_)
 	return size;
 }
 
+#define MAX_POTINT 8
+
 void Tracer::tracey(uint32 start, uint32 end)
 {
+	uint32 potints[MAX_POTINT];
+	uint32 potint_count;
+	uint64 state[2];
+
 	for (uint32 i = start; i < end; i++) {
-		if (rayinters[i]->ray.is_shadow_ray)
-			rayinters[i]->hit = scene->intersect_ray(rayinters[i]->ray, NULL);
-		else
-			rayinters[i]->hit = scene->intersect_ray(rayinters[i]->ray, &(rayinters[i]->inter));
+		state[0] = 0;
+		state[1] = 0;
+		potint_count = 1;
+		bool shadow_hit = false;
+
+		do {
+
+			potint_count = scene->world.get_potential_intersections(rayinters[i]->ray, MAX_POTINT, potints, state);
+
+			for (uint32 i2 = 0; i2 < potint_count; i2++) {
+				if (rayinters[i]->ray.is_shadow_ray) {
+					rayinters[i]->hit |= scene->world.get_primitive(potints[i2]).intersect_ray(rayinters[i]->ray, NULL);
+
+					// Early out for shadow rays
+					if (rayinters[i]->hit) {
+						shadow_hit = true;
+						break;
+					}
+				} else
+					rayinters[i]->hit |= scene->world.get_primitive(potints[i2]).intersect_ray(rayinters[i]->ray, &(rayinters[i]->inter));
+			}
+		} while (potint_count > 1 && !shadow_hit);
 	}
 }
 
