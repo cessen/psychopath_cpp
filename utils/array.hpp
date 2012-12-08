@@ -2,6 +2,7 @@
 #define ARRAY_HPP
 
 #include <assert.h>
+#include <stdlib.h>
 #include "numtype.h"
 
 /**
@@ -90,6 +91,26 @@ public:
 	 */
 	const size_type &size() const {
 		return size_;
+	}
+
+	/**
+	 * @brief Returns pointer to the first element in the array.
+	 */
+	T *begin() const {
+		if (size_ == 0)
+			return NULL;
+		else
+			return &(data[0]);
+	}
+
+	/**
+	 * @brief Returns pointer to the last element in the array.
+	 */
+	T *end() const {
+		if (size_ == 0)
+			return NULL;
+		else
+			return &(data[size_-1]);
 	}
 
 	/**

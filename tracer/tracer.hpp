@@ -16,6 +16,15 @@
 
 
 /**
+ * Records a potential intersection.
+ */
+struct PotentialInter {
+	uint64 object_id;
+	RayInter *ray_inter;
+};
+
+
+/**
  * @brief Traces rays in a scene.
  *
  * The Tracer is responsible for doing the actual ray-tracing in a scene.
@@ -41,8 +50,11 @@ class Tracer
 {
 public:
 	Scene *scene;
-	Array<RayInter *> rayinters;
 	int thread_count;
+
+	Array<RayInter *> ray_inters; // Ray/Intersection data
+	Array<uint64> states; // Ray states, for interrupting and resuming traversal
+	Array<PotentialInter> potential_inters; // "Potential intersection" buffer
 
 	Tracer(Scene *scene_, int thread_count_=1) {
 		scene = scene_;
@@ -63,8 +75,23 @@ public:
 	uint32 trace_rays();
 
 private:
-	void tracey(uint32 start, uint32 end);
+	/**
+	 * Accumulates potential intersections into the potential_inters buffer.
+	 * The buffer is sized appropriately and sorted by the time this method
+	 * finished.
+	 *
+	 * @returns The total number of potential intersections accumulated.
+	 */
+	uint64 accumulate_potential_intersections();
+
+	/**
+	 * Traces all of the potential intersections in the potential_inters buffer.
+	 * This method assumes the the buffer is properly sorted by object id,
+	 * and that it is sized properly so that there are no empty potential
+	 * intersections.
+	 */
+	void trace_potential_intersections();
 };
 
-#endif // TRACER_H
+#endif // TRACER_HPP
 

@@ -1,16 +1,16 @@
-- Add unit tests for the disk cache class
+//- Add unit tests for the disk cache class
 
 - Triangle primitive
 
-- Make min_t/max_t ray updating the responsibility of the Tracer, not the primitives
+? Make min_t/max_t ray updating the responsibility of the Tracer, not the primitives
 
 - Two-stage ray tracing, similar to the Rayes (not Reyes) paper
 	- Create "Instance" class
 	- Modify Scene class so that only instances can be stored directly
 	  in the scene-level BVH.
-	- Implement an alternative BVH traversal which can be resumed for a ray.
+	//- Implement an alternative BVH traversal which can be resumed for a ray.
 	  May require modifying rays to be traversal-aware.
-	- Implement BVH method to return "next n leaf node hits".
+	//- Implement BVH method to return "next n leaf node hits".
 	- Change Tracer to use this stuff in a naive useless way, to verify.
 	- ...
 

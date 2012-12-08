@@ -414,17 +414,16 @@ uint32 BVH::get_potential_intersections(const Ray &ray, uint32 max_potential, ui
 {
 	uint64 node;
 	uint8 node_state;
-	
+
 	// Initialize state
 	if (state == NULL) {
 		node = 0;
 		node_state = FROM_PARENT;
-	}
-	else {
+	} else {
 		node = state[0];
 		node_state = state[1];
 	}
-	
+
 	// Traverse the BVH
 	// TODO: traversal does not currently account for ray direction
 	// when choosing order of traversal.  Fix.
@@ -436,101 +435,95 @@ uint32 BVH::get_potential_intersections(const Ray &ray, uint32 max_potential, ui
 		switch (node_state) {
 			case FROM_PARENT:
 				hit = nodes[node].b.intersect_ray(ray, &hitt0, &hitt1);
-				
+
 				if (!hit) {
 					// If ray misses BBox
 					// Go to sibling node
 					node++;
-					
+
 					// State: from_sibling
 					node_state = FROM_SIBLING;
-				}
-				else if (nodes[node].flags & IS_LEAF) {
+				} else if (nodes[node].flags & IS_LEAF) {
 					// If ray hits BBox and node is leaf
 					// Add primitive to ids
 					ids[hits_so_far] = node;
 					hits_so_far++;
-					
+
 					// Go to sibling node
 					node++;
-					
+
 					// State: from_sibling
 					node_state = FROM_SIBLING;
-				}
-				else {
+				} else {
 					// If ray hits BBox and node is not leaf
 					// Go to near child
 					node = nodes[node].child_index;
-					
+
 					// State: from_parent
 					node_state = FROM_PARENT;
 				}
-				
+
 				break;
-				
+
 			case FROM_SIBLING:
 				hit = nodes[node].b.intersect_ray(ray, &hitt0, &hitt1);
-				
+
 				if (!hit) {
 					// If ray misses BBox, go to parent node.
 					node = nodes[node].parent_index;
-					
+
 					// State: from_child
 					node_state = FROM_CHILD;
-				}
-				else if (nodes[node].flags & IS_LEAF) {
+				} else if (nodes[node].flags & IS_LEAF) {
 					// If ray hits BBox and node is leaf
 					// Add primitive to ids
 					ids[hits_so_far] = node;
 					hits_so_far++;
-					
+
 					// Go to parent node
 					node = nodes[node].parent_index;
-					
+
 					// State: from_child
 					node_state = FROM_CHILD;
-				}
-				else {
+				} else {
 					// If ray hits BBox and node is not leaf
 					// Go to near child
 					node = nodes[node].child_index;
-					
+
 					// State: from_parent
 					node_state = FROM_PARENT;
 				}
-				
+
 				break;
-				
+
 			case FROM_CHILD:
 				if (node == 0) {
 					// If root node, finished
 					finished = true;
-				}
-				else if (node == nodes[nodes[node].parent_index].child_index) {
+				} else if (node == nodes[nodes[node].parent_index].child_index) {
 					// If node is the near child of its parent
 					// Go to sibling
 					node++;
-					
+
 					// State: from_sibling
 					node_state = FROM_SIBLING;
-				}
-				else {
+				} else {
 					// If node is the far child of its parent
 					// Go to parent
 					node = nodes[node].parent_index;
-					
+
 					// State: from_child
 					node_state = FROM_CHILD;
 				}
-				
+
 				break;
 		}
 	}
-	
+
 	// Store state
 	state[0] = node;
 	state[1] = node_state;
-	
+
 	// Return the number of primitives accumulated
 	return hits_so_far;
 }
