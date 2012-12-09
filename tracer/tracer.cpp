@@ -81,10 +81,13 @@ void Tracer::trace_potential_intersections()
 		RayInter *ray_inter = potential_inters[i].ray_inter;
 		uint64 id = potential_inters[i].object_id;
 
-		if (ray_inter->ray.is_shadow_ray)
-			ray_inter->hit |= scene->world.get_primitive(id).intersect_ray(ray_inter->ray, NULL);
-		else
+		if (ray_inter->ray.is_shadow_ray) {
+			if (!ray_inter->hit)
+				ray_inter->hit |= scene->world.get_primitive(id).intersect_ray(ray_inter->ray, NULL);
+		}
+		else {
 			ray_inter->hit |= scene->world.get_primitive(id).intersect_ray(ray_inter->ray, &(ray_inter->inter));
+		}
 	}
 }
 

@@ -31,6 +31,30 @@
 #include <boost/program_options.hpp>
 namespace BPO = boost::program_options;
 
+/*
+ * Previous results:
+ *
+ * Pre-ray-reordering:
+ * 1000 spheres / 0 patches
+ * 1280x720 @ 4spp
+ * Single threaded
+ * ~26 second
+ *
+ * Naive-ray-reordering:
+ * 1000 spheres / 0 patches
+ * 1280x720 @ 4spp
+ * Single threaded
+ * 4 potints
+ * ~43 second
+ *
+ * Naive-ray-reordering:
+ * 1000 spheres / 0 patches
+ * 1280x720 @ 4spp
+ * Single threaded
+ * 1 potints
+ * ~39 second
+ */
+
 #define THREADS 1
 #define SPP 4
 //#define XRES 512
@@ -38,7 +62,7 @@ namespace BPO = boost::program_options;
 #define XRES 1280
 #define YRES 720
 #define NUM_RAND_PATCHES 0000
-#define NUM_RAND_SPHERES 1000
+#define NUM_RAND_SPHERES 1000 
 #define SPHERE_RADIUS 1.0
 #define FRAC_MB 0.1
 #define CAMERA_SPIN 0.0

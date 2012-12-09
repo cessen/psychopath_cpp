@@ -445,7 +445,6 @@ uint32 BVH::get_potential_intersections(const Ray &ray, uint32 max_potential, ui
 					node_state = FROM_SIBLING;
 				} else if (nodes[node].flags & IS_LEAF) {
 					// If ray hits BBox and node is leaf
-					// Add primitive to ids
 					ids[hits_so_far] = node;
 					hits_so_far++;
 
@@ -476,7 +475,6 @@ uint32 BVH::get_potential_intersections(const Ray &ray, uint32 max_potential, ui
 					node_state = FROM_CHILD;
 				} else if (nodes[node].flags & IS_LEAF) {
 					// If ray hits BBox and node is leaf
-					// Add primitive to ids
 					ids[hits_so_far] = node;
 					hits_so_far++;
 

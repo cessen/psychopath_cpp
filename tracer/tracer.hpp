@@ -12,16 +12,8 @@
 
 #include "ray.hpp"
 #include "rayinter.hpp"
+#include "potentialinter.hpp"
 #include "scene.hpp"
-
-
-/**
- * Records a potential intersection.
- */
-struct PotentialInter {
-	uint64 object_id;
-	RayInter *ray_inter;
-};
 
 
 /**
