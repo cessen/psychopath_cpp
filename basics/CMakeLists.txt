@@ -1,1 +1,2 @@
-#add_library(basics)
+add_library(basics
+	bbox)

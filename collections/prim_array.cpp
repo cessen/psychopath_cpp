@@ -37,7 +37,7 @@ bool PrimArray::finalize()
 	return true;
 }
 
-Primitive &PrimArray::get_primitive(uint64 id)
+Primitive &PrimArray::get_primitive(uint_i id)
 {
 	return *(children[id]);
 }
@@ -85,7 +85,7 @@ bool PrimArray::intersect_ray(Ray &ray, Intersection *intersection)
 }
 
 
-uint32 PrimArray::get_potential_intersections(const Ray &ray, uint32 max_potential, uint32 *ids, uint64 *state)
+uint32 PrimArray::get_potential_intersections(const Ray &ray, uint32 max_potential, uint_i *ids, uint64 *state)
 {
 	const uint32 size = children.size();
 	float32 tnear, tfar;

@@ -16,7 +16,7 @@ union V4 {
 };
 
 /**
- * @brief A single axis-aligned bounding box.
+ * @brief An axis-aligned bounding box.
  */
 struct BBox {
 	Vec3 min;
@@ -210,6 +210,13 @@ public:
 		} else {
 			return bbox[0];
 		}
+	}
+
+	/**
+	 * @brief Number of time samples.
+	 */
+	uint_i size() {
+		return bbox.size();
 	}
 
 	BBox &operator[](const int32 &i) {

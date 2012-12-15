@@ -5,6 +5,7 @@
 
 #include "vector.hpp"
 
+#include <iterator>
 #include <cmath>
 #include <assert.h>
 
@@ -28,6 +29,46 @@ static inline T lerp2d(float32 alpha_u, float32 alpha_v,
 	T temp1 = (s00 * (1.0-alpha_u)) + (s10 * alpha_u);
 	T temp2 = (s01 * (1.0-alpha_u)) + (s11 * alpha_u);
 	return (temp1 * (1.0-alpha_v)) + (temp2 * alpha_v);
+}
+
+
+/*
+ * Quick lookup of what indices and alpha we should use to interpolate
+ * time samples.
+ * The first index and alpha are put into i and alpha respectively.
+ */
+static inline bool calc_time_interp(const uint8& time_count, const float32 &time, uint32 *i, float32 *alpha)
+{
+	if (time_count < 2)
+		return false;
+
+	if (time < 1.0) {
+		const float32 temp = time * (time_count - 1);
+		*i = temp;
+		*alpha = temp - (float32)(*i);
+	} else {
+		*i = time_count - 2;
+		*alpha = 1.0;
+	}
+
+	return true;
+}
+
+template <class T, class iterator>
+static inline const T lerp_seq(const float32 &alpha, const iterator &seq, const uint_i &seq_length)
+{
+	if (seq_length == 1)
+		return seq[0];
+	else if (seq_length == 2)
+		return lerp(alpha, seq[0], seq[1]);
+	else if (alpha < 1.0) {
+		const float32 temp = alpha * (seq_length - 1);
+		const uint_i index = (uint_i)temp;
+		const float32 nalpha = temp - index;
+		return lerp(nalpha, seq[index], seq[index+1]);
+	}
+
+	return seq[seq_length-1];
 }
 
 #define QPI (3.1415926535897932384626433 / 4)
@@ -145,29 +186,6 @@ static inline Vec3 zup_to_vec(Vec3 from, Vec3 toz)
 	// vector to a space composed of tox, toy, and toz
 	// as the x, y, and z axes.
 	return (tox * from.x) + (toy * from.y) + (toz * from.z);
-}
-
-
-/*
- * Quick lookup of what indices and alpha we should use to interpolate
- * time samples.
- * The first index and alpha are put into i and alpha respectively.
- */
-static inline bool calc_time_interp(const uint8& time_count, const float32 &time, uint32 *i, float32 *alpha)
-{
-	if (time_count < 2)
-		return false;
-
-	if (time < 1.0) {
-		const float32 temp = time * (time_count - 1);
-		*i = temp;
-		*alpha = temp - (float32)(*i);
-	} else {
-		*i = time_count - 2;
-		*alpha = 1.0;
-	}
-
-	return true;
 }
 
 

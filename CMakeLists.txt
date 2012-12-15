@@ -125,7 +125,7 @@ set (PSYCHO_LIB
 	tracer
 	sampling
 	primitives
-	#basics
+	basics
 	grid
 	collections
 	config)

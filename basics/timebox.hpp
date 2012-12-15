@@ -51,6 +51,10 @@ public:
 	const T &operator[](const int32 &i) const {
 		return states[i];
 	}
+
+	uint_i size() const {
+		return state_count;
+	}
 };
 
 

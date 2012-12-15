@@ -12,15 +12,16 @@
 #include "bbox.hpp"
 #include "utils.hpp"
 #include "vector.hpp"
+#include "chunked_array.hpp"
 
-#define BVH_CHUNK_SIZE 1024
 
+#define BVH_NODE_CHUNK_SIZE 4096
 
 struct BucketInfo {
 	BucketInfo() {
 		count = 0;
 	}
-	int32 count;
+	uint_i count;
 	BBoxT bb;
 };
 
@@ -63,61 +64,21 @@ public:
 class BVHNode
 {
 public:
-	BBoxT b;
+	uint_i bbox_index;
 	union {
-		uint32 child_index;
+		uint_i child_index;
 		Primitive *data;
 	};
-	uint32 parent_index;
-
-	uint8 flags;
+	uint_i parent_index;
+	uint16 ts; // Time sample count
+	uint16 flags;
 
 	BVHNode() {
+		bbox_index = 0;
 		child_index = 0;
 		data = NULL;
+		ts = 0;
 		flags = 0;
-	}
-};
-
-
-/*
- * A collection of BVHNodes.  Like a resizable array.
- * Allocates nodes in chunks, for less RAM shuffling.
- */
-class BVHNodes
-{
-public:
-	std::vector<BVHNode *> nodes;
-	uint32 num_nodes;
-
-	BVHNodes() {
-		num_nodes = 0;
-	}
-
-	~BVHNodes() {
-		int32 s = nodes.size();
-		for (int32 i=0; i < s; i++) {
-			delete [] nodes[i];
-		}
-	}
-
-	BVHNode &operator[](const int32 &i) {
-		return (nodes[i/BVH_CHUNK_SIZE])[i%BVH_CHUNK_SIZE];
-	}
-
-	const BVHNode &operator[](const int32 &i) const {
-		return (nodes[i/BVH_CHUNK_SIZE])[i%BVH_CHUNK_SIZE];
-	}
-
-	uint32 size() const {
-		return num_nodes;
-	}
-
-	void add_chunk() {
-		int32 s = nodes.size();
-		nodes.resize(s+1);
-		nodes[s] = new BVHNode[BVH_CHUNK_SIZE];
-		num_nodes = BVH_CHUNK_SIZE * (s+1);
 	}
 };
 
@@ -130,28 +91,42 @@ class BVH: public Collection
 {
 private:
 	BBoxT bbox;
-	BVHNodes nodes;
-	uint32 next_node;
+	ChunkedArray<BVHNode, BVH_NODE_CHUNK_SIZE> nodes;
+	ChunkedArray<BBox, BVH_NODE_CHUNK_SIZE> bboxes;
+	uint_i next_node, next_bbox;
 	std::vector<BVHPrimitive> bag;  // Temporary holding spot for primitives not yet added to the hierarchy
+
+	/**
+	 * @brief Tests whether a ray intersects a node or not.
+	 */
+	bool intersect_node(uint_i node, const Ray &ray, float32 *near_t, float32 *far_t) {
+		if (nodes[node].ts == 1) {
+			return bboxes[nodes[node].bbox_index].intersect_ray(ray, near_t, far_t);
+		} else {
+			const BBox b = lerp_seq<BBox, ChunkedArrayIterator<BBox, BVH_NODE_CHUNK_SIZE> >(ray.time, bboxes.get_iterator(nodes[node].bbox_index), nodes[node].ts);
+			return b.intersect_ray(ray, near_t, far_t);
+		}
+	}
 
 public:
 	BVH() {
 		next_node = 0;
+		next_bbox = 0;
 	}
 	virtual ~BVH();
 
 	// Inherited
 	virtual void add_primitives(std::vector<Primitive *> &primitives);
 	virtual bool finalize();
-	virtual Primitive &get_primitive(uint64 id);
-	virtual uint32 get_potential_intersections(const Ray &ray, uint32 max_potential, uint32 *ids, uint64 *state);
+	virtual Primitive &get_primitive(uint_i id);
+	virtual uint32 get_potential_intersections(const Ray &ray, uint32 max_potential, uint_i *ids, uint64 *state);
 
 
 	virtual BBoxT &bounds();
 	virtual bool intersect_ray(Ray &ray, Intersection *intersection=NULL);
 
-	unsigned split_primitives(uint32 first_prim, uint32 last_prim, int32 *axis=NULL);
-	void recursive_build(uint32 parent, uint32 me, uint32 first_prim, uint32 last_prim);
+	unsigned split_primitives(uint_i first_prim, uint_i last_prim, int32 *axis=NULL);
+	void recursive_build(uint_i parent, uint_i me, uint_i first_prim, uint_i last_prim);
 };
 
 

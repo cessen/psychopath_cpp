@@ -17,7 +17,7 @@
 
 BVH::~BVH()
 {
-	for (uint32 i=0; i < next_node; i++) {
+	for (uint_i i=0; i < next_node; i++) {
 		if (nodes[i].flags & IS_LEAF)
 			delete nodes[i].data;
 	}
@@ -25,11 +25,11 @@ BVH::~BVH()
 
 void BVH::add_primitives(std::vector<Primitive *> &primitives)
 {
-	int32 start = bag.size();
-	int32 added = primitives.size();
+	uint_i start = bag.size();
+	uint_i added = primitives.size();
 	bag.resize(start + added);
 
-	for (int32 i=0; i < added; i++) {
+	for (uint_i i=0; i < added; i++) {
 		bag[start + i].init(primitives[i]);
 	}
 }
@@ -38,12 +38,11 @@ bool BVH::finalize()
 {
 	next_node = 1;
 	recursive_build(0, 0, 0, bag.size()-1);
-	bbox.copy(nodes[0].b);
 	bag.resize(0);
 	return true;
 }
 
-Primitive &BVH::get_primitive(uint64 id)
+Primitive &BVH::get_primitive(uint_i id)
 {
 	return *(nodes[id].data);
 }
@@ -84,7 +83,7 @@ struct CompareDim {
  * Returns the split index (last index of the first group).
  */
 #ifndef SAH
-uint32 BVH::split_primitives(uint32 first_prim, uint32 last_prim, int32 *axis)
+uint32 BVH::split_primitives(uint_i first_prim, uint_i last_prim, int32 *axis)
 {
 	// Find the minimum and maximum centroid values on each axis
 	Vec3 min, max;
@@ -126,7 +125,7 @@ uint32 BVH::split_primitives(uint32 first_prim, uint32 last_prim, int32 *axis)
 #else
 
 /* SAH-based split */
-uint32 BVH::split_primitives(uint32 first_prim, uint32 last_prim, int32 *axis)
+uint32 BVH::split_primitives(uint_i first_prim, uint_i last_prim, int32 *axis)
 {
 	uint32 split;
 
@@ -292,11 +291,11 @@ uint32 BVH::split_primitives(uint32 first_prim, uint32 last_prim, int32 *axis)
  * Recursively builds the BVH starting at the given node with the given
  * first and last primitive indices (in bag).
  */
-void BVH::recursive_build(uint32 parent, uint32 me, uint32 first_prim, uint32 last_prim)
+void BVH::recursive_build(uint_i parent, uint_i me, uint_i first_prim, uint_i last_prim)
 {
 	// Need to allocate more node space?
 	if (me >= nodes.size())
-		nodes.add_chunk();
+		nodes.resize(nodes.size()+256);
 
 	nodes[me].flags = 0;
 	nodes[me].parent_index = parent;
@@ -305,7 +304,18 @@ void BVH::recursive_build(uint32 parent, uint32 me, uint32 first_prim, uint32 la
 	if (first_prim == last_prim) {
 		nodes[me].flags |= IS_LEAF;
 		nodes[me].data = bag[first_prim].data;
-		nodes[me].b.copy(bag[first_prim].data->bounds());
+
+		// Get bounding boxes
+		nodes[me].ts = bag[first_prim].data->bounds().size();
+		if ((next_bbox + nodes[me].ts) >= bboxes.size()) // Make sure we have enough space
+			bboxes.resize(next_bbox + nodes[me].ts + 256); // Allocate space if not
+		for (uint_i i = 0; i < nodes[me].ts; i++) {
+			// Copy bounding boxes
+			bboxes[next_bbox+i] = bag[first_prim].data->bounds()[i];
+		}
+		nodes[me].bbox_index = next_bbox;
+		next_bbox += nodes[me].ts;
+
 		return;
 	}
 
@@ -340,8 +350,36 @@ void BVH::recursive_build(uint32 parent, uint32 me, uint32 first_prim, uint32 la
 	recursive_build(me, child2i, split_index+1, last_prim);
 
 	// Calculate bounds
-	nodes[me].b.copy(nodes[child1i].b);
-	nodes[me].b.merge_with(nodes[child2i].b);
+	// If both children have same number of time samples
+	/*if (nodes[child1i].ts == nodes[child2i].ts) {
+		nodes[me].ts = nodes[child1i].ts;
+		if ((next_bbox + nodes[me].ts) >= bboxes.size()) // Make sure we have enough space
+			bboxes.resize(next_bbox + nodes[me].ts + 256); // Allocate space if not
+
+		for (uint_i i = 0; i < nodes[me].ts; i++) {
+			// Copy merged bounding boxes
+			bboxes[next_bbox+i] =          bboxes[nodes[child1i].bbox_index+i];
+			bboxes[next_bbox+i].merge_with(bboxes[nodes[child2i].bbox_index+i]);
+		}
+
+	}
+	// If children have different number of time samples
+	else {*/
+	nodes[me].ts = 1;
+	if ((next_bbox + nodes[me].ts) >= bboxes.size()) // Make sure we have enough space
+		bboxes.resize(next_bbox + nodes[me].ts + 256); // Allocate space if not
+
+	// Merge children's bboxes to get our bbox
+	bboxes[next_bbox] = bboxes[nodes[child1i].bbox_index];
+	for (uint_i i = 1; i < nodes[child1i].ts; i++) {
+		bboxes[next_bbox].merge_with(bboxes[nodes[child1i].bbox_index+i]);
+	}
+	for (uint_i i = 0; i < nodes[child2i].ts; i++) {
+		bboxes[next_bbox].merge_with(bboxes[nodes[child2i].bbox_index+i]);
+	}
+	//}
+	nodes[me].bbox_index = next_bbox;
+	next_bbox += nodes[me].ts;
 }
 
 
@@ -361,7 +399,7 @@ bool BVH::intersect_ray(Ray &ray, Intersection *intersection)
 	uint32 todo[64];
 
 	while (true) {
-		if (nodes[node].b.intersect_ray(ray, &hitt0, &hitt1)) {
+		if (intersect_node(node, ray, &hitt0, &hitt1)) {
 			if (nodes[node].flags & IS_LEAF) {
 				if (nodes[node].data->is_traceable(ray.min_width(hitt0, hitt1))) {
 					// Trace!
@@ -410,7 +448,7 @@ bool BVH::intersect_ray(Ray &ray, Intersection *intersection)
 #define FROM_SIBLING 1
 #define FROM_CHILD 2
 
-uint32 BVH::get_potential_intersections(const Ray &ray, uint32 max_potential, uint32 *ids, uint64 *state)
+uint32 BVH::get_potential_intersections(const Ray &ray, uint32 max_potential, uint_i *ids, uint64 *state)
 {
 	uint64 node;
 	uint8 node_state;
@@ -425,38 +463,48 @@ uint32 BVH::get_potential_intersections(const Ray &ray, uint32 max_potential, ui
 	}
 
 	// Traverse the BVH
-	// TODO: traversal does not currently account for ray direction
-	// when choosing order of traversal.  Fix.
 	bool hit;
 	uint32 hits_so_far = 0;
 	float32 hitt0, hitt1;
 	bool finished = false;
 	while (hits_so_far < max_potential && !finished) {
+		BVHNode *current = &(nodes[node]);
+		BVHNode *parent = &(nodes[current->parent_index]);
+
 		switch (node_state) {
 			case FROM_PARENT:
-				hit = nodes[node].b.intersect_ray(ray, &hitt0, &hitt1);
+				hit = intersect_node(node, ray, &hitt0, &hitt1);
 
 				if (!hit) {
 					// If ray misses BBox
 					// Go to sibling node
-					node++;
+					if (ray.d_is_neg[parent->flags & SPLIT_MASK])
+						node--;
+					else
+						node++;
 
 					// State: from_sibling
 					node_state = FROM_SIBLING;
-				} else if (nodes[node].flags & IS_LEAF) {
+				} else if (current->flags & IS_LEAF) {
 					// If ray hits BBox and node is leaf
 					ids[hits_so_far] = node;
 					hits_so_far++;
 
 					// Go to sibling node
-					node++;
+					if (ray.d_is_neg[parent->flags & SPLIT_MASK])
+						node--;
+					else
+						node++;
 
 					// State: from_sibling
 					node_state = FROM_SIBLING;
 				} else {
 					// If ray hits BBox and node is not leaf
 					// Go to near child
-					node = nodes[node].child_index;
+					if (ray.d_is_neg[current->flags & SPLIT_MASK])
+						node = current->child_index+1;
+					else
+						node = current->child_index;
 
 					// State: from_parent
 					node_state = FROM_PARENT;
@@ -465,28 +513,31 @@ uint32 BVH::get_potential_intersections(const Ray &ray, uint32 max_potential, ui
 				break;
 
 			case FROM_SIBLING:
-				hit = nodes[node].b.intersect_ray(ray, &hitt0, &hitt1);
+				hit = intersect_node(node, ray, &hitt0, &hitt1);
 
 				if (!hit) {
 					// If ray misses BBox, go to parent node.
-					node = nodes[node].parent_index;
+					node = current->parent_index;
 
 					// State: from_child
 					node_state = FROM_CHILD;
-				} else if (nodes[node].flags & IS_LEAF) {
+				} else if (current->flags & IS_LEAF) {
 					// If ray hits BBox and node is leaf
 					ids[hits_so_far] = node;
 					hits_so_far++;
 
 					// Go to parent node
-					node = nodes[node].parent_index;
+					node = current->parent_index;
 
 					// State: from_child
 					node_state = FROM_CHILD;
 				} else {
 					// If ray hits BBox and node is not leaf
 					// Go to near child
-					node = nodes[node].child_index;
+					if (ray.d_is_neg[current->flags & SPLIT_MASK])
+						node = current->child_index+1;
+					else
+						node = current->child_index;
 
 					// State: from_parent
 					node_state = FROM_PARENT;
@@ -498,7 +549,14 @@ uint32 BVH::get_potential_intersections(const Ray &ray, uint32 max_potential, ui
 				if (node == 0) {
 					// If root node, finished
 					finished = true;
-				} else if (node == nodes[nodes[node].parent_index].child_index) {
+				} else if (ray.d_is_neg[parent->flags & SPLIT_MASK] && node == (parent->child_index+1)) {
+					// If node is the near child of its parent
+					// Go to sibling
+					node--;
+
+					// State: from_sibling
+					node_state = FROM_SIBLING;
+				} else if (!(ray.d_is_neg[parent->flags & SPLIT_MASK]) && node == (parent->child_index)) {
 					// If node is the near child of its parent
 					// Go to sibling
 					node++;
@@ -508,7 +566,7 @@ uint32 BVH::get_potential_intersections(const Ray &ray, uint32 max_potential, ui
 				} else {
 					// If node is the far child of its parent
 					// Go to parent
-					node = nodes[node].parent_index;
+					node = current->parent_index;
 
 					// State: from_child
 					node_state = FROM_CHILD;
@@ -519,8 +577,10 @@ uint32 BVH::get_potential_intersections(const Ray &ray, uint32 max_potential, ui
 	}
 
 	// Store state
-	state[0] = node;
-	state[1] = node_state;
+	if (state != NULL) {
+		state[0] = node;
+		state[1] = node_state;
+	}
 
 	// Return the number of primitives accumulated
 	return hits_so_far;

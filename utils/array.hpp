@@ -14,7 +14,7 @@
 template <class T>
 class Array
 {
-	typedef uint32 size_type;
+	typedef uint_i size_type;
 	size_type size_;
 	size_type capacity_;
 	T *data;

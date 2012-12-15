@@ -23,6 +23,11 @@
 #include "point_light.hpp"
 #include "sphere_light.hpp"
 
+#include "ray.hpp"
+#include "intersection.hpp"
+#include "rayinter.hpp"
+#include "potentialinter.hpp"
+
 
 #include "config.hpp"
 
@@ -62,7 +67,7 @@ namespace BPO = boost::program_options;
 #define XRES 1280
 #define YRES 720
 #define NUM_RAND_PATCHES 0000
-#define NUM_RAND_SPHERES 1000 
+#define NUM_RAND_SPHERES 1000
 #define SPHERE_RADIUS 1.0
 #define FRAC_MB 0.1
 #define CAMERA_SPIN 0.0
@@ -124,6 +129,9 @@ int main(int argc, char **argv)
 #ifdef DEBUG
 	std::cout << std::endl << "Struct sizes:" << std::endl;
 	std::cout << "Ray: " << sizeof(Ray) << std::endl;
+	std::cout << "Intersection: " << sizeof(Intersection) << std::endl;
+	std::cout << "RayInter: " << sizeof(RayInter) << std::endl;
+	std::cout << "PotentialInter: " << sizeof(PotentialInter) << std::endl;
 	std::cout << "BBounds: " << sizeof(BBox) << std::endl;
 	std::cout << "BBox: " << sizeof(BBoxT) << std::endl;
 	std::cout << "BVHNode: " << sizeof(BVHNode) << std::endl;

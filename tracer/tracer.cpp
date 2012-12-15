@@ -24,7 +24,7 @@ uint32 Tracer::queue_rays(const Array<RayInter *> &ray_inters_)
 	return size;
 }
 
-#define MAX_POTINT 4
+#define MAX_POTINT 1
 
 bool compare_potint(const PotentialInter &a, const PotentialInter &b)
 {
@@ -53,7 +53,7 @@ uint64 Tracer::accumulate_potential_intersections()
 
 	// Accumulate potential intersections
 	uint64 pii = 0;
-	uint32 potint_ids[MAX_POTINT];
+	uint_i potint_ids[MAX_POTINT];
 	const uint64 sri = ray_inters.size();
 	for (uint64 i = 0; i < sri; i++) {
 		const uint32 potint_count = scene->world.get_potential_intersections(ray_inters[i]->ray, MAX_POTINT, potint_ids, &(states[i*2]));
@@ -84,8 +84,7 @@ void Tracer::trace_potential_intersections()
 		if (ray_inter->ray.is_shadow_ray) {
 			if (!ray_inter->hit)
 				ray_inter->hit |= scene->world.get_primitive(id).intersect_ray(ray_inter->ray, NULL);
-		}
-		else {
+		} else {
 			ray_inter->hit |= scene->world.get_primitive(id).intersect_ray(ray_inter->ray, &(ray_inter->inter));
 		}
 	}

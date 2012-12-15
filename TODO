@@ -1,18 +1,18 @@
-//- Add unit tests for the disk cache class
-
 - Triangle primitive
 
-? Make min_t/max_t ray updating the responsibility of the Tracer, not the primitives
+
 
 - Two-stage ray tracing, similar to the Rayes (not Reyes) paper
-	- Create "Instance" class
-	- Modify Scene class so that only instances can be stored directly
-	  in the scene-level BVH.
 	//- Implement an alternative BVH traversal which can be resumed for a ray.
-	  May require modifying rays to be traversal-aware.
+	//  May require modifying rays to be traversal-aware.
 	//- Implement BVH method to return "next n leaf node hits".
-	- Change Tracer to use this stuff in a naive useless way, to verify.
-	- ...
+	//- Change Tracer to use this stuff in a naive useless way, to verify.
+	- Make min_t/max_t ray updating the responsibility of the Tracer, not the primitives
+	- Refactor data structures to pass around minimal data when handling the 
+	  ray reordering strategy.
+	- Refactor primitive intersection code to use per-thread data caches, handling
+	  all dynamic data generation in those per-thread caches.
+	- Multi-thread ray tracing
 
 - Migrate all render configuration data to Renderer
 
@@ -37,5 +37,7 @@
 	- Quantized BVH?
 	- MSBVH?
 	- QBVH?
-	- Quantized MSQBVH?  Ha ha ha.
+	- SSH?
+	- Quantized MSQSSH?  Ha ha ha.
+	- Must be able to pause and resume traversal with minimal data per ray
 

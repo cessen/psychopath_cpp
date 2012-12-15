@@ -36,7 +36,7 @@ public:
 	/**
 	 * Fetches a primitive based on id.
 	 */
-	virtual Primitive &get_primitive(uint64 id) = 0;
+	virtual Primitive &get_primitive(uint_i id) = 0;
 
 	/**
 	 * Retrieves ids of primitives that potentially intersect with a ray.
@@ -51,7 +51,7 @@ public:
 	 *
 	 * @returns The number of results acquired.  If zero, that means there were no potential intersections.
 	 */
-	virtual uint32 get_potential_intersections(const Ray &ray, uint32 max_potential, uint32 *ids, uint64 *state) = 0;
+	virtual uint32 get_potential_intersections(const Ray &ray, uint32 max_potential, uint_i *ids, uint64 *state) = 0;
 
 
 

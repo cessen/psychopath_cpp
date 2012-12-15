@@ -76,7 +76,7 @@ struct Ray {
 	// is going to be too broad for dicing.
 	float32 diff_rate[NUM_DIFFERENTIALS];
 
-
+	byte padding[12];
 
 	/*
 	 * Constructor.
