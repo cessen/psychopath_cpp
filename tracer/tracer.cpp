@@ -97,7 +97,7 @@ uint32 Tracer::trace_rays()
 
 	// Allocate and clear out ray states
 	states.resize(s*2);
-	for (uint64 i = 0; i < s*2; i++)
+	for (uint_i i = 0; i < s*2; i++)
 		states[i] = 0;
 
 	// Allocate potential intersection buffer
@@ -121,7 +121,6 @@ uint32 Tracer::trace_rays()
 	} else {
 		accumulate_potential_intersections();
 	}*/
-
 	while (accumulate_potential_intersections()) {
 		trace_potential_intersections();
 	}

@@ -14,9 +14,8 @@
 template <class T>
 class Array
 {
-	typedef uint_i size_type;
-	size_type size_;
-	size_type capacity_;
+	uint_i size_;
+	uint_i capacity_;
 	T *data;
 
 public:
@@ -26,7 +25,7 @@ public:
 		data = 0;
 	}
 
-	Array(size_type size) {
+	Array(uint_i size) {
 		data = new T[size];
 		size_ = size;
 		capacity_ = size;
@@ -44,7 +43,7 @@ public:
 	 * This does _not_ shrink the capacity, only increases.
 	 * If cap is less then the current capacity, it does nothing.
 	 */
-	void reserve(size_type cap) {
+	void reserve(uint_i cap) {
 		assert(cap > 0);
 
 		if (cap <= capacity_)
@@ -52,7 +51,7 @@ public:
 
 		T *data2 = new T[cap];
 
-		for (size_type i=0; i < size_; i++)
+		for (uint_i i=0; i < size_; i++)
 			data2[i] = data[i];
 
 		delete [] data;
@@ -65,7 +64,7 @@ public:
 	 *
 	 * This does _not_ free any space.  The entire capacity is left alone.
 	 */
-	void resize(size_type size) {
+	void resize(uint_i size) {
 		if (size > capacity_)
 			reserve(size);
 
@@ -82,14 +81,14 @@ public:
 	/**
 	 * @brief Returns the current capacity of the array.
 	 */
-	const size_type &capacity() const {
+	const uint_i &capacity() const {
 		return capacity_;
 	}
 
 	/**
 	 * @brief Returns the current size of the array.
 	 */
-	const size_type &size() const {
+	const uint_i &size() const {
 		return size_;
 	}
 
@@ -116,14 +115,14 @@ public:
 	/**
 	 * @brief Access to array elements.
 	 */
-	T& operator[](const size_type &n) {
+	T& operator[](const uint_i &n) {
 		assert(n >= 0 && n < size_);
 		return data[n];
 	}
 	/**
 	 * @brief Access to array elements.
 	 */
-	const T& operator[](const size_type &n) const {
+	const T& operator[](const uint_i &n) const {
 		assert(n >= 0 && n < size_);
 		return data[n];
 	}

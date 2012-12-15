@@ -468,8 +468,8 @@ uint32 BVH::get_potential_intersections(const Ray &ray, uint32 max_potential, ui
 	float32 hitt0, hitt1;
 	bool finished = false;
 	while (hits_so_far < max_potential && !finished) {
-		BVHNode *current = &(nodes[node]);
-		BVHNode *parent = &(nodes[current->parent_index]);
+		const BVHNode &current = nodes[node];
+		const BVHNode &parent = nodes[current.parent_index];
 
 		switch (node_state) {
 			case FROM_PARENT:
@@ -477,21 +477,27 @@ uint32 BVH::get_potential_intersections(const Ray &ray, uint32 max_potential, ui
 
 				if (!hit) {
 					// If ray misses BBox
-					// Go to sibling node
-					if (ray.d_is_neg[parent->flags & SPLIT_MASK])
-						node--;
-					else
-						node++;
+					if (node == 0) {
+						// If node is root node, finished
+						finished = true;
+						node_state = FROM_CHILD;
+					} else {
+						// Go to sibling node
+						if (ray.d_is_neg[parent.flags & SPLIT_MASK])
+							node--;
+						else
+							node++;
 
-					// State: from_sibling
-					node_state = FROM_SIBLING;
-				} else if (current->flags & IS_LEAF) {
+						// State: from_sibling
+						node_state = FROM_SIBLING;
+					}
+				} else if (current.flags & IS_LEAF) {
 					// If ray hits BBox and node is leaf
 					ids[hits_so_far] = node;
 					hits_so_far++;
 
 					// Go to sibling node
-					if (ray.d_is_neg[parent->flags & SPLIT_MASK])
+					if (ray.d_is_neg[parent.flags & SPLIT_MASK])
 						node--;
 					else
 						node++;
@@ -501,10 +507,10 @@ uint32 BVH::get_potential_intersections(const Ray &ray, uint32 max_potential, ui
 				} else {
 					// If ray hits BBox and node is not leaf
 					// Go to near child
-					if (ray.d_is_neg[current->flags & SPLIT_MASK])
-						node = current->child_index+1;
+					if (ray.d_is_neg[current.flags & SPLIT_MASK])
+						node = current.child_index+1;
 					else
-						node = current->child_index;
+						node = current.child_index;
 
 					// State: from_parent
 					node_state = FROM_PARENT;
@@ -517,27 +523,27 @@ uint32 BVH::get_potential_intersections(const Ray &ray, uint32 max_potential, ui
 
 				if (!hit) {
 					// If ray misses BBox, go to parent node.
-					node = current->parent_index;
+					node = current.parent_index;
 
 					// State: from_child
 					node_state = FROM_CHILD;
-				} else if (current->flags & IS_LEAF) {
+				} else if (current.flags & IS_LEAF) {
 					// If ray hits BBox and node is leaf
 					ids[hits_so_far] = node;
 					hits_so_far++;
 
 					// Go to parent node
-					node = current->parent_index;
+					node = current.parent_index;
 
 					// State: from_child
 					node_state = FROM_CHILD;
 				} else {
 					// If ray hits BBox and node is not leaf
 					// Go to near child
-					if (ray.d_is_neg[current->flags & SPLIT_MASK])
-						node = current->child_index+1;
+					if (ray.d_is_neg[current.flags & SPLIT_MASK])
+						node = current.child_index+1;
 					else
-						node = current->child_index;
+						node = current.child_index;
 
 					// State: from_parent
 					node_state = FROM_PARENT;
@@ -549,14 +555,14 @@ uint32 BVH::get_potential_intersections(const Ray &ray, uint32 max_potential, ui
 				if (node == 0) {
 					// If root node, finished
 					finished = true;
-				} else if (ray.d_is_neg[parent->flags & SPLIT_MASK] && node == (parent->child_index+1)) {
+				} else if (ray.d_is_neg[parent.flags & SPLIT_MASK] && node == (parent.child_index+1)) {
 					// If node is the near child of its parent
 					// Go to sibling
 					node--;
 
 					// State: from_sibling
 					node_state = FROM_SIBLING;
-				} else if (!(ray.d_is_neg[parent->flags & SPLIT_MASK]) && node == (parent->child_index)) {
+				} else if (!(ray.d_is_neg[parent.flags & SPLIT_MASK]) && node == (parent.child_index)) {
 					// If node is the near child of its parent
 					// Go to sibling
 					node++;
@@ -566,7 +572,7 @@ uint32 BVH::get_potential_intersections(const Ray &ray, uint32 max_potential, ui
 				} else {
 					// If node is the far child of its parent
 					// Go to parent
-					node = current->parent_index;
+					node = current.parent_index;
 
 					// State: from_child
 					node_state = FROM_CHILD;
