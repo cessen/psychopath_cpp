@@ -10,6 +10,10 @@
  *
  * This way I can rely on very specific behaviors, regardless of compiler
  * or platform.
+ *
+ * The most important behavior is that reducing the size of an Array never
+ * reduces its capacity or frees memory.  This is an important behavior for
+ * several places where Arrays are used in Psychopath.
  */
 template <class T>
 class Array

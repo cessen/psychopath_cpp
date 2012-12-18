@@ -25,8 +25,12 @@ set (CMAKE_BUILD_TYPE Release)
 configure_file ("${PROJECT_SOURCE_DIR}/config.h.in"
                 "${PROJECT_BINARY_DIR}/config.h")
 
+# SSE3 support
+#set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse3")
+#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3")
+
 # Warnings
-set (CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall")
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
 # Profiling

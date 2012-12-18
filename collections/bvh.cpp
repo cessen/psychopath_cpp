@@ -42,6 +42,7 @@ bool BVH::finalize()
 	return true;
 }
 
+// TODO: should be changed to fetch based on primitive id, not node id.
 Primitive &BVH::get_primitive(uint_i id)
 {
 	return *(nodes[id].data);
@@ -448,7 +449,10 @@ bool BVH::intersect_ray(Ray &ray, Intersection *intersection)
 #define FROM_SIBLING 1
 #define FROM_CHILD 2
 
-uint32 BVH::get_potential_intersections(const Ray &ray, uint32 max_potential, uint_i *ids, uint64 *state)
+// TODO: currently the "ids" returned are node id's, but they should be
+// primitive ids.  Similarly, get_primitve() should be changed to take
+// primitive ids.
+uint BVH::get_potential_intersections(const Ray &ray, uint max_potential, uint_i *ids, void *state)
 {
 	uint64 node;
 	uint8 node_state;
@@ -458,8 +462,8 @@ uint32 BVH::get_potential_intersections(const Ray &ray, uint32 max_potential, ui
 		node = 0;
 		node_state = FROM_PARENT;
 	} else {
-		node = state[0];
-		node_state = state[1];
+		node = ((uint64 *)state)[0];
+		node_state = ((uint64 *)state)[1];
 	}
 
 	// Traverse the BVH
@@ -584,8 +588,8 @@ uint32 BVH::get_potential_intersections(const Ray &ray, uint32 max_potential, ui
 
 	// Store state
 	if (state != NULL) {
-		state[0] = node;
-		state[1] = node_state;
+		((uint64 *)state)[0] = node;
+		((uint64 *)state)[1] = node_state;
 	}
 
 	// Return the number of primitives accumulated

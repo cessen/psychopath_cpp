@@ -58,6 +58,14 @@ namespace BPO = boost::program_options;
  * Single threaded
  * 1 potints
  * ~39 second
+ *
+ * Naive-ray-reordering:
+ * 1000 spheres / 0 patches
+ * 1280x720 @ 4spp
+ * Single threaded
+ * Intermediate image writing disabled
+ * 2 potints
+ * 36.3 second
  */
 
 #define THREADS 1
@@ -216,30 +224,30 @@ int main(int argc, char **argv)
 	cam_tra.resize(4);
 
 	float angle = CAMERA_SPIN * (3.14159 / 180.0);
-	Vec3 axis(0.0, 0.0, 1.0);
+	ImathVec3 axis(0.0, 0.0, 1.0);
 
 	mat.makeIdentity();
-	mat.translate(Vec3(0.0, 0.0, -40.0));
-	mat.rotate(Vec3(0.0, 0.0, 0.0));
-	mat.translate(Vec3(0.0, 0.0, 20.0));
+	mat.translate(ImathVec3(0.0, 0.0, -40.0));
+	mat.rotate(ImathVec3(0.0, 0.0, 0.0));
+	mat.translate(ImathVec3(0.0, 0.0, 20.0));
 	cam_tra[0] = mat;
 
 	mat.makeIdentity();
-	mat.translate(Vec3(0.0, 0.0, -40.0));
-	mat.rotate(Vec3(0.0, 0.0, (angle/3)*1));
-	mat.translate(Vec3(0.0, 0.0, 20.0));
+	mat.translate(ImathVec3(0.0, 0.0, -40.0));
+	mat.rotate(ImathVec3(0.0, 0.0, (angle/3)*1));
+	mat.translate(ImathVec3(0.0, 0.0, 20.0));
 	cam_tra[1] = mat;
 
 	mat.makeIdentity();
-	mat.translate(Vec3(0.0, 0.0, -40.0));
-	mat.rotate(Vec3(0.0, 0.0, (angle/3)*2));
-	mat.translate(Vec3(0.0, 0.0, 20.0));
+	mat.translate(ImathVec3(0.0, 0.0, -40.0));
+	mat.rotate(ImathVec3(0.0, 0.0, (angle/3)*2));
+	mat.translate(ImathVec3(0.0, 0.0, 20.0));
 	cam_tra[2] = mat;
 
 	mat.makeIdentity();
-	mat.translate(Vec3(0.0, 0.0, -40.0));
-	mat.rotate(Vec3(0.0, 0.0, (angle/3)*3));
-	mat.translate(Vec3(0.0, 0.0, 20.0));
+	mat.translate(ImathVec3(0.0, 0.0, -40.0));
+	mat.rotate(ImathVec3(0.0, 0.0, (angle/3)*3));
+	mat.translate(ImathVec3(0.0, 0.0, 20.0));
 	cam_tra[3] = mat;
 
 #define FOCUS_DISTANCE 40.0

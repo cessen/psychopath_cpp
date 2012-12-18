@@ -45,7 +45,7 @@ public:
 	int thread_count;
 
 	Array<RayInter *> ray_inters; // Ray/Intersection data
-	Array<uint64> states; // Ray states, for interrupting and resuming traversal
+	Array<byte> states; // Ray states, for interrupting and resuming traversal
 	Array<PotentialInter> potential_inters; // "Potential intersection" buffer
 
 	Tracer(Scene *scene_, int thread_count_=1) {

@@ -10,9 +10,9 @@
 typedef Imath::Matrix44<float32> Matrix44;
 
 // Tranforms a vector with the transpose of a matrix
-static inline Vec3 vec_transform_transpose(const Matrix44 &m, const Vec3 &v)
+static inline ImathVec3 vec_transform_transpose(const Matrix44 &m, const ImathVec3 &v)
 {
-	Vec3 r;
+	ImathVec3 r;
 	float32 w;
 
 	r.x = v[0] * m[0][0] + v[1] * m[0][1] + v[2] * m[0][2] + m[0][3];
@@ -28,9 +28,9 @@ static inline Vec3 vec_transform_transpose(const Matrix44 &m, const Vec3 &v)
 }
 
 // Tranforms a vector, as a direction, with the transpose of a matrix
-static inline Vec3 dir_transform_transpose(const Matrix44 &m, const Vec3 &v)
+static inline ImathVec3 dir_transform_transpose(const Matrix44 &m, const ImathVec3 &v)
 {
-	Vec3 r;
+	ImathVec3 r;
 
 	r.x = v[0] * m[0][0] + v[1] * m[0][1] + v[2] * m[0][2];
 	r.y = v[0] * m[1][0] + v[1] * m[1][1] + v[2] * m[1][2];

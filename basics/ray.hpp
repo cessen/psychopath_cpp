@@ -53,9 +53,6 @@ struct Ray {
 	float32 min_t;
 	float32 max_t;
 
-	// Shadow ray or not
-	bool is_shadow_ray;
-
 	// Differentials for origin and direction
 	// 0: Image X
 	// 1: Image Y
@@ -64,19 +61,22 @@ struct Ray {
 	Vec3 od[NUM_DIFFERENTIALS]; // Ray origin differentials
 	Vec3 dd[NUM_DIFFERENTIALS]; // Ray direction differentials
 
-	bool has_differentials;
-
-	// Pre-computed data for accelerating ray intersection
-	Vec3 inv_d;                 // 1.0/d
-	uint32 d_is_neg[3];  // Whether each component of d is negative
-
 	// Rates of ray differentials' change, as a function of distance
 	// along the ray.  This is useful for determining if
 	// the range of micropolygon sizes across a surface
 	// is going to be too broad for dicing.
 	float32 diff_rate[NUM_DIFFERENTIALS];
 
-	byte padding[12];
+	// Whether the ray has differentials or not
+	bool has_differentials;
+
+	// Shadow ray or not
+	bool is_shadow_ray;
+
+	// Pre-computed data for accelerating ray intersection
+	Vec3 inv_d;                 // 1.0/d
+	uint32 d_is_neg[3];  // Whether each component of d is negative
+
 
 	/*
 	 * Constructor.
@@ -101,9 +101,7 @@ struct Ray {
 	 * Computes the acceleration data for speedy bbox intersection testing.
 	 */
 	void update_accel() {
-		inv_d.x = 1.0 / d.x;
-		inv_d.y = 1.0 / d.y;
-		inv_d.z = 1.0 / d.z;
+		inv_d = Vec3(1.0, 1.0, 1.0) / d;
 
 		d_is_neg[0] = d.x < 0 ? 1 : 0;
 		d_is_neg[1] = d.y < 0 ? 1 : 0;
@@ -143,29 +141,6 @@ struct Ray {
 		update_accel();
 		update_differentials();
 	}
-
-
-	/**
-	 * Applies a matrix transform.
-	 */
-	void apply_matrix(const Matrix44 &m) {
-		// Origin and direction
-		m.multVecMatrix(o, o);
-		m.multDirMatrix(d, d);
-
-		// Differentials
-		// These can be transformed as directional vectors...?
-		if (has_differentials) {
-			for (int32 i = 0; i < NUM_DIFFERENTIALS; i++) {
-				m.multDirMatrix(od[i], od[i]);
-				m.multDirMatrix(dd[i], od[i]);
-			}
-		}
-
-		update_accel();
-		update_differentials();
-	}
-
 
 	/**
 	 * Applies a Transform.

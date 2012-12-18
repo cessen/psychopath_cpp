@@ -11,6 +11,8 @@
 #include "scene.hpp"
 #include "rayinter.hpp"
 
+#define RAY_STATE_SIZE scene->world.ray_state_size()
+#define MAX_POTINT 2
 
 uint32 Tracer::queue_rays(const Array<RayInter *> &ray_inters_)
 {
@@ -24,7 +26,6 @@ uint32 Tracer::queue_rays(const Array<RayInter *> &ray_inters_)
 	return size;
 }
 
-#define MAX_POTINT 1
 
 bool compare_potint(const PotentialInter &a, const PotentialInter &b)
 {
@@ -56,7 +57,7 @@ uint64 Tracer::accumulate_potential_intersections()
 	uint_i potint_ids[MAX_POTINT];
 	const uint64 sri = ray_inters.size();
 	for (uint64 i = 0; i < sri; i++) {
-		const uint32 potint_count = scene->world.get_potential_intersections(ray_inters[i]->ray, MAX_POTINT, potint_ids, &(states[i*2]));
+		const uint32 potint_count = scene->world.get_potential_intersections(ray_inters[i]->ray, MAX_POTINT, potint_ids, &(states[i*RAY_STATE_SIZE]));
 		for (uint32 j = 0; j < potint_count; j++) {
 			potential_inters[pii+j].object_id = potint_ids[j];
 			potential_inters[pii+j].ray_inter = ray_inters[i];
@@ -96,8 +97,8 @@ uint32 Tracer::trace_rays()
 	std::cout << "\tTracing " << s << " rays" << std::endl;
 
 	// Allocate and clear out ray states
-	states.resize(s*2);
-	for (uint_i i = 0; i < s*2; i++)
+	states.resize(s*RAY_STATE_SIZE);
+	for (uint_i i = 0; i < s*RAY_STATE_SIZE; i++)
 		states[i] = 0;
 
 	// Allocate potential intersection buffer

@@ -4,23 +4,18 @@
 #include "numtype.h"
 
 #include <stdlib.h>
-#include <xmmintrin.h>
+#include <x86intrin.h>
 #include "timebox.hpp"
 #include "vector.hpp"
 #include "ray.hpp"
 #include "utils.hpp"
 
-union V4 {
-	float32 a[4];
-	__m128 b;
-};
 
 /**
  * @brief An axis-aligned bounding box.
  */
 struct BBox {
-	Vec3 min;
-	Vec3 max;
+	Vec3 min, max;
 
 	BBox() {
 		min.x = 0.0;
@@ -92,19 +87,15 @@ struct BBox {
 	 * encompasses both.
 	 */
 	void merge_with(const BBox &b) {
-		if (b.min.x < min.x)
-			min.x = b.min.x;
-		if (b.min.y < min.y)
-			min.y = b.min.y;
-		if (b.min.z < min.z)
-			min.z = b.min.z;
-
-		if (b.max.x > max.x)
-			max.x = b.max.x;
-		if (b.max.y > max.y)
-			max.y = b.max.y;
-		if (b.max.z > max.z)
-			max.z = b.max.z;
+#if 0
+		min.m128 = _mm_min_ps(min.m128, b.min.m128);
+		max.m128 = _mm_max_ps(max.m128, b.max.m128);
+#else
+		for (uint_i i = 0; i < 3; i++) {
+			min[i] = min[i] < b.min[i] ? min[i] : b.min[i];
+			max[i] = max[i] > b.max[i] ? max[i] : b.max[i];
+		}
+#endif
 	}
 
 	/**
@@ -145,6 +136,7 @@ struct BBox {
 			return false;
 		}
 	}
+
 
 	/**
 	 * @brief Tests a ray against the BBox.
