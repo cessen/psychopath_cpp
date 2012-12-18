@@ -74,7 +74,10 @@ private:
 	 *
 	 * @returns The total number of potential intersections accumulated.
 	 */
-	uint64 accumulate_potential_intersections();
+	uint_i accumulate_potential_intersections();
+
+	// Thread helper for accumulate_potential_intersections()
+	void accumulation_helper(uint_i start, uint_i end);
 
 	/**
 	 * Traces all of the potential intersections in the potential_inters buffer.

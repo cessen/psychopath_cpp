@@ -26,52 +26,94 @@ uint32 Tracer::queue_rays(const Array<RayInter *> &ray_inters_)
 	return size;
 }
 
-
-bool compare_potint(const PotentialInter &a, const PotentialInter &b)
+uint32 Tracer::trace_rays()
 {
-	// Empty potential intersections always go after non-emtpy
-	if (a.ray_inter != NULL && b.ray_inter == NULL)
-		return true;
-	else if (a.ray_inter == NULL)
-		return false;
+	uint32 s = ray_inters.size();
+	std::cout << "\tTracing " << s << " rays" << std::endl;
 
-	// Sort by object id
-	if (a.object_id < b.object_id)
-		return true;
-	else
-		return false;
+	// Allocate and clear out ray states
+	states.resize(s*RAY_STATE_SIZE);
+	for (uint_i i = 0; i < s*RAY_STATE_SIZE; i++)
+		states[i] = 0;
+
+	// Allocate potential intersection buffer
+	potential_inters.resize(s*MAX_POTINT);
+
+	// Trace potential intersections
+	while (accumulate_potential_intersections()) {
+		trace_potential_intersections();
+	}
+
+	ray_inters.clear();
+	return s;
 }
 
-uint64 Tracer::accumulate_potential_intersections()
-{
-	// TODO: make multi-threaded
 
+
+uint_i Tracer::accumulate_potential_intersections()
+{
 	// Clear out potential intersection buffer
-	potential_inters.resize(potential_inters.capacity());
-	const uint32 spi = potential_inters.size();
-	for (uint32 i = 0; i < spi; i++)
+	potential_inters.resize(ray_inters.size()*MAX_POTINT);
+	const uint_i spi = potential_inters.size();
+	for (uint_i i = 0; i < spi; i++)
 		potential_inters[i].ray_inter = NULL;
 
 	// Accumulate potential intersections
-	uint64 pii = 0;
-	uint_i potint_ids[MAX_POTINT];
-	const uint64 sri = ray_inters.size();
-	for (uint64 i = 0; i < sri; i++) {
-		const uint32 potint_count = scene->world.get_potential_intersections(ray_inters[i]->ray, MAX_POTINT, potint_ids, &(states[i*RAY_STATE_SIZE]));
-		for (uint32 j = 0; j < potint_count; j++) {
-			potential_inters[pii+j].object_id = potint_ids[j];
-			potential_inters[pii+j].ray_inter = ray_inters[i];
+	boost::thread acc_helpers[thread_count];
+	if (spi >= (uint_i)(thread_count)) {
+		// Start threads
+		for (uint_i i=0; i < (uint_i)thread_count; i++) {
+			uint32 start = (ray_inters.size()*i) / thread_count;
+			uint32 end   = (ray_inters.size()*(i+1)) / thread_count;
+
+			acc_helpers[i] = boost::thread(&Tracer::accumulation_helper, this, start, end);
 		}
-		pii += potint_count;
+
+		// Join threads
+		for (int i=0; i < thread_count; i++) {
+			acc_helpers[i].join();
+		}
+	} else {
+		accumulation_helper(0, ray_inters.size());
 	}
 
-	// Minimize and sort the potential intersections
+	// Compact the potential intersections
+	uint_i pii = 0;
+	uint_i last = 0;
+	uint_i i = 0;
+	while (i < potential_inters.size()) {
+		while (potential_inters[last].ray_inter != NULL && last < potential_inters.size())
+			last++;
+
+		if (potential_inters[i].ray_inter != NULL) {
+			pii++;
+			if (i > last) {
+				potential_inters[last] = potential_inters[i];
+				potential_inters[i].ray_inter = NULL;
+			}
+		}
+
+		i++;
+	}
 	potential_inters.resize(pii);
-	if (potential_inters.size() > 0)
-		std::sort(potential_inters.begin(), potential_inters.end(), compare_potint);
+
+	// Sort the potential intersections
+	std::sort(potential_inters.begin(), potential_inters.end(), compare_potint);
 
 	// Return the total number of potential intersections accumulated
 	return pii;
+}
+
+void Tracer::accumulation_helper(uint_i start, uint_i end)
+{
+	uint_i potint_ids[MAX_POTINT];
+	for (uint_i i = start; i < end; i++) {
+		const uint_i pc = scene->world.get_potential_intersections(ray_inters[i]->ray, MAX_POTINT, potint_ids, &(states[i*RAY_STATE_SIZE]));
+		for (uint_i j = 0; j < pc; j++) {
+			potential_inters[(i*MAX_POTINT)+j].object_id = potint_ids[j];
+			potential_inters[(i*MAX_POTINT)+j].ray_inter = ray_inters[i];
+		}
+	}
 }
 
 void Tracer::trace_potential_intersections()
@@ -91,42 +133,5 @@ void Tracer::trace_potential_intersections()
 	}
 }
 
-uint32 Tracer::trace_rays()
-{
-	uint32 s = ray_inters.size();
-	std::cout << "\tTracing " << s << " rays" << std::endl;
 
-	// Allocate and clear out ray states
-	states.resize(s*RAY_STATE_SIZE);
-	for (uint_i i = 0; i < s*RAY_STATE_SIZE; i++)
-		states[i] = 0;
-
-	// Allocate potential intersection buffer
-	potential_inters.resize(s*MAX_POTINT);
-
-	/*boost::thread traceys[thread_count];
-
-	if (s >= (uint32)(thread_count) && (thread_count > 1)) {
-		// Start threads
-		for (int i=0; i < thread_count; i++) {
-			uint32 start = (s*i) / thread_count;
-			uint32 end   = (s*(i+1)) / thread_count;
-
-			traceys[i] = boost::thread(&Tracer::accumulate_potential_intersections, this);
-		}
-
-		// Join threads
-		for (int i=0; i < thread_count; i++) {
-			traceys[i].join();
-		}
-	} else {
-		accumulate_potential_intersections();
-	}*/
-	while (accumulate_potential_intersections()) {
-		trace_potential_intersections();
-	}
-
-	ray_inters.clear();
-	return s;
-}
 

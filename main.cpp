@@ -42,39 +42,40 @@ namespace BPO = boost::program_options;
  * Pre-ray-reordering:
  * 1000 spheres / 0 patches
  * 1280x720 @ 4spp
- * Single threaded
+ * 1 thread
  * ~26 second
  *
  * Naive-ray-reordering:
  * 1000 spheres / 0 patches
  * 1280x720 @ 4spp
- * Single threaded
+ * 1 thread
  * 4 potints
  * ~43 second
  *
  * Naive-ray-reordering:
  * 1000 spheres / 0 patches
  * 1280x720 @ 4spp
- * Single threaded
- * 1 potints
- * ~39 second
- *
- * Naive-ray-reordering:
- * 1000 spheres / 0 patches
- * 1280x720 @ 4spp
- * Single threaded
+ * 1 thread
  * Intermediate image writing disabled
  * 2 potints
  * 36.3 second
+ *
+ * Threaded ray-reordering:
+ * 1000 spheres / 0 patches
+ * 1280x720 @ 4spp
+ * 4 threads
+ * Intermediate image writing disabled
+ * 2 potints
+ * 24.8 second
  */
 
-#define THREADS 1
+#define THREADS 4
 #define SPP 4
 //#define XRES 512
 //#define YRES 288
 #define XRES 1280
 #define YRES 720
-#define NUM_RAND_PATCHES 0000
+#define NUM_RAND_PATCHES 1000
 #define NUM_RAND_SPHERES 1000
 #define SPHERE_RADIUS 1.0
 #define FRAC_MB 0.1

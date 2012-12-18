@@ -14,4 +14,10 @@ struct PotentialInter {
 	byte pad[8];
 };
 
+static bool compare_potint(const PotentialInter &a, const PotentialInter &b)
+{
+	// Sort by object id
+	return a.object_id < b.object_id;
+}
+
 #endif // POTENTIALINTER_HPP

@@ -48,8 +48,6 @@ public:
 	 * If cap is less then the current capacity, it does nothing.
 	 */
 	void reserve(uint_i cap) {
-		assert(cap > 0);
-
 		if (cap <= capacity_)
 			return;
 
