@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <boost/thread.hpp>
 #include "array.hpp"
+#include "counting_sort.hpp"
 
 #include "ray.hpp"
 #include "scene.hpp"
@@ -41,6 +42,7 @@ uint32 Tracer::trace_rays()
 
 	// Trace potential intersections
 	while (accumulate_potential_intersections()) {
+		sort_potential_intersections();
 		trace_potential_intersections();
 	}
 
@@ -97,9 +99,6 @@ uint_i Tracer::accumulate_potential_intersections()
 	}
 	potential_inters.resize(pii);
 
-	// Sort the potential intersections
-	std::sort(potential_inters.begin(), potential_inters.end(), compare_potint);
-
 	// Return the total number of potential intersections accumulated
 	return pii;
 }
@@ -114,6 +113,53 @@ void Tracer::accumulation_helper(uint_i start, uint_i end)
 			potential_inters[(i*MAX_POTINT)+j].ray_inter = ray_inters[i];
 		}
 	}
+}
+
+void Tracer::sort_potential_intersections()
+{
+	const uint_i max_items = scene->world.max_primitive_id()+1;
+
+	for (uint_i i = 0; i < max_items; i++) {
+		item_counts[i] = 0;
+	}
+
+	// Count the items
+	for (uint_i i = 0; i < potential_inters.size(); i++) {
+		item_counts[potential_inters[i].object_id]++;
+	}
+
+	// Set up start-index array
+	uint_i running_count = 0;
+	for (uint_i i = 0; i < max_items; i++) {
+		item_start_indices[i] = running_count;
+		running_count += item_counts[i];
+	}
+
+	// Set up filled-so-far-count array
+	for (uint_i i = 0; i < max_items; i++) {
+		item_fill_counts[i] = 0;
+	}
+
+	// Sort the list
+	uint_i traversal = 0;
+	uint_i i = 0;
+	while (i < potential_inters.size()) {
+		const uint_i index = potential_inters[i].object_id;
+		const uint_i next_place = item_start_indices[index] + item_fill_counts[index];
+
+		if (i >= item_start_indices[index] && i < next_place) {
+			i++;
+		} else {
+			std::swap(potential_inters[i], potential_inters[next_place]);
+			item_fill_counts[index]++;
+		}
+		traversal++;
+	}
+
+	/*for (uint_i i = 0; i < potential_inters.size(); i++) {
+		std::cout << potential_inters[i].object_id << ", ";
+	}
+	std::cout << "END" << std::endl;*/
 }
 
 void Tracer::trace_potential_intersections()

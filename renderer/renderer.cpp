@@ -53,8 +53,8 @@ bool Renderer::render(int thread_count)
 
 	// Render
 	Tracer tracer(scene, thread_count);
-	PathTraceIntegrator integrator(scene, &tracer, image, spp, thread_count, &callback);
-	//PathTraceIntegrator integrator(scene, &tracer, image, spp, thread_count);
+	//PathTraceIntegrator integrator(scene, &tracer, image, spp, thread_count, &callback);
+	PathTraceIntegrator integrator(scene, &tracer, image, spp, thread_count);
 	integrator.integrate();
 
 	// Gamma correction + dithering(256)

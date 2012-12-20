@@ -42,6 +42,11 @@ bool BVH::finalize()
 	return true;
 }
 
+uint_i BVH::max_primitive_id() const
+{
+	return nodes.size();
+}
+
 // TODO: should be changed to fetch based on primitive id, not node id.
 Primitive &BVH::get_primitive(uint_i id)
 {

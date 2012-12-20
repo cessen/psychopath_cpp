@@ -1,5 +1,8 @@
 - Triangle primitive
 
+- More efficient sample layout in memory
+	- Big array of floats
+
 
 
 - Two-stage ray tracing, similar to the Rayes (not Reyes) paper
@@ -10,8 +13,8 @@
 	- Make min_t/max_t ray updating the responsibility of the Tracer, not the primitives
 	- Refactor data structures to pass around minimal data when handling the 
 	  ray reordering strategy.
-	- Refactor primitive intersection code to use per-thread data caches, handling
-	  all dynamic data generation in those per-thread caches.
+	- Refactor bilinear patch primitives to work in a multi-threaded
+	  environment.
 	- Multi-thread ray tracing
 
 - Migrate all render configuration data to Renderer
@@ -41,8 +44,8 @@
 	- Quantized MSQSSH?  Ha ha ha.
 	- Must be able to pause and resume traversal with minimal data per ray
 
-- Faster sorting of potential ray intersections
-	- Counting sort
+//- Faster sorting of potential ray intersections
+	//- Counting sort
 		- Big benefit of counting sort is we automatically get the starting
 		  indices in the potential intersections array for each object.
 		- http://www.drdobbs.com/architecture-and-design/parallel-counting-sort/224700144

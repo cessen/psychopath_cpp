@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Session Name="/home/cessen/Projects/psychopath/psychopath/psychopath.workspace">
+  <int Value="0" Name="m_selectedTab"/>
+  <wxString Value="/home/cessen/Projects/psychopath/psychopath/psychopath.workspace" Name="m_workspaceName"/>
+  <TabInfoArray Name="TabInfoArray"/>
+  <SerializedObject Name="m_breakpoints">
+    <long Value="0" Name="Count"/>
+  </SerializedObject>
+</Session>

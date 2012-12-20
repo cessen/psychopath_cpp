@@ -67,6 +67,14 @@ namespace BPO = boost::program_options;
  * Intermediate image writing disabled
  * 2 potints
  * 24.8 second
+ *
+ * Threaded ray-reordering w/ counting sort:
+ * 1000 spheres / 0 patches
+ * 1280x720 @ 4spp
+ * 4 threads
+ * Intermediate image writing disabled
+ * 2 potints
+ * 23.5 second
  */
 
 #define THREADS 4
@@ -75,7 +83,7 @@ namespace BPO = boost::program_options;
 //#define YRES 288
 #define XRES 1280
 #define YRES 720
-#define NUM_RAND_PATCHES 1000
+#define NUM_RAND_PATCHES 0000
 #define NUM_RAND_SPHERES 1000
 #define SPHERE_RADIUS 1.0
 #define FRAC_MB 0.1

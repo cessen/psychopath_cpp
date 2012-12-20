@@ -48,9 +48,18 @@ public:
 	Array<byte> states; // Ray states, for interrupting and resuming traversal
 	Array<PotentialInter> potential_inters; // "Potential intersection" buffer
 
+	// Arrays for the counting sort
+	Array<uint32> item_counts;
+	Array<uint32> item_start_indices;
+	Array<uint32> item_fill_counts;
+
 	Tracer(Scene *scene_, int thread_count_=1) {
 		scene = scene_;
 		thread_count = thread_count_;
+
+		item_counts.resize(scene->world.max_primitive_id()+1);
+		item_start_indices.resize(scene->world.max_primitive_id()+1);
+		item_fill_counts.resize(scene->world.max_primitive_id()+1);
 	}
 
 	/**
@@ -78,6 +87,13 @@ private:
 
 	// Thread helper for accumulate_potential_intersections()
 	void accumulation_helper(uint_i start, uint_i end);
+
+	/**
+	 * Sorts the accumulated potential intersections by primitive
+	 * id, and creates a table of the starting index and number of
+	 * potential intersections for each primitive.
+	 */
+	void sort_potential_intersections();
 
 	/**
 	 * Traces all of the potential intersections in the potential_inters buffer.
