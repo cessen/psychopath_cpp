@@ -14,16 +14,17 @@
 
 #define GAMMA 2.2
 
-struct Yar: public Functor {
+struct ImageWriter: public Functor {
 	Film<Color> *image;
 	std::string path;
 
-	Yar(Film<Color> *im_, std::string path_) {
+	ImageWriter(Film<Color> *im_, std::string path_) {
 		image = im_;
 		path = path_;
 	}
 
 	virtual void operator()() {
+		// Gamma correction + dithering(256)
 		uint8 *im = image->scanline_image_8bbc(2.2);
 
 		// Save image
@@ -49,32 +50,16 @@ bool Renderer::render(int thread_count)
 	                                     -1.0, -(((float32)(res_y))/res_x),
 	                                     1.0, (((float32)(res_y))/res_x));
 
-	Yar callback = Yar(image, output_path);
+	ImageWriter image_writer = ImageWriter(image, output_path);
 
 	// Render
 	Tracer tracer(scene, thread_count);
-	//PathTraceIntegrator integrator(scene, &tracer, image, spp, thread_count, &callback);
+	//PathTraceIntegrator integrator(scene, &tracer, image, spp, thread_count, &image_writer);
 	PathTraceIntegrator integrator(scene, &tracer, image, spp, thread_count);
 	integrator.integrate();
 
-	// Gamma correction + dithering(256)
-	uint8 *im = image->scanline_image_8bbc(2.2);
-
 	// Save image
-	OpenImageIO::ImageOutput *out = OpenImageIO::ImageOutput::create(".png");
-	if (!out) {
-		delete image;
-		return false;
-	}
-	OpenImageIO::ImageSpec spec(image->width, image->height, 3, OpenImageIO::TypeDesc::UINT8);
-	out->open(output_path, spec);
-	out->write_image(OpenImageIO::TypeDesc::UINT8, im);
-	out->close();
-
-	// Cleanup
-	delete out;
-	delete image;
-	delete [] im;
+	image_writer();
 
 	// Finished
 	return true;

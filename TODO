@@ -3,19 +3,33 @@
 - More efficient sample layout in memory
 	- Big array of floats
 
-
+- Framework for surface primitives to manage their splitting and micropolygons
+  in a thread-safe way.
+	- Should be generic enough for all surface primitives to use.
+	- Perhaps define an API that primitives must expose, which the framework
+	  can use.
+	- Two kinds of splitting: splitting to reduce individual grid size,
+	  and splitting that has to happen for tracing in the first place.
+	  E.g. a character made of nurbs patches naturally splits into
+	  the individual patches, which is different from the individual
+	  patches splitting to limit diced grid size.  It might be good
+	  to make a distinction between those in the API.
+	- How can this relate to a bigger picture that handles, e.g.,
+	  particles, curves, and volumes as well?
 
 - Two-stage ray tracing, similar to the Rayes (not Reyes) paper
-	//- Implement an alternative BVH traversal which can be resumed for a ray.
-	//  May require modifying rays to be traversal-aware.
-	//- Implement BVH method to return "next n leaf node hits".
-	//- Change Tracer to use this stuff in a naive useless way, to verify.
-	- Make min_t/max_t ray updating the responsibility of the Tracer, not the primitives
-	- Refactor data structures to pass around minimal data when handling the 
-	  ray reordering strategy.
-	- Refactor bilinear patch primitives to work in a multi-threaded
-	  environment.
-	- Multi-thread ray tracing
+	- Assign each thread an object id to trace rays for.
+		- Each thread needs its own ray cache, which gets merged with
+		  the main RayInter structers after the tracing is complete.
+		  How to manage those caches efficiently?  A maximum on the rays
+		  traced by a thread at once, maybe?  Tracing the rays in
+		  chunks?
+	- Refactor data structures and API to pass around/duplicate minimal
+	  data when handling ray reordering and ray tracing.
+		- Do we really need the RayInter structure at all?  And if so,
+		  why not make it more ubiquitous throughout the renderer?
+
+
 
 - Migrate all render configuration data to Renderer
 
@@ -24,8 +38,6 @@
 - Propagation of ray differentials on bounces
 
 - Adaptive sampling scheme
-
-//- Create Transform class
 
 - Simple material system (for testing purposes
   only, eventually replace with OSL)
@@ -36,13 +48,30 @@
 
 - OSL integration
 
-- More compact and/or faster BVH:
-	- Quantized BVH?
-	- MSBVH?
-	- QBVH?
-	- SSH?
-	- Quantized MSQSSH?  Ha ha ha.
+- More compact and/or faster top-level BVH:
+	- More compact probably actually doesn't matter so much, given
+	  the intended usage of Psychopath.  The top-level BVH is likely
+	  to be relatively sparse anyway compared to most path tracers,
+	  since it uses higher-order surface descriptions.  Focus on speed.
+	- Three basic approaches to speeding up traversal:
+		- Reducing the number of nodes traversed on average
+		- Reducing the cost of testing against a node
+		- Using SIMD to test multiple nodes at once
 	- Must be able to pause and resume traversal with minimal data per ray
+	- QBVH is worth investigating, but it's unclear how to do efficient
+	  resumes.
+	- MSBVH is good to look at, especially if some primitives may be
+	  very large and clog up the tree.  Also could just try to keep large
+	  primitives higher in the tree.
+	- Single Slab Hierarchy is very interesting, but it's unclear if
+	  efficient resumes are possible.  Unless we actually keep the
+	  entire BBoxes at each node, and only trace it like a SSH when
+	  possible...?  Maybe generalize to marking specific BBox sides
+	  as important.
+	- Variable-child BVH could be interesting, with SIMD used where applicable.
+	  Similar tricky resume issue as QBVH, though.
+	- "Restart trail" approach for resuming might extend to higher 
+	  branch factors, e.g. QBVH.
 
 //- Faster sorting of potential ray intersections
 	//- Counting sort
