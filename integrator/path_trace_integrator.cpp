@@ -30,12 +30,18 @@ float32 lambert(Vec3 v1, Vec3 v2)
 
 void PathTraceIntegrator::integrate()
 {
+	const uint_i samp_dim = 5 + (path_length * 5);
+
 	RNG rng(43643);
 	ImageSampler image_sampler(spp, image->width, image->height);
 
 	// Sample array
-	Array<Sample> samps;
-	samps.resize(RAYS_AT_A_TIME);
+	Array<float32> samps;
+	samps.resize(RAYS_AT_A_TIME * samp_dim);
+
+	// Coordinate array
+	Array<uint16> coords;
+	coords.resize(RAYS_AT_A_TIME * 2);
 
 	// Light path array
 	Array<PTPath> paths;
@@ -61,14 +67,14 @@ void PathTraceIntegrator::integrate()
 			paths[i].col = Color(0.0);
 			paths[i].fcol = Color(1.0);
 
-			if (!image_sampler.get_next_sample(&(samps[i]), path_length*5)) {
-				samps.resize(i);
+			if (!image_sampler.get_next_sample(samp_dim, &(samps[i*samp_dim]), &(coords[i*2]))) {
+				samps.resize(i*samp_dim);
 				paths.resize(i);
 				last = true;
 				break;
 			}
 		}
-		uint32 samp_size = samps.size();
+		uint32 samp_size = samps.size() / samp_dim;
 
 		// Path tracing loop for the samples we have
 		for (int path_n=0; path_n < path_length; path_n++) {
@@ -78,7 +84,7 @@ void PathTraceIntegrator::integrate()
 			// Size the ray buffer appropriately
 			rayinters.resize(samp_size);
 
-			int32 so = (path_n * 5) - 2; // Sample offset
+			int32 so = (path_n * 5); // Sample offset
 
 			// Calculate path rays
 			std::cout << "\tGenerating path rays" << std::endl;
@@ -86,11 +92,11 @@ void PathTraceIntegrator::integrate()
 			if (path_n == 0) {
 				// First segment of path is camera rays
 				for (uint32 i = 0; i < samp_size; i++) {
-					float32 rx = (samps[i].x - 0.5) * (image->max_x - image->min_x);
-					float32 ry = (0.5 - samps[i].y) * (image->max_y - image->min_y);
+					float32 rx = (samps[i*samp_dim] - 0.5) * (image->max_x - image->min_x);
+					float32 ry = (0.5 - samps[i*samp_dim + 1]) * (image->max_y - image->min_y);
 					float32 dx = (image->max_x - image->min_x) / image->width;
 					float32 dy = (image->max_y - image->min_y) / image->height;
-					rayinters[i]->ray = scene->camera->generate_ray(rx, ry, dx, dy, samps[i].t, samps[i].u, samps[i].v);
+					rayinters[i]->ray = scene->camera->generate_ray(rx, ry, dx, dy, samps[i*samp_dim+4], samps[i*samp_dim+2], samps[i*samp_dim+3]);
 					rayinters[i]->ray.finalize();
 					rayinters[i]->hit = false;
 					rayinters[i]->id = i;
@@ -104,10 +110,8 @@ void PathTraceIntegrator::integrate()
 						// of the surface.
 						// TODO: use BxDF distribution here
 						// TODO: use proper PDF here
-						Vec3 dir = cosine_sample_hemisphere(samps[i].ns[so], samps[i].ns[so+1]);
+						Vec3 dir = cosine_sample_hemisphere(samps[i*samp_dim+so], samps[i*samp_dim+so+1]);
 						float32 pdf = dir.z * 2;
-						//Vec3 dir = uniform_sample_hemisphere(samps[i].ns[so], samps[i].ns[so+1]);
-						//float32 pdf = 1.0;
 
 						if (pdf < 0.001)
 							pdf = 0.001;
@@ -125,7 +129,7 @@ void PathTraceIntegrator::integrate()
 						// Create a bounce ray for this path
 						rayinters[pri]->ray.o = paths[i].inter.p;
 						rayinters[pri]->ray.d = dir;
-						rayinters[pri]->ray.time = samps[i].t;
+						rayinters[pri]->ray.time = samps[i*samp_dim+4];
 						rayinters[pri]->ray.is_shadow_ray = false;
 						rayinters[pri]->ray.has_differentials = false;
 						rayinters[pri]->ray.min_t = 0.01;
@@ -169,12 +173,12 @@ void PathTraceIntegrator::integrate()
 			for (uint32 i = 0; i < paths.size(); i++) {
 				if (!paths[i].done) {
 					// Select a light and store the normalization factor for it's output
-					Light *lighty = scene->finite_lights[(uint32)(samps[i].ns[so+2] * scene->finite_lights.size()) % scene->finite_lights.size()];
+					Light *lighty = scene->finite_lights[(uint32)(samps[i*samp_dim+so+2] * scene->finite_lights.size()) % scene->finite_lights.size()];
 					//Light *lighty = scene->finite_lights[rng.next_uint() % scene->finite_lights.size()];
 
 					// Sample the light source
 					Vec3 ld;
-					paths[i].lcol = lighty->sample(paths[i].inter.p, samps[i].ns[so+3], samps[i].ns[so+4], samps[i].t, &ld)
+					paths[i].lcol = lighty->sample(paths[i].inter.p, samps[i*samp_dim+so+3], samps[i*samp_dim+so+4], samps[i*samp_dim+4], &ld)
 					                * (float32)(scene->finite_lights.size());
 					//paths[i].lcol = lighty->sample(paths[i].inter.p, rng.next_float(), rng.next_float(), samps[i].t, &ld)
 					//                * (float32)(scene->finite_lights.size());
@@ -184,7 +188,7 @@ void PathTraceIntegrator::integrate()
 					ld.normalize();
 					rayinters[sri]->ray.o = paths[i].inter.p;
 					rayinters[sri]->ray.d = ld;
-					rayinters[sri]->ray.time = samps[i].t;
+					rayinters[sri]->ray.time = samps[i*samp_dim+4];
 					rayinters[sri]->ray.is_shadow_ray = true;
 					rayinters[sri]->ray.has_differentials = false;
 					rayinters[sri]->ray.min_t = 0.01;
@@ -222,7 +226,7 @@ void PathTraceIntegrator::integrate()
 		std::cout << "\tAccumulating samples" << std::endl;
 		std::cout.flush();
 		for (uint32 i = 0; i < samp_size; i++) {
-			image->add_sample(paths[i].col, samps[i].ix, samps[i].iy);
+			image->add_sample(paths[i].col, coords[i*2], coords[i*2+1]);
 		}
 
 		// Print percentage complete

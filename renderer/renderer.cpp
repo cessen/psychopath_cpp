@@ -54,8 +54,9 @@ bool Renderer::render(int thread_count)
 
 	// Render
 	Tracer tracer(scene, thread_count);
-	//PathTraceIntegrator integrator(scene, &tracer, image, spp, thread_count, &image_writer);
-	PathTraceIntegrator integrator(scene, &tracer, image, spp, thread_count);
+	PathTraceIntegrator integrator(scene, &tracer, image, spp, thread_count, &image_writer);
+	//PathTraceIntegrator integrator(scene, &tracer, image, spp, thread_count);
+	//DirectLightingIntegrator integrator(scene, &tracer, image, spp, thread_count, &image_writer);
 	integrator.integrate();
 
 	// Save image

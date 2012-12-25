@@ -4,7 +4,6 @@
 #include "halton.hpp"
 #include "rng.hpp"
 #include "image_sampler.hpp"
-#include "sample.hpp"
 #include "hilbert.hpp"
 #include "morton.hpp"
 
@@ -63,10 +62,12 @@ float logit(float p, float width = 1.5f)
 	return logf(p/(1.0f-p)) * width * (0.6266f/4);
 }
 
-void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, Sample *sample, uint32 ns)
+void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, uint32 ns, float32 *sample, uint16 *coords)
 {
-	sample->ix = x;
-	sample->iy = y;
+	if (coords != NULL) {
+		coords[0] = x;
+		coords[1] = y;
+	}
 
 #define LDS_SAMP
 #ifdef LDS_SAMP
@@ -87,37 +88,33 @@ void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, Sample *sample, uint
 	const uint32 samp_i = hash + d;
 
 	// Generate the sample
-	sample->x = Halton::sample(5, samp_i);
-	sample->y = Halton::sample(4, samp_i);
-	sample->u = Halton::sample(3, samp_i);
-	sample->v = Halton::sample(2, samp_i);
-	sample->t = Halton::sample(1, samp_i);
-	if (sample->ns.size() != ns)
-		sample->ns.resize(ns);
-	for (uint32 i = 0; i < ns; i++) {
-		sample->ns[i] = Sobol::sample(i, samp_i);
+	sample[0] = Halton::sample(5, samp_i);
+	sample[1] = Halton::sample(4, samp_i);
+	sample[2] = Halton::sample(3, samp_i);
+	sample[3] = Halton::sample(2, samp_i);
+	sample[4] = Halton::sample(1, samp_i);
+	for (uint32 i = 5; i < ns; i++) {
+		sample[i] = Sobol::sample(i-5, samp_i);
 	}
 #else
 	// Generate the sample
-	sample->x = rng.next_float();
-	sample->y = rng.next_float();
-	sample->u = rng.next_float();
-	sample->v = rng.next_float();
-	sample->t = rng.next_float();
-	if (sample->ns.size() != ns)
-		sample->ns.resize(ns);
-	for (uint32 i = 0; i < ns; i++) {
-		sample->ns[i] = rng.next_float();
+	sample[0] = rng.next_float();
+	sample[1] = rng.next_float();
+	sample[2] = rng.next_float();
+	sample[3] = rng.next_float();
+	sample[4] = rng.next_float();
+	for (uint32 i = 5; i < ns; i++) {
+		sample[i] = rng.next_float();
 	}
 #endif
 
 
 
 #define WIDTH 1.5f
-	sample->x = logit(sample->x, WIDTH) + 0.5f;
-	sample->y = logit(sample->y, WIDTH) + 0.5f;
-	sample->x = (sample->x + x) / res_x;  // Return image x/y in normalized [0,1] range
-	sample->y = (sample->y + y) / res_y;
+	sample[0] = logit(sample[0], WIDTH) + 0.5f;
+	sample[1] = logit(sample[1], WIDTH) + 0.5f;
+	sample[0] = (sample[0] + x) / res_x;  // Return image x/y in normalized [0,1] range
+	sample[1] = (sample[1] + y) / res_y;
 }
 
 
@@ -131,16 +128,16 @@ void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, Sample *sample, uint
  * @param[out] sample A pointer where the sample is stored.
  * @param ns The number of additional coordinates to provide.
  */
-//#define PROGRESSIVE_SAMPLING
+#define PROGRESSIVE_SAMPLING
 #ifndef PROGRESSIVE_SAMPLING
-bool ImageSampler::get_next_sample(Sample *sample, uint32 ns)
+bool ImageSampler::get_next_sample(uint32 ns, float32 *sample, uint16 *coords)
 {
 	//std::cout << s << " " << x << " " << y << std::endl;
 	// Check if we're done
 	if (points_traversed >= (curve_res*curve_res))
 		return false;
 
-	get_sample(x, y, s, sample, ns);
+	get_sample(x, y, s, ns, sample, coords);
 
 	// increment to next sample
 	samp_taken++;
@@ -160,14 +157,14 @@ bool ImageSampler::get_next_sample(Sample *sample, uint32 ns)
 	return true;
 }
 #else
-bool ImageSampler::get_next_sample(Sample *sample, uint32 ns)
+bool ImageSampler::get_next_sample(uint32 ns, float32 *sample, uint16 *coords)
 {
 	//std::cout << s << " " << x << " " << y << std::endl;
 	// Check if we're done
 	if (points_traversed >= (curve_res*curve_res) && s >= spp)
 		return false;
 
-	get_sample(x, y, s, sample, ns);
+	get_sample(x, y, s, ns, sample, coords);
 
 	samp_taken++;
 

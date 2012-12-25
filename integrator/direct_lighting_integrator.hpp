@@ -8,6 +8,7 @@
 #include "integrator.hpp"
 
 #include "numtype.h"
+#include "functor.hpp"
 
 #include "film.hpp"
 #include "scene.hpp"
@@ -34,6 +35,7 @@ public:
 	Film<Color> *image;
 	int spp;
 	int thread_count;
+	Functor *callback;
 
 	/**
 	 * @brief Constructor.
@@ -46,12 +48,13 @@ public:
 	 *                    initialized with 3 channels, for rgb.
 	 * @param spp_ The number of samples to take per pixel for integration.
 	 */
-	DirectLightingIntegrator(Scene *scene_, Tracer *tracer_, Film<Color> *image_, int spp_, int thread_count_=1) {
+	DirectLightingIntegrator(Scene *scene_, Tracer *tracer_, Film<Color> *image_, int spp_, int thread_count_=1, Functor *callback_=NULL) {
 		scene = scene_;
 		tracer = tracer_;
 		image = image_;
 		spp = spp_;
 		thread_count = thread_count_;
+		callback = callback_;
 	}
 
 	//virtual ~DirectLightingIntegrator() {

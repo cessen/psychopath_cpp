@@ -1,2 +1,2 @@
-add_library(grid
+add_library(usurface
     utriangle grid grid_cache)

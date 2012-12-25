@@ -3,7 +3,6 @@
 
 #include "numtype.h"
 
-#include "sample.hpp"
 #include "rng.hpp"
 #include <vector>
 
@@ -44,8 +43,8 @@ public:
 	~ImageSampler();
 
 	void init_tile();
-	void get_sample(uint32 x, uint32 y, uint32 d, Sample *sample, uint32 ns);
-	bool get_next_sample(Sample *sample, uint32 ns);
+	void get_sample(uint32 x, uint32 y, uint32 d, uint32 ns, float32 *sample, uint16 *coords=NULL);
+	bool get_next_sample(uint32 ns, float32 *sample, uint16 *coords=NULL);
 
 	float percentage() const {
 		return ((float)(samp_taken)) / tot_samp;

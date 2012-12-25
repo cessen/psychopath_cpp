@@ -34,12 +34,18 @@ void resize_rayinters(Array<RayInter *> &rayinters, uint32 size)
 
 void DirectLightingIntegrator::integrate()
 {
+	const uint_i samp_dim = 8;
+
 	RNG rng(43643);
 	ImageSampler image_sampler(spp, image->width, image->height);
 
 	// Sample array
-	Array<Sample> samps;
-	samps.resize(RAYS_AT_A_TIME);
+	Array<float32> samps;
+	samps.resize(RAYS_AT_A_TIME * samp_dim);
+
+	// Sample pixel coordinate array
+	Array<uint16> coords;
+	coords.resize(RAYS_AT_A_TIME * 2);
 
 	// Light path array
 	Array<DLPath> paths;
@@ -55,8 +61,8 @@ void DirectLightingIntegrator::integrate()
 		std::cout << "\t--------\n\tGenerating samples" << std::endl;
 		std::cout.flush();
 		for (int i = 0; i < RAYS_AT_A_TIME; i++) {
-			if (!image_sampler.get_next_sample(&(samps[i]), 3)) {
-				samps.resize(i);
+			if (!image_sampler.get_next_sample(samp_dim, &(samps[i*samp_dim]), &(coords[i*2]))) {
+				samps.resize(i*samp_dim);
 				paths.resize(i);
 				last = true;
 				break;
@@ -64,7 +70,7 @@ void DirectLightingIntegrator::integrate()
 				paths[i].done = false;
 			}
 		}
-		uint32 ssize = samps.size();
+		uint32 ssize = samps.size() / samp_dim;
 
 
 		// Size the ray buffer appropriately
@@ -75,11 +81,11 @@ void DirectLightingIntegrator::integrate()
 		std::cout << "\tGenerating camera rays" << std::endl;
 		std::cout.flush();
 		for (uint32 i = 0; i < ssize; i++) {
-			float32 rx = (samps[i].x - 0.5) * (image->max_x - image->min_x);
-			float32 ry = (0.5 - samps[i].y) * (image->max_y - image->min_y);
+			float32 rx = (samps[i*samp_dim] - 0.5) * (image->max_x - image->min_x);
+			float32 ry = (0.5 - samps[i*samp_dim+1]) * (image->max_y - image->min_y);
 			float32 dx = (image->max_x - image->min_x) / image->width;
 			float32 dy = (image->max_y - image->min_y) / image->height;
-			rayinters[i]->ray = scene->camera->generate_ray(rx, ry, dx, dy, samps[i].t, samps[i].u, samps[i].v);
+			rayinters[i]->ray = scene->camera->generate_ray(rx, ry, dx, dy, samps[i*samp_dim+4], samps[i*samp_dim+2], samps[i*samp_dim+3]);
 			rayinters[i]->ray.finalize();
 			rayinters[i]->hit = false;
 			rayinters[i]->id = i;
@@ -116,12 +122,12 @@ void DirectLightingIntegrator::integrate()
 		for (uint32 i = 0; i < ssize; i++) {
 			if (!paths[i].done) {
 				// Select a light and store the normalization factor for it's output
-				Light *lighty = scene->finite_lights[(uint32)(samps[i].ns[0] * scene->finite_lights.size()) % scene->finite_lights.size()];
+				Light *lighty = scene->finite_lights[(uint32)(samps[i*samp_dim+5] * scene->finite_lights.size()) % scene->finite_lights.size()];
 				//Light *lighty = scene->finite_lights[rng.next_uint() % scene->finite_lights.size()];
 
 				// Sample the light source
 				Vec3 ld;
-				paths[i].lcol = lighty->sample(rayinters[i]->inter.p, samps[i].ns[1], samps[i].ns[2], rayinters[i]->ray.time, &ld)
+				paths[i].lcol = lighty->sample(rayinters[i]->inter.p, samps[i*samp_dim+6], samps[i*samp_dim+7], rayinters[i]->ray.time, &ld)
 				                * (float32)(scene->finite_lights.size());
 				//paths[i].lcol = lighty->sample(rayinters[i]->inter.p, rng.next_float(), rng.next_float(), rayinters[i]->ray.time, &ld)
 				//                * (float32)(scene->finite_lights.size());
@@ -131,7 +137,7 @@ void DirectLightingIntegrator::integrate()
 				ld.normalize();
 				rayinters[sri]->ray.o = paths[i].inter.p;
 				rayinters[sri]->ray.d = ld;
-				rayinters[sri]->ray.time = samps[i].t;
+				rayinters[sri]->ray.time = samps[i*samp_dim+4];
 				rayinters[sri]->ray.is_shadow_ray = true;
 				rayinters[sri]->ray.has_differentials = false;
 				rayinters[sri]->ray.min_t = 0.01;
@@ -178,9 +184,8 @@ void DirectLightingIntegrator::integrate()
 		// Accumulate the samples
 		std::cout << "\tAccumulating samples" << std::endl;
 		std::cout.flush();
-		int s = samps.size();
-		for (int i = 0; i < s; i++) {
-			image->add_sample(paths[i].col, samps[i].x, samps[i].y);
+		for (uint_i i = 0; i < ssize; i++) {
+			image->add_sample(paths[i].col, coords[i*2], coords[i*2+1]);
 		}
 
 		// Print percentage complete
@@ -190,6 +195,9 @@ void DirectLightingIntegrator::integrate()
 			std::cout << perc << "%" << std::endl;
 			last_perc = perc;
 		}
+
+		if (callback)
+			(*callback)();
 
 		if (last)
 			break;
