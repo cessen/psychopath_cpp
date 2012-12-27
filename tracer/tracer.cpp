@@ -61,22 +61,34 @@ uint_i Tracer::accumulate_potential_intersections()
 		potential_inters[i].ray_inter = NULL;
 
 	// Accumulate potential intersections
-	boost::thread acc_helpers[thread_count];
+	JobQueue<IndexRange> jq(32);
+	boost::thread acc_consumers[thread_count];
 	if (spi >= (uint_i)(thread_count)) {
-		// Start threads
+		// Start consumer threads
 		for (uint_i i=0; i < (uint_i)thread_count; i++) {
-			uint32 start = (ray_inters.size()*i) / thread_count;
-			uint32 end   = (ray_inters.size()*(i+1)) / thread_count;
-
-			acc_helpers[i] = boost::thread(&Tracer::accumulation_helper, this, start, end);
+			acc_consumers[i] = boost::thread(&Tracer::accumulation_consumer, this, &jq);
 		}
+
+#define RAY_JOB_SIZE 2048
+		// Dole out jobs
+		for (uint_i i = 0; i < ray_inters.size(); i += RAY_JOB_SIZE) {
+			uint_i start = i;
+			uint_i end = i + RAY_JOB_SIZE;
+			if (end > ray_inters.size())
+				end = ray_inters.size();
+
+			jq.push(IndexRange(start, end));
+		}
+		jq.close();
 
 		// Join threads
 		for (int i=0; i < thread_count; i++) {
-			acc_helpers[i].join();
+			acc_consumers[i].join();
 		}
 	} else {
-		accumulation_helper(0, ray_inters.size());
+		jq.push(IndexRange(0, ray_inters.size()));
+		jq.close();
+		accumulation_consumer(&jq);
 	}
 
 	// Compact the potential intersections
@@ -103,14 +115,19 @@ uint_i Tracer::accumulate_potential_intersections()
 	return pii;
 }
 
-void Tracer::accumulation_helper(uint_i start, uint_i end)
+void Tracer::accumulation_consumer(JobQueue<IndexRange> *job_queue)
 {
 	uint_i potint_ids[MAX_POTINT];
-	for (uint_i i = start; i < end; i++) {
-		const uint_i pc = scene->world.get_potential_intersections(ray_inters[i]->ray, MAX_POTINT, potint_ids, &(states[i*RAY_STATE_SIZE]));
-		for (uint_i j = 0; j < pc; j++) {
-			potential_inters[(i*MAX_POTINT)+j].object_id = potint_ids[j];
-			potential_inters[(i*MAX_POTINT)+j].ray_inter = ray_inters[i];
+	IndexRange ir;
+
+	// Keep processing items in the queue as long as they keep coming
+	while (job_queue->pop(&ir)) {
+		for (uint_i i = ir.start; i < ir.end; i++) {
+			const uint_i pc = scene->world.get_potential_intersections(ray_inters[i]->ray, MAX_POTINT, potint_ids, &(states[i*RAY_STATE_SIZE]));
+			for (uint_i j = 0; j < pc; j++) {
+				potential_inters[(i*MAX_POTINT)+j].object_id = potint_ids[j];
+				potential_inters[(i*MAX_POTINT)+j].ray_inter = ray_inters[i];
+			}
 		}
 	}
 }

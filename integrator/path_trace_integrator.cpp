@@ -250,5 +250,6 @@ void PathTraceIntegrator::integrate()
 	std::cout << "Splits during rendering: " << Config::split_count << std::endl;
 	std::cout << "Micropolygons generated during rendering: " << Config::upoly_gen_count << std::endl;
 	std::cout << "Grid cache misses during rendering: " << Config::cache_misses << std::endl;
+	std::cout << "Primitive-ray tests during rendering: " << Config::primitive_ray_tests << std::endl;
 }
 

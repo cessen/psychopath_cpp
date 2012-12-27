@@ -14,5 +14,6 @@ int cache_size = 30; // In MB
 uint64 split_count = 0;
 uint64 upoly_gen_count = 0;
 uint64 cache_misses = 0;
+uint_i primitive_ray_tests = 0;
 }
 

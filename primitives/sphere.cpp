@@ -63,6 +63,8 @@ void Sphere::add_time_sample(int samp, Vec3 center_, float32 radius_)
 
 bool Sphere::intersect_ray(Ray &ray, Intersection *intersection)
 {
+	Config::primitive_ray_tests++;
+
 	// Get the center and radius of the sphere at the ray's time
 	int ia, ib;
 	float32 alpha;

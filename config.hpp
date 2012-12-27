@@ -15,6 +15,7 @@ extern int grid_cache_size;
 extern uint64 split_count;
 extern uint64 upoly_gen_count;
 extern uint64 cache_misses;
+extern uint_i primitive_ray_tests;
 }
 
 #endif

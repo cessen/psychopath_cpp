@@ -1,8 +1,5 @@
 - Triangle primitive
 
-- More efficient sample layout in memory
-	- Big array of floats
-
 - Framework for surface primitives to manage their splitting and micropolygons
   in a thread-safe way.
 	- Should be generic enough for all surface primitives to use.
@@ -38,6 +35,10 @@
 - Propagation of ray differentials on bounces
 
 - Adaptive sampling scheme
+	//- Calculate variance information per pixel
+	- Reduce the Sampler's responsibilities, migrating pixel/sample
+	  traversal to be the Integrator's responsibilitiy.
+	- Implement adaptive sample traversal based on variance
 
 - Simple material system (for testing purposes
   only, eventually replace with OSL)
@@ -72,6 +73,12 @@
 	  Similar tricky resume issue as QBVH, though.
 	- "Restart trail" approach for resuming might extend to higher 
 	  branch factors, e.g. QBVH.
+	- What performance impact does a fixed traversal order have?
+	  Does the reduction in branching compensate for less efficient
+	  traversal?  What is the most efficient fixed traversal order?
+	  SAH-based?  Pre-randomized?
+	  A fixed traversal order would make resumes trivial on almost
+	  any tree structure.
 
 //- Faster sorting of potential ray intersections
 	//- Counting sort

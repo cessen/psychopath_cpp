@@ -7,6 +7,7 @@
 
 #include "numtype.h"
 #include "array.hpp"
+#include "job_queue.hpp"
 
 #include <vector>
 
@@ -15,6 +16,18 @@
 #include "potentialinter.hpp"
 #include "scene.hpp"
 
+struct IndexRange {
+	uint_i start, end;
+
+	IndexRange() {
+		start=0;
+		end=0;
+	}
+	IndexRange(uint_i start_, uint_i end_) {
+		start=start_;
+		end=end_;
+	}
+};
 
 /**
  * @brief Traces rays in a scene.
@@ -86,7 +99,7 @@ private:
 	uint_i accumulate_potential_intersections();
 
 	// Thread helper for accumulate_potential_intersections()
-	void accumulation_helper(uint_i start, uint_i end);
+	void accumulation_consumer(JobQueue<IndexRange> *job_queue);
 
 	/**
 	 * Sorts the accumulated potential intersections by primitive

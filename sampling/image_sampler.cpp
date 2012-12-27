@@ -128,7 +128,7 @@ void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, uint32 ns, float32 *
  * @param[out] sample A pointer where the sample is stored.
  * @param ns The number of additional coordinates to provide.
  */
-#define PROGRESSIVE_SAMPLING
+//#define PROGRESSIVE_SAMPLING
 #ifndef PROGRESSIVE_SAMPLING
 bool ImageSampler::get_next_sample(uint32 ns, float32 *sample, uint16 *coords)
 {
