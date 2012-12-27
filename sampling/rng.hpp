@@ -1,8 +1,8 @@
 #ifndef RNG_HPP
 #define RNG_HPP
 
-#include "time.h"
-#include "numtype.h"
+#include <time.h>
+#include <stdint.h>
 
 /**
  * @brief A psuedo-random number generator.
@@ -21,7 +21,7 @@
  */
 class RNG
 {
-	uint32 x, y, z, c;
+	uint32_t x, y, z, c;
 
 public:
 	/**
@@ -41,14 +41,14 @@ public:
 	 * Initializes the RNG with the given seed.  This is the
 	 * recommended way to initialize an RNG.
 	 */
-	RNG(uint32 seed_) {
+	RNG(uint32_t seed_) {
 		seed(seed_);
 	}
 
 	/**
 	 * @brief Sets the seed of the RNG.
 	 */
-	void seed(uint32 seed_) {
+	void seed(uint32_t seed_) {
 		// Make sure seed is large enough
 		seed_ += 42;
 
@@ -66,8 +66,8 @@ public:
 	 * This is the work-horse method of the RNG.  All the other next_XXX()
 	 * methods call this.
 	 */
-	uint32 next_uint() {
-		uint64 t;
+	uint32_t next_uint() {
+		uint64_t t;
 
 		x = 314527869 * x + 1234567;
 
@@ -85,13 +85,13 @@ public:
 	/**
 	 * @brief Returns a random 32-bit float in the interval [0.0, 1.0).
 	 */
-	float32 next_float() {
+	float next_float() {
 		// The following assumes an IEEE 32-bit binary floating point format.
 		// Alternatively, you could just do "next_uint() / 4294967296.0" which
 		// would accomplish the same thing, albeit slower.
 		union {
-			float32 x;
-			uint32 a;
+			float x;
+			uint32_t a;
 		};
 		a = next_uint() >> 9; // Take upper 23 bits
 		a |= 0x3F800000; // Make a float from bits
@@ -101,7 +101,7 @@ public:
 	/**
 	 * @brief Returns a random 32-bit float in the interval [-0.5, 0.5).
 	 */
-	float32 next_float_c() {
+	float next_float_c() {
 		return next_float() - 0.5f;
 	}
 };

@@ -9,8 +9,6 @@
 #include <vector>
 #include <string>
 
-#include "numtype.h"
-
 namespace DiskCache
 {
 
@@ -79,9 +77,9 @@ public:
  * @brief Information about a block loaded in the cache.
  */
 struct BlockInfo {
-	uint32 priority; // Priority in the LRU cache
-	uint32 index; // Index of the block
-	uint32 c_index; // Index to the first element of the cache block
+	size_t priority; // Priority in the LRU cache
+	size_t index; // Index of the block
+	size_t c_index; // Index to the first element of the cache block
 	bool modified; // Whether the block has been modified in RAM
 	bool used; // Whether the block is currently used
 };
@@ -106,15 +104,15 @@ struct BlockInfo {
  * necessary for thread safety anyway.
  *
  */
-template <class T, uint32 BLOCK_SIZE>
+template <class T, size_t BLOCK_SIZE>
 class Cache
 {
 private:
-	uint32 priority_tally;
+	size_t priority_tally;
 
-	uint32 e_count; // element_count
-	uint32 block_count;
-	uint32 cache_size;
+	size_t e_count; // element_count
+	size_t block_count;
+	size_t cache_size;
 
 	std::vector<T> cache; // Loaded cached data
 	std::vector<BlockInfo> cache_info; // Information about the cached blocks
@@ -125,7 +123,7 @@ private:
 public:
 	Cache() {}
 
-	Cache(uint32 element_count_, uint32 cache_size_) {
+	Cache(size_t element_count_, size_t cache_size_) {
 		init(element_count_, cache_size_);
 	}
 
@@ -143,7 +141,7 @@ public:
 	 * @param element_count The number of data elements.
 	 * @param cache_size_ The max number of data blocks to hold in RAM at once.
 	 */
-	void init(uint32 element_count_, uint32 cache_size_) {
+	void init(size_t element_count_, size_t cache_size_) {
 		priority_tally = 1;
 
 		block_count = (element_count_ / BLOCK_SIZE) + 1;
@@ -156,7 +154,7 @@ public:
 		data_table.resize(block_count);
 
 		// Set all cache blocks to "not used"
-		for (uint32 i=0; i < cache_size; i++) {
+		for (size_t i=0; i < cache_size; i++) {
 			cache_info[i].priority = 0;
 			cache_info[i].modified = false;
 			cache_info[i].used = false;
@@ -177,21 +175,21 @@ public:
 	/**
 	 * @brief Returns the block size.
 	 */
-	uint32 block_size() {
+	size_t block_size() {
 		return BLOCK_SIZE;
 	}
 
 	/**
 	 * @brief Returns the number of elements.
 	 */
-	uint32 element_count() {
+	size_t element_count() {
 		return e_count;
 	}
 
 	/**
 	 * Returns and increments the priority tally.
 	 */
-	uint32 priot() {
+	size_t priot() {
 		return priority_tally++;
 	}
 
@@ -200,8 +198,8 @@ public:
 	 * Unloads a block from the cache, making sure that any modifications
 	 * are written back to disk.
 	 */
-	void unload_cache_block(uint32 cb_index) {
-		const uint32 b_index = cache_info[cb_index].index;
+	void unload_cache_block(size_t cb_index) {
+		const size_t b_index = cache_info[cb_index].index;
 
 		// Clear the reference from the table
 		if (cache_info[cb_index].used)
@@ -229,12 +227,12 @@ public:
 	/**
 	 * Loads a block from disk into the cache.
 	 */
-	void load_block(uint32 b_index) {
+	void load_block(size_t b_index) {
 		if (!data_table[b_index]) {
 			// Find the least recently used block in the cache
-			uint32 cb_index = 0;
-			uint32 p = cache_info[0].priority;
-			for (uint32 i=1; i < cache_size; i++) {
+			size_t cb_index = 0;
+			size_t p = cache_info[0].priority;
+			for (size_t i=1; i < cache_size; i++) {
 				if (cache_info[i].priority < p) {
 					cb_index = i;
 					p = cache_info[i].priority;
@@ -267,8 +265,8 @@ public:
 	 * Retreives the value of the given element index.
 	 * For read only.
 	 */
-	const T read(uint32 i) {
-		const uint32 b_index = i / BLOCK_SIZE;
+	const T read(size_t i) {
+		const size_t b_index = i / BLOCK_SIZE;
 		i %= BLOCK_SIZE;
 
 		// Increment block priority if it's already loaded,
@@ -286,8 +284,8 @@ public:
 	 * Retreives the element at the given index.
 	 * For reading and writing.
 	 */
-	T &get(uint32 i) {
-		const uint32 b_index = i / BLOCK_SIZE;
+	T &get(size_t i) {
+		const size_t b_index = i / BLOCK_SIZE;
 		i %= BLOCK_SIZE;
 
 		// Increment block priority if it's already loaded,
@@ -305,7 +303,7 @@ public:
 	/**
 	 * Same as get().
 	 */
-	T &operator[](uint32 i) {
+	T &operator[](size_t i) {
 		return get(i);
 	}
 
@@ -317,25 +315,25 @@ public:
  * Dummy class to do everything in RAM, without writing to disk.
  * For speed and accuracy comparisons.
  */
-template<class T, uint32 BLOCK_SIZE>
+template<class T, size_t BLOCK_SIZE>
 class DummyCache
 {
 public:
 	std::vector<T> data;
 
-	DummyCache(uint32 block_count_, uint32 cache_size_) {
+	DummyCache(size_t block_count_, size_t cache_size_) {
 		data.resize(BLOCK_SIZE * block_count_);
 	}
 
-	const T read(uint32 i) {
+	const T read(size_t i) {
 		return data[i];
 	}
 
-	T &get(uint32 i) {
+	T &get(size_t i) {
 		return data[i];
 	}
 
-	T &operator[](uint32 i) {
+	T &operator[](size_t i) {
 		return data[i];
 	}
 };

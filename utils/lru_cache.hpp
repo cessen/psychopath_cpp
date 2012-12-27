@@ -1,8 +1,6 @@
 #ifndef LRU_CACHE_HPP
 #define LRU_CACHE_HPP
 
-#include "numtype.h"
-
 #include <iostream>
 #include <stdlib.h>
 #include <map>
@@ -10,7 +8,7 @@
 #include <utility>
 #include "config.hpp"
 
-typedef uint32 LRUKey;
+typedef size_t LRUKey;
 
 template <class T>
 class LRUPair
@@ -31,8 +29,8 @@ template <class T>
 class LRUCache
 {
 private:
-	uint32 max_bytes;
-	uint32 byte_count;
+	size_t max_bytes;
+	size_t byte_count;
 	LRUKey next_key;
 
 	// A map from indices to iterators into the list
@@ -41,7 +39,7 @@ private:
 	std::list<LRU_PAIR > elements;
 
 public:
-	LRUCache(uint32 max_bytes_=40) {
+	LRUCache(size_t max_bytes_=40) {
 		max_bytes = max_bytes_;
 		byte_count = 0;
 		next_key = 1; // Starts at one so that 0 can mean NULL
@@ -60,7 +58,7 @@ public:
 	 * Sets the maximum number of bytes in the cache.
 	 * Should only be called once right after construction.
 	 */
-	void set_max_size(uint32 size) {
+	void set_max_size(size_t size) {
 		max_bytes = size;
 	}
 
@@ -69,14 +67,10 @@ public:
 	 * Erases the given key and associated data from the cache.
 	 */
 	void erase(LRUKey key) {
-		//std::cout << "Erasing grid from LRU... "; std::cout.flush();
-
 		byte_count -= map[key]->data_ptr->bytes();
 		delete map[key]->data_ptr;
 		elements.erase(map[key]);
 		map.erase(key);
-
-		//std::cout << "done." << std::endl; std::cout.flush();
 	}
 
 
@@ -94,7 +88,6 @@ public:
 	 * Returns the key.
 	 */
 	LRUKey add(T *data_ptr) {
-		//std::cout << "Adding grid to LRU." << std::endl; std::cout.flush();
 		typename std::list<LRU_PAIR >::iterator it;
 		LRU_PAIR data_pair;
 
@@ -139,7 +132,6 @@ public:
 	 * Return a pointer to the data associated with the given key.
 	 */
 	T* fetch(LRUKey key) {
-		//std::cout << map[key]->data_ptr << std::endl;
 		if (exists(key))
 			return map[key]->data_ptr;
 		else
@@ -151,7 +143,7 @@ public:
 	 * Returns a pointer to the data associated with the given
 	 * key.
 	 */
-	T *operator[](uint32 key) {
+	T *operator[](size_t key) {
 		return fetch(key);
 	}
 

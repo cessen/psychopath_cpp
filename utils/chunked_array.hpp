@@ -3,17 +3,16 @@
 
 #include <stdlib.h>
 #include <iterator>
-#include "numtype.h"
 
 
 /**
  * @brief A random access iterator for ChunkedArrays.
  */
-template <class T, uint_i CHUNK_SIZE>
+template <class T, size_t CHUNK_SIZE>
 class ChunkedArrayIterator: public std::iterator<std::random_access_iterator_tag, T>
 {
 	T **chunks;
-	uint_i base;
+	size_t base;
 
 public:
 	ChunkedArrayIterator() {
@@ -21,7 +20,7 @@ public:
 		base = 0;
 	}
 
-	ChunkedArrayIterator(T **chunks_, uint_i base_) {
+	ChunkedArrayIterator(T **chunks_, size_t base_) {
 		chunks = chunks_;
 		base = base_;
 	}
@@ -42,13 +41,13 @@ public:
 		return *this;
 	}
 
-	T &operator[](const uint_i &i) {
-		const uint_i ii = base + i;
+	T &operator[](const size_t &i) {
+		const size_t ii = base + i;
 		return chunks[ii/CHUNK_SIZE][ii%CHUNK_SIZE];
 	}
 
-	const T &operator[](const uint_i &i) const {
-		const uint_i ii = base + i;
+	const T &operator[](const size_t &i) const {
+		const size_t ii = base + i;
 		return chunks[ii/CHUNK_SIZE][ii%CHUNK_SIZE];
 	}
 };
@@ -61,13 +60,13 @@ public:
  * so pointers to elements of this array should not be incremented or
  * decremented.
  */
-template <class T, uint_i CHUNK_SIZE>
+template <class T, size_t CHUNK_SIZE>
 class ChunkedArray
 {
 private:
-	uint_i element_count;
-	uint_i chunk_count;
-	uint_i chunk_pointer_count;
+	size_t element_count;
+	size_t chunk_count;
+	size_t chunk_pointer_count;
 	T **chunks;
 
 	/**
@@ -77,10 +76,10 @@ private:
 	 * @returns The number of chunks that can be accommodated after calling
 	 *          this.
 	 */
-	uint_i resize_chunk_pointer_array(uint_i chunk_count_) {
+	size_t resize_chunk_pointer_array(size_t chunk_count_) {
 		// Calculate the old and new chunk pointer array sizes
-		uint_i old_size = chunk_pointer_count;
-		uint_i new_size = chunk_count_ / CHUNK_SIZE;
+		size_t old_size = chunk_pointer_count;
+		size_t new_size = chunk_count_ / CHUNK_SIZE;
 		if ((chunk_count_ % CHUNK_SIZE) > 0)
 			new_size++;
 		new_size *= CHUNK_SIZE;
@@ -102,13 +101,13 @@ private:
 		// General case
 		T **chunks_2 = new T*[new_size];
 
-		uint_i smaller_size;
+		size_t smaller_size;
 		if (new_size < old_size)
 			smaller_size = new_size;
 		else
 			smaller_size = old_size;
 
-		for (uint_i i = 0; i < smaller_size; i++)
+		for (size_t i = 0; i < smaller_size; i++)
 			chunks_2[i] = chunks[i];
 
 		delete [] chunks;
@@ -123,9 +122,9 @@ private:
 	 * Resizes the number of chunks to accommodate at least
 	 * element_count_ elements.
 	 */
-	uint_i resize_chunks(uint_i element_count_) {
-		uint_i old_size = chunk_count;
-		uint_i new_size = element_count_ / CHUNK_SIZE;
+	size_t resize_chunks(size_t element_count_) {
+		size_t old_size = chunk_count;
+		size_t new_size = element_count_ / CHUNK_SIZE;
 		if ((element_count_ % CHUNK_SIZE) > 0)
 			new_size++;
 
@@ -135,7 +134,7 @@ private:
 		}
 		// Sizing down
 		else if (new_size < old_size) {
-			for (uint_i i = new_size; i < old_size; i++)
+			for (size_t i = new_size; i < old_size; i++)
 				delete [] chunks[i];
 			resize_chunk_pointer_array(new_size);
 			chunk_count = new_size;
@@ -143,7 +142,7 @@ private:
 		// Sizing up
 		else {
 			resize_chunk_pointer_array(new_size);
-			for (uint_i i = old_size; i < new_size; i++)
+			for (size_t i = old_size; i < new_size; i++)
 				chunks[i] = new T[CHUNK_SIZE];
 			chunk_count = new_size;
 		}
@@ -160,7 +159,7 @@ public:
 		chunks = NULL;
 	}
 
-	ChunkedArray(uint_i size_) {
+	ChunkedArray(size_t size_) {
 		element_count = 0;
 		chunk_count = 0;
 		chunk_pointer_count = 0;
@@ -170,27 +169,27 @@ public:
 	}
 
 	~ChunkedArray() {
-		for (uint_i i = 0; i < chunk_count; i++)
+		for (size_t i = 0; i < chunk_count; i++)
 			delete [] chunks[i];
 
 		delete [] chunks;
 	}
 
-	T &operator[](const uint_i &i) {
+	T &operator[](const size_t &i) {
 		assert(i < element_count);
 		return chunks[i/CHUNK_SIZE][i%CHUNK_SIZE];
 	}
 
-	const T &operator[](const uint_i &i) const {
+	const T &operator[](const size_t &i) const {
 		assert(i < element_count);
 		return chunks[i/CHUNK_SIZE][i%CHUNK_SIZE];
 	}
 
-	uint_i size() const {
+	size_t size() const {
 		return element_count;
 	}
 
-	uint_i resize(uint_i size_) {
+	size_t resize(size_t size_) {
 		// Don't need to resize
 		if (element_count == size_)
 			return size_;
@@ -206,7 +205,7 @@ public:
 		return ChunkedArrayIterator<T, CHUNK_SIZE>(chunks, 0);
 	}
 
-	ChunkedArrayIterator<T, CHUNK_SIZE> get_iterator(uint_i base) {
+	ChunkedArrayIterator<T, CHUNK_SIZE> get_iterator(size_t base) {
 		return ChunkedArrayIterator<T, CHUNK_SIZE>(chunks, base);
 	}
 };
