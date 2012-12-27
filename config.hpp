@@ -9,7 +9,7 @@ extern float32 dice_rate;
 extern float32 focus_factor;
 extern float32 min_upoly_size;
 extern int max_grid_size;
-extern int grid_cache_size;
+extern float grid_cache_size;
 
 // Statistics
 extern uint64 split_count;

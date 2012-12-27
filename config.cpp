@@ -4,11 +4,11 @@
 
 namespace Config
 {
-float32 dice_rate = 50; // 0.7 is about half pixel area
+float32 dice_rate = 0.7; // 0.7 is about half pixel area
 float32 focus_factor = 0.707;
 float32 min_upoly_size = 0.01; // Approximate minimum micropolygon size in world space
-int max_grid_size = 32;
-int cache_size = 30; // In MB
+int max_grid_size = 64;
+float grid_cache_size = 32.0; // In MB
 
 // Statistics
 uint64 split_count = 0;

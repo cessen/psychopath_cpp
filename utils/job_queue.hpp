@@ -19,7 +19,7 @@ class JobQueue
 	size_t next_job;
 	size_t job_count;
 
-	bool is_closed;
+	size_t open_count;
 
 	boost::mutex mut;
 	boost::condition_variable full;
@@ -31,13 +31,13 @@ public:
 		job_ring.resize(1);
 		next_job = 0;
 		job_count = 0;
-		is_closed = false;
+		open_count = 1;
 	}
 	JobQueue(size_t queue_size) {
 		job_ring.resize(queue_size);
 		next_job = 0;
 		job_count = 0;
-		is_closed = false;
+		open_count = 1;
 	}
 
 
@@ -66,9 +66,20 @@ public:
 	 */
 	void close() {
 		mut.lock();
-		is_closed = true;
+		open_count--;
 
 		// Notify all threads that the queue is closed
+		full.notify_all();
+		empty.notify_all();
+
+		mut.unlock();
+	}
+
+	void open() {
+		mut.lock();
+		open_count++;
+
+		// Notify all threads that the queue is open
 		full.notify_all();
 		empty.notify_all();
 
@@ -87,7 +98,7 @@ public:
 
 		// Wait for open space in the queue
 		while (job_count >= job_ring.size()) {
-			if (is_closed)
+			if (open_count == 0)
 				return false;
 			else
 				full.wait(lock);
@@ -117,7 +128,7 @@ public:
 
 		// Wait for a job in the queue
 		while (job_count == 0) {
-			if (is_closed)
+			if (open_count == 0)
 				return false;
 			else
 				empty.wait(lock);

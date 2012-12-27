@@ -29,6 +29,23 @@ struct IndexRange {
 	}
 };
 
+struct PotintJob {
+	RayInter *ray_inters;
+	uint_i start, end, size;
+
+	PotintJob() {
+		start=0;
+		end=0;
+		ray_inters = NULL;
+	}
+	PotintJob(uint_i start_, uint_i end_, RayInter *ray_inters_) {
+		start=start_;
+		end=end_;
+		size = end - start;
+		ray_inters = ray_inters_;
+	}
+};
+
 /**
  * @brief Traces rays in a scene.
  *
@@ -115,6 +132,9 @@ private:
 	 * intersections.
 	 */
 	void trace_potential_intersections();
+
+	// Thread helper
+	void trace_potints_consumer(JobQueue<PotintJob> *job_queue);
 };
 
 #endif // TRACER_HPP

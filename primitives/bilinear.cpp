@@ -65,6 +65,8 @@ int Bilinear::dice_rate(float32 upoly_width)
 		int rate = 1 + (size / (upoly_width * Config::dice_rate));
 		if (rate < 2)
 			rate = 2;
+		if (rate > Config::max_grid_size+1)
+			rate = Config::max_grid_size+1;
 
 		return rate;
 	}
@@ -73,8 +75,14 @@ int Bilinear::dice_rate(float32 upoly_width)
 
 bool Bilinear::intersect_ray(Ray &ray, Intersection *intersection)
 {
+	// Try to get an existing grid
+	Grid *grid = GridCache::cache.open(grid_key);
+
 	// Dice the grid if we don't have one already
-	if (!GridCache::cache.exists(grid_key)) {
+	if (!grid) {
+		if (!(grid_key == 0))
+			Config::cache_misses++;
+
 		// Get closest intersection with the bounding box
 		float32 tnear, tfar;
 		if (!bounds().intersect_ray(ray, &tnear, &tfar))
@@ -84,11 +92,16 @@ bool Bilinear::intersect_ray(Ray &ray, Intersection *intersection)
 		int rate = dice_rate(ray.min_width(tnear, tfar));
 
 		// Dice away!
-		dice(rate, rate);
+		grid = dice(rate, rate);
+
+		grid_key = GridCache::cache.add_open(grid);
 	}
 
-	GridCache::cache.touch(grid_key);
-	return GridCache::cache[grid_key]->intersect_ray(ray, intersection);
+	// Test the ray against the grid
+	const bool hit = grid->intersect_ray(ray, intersection);
+	GridCache::cache.close(grid_key);
+
+	return hit;
 }
 
 
@@ -197,7 +210,7 @@ void Bilinear::refine(std::vector<Primitive *> &primitives)
  * ru and rv are the resolution of the grid in vertices
  * in the u and v directions.
  */
-void Bilinear::dice(const int ru, const int rv)
+Grid *Bilinear::dice(const int ru, const int rv)
 {
 	Config::upoly_gen_count += (ru-1)*(rv-1);
 	Grid *grid = new Grid(ru, rv, verts.state_count, 0);
@@ -255,5 +268,5 @@ void Bilinear::dice(const int ru, const int rv)
 	grid->calc_normals();
 	grid->finalize();
 
-	grid_key = GridCache::cache.add(grid);
+	return grid;
 }

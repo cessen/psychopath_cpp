@@ -41,7 +41,7 @@ public:
 	virtual void refine(std::vector<Primitive *> &primitives);
 
 	void add_time_sample(int samp, Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4);
-	void dice(const int ru, const int rv);
+	Grid *dice(const int ru, const int rv);
 };
 
 #endif

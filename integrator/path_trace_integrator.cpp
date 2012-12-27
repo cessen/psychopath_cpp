@@ -61,7 +61,6 @@ void PathTraceIntegrator::integrate()
 	while (true) {
 		// Generate samples
 		std::cout << "\t--------\n\tGenerating samples" << std::endl;
-		std::cout.flush();
 		for (int i = 0; i < RAYS_AT_A_TIME; i++) {
 			paths[i].done = false;
 			paths[i].col = Color(0.0);
@@ -78,9 +77,6 @@ void PathTraceIntegrator::integrate()
 
 		// Path tracing loop for the samples we have
 		for (int path_n=0; path_n < path_length; path_n++) {
-			std::cout << "\t-- Path segment #" << path_n << std::endl;
-			std::cout.flush();
-
 			// Size the ray buffer appropriately
 			rayinters.resize(samp_size);
 
@@ -88,7 +84,6 @@ void PathTraceIntegrator::integrate()
 
 			// Calculate path rays
 			std::cout << "\tGenerating path rays" << std::endl;
-			std::cout.flush();
 			if (path_n == 0) {
 				// First segment of path is camera rays
 				for (uint32 i = 0; i < samp_size; i++) {
@@ -150,8 +145,6 @@ void PathTraceIntegrator::integrate()
 
 
 			// Update paths
-			std::cout << "\tUpdating paths" << std::endl;
-			std::cout.flush();
 			uint32 rsize = rayinters.size();
 			for (uint32 i = 0; i < rsize; i++) {
 				const uint32 id = rayinters[i]->id;
@@ -168,7 +161,6 @@ void PathTraceIntegrator::integrate()
 
 			// Generate a bunch of shadow rays
 			std::cout << "\tGenerating shadow rays" << std::endl;
-			std::cout.flush();
 			uint32 sri = 0; // Shadow ray index
 			for (uint32 i = 0; i < paths.size(); i++) {
 				if (!paths[i].done) {
@@ -208,8 +200,6 @@ void PathTraceIntegrator::integrate()
 
 
 			// Calculate sample colors
-			std::cout << "\tCalculating sample colors" << std::endl;
-			std::cout.flush();
 			rsize = rayinters.size();
 			for (uint32 i = 0; i < rsize; i++) {
 				const uint32 id = rayinters[i]->id;
@@ -224,7 +214,6 @@ void PathTraceIntegrator::integrate()
 
 		// Accumulate the samples
 		std::cout << "\tAccumulating samples" << std::endl;
-		std::cout.flush();
 		for (uint32 i = 0; i < samp_size; i++) {
 			image->add_sample(paths[i].col, coords[i*2], coords[i*2+1]);
 		}
