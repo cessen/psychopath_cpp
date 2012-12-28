@@ -1,4 +1,4 @@
-#include "direct_lighting_integrator.hpp"
+#include "vis_integrator.hpp"
 
 #include <iostream>
 #include <assert.h>
@@ -32,7 +32,7 @@ void resize_rayinters(Array<RayInter *> &rayinters, uint32 size)
 }
 
 
-void DirectLightingIntegrator::integrate()
+void VisIntegrator::integrate()
 {
 	const uint_i samp_dim = 8;
 
@@ -48,7 +48,7 @@ void DirectLightingIntegrator::integrate()
 	coords.resize(RAYS_AT_A_TIME * 2);
 
 	// Light path array
-	Array<DLPath> paths;
+	Array<VisPath> paths;
 	paths.resize(RAYS_AT_A_TIME);
 
 	// Ray array
@@ -106,77 +106,12 @@ void DirectLightingIntegrator::integrate()
 		for (uint32 i = 0; i < rsize; i++) {
 			if (rayinters[i]->hit) {
 				// Ray hit something!  Store intersection data
-				paths[rayinters[i]->id].inter = rayinters[i]->inter;
+				paths[rayinters[i]->id].done = true;
+				paths[rayinters[i]->id].col = rayinters[i]->inter.col;
 			} else {
 				// Ray didn't hit anything, done and black background
 				paths[rayinters[i]->id].done = true;
 				paths[rayinters[i]->id].col = Color(0.0, 0.0, 0.0);
-			}
-		}
-
-
-		// Generate a bunch of shadow rays
-		std::cout << "\tGenerating shadow rays" << std::endl;
-		std::cout.flush();
-		uint32 sri = 0; // Shadow ray index
-		for (uint32 i = 0; i < ssize; i++) {
-			if (!paths[i].done) {
-				// Select a light and store the normalization factor for it's output
-				Light *lighty = scene->finite_lights[(uint32)(samps[i*samp_dim+5] * scene->finite_lights.size()) % scene->finite_lights.size()];
-				//Light *lighty = scene->finite_lights[rng.next_uint() % scene->finite_lights.size()];
-
-				// Sample the light source
-				Vec3 ld;
-				paths[i].lcol = lighty->sample(rayinters[i]->inter.p, samps[i*samp_dim+6], samps[i*samp_dim+7], rayinters[i]->ray.time, &ld)
-				                * (float32)(scene->finite_lights.size());
-				//paths[i].lcol = lighty->sample(rayinters[i]->inter.p, rng.next_float(), rng.next_float(), rayinters[i]->ray.time, &ld)
-				//                * (float32)(scene->finite_lights.size());
-
-				// Create a shadow ray for this path
-				float d = ld.length();
-				ld.normalize();
-				rayinters[sri]->ray.o = paths[i].inter.p;
-				rayinters[sri]->ray.d = ld;
-				rayinters[sri]->ray.time = samps[i*samp_dim+4];
-				rayinters[sri]->ray.is_shadow_ray = true;
-				rayinters[sri]->ray.has_differentials = false;
-				rayinters[sri]->ray.min_t = 0.01;
-				rayinters[sri]->ray.max_t = d;
-				rayinters[sri]->ray.finalize();
-				rayinters[sri]->hit = false;
-				rayinters[sri]->id = i;
-
-				// Increment shadow ray index
-				sri++;
-			}
-		}
-		resize_rayinters(rayinters, sri);
-
-
-		// Trace the shadow rays
-		std::cout << "\tTracing shadow rays" << std::endl;
-		std::cout.flush();
-		tracer->queue_rays(rayinters);
-		tracer->trace_rays();
-
-
-		// Calculate sample colors
-		std::cout << "\tCalculating sample colors" << std::endl;
-		std::cout.flush();
-		rsize = rayinters.size();
-		for (uint32 i = 0; i < rsize; i++) {
-			uint32 id = rayinters[i]->id;
-			if (rayinters[i]->hit) {
-				// Sample was shadowed
-				paths[id].done = true;
-				paths[id].col = Color(0.0, 0.0, 0.0);
-			} else {
-				// Sample was lit
-				paths[id].inter.n.normalize();
-				float lambert = dot(rayinters[i]->ray.d, paths[id].inter.n);
-				if (lambert < 0.0) lambert = 0.0;
-
-				paths[id].col = paths[id].lcol * lambert;
 			}
 		}
 

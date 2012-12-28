@@ -92,7 +92,7 @@ include_directories ("${PROJECT_BINARY_DIR}",
                      "${PROJECT_SOURCE_DIR}",
                      "${PROJECT_SOURCE_DIR}/collections",
                      "${PROJECT_SOURCE_DIR}/basics",
-                     "${PROJECT_SOURCE_DIR}/usurface",
+                     "${PROJECT_SOURCE_DIR}/micro_surface",
                      "${PROJECT_SOURCE_DIR}/integrator",
                      "${PROJECT_SOURCE_DIR}/lights",
                      "${PROJECT_SOURCE_DIR}/math",
@@ -111,7 +111,7 @@ include_directories ("${PROJECT_BINARY_DIR}",
 #--------------------------------------
 add_subdirectory(collections)
 add_subdirectory(basics)
-add_subdirectory(usurface)
+add_subdirectory(micro_surface)
 add_subdirectory(integrator)
 add_subdirectory(math)
 add_subdirectory(primitives)
@@ -130,7 +130,7 @@ set (PSYCHO_LIB
 	sampling
 	primitives
 	basics
-	usurface
+	micro_surface
 	collections
 	config)
 

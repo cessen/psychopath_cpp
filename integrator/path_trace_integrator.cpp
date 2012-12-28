@@ -93,6 +93,7 @@ void PathTraceIntegrator::integrate()
 					float32 dy = (image->max_y - image->min_y) / image->height;
 					rayinters[i]->ray = scene->camera->generate_ray(rx, ry, dx, dy, samps[i*samp_dim+4], samps[i*samp_dim+2], samps[i*samp_dim+3]);
 					rayinters[i]->ray.finalize();
+					paths[i].prev_ray = rayinters[i]->ray;
 					rayinters[i]->hit = false;
 					rayinters[i]->id = i;
 				}
@@ -122,14 +123,19 @@ void PathTraceIntegrator::integrate()
 						rayinters[pri]->id = i;
 
 						// Create a bounce ray for this path
-						rayinters[pri]->ray.o = paths[i].inter.p;
+						rayinters[pri]->ray.o = paths[i].inter.p + paths[i].inter.offset;
 						rayinters[pri]->ray.d = dir;
 						rayinters[pri]->ray.time = samps[i*samp_dim+4];
 						rayinters[pri]->ray.is_shadow_ray = false;
-						rayinters[pri]->ray.has_differentials = false;
 						rayinters[pri]->ray.min_t = 0.01;
 						rayinters[pri]->ray.max_t = 999999999999.0;
+						rayinters[pri]->ray.has_differentials = true;
+						for (uint_i zzz=0; zzz < NUM_DIFFERENTIALS; zzz++) {
+							rayinters[pri]->ray.od[zzz] = paths[i].prev_ray.od[zzz] + paths[i].prev_ray.dd[zzz] * paths[i].inter.t;
+							rayinters[pri]->ray.dd[zzz] = paths[i].prev_ray.dd[zzz] * 20;
+						}
 						rayinters[pri]->ray.finalize();
+						paths[pri].prev_ray = rayinters[pri]->ray;
 
 						// Increment path ray index
 						pri++;
@@ -178,13 +184,17 @@ void PathTraceIntegrator::integrate()
 					// Create a shadow ray for this path
 					float d = ld.length();
 					ld.normalize();
-					rayinters[sri]->ray.o = paths[i].inter.p;
+					rayinters[sri]->ray.o = paths[i].inter.p + paths[i].inter.offset;
 					rayinters[sri]->ray.d = ld;
 					rayinters[sri]->ray.time = samps[i*samp_dim+4];
 					rayinters[sri]->ray.is_shadow_ray = true;
-					rayinters[sri]->ray.has_differentials = false;
 					rayinters[sri]->ray.min_t = 0.01;
 					rayinters[sri]->ray.max_t = d;
+					rayinters[sri]->ray.has_differentials = true;
+					for (uint_i zzz=0; zzz < NUM_DIFFERENTIALS; zzz++) {
+						rayinters[sri]->ray.od[zzz] = paths[i].prev_ray.od[zzz] + paths[i].prev_ray.dd[zzz] * paths[i].inter.t;
+						rayinters[sri]->ray.dd[zzz] = paths[i].prev_ray.dd[zzz] * 20;
+					}
 					rayinters[sri]->ray.finalize();
 					rayinters[sri]->hit = false;
 					rayinters[sri]->id = i;
@@ -235,10 +245,5 @@ void PathTraceIntegrator::integrate()
 
 	// Delete the RayInter structures
 	delete [] rayinters_;
-
-	std::cout << "Splits during rendering: " << Config::split_count << std::endl;
-	std::cout << "Micropolygons generated during rendering: " << Config::upoly_gen_count << std::endl;
-	std::cout << "Grid cache misses during rendering: " << Config::cache_misses << std::endl;
-	std::cout << "Primitive-ray tests during rendering: " << Config::primitive_ray_tests << std::endl;
 }
 

@@ -160,6 +160,13 @@ struct BBox {
 
 		return 2 * (x*y + x*z + y*z);
 	}
+
+	/**
+	 * @brief Returns the length of the diagonal of the BBox.
+	 */
+	float32 diagonal() const {
+		return (max - min).length();
+	}
 };
 
 

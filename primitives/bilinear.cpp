@@ -75,6 +75,9 @@ int Bilinear::dice_rate(float32 upoly_width)
 
 bool Bilinear::intersect_ray(Ray &ray, Intersection *intersection)
 {
+	Config::primitive_ray_tests++;
+
+
 	// Try to get an existing grid
 	Grid *grid = GridCache::cache.open(grid_key);
 
@@ -90,6 +93,8 @@ bool Bilinear::intersect_ray(Ray &ray, Intersection *intersection)
 
 		// Get dicing rate
 		int rate = dice_rate(ray.min_width(tnear, tfar));
+		Config::grid_size_accum += rate;
+		Config::grid_count++;
 
 		// Dice away!
 		grid = dice(rate, rate);

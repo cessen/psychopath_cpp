@@ -18,6 +18,10 @@ struct Intersection {
 	Vec3 in; // The incoming ray direction
 	float32 t; // T-parameter along the ray at the intersection
 
+	// Offset for subsequent spawned rays to avoid self-intersection
+	// Should be added for reflection, subtracted for transmission
+	Vec3 offset;
+
 	Color col;
 };
 

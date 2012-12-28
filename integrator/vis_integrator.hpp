@@ -2,8 +2,8 @@
  * This file and integrator.cpp define a Integrator class, which decides where
  * to shoot rays and how to combine their results into a final image or images.
  */
-#ifndef PATH_TRACE_INTEGRATOR_HPP
-#define PATH_TRACE_INTEGRATOR_HPP
+#ifndef VIS_INTEGRATOR_HPP
+#define VIS_INTEGRATOR_HPP
 
 #include "integrator.hpp"
 
@@ -27,14 +27,13 @@
  * Although markov chain algorithms may play poorly with the Tracer, which is
  * designed to trace rays in bulk.
  */
-class PathTraceIntegrator: Integrator
+class VisIntegrator: Integrator
 {
 public:
 	Scene *scene;
 	Tracer *tracer;
 	Film<Color> *image;
 	int spp;
-	int path_length;
 	int thread_count;
 	Functor *callback;
 
@@ -49,17 +48,16 @@ public:
 	 *                    initialized with 3 channels, for rgb.
 	 * @param spp_ The number of samples to take per pixel for integration.
 	 */
-	PathTraceIntegrator(Scene *scene_, Tracer *tracer_, Film<Color> *image_, int spp_, int thread_count_=1, Functor *callback_=NULL) {
+	VisIntegrator(Scene *scene_, Tracer *tracer_, Film<Color> *image_, int spp_, int thread_count_=1, Functor *callback_=NULL) {
 		scene = scene_;
 		tracer = tracer_;
 		image = image_;
 		spp = spp_;
 		thread_count = thread_count_;
-		path_length = 3;
 		callback = callback_;
 	}
 
-	//virtual ~PathTraceIntegrator() {
+	//virtual ~DirectLightingIntegrator() {
 	//	delete accum;
 	//}
 
@@ -72,18 +70,14 @@ public:
 
 
 /*
- * A path tracing path.
+ * A direct lighting path.
  * Stores state of a path in progress.
  */
-struct PTPath {
-	Ray prev_ray;
+struct VisPath {
 	Intersection inter;
-	Color col; // Color of the sample collected so far
-	Color fcol; // Accumulated filter color from light path
-	Color lcol; // Temporary storage for incoming light color
-
+	Color col, lcol;
 	bool done;
 };
 
-#endif // PATH_TRACE_INTEGRATOR_H
+#endif // VIS_INTEGRATOR_H
 

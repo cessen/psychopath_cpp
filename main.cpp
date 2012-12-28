@@ -305,16 +305,16 @@ int main(int argc, char **argv)
 
 			if (flip) {
 				patch->add_time_sample(j,
-				                       Vec3((x*s)+2, (y*s)+2, z+(rng.next_float_c()*2)),
-				                       Vec3((x*s)+2, (y*s)-2, z+(rng.next_float_c()*2)),
-				                       Vec3((x*s)-2, (y*s)-2, z+(rng.next_float_c()*2)),
-				                       Vec3((x*s)-2, (y*s)+2, z+(rng.next_float_c()*2)));
+				                       Vec3((x*s)+2, (y*s)+2, z+(rng.next_float_c()*8)),
+				                       Vec3((x*s)+2, (y*s)-2, z+(rng.next_float_c()*8)),
+				                       Vec3((x*s)-2, (y*s)-2, z+(rng.next_float_c()*8)),
+				                       Vec3((x*s)-2, (y*s)+2, z+(rng.next_float_c()*8)));
 			} else {
 				patch->add_time_sample(j,
-				                       Vec3((x*s)+2, (y*s)+2, z+(rng.next_float_c()*2)),
-				                       Vec3((x*s)-2, (y*s)+2, z+(rng.next_float_c()*2)),
-				                       Vec3((x*s)-2, (y*s)-2, z+(rng.next_float_c()*2)),
-				                       Vec3((x*s)+2, (y*s)-2, z+(rng.next_float_c()*2)));
+				                       Vec3((x*s)+2, (y*s)+2, z+(rng.next_float_c()*8)),
+				                       Vec3((x*s)-2, (y*s)+2, z+(rng.next_float_c()*8)),
+				                       Vec3((x*s)-2, (y*s)-2, z+(rng.next_float_c()*8)),
+				                       Vec3((x*s)+2, (y*s)-2, z+(rng.next_float_c()*8)));
 
 			}
 		}

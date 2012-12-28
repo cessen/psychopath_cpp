@@ -1,5 +1,8 @@
 - Triangle primitive
 
+
+
+
 - Framework for surface primitives to manage their splitting and micropolygons
   in a thread-safe way.
 	- Should be generic enough for all surface primitives to use.
@@ -13,6 +16,30 @@
 	  to make a distinction between those in the API.
 	- How can this relate to a bigger picture that handles, e.g.,
 	  particles, curves, and volumes as well?
+
+- Surface primitive API:
+	- separate() -- separates out natural component primitives that
+	                together make up the original.  Used on scene
+	                loading to make sure everything can be handled
+	                by the surface framework.
+	- split() -- splits the primitive into multiple primitives that
+	             together make up the original.  May be called on scene
+	             loading, but is primarily for the tracing stages.
+	- micro_estimate() -- given a target microelement size, estimates
+	                      the number of microelements that would have to
+	                      be generated to achieve it.
+	- micro_generate() -- generates the MicroSurface
+	- class MicroSurface -- the description that is actually directly
+	                        ray-tested against.  Different API's can be
+	                        added to allow surface primitives to seed it,
+	                        but by default the input will likely be a
+	                        grid.  The MicroSurface handles
+	                        displacements, etc.
+
+//- Intersection data should include information about how to offset
+//  rays spawned from the intersection point to avoid self-intersections.
+//  It should be a small vector which is added to the ray origin for
+//  reflection and subtracted for transmission.
 
 - Two-stage ray tracing, similar to the Rayes (not Reyes) paper
 	- Assign each thread an object id to trace rays for.
@@ -54,10 +81,11 @@
 	  the intended usage of Psychopath.  The top-level BVH is likely
 	  to be relatively sparse anyway compared to most path tracers,
 	  since it uses higher-order surface descriptions.  Focus on speed.
-	- Three basic approaches to speeding up traversal:
+	- Four basic approaches to speeding up traversal:
 		- Reducing the number of nodes traversed on average
-		- Reducing the cost of testing against a node
+		- Reducing the cost of testing against each node
 		- Using SIMD to test multiple nodes at once
+		- Improving cache coherency of traversal by better tree layout
 	- Must be able to pause and resume traversal with minimal data per ray
 	- QBVH is worth investigating, but it's unclear how to do efficient
 	  resumes.

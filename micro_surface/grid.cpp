@@ -312,7 +312,8 @@ bool Grid::intersect_ray(Ray &rayo, Intersection *intersection)
 	}
 
 	ray.update_accel();
-	float32 tscale = ray.d.length() / rayo.d.length();
+
+	float32 offset_fac = 0.0f;
 
 	// Traverse the BVH and check for intersections. Yay!
 	uint32 todo_offset = 0, node = 0;
@@ -322,16 +323,66 @@ bool Grid::intersect_ray(Ray &rayo, Intersection *intersection)
 		if (intersect_grid_bvh_node(time_count, &(bvh_nodes[node]), ray, ia, alpha, q, quant_info, tnear, tfar)) {
 			if (bvh_nodes[node].flags & IS_LEAF) {
 				//Intersect ray with upoly in leaf BVH node
+#define USE_BBOX_FOR_FINAL
+#ifdef USE_BBOX_FOR_FINAL
+				// Use BBox itself as the intersection geometry
+				const float32 temp_t = (tnear + tfar) / 2.0f;
+				if (t < rayo.max_t) {
+					t = temp_t;
+					hit = true;
+					upoly_i = bvh_nodes[node].upoly_index;
+					rayo.max_t = t;
+					ray.max_t = t;
+
+					if (rayo.is_shadow_ray)
+						break;
+
+					u = 0.5;
+					v = 0.5;
+
+					// Calculate offset
+					const float32 x1 = inv_grid_quant(bvh_nodes[node].bounds[0], q.offset[0], q.factor[0]);
+					const float32 y1 = inv_grid_quant(bvh_nodes[node].bounds[1], q.offset[1], q.factor[1]);
+					const float32 z1 = inv_grid_quant(bvh_nodes[node].bounds[2], q.offset[2], q.factor[2]);
+
+					const float32 x2 = inv_grid_quant(bvh_nodes[node].bounds[3], q.offset[0], q.factor[0]);
+					const float32 y2 = inv_grid_quant(bvh_nodes[node].bounds[4], q.offset[1], q.factor[1]);
+					const float32 z2 = inv_grid_quant(bvh_nodes[node].bounds[5], q.offset[2], q.factor[2]);
+
+					const float32 dx = x1 - x2;
+					const float32 dy = y1 - y2;
+					const float32 dz = z1 - z2;
+
+					offset_fac = sqrt(dx*dx + dy*dy + dz*dz);
+				}
+#else
+				// Use the micropolygon as the intersection geometry
 				if (intersect_ray_upoly(rayo, bvh_nodes[node].upoly_index, &u, &v, &t)) {
 					hit = true;
 					upoly_i = bvh_nodes[node].upoly_index;
 					rayo.max_t = t;
-					ray.max_t = t * tscale;
+					ray.max_t = t;
 
 					// Early out for shadow rays
 					if (ray.is_shadow_ray)
 						break;
+
+					// Calculate offset
+					const float32 x1 = inv_grid_quant(bvh_nodes[node].bounds[0], q.offset[0], q.factor[0]);
+					const float32 y1 = inv_grid_quant(bvh_nodes[node].bounds[1], q.offset[1], q.factor[1]);
+					const float32 z1 = inv_grid_quant(bvh_nodes[node].bounds[2], q.offset[2], q.factor[2]);
+
+					const float32 x2 = inv_grid_quant(bvh_nodes[node].bounds[3], q.offset[0], q.factor[0]);
+					const float32 y2 = inv_grid_quant(bvh_nodes[node].bounds[4], q.offset[1], q.factor[1]);
+					const float32 z2 = inv_grid_quant(bvh_nodes[node].bounds[5], q.offset[2], q.factor[2]);
+
+					const float32 dx = x1 - x2;
+					const float32 dy = y1 - y2;
+					const float32 dz = z1 - z2;
+
+					offset_fac = sqrt(dx*dx + dy*dy + dz*dz);
 				}
+#endif
 
 				if (todo_offset == 0)
 					break;
@@ -383,8 +434,16 @@ bool Grid::intersect_ray(Ray &rayo, Intersection *intersection)
 		n1.normalize();
 		intersection->n = n1;
 
+		if (dot(rayo.d.normalized(), n1) < 0.0f)
+			intersection->offset = n1 * offset_fac;
+		else
+			intersection->offset = n1 * -offset_fac;
+
 		// Normal xyz -> color rgb
 		intersection->col = Color((n1.x+1.0)/2, (n1.y+1.0)/2, (n1.z+1.0)/2);
+
+		// Intersection depth -> color rgb
+		//intersection->col = Color(t/256.0);
 
 		// UV0 -> color rgb
 		//intersection->col = Color(u, v, 0.0);

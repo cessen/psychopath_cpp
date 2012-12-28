@@ -152,6 +152,7 @@ bool Sphere::intersect_ray(Ray &ray, Intersection *intersection)
 		intersection->n.normalize();
 		intersection->in = ray.d;
 		intersection->t = t;
+		intersection->offset = Vec3(0.0f, 0.0f, 0.0f);
 
 		intersection->col = Color((intersection->n.x+1.0)/2, (intersection->n.y+1.0)/2, (intersection->n.z+1.0)/2);
 	}
