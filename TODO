@@ -36,10 +36,10 @@
 	                        grid.  The MicroSurface handles
 	                        displacements, etc.
 
-//- Intersection data should include information about how to offset
-//  rays spawned from the intersection point to avoid self-intersections.
-//  It should be a small vector which is added to the ray origin for
-//  reflection and subtracted for transmission.
+- Intersection data should include information about how to offset
+  rays spawned from the intersection point to avoid self-intersections.
+  It should be a small vector which is added to the ray origin for
+  reflection and subtracted for transmission.
 
 - Two-stage ray tracing, similar to the Rayes (not Reyes) paper
 	- Assign each thread an object id to trace rays for.

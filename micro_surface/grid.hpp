@@ -1,115 +1,59 @@
 #ifndef GRID_HPP
 #define GRID_HPP
-/*
- * This file and grid.cpp define micropolygon grids.
- * They come with their own special spatial acceleration structure,
- * and they know how to intersect rays with themselves.
- *
- * TODO:
- * - Quantized bounds for bvh nodes.
- */
-
-#include "numtype.h"
 
 #include <vector>
-#include "ray.hpp"
-#include "primitive.hpp"
-#include "bbox.hpp"
-#include "timebox.hpp"
+
+#include "numtype.h"
 #include "vector.hpp"
-#include <stdlib.h>
-
-
-class Grid;
-
-struct GridQuantInfo {
-	Vec3 offset;
-	Vec3 factor;
-};
-
-/*
- * A single vertex of a micropolygon.
- */
-class UVert
-{
-public:
-	Vec3 p; // Position
-	Vec3 n; // Normal
-};
-
-
-#define GRID_BVH_QUANT 255
-
-/*
- * A node of a grid BVH.
- */
-class GridBVHNode
-{
-public:
-	union {
-		unsigned short child_index;
-		unsigned short upoly_index;
-	};
-
-	/* Bounding boxes of the node, layed out as minx, miny, minz,
-	   maxx, maxy, maxz.
-	   Bounds are quantized to bytes, relative to the over-all grid bounding
-	   box at each time step.
-	 */
-	uint8 bounds[6];
-	uint8 flags;
-
-	char pad[7];
-};
 
 
 /*
  * A micropolygon grid.
  */
-class Grid: Boundable, Traceable
-{
-private:
-	BBoxT bbox;
-	bool has_bounds;
+struct Grid {
+	// Resolution
+	uint16 res_u, res_v; // In vertices, not faces
+	uint16 time_count;
 
-	std::vector<GridBVHNode> bvh_nodes;
-	std::vector<GridQuantInfo> quant_info;
+	// Data
+	std::vector<Vec3> verts; // v1_t1, v1_t2, v1_t3, v2_t1, v2_t2, v2_t3...
+	float32 u1, v1,
+	        u2, v2,
+	        u3, v3,
+	        u4, v4;
+	uint_i face_id;
 
-	void bound_upoly(int32 first_vert, GridBVHNode *bnodes);
-	int32 recursive_build_bvh(int32 me, int32 next_node,
-	                          int32 umin, int32 umax,
-	                          int32 vmin, int32 vmax);
+	// Constructors
+	Grid() {}
+	Grid(uint16 ru, uint16 rv, uint16 tc) {
+		res_u = ru;
+		res_v = rv;
+		time_count = tc;
 
-public:
-	unsigned short res_u, res_v, res_time; // Grid resolution in vertices
-	unsigned short var_count; // Number of variables on each vertex (r, g, b, a, etc.)
-	uint8 time_count;
-
-	TimeBox<UVert *> verts; // Grid vertices
-	float32 *vars; // Variables per-vertex, stored ch1,ch2,ch3,ch1,ch2,ch3...
-
-	Grid(int32 ru, int32 rv, int32 rt, int32 vc);
-	~Grid();
-
-	bool finalize();
-
-	virtual bool intersect_ray(Ray &ray, Intersection *intersection=NULL);
-	virtual BBoxT &bounds();
-
-	bool intersect_ray_upoly(const Ray &ray, int32 upoly_i, float32 *u, float32 *v, float32 *t);
-
-	void calc_normals();
-
-
-
-	/* Returns the approximate size of the grid's data in bytes.
-	 */
-	uint32 bytes() const {
-		int32 vertsize = (res_u * res_v * verts.state_count * sizeof(UVert)) + (verts.state_count * sizeof(UVert *));
-		int32 varsize = (res_u * res_v * var_count * sizeof(float32));
-		int32 bvhsize = (((res_u-1) * (res_v-1) * verts.state_count) * 2) * sizeof(GridBVHNode);
-		return vertsize + varsize + bvhsize + sizeof(Grid);
+		verts.resize(ru*rv*tc);
 	}
+
+	// Convenience methods
+	/**
+	 * @brief Computes surface normals for each vertex of the grid.
+	 *
+	 * The normals are stored in the following order:
+	 * n1_t1, n1_t2, n1_t3, n2_t1, n2_t2, n2_t3...
+	 *
+	 * @param normals Pointer to already allocated space to store
+	 *                the normals.
+	 */
+	bool calc_normals(Vec3 *normals);
+
+	/**
+	 * @brief Computes uv coordinates for each vertex of the grid.
+	 *
+	 * The coordinates are stored in the following order:
+	 * u1, v1, u2, v2, u3, v3...
+	 *
+	 * @param uvs Pointer to already allocated space to store the uvs.
+	 */
+	bool calc_uvs(float32 *uvs);
 };
 
 #endif

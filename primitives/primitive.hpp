@@ -56,8 +56,8 @@ public:
  * for rendering and which can be bounded in space.  E.g. surfaces,
  * particles, volumes, etc.
  *
- * Some primitives may need to be split into sub-primitives first,
- * but should eventually split down to something directly traceable.
+ * Some primitives may need to be separated into sub-primitives first,
+ * but should eventually separate into something traceable.
  */
 class Primitive: public Boundable, public Traceable
 {
@@ -65,20 +65,20 @@ public:
 	virtual ~Primitive() {}
 
 	/**
-	 @brief Splits a primitive into several sub-primitives.
-
-	 Places pointers to the primitives in the given primitives vector.
+	 @brief Returns whether the primitive needs to be separated before tracing.
 	 */
-	virtual void refine(std::vector<Primitive *> &primitives) {
-		std::cout << "Error: Primitive::refine() not implemented for this primitive." << std::endl;
-		exit(1);
+	virtual bool is_traceable() {
+		return true;
 	}
 
 	/**
-	 @brief Returns whether the surface needs to be split before tracing.
+	 @brief Separates a primitive into natural sub-primitives.
+
+	 Places pointers to the primitives in the given primitives vector.
 	 */
-	virtual bool is_traceable(float32 ray_width) {
-		return true;
+	virtual void separate(std::vector<Primitive *> &primitives) {
+		std::cout << "Error: Primitive::separate() not implemented for this primitive." << std::endl;
+		exit(1);
 	}
 };
 
@@ -90,6 +90,16 @@ class Surface: public Primitive
 {
 public:
 	virtual ~Surface() {}
+
+	/**
+	 @brief Splits a primitive into two or more sub-primitives.
+
+	 Places pointers to the primitives in the given primitives vector.
+	 */
+	virtual void split(std::vector<Primitive *> &primitives) {
+		std::cout << "Error: Primitive::split() not implemented for this primitive." << std::endl;
+		exit(1);
+	}
 };
 
 #endif

@@ -31,7 +31,7 @@ public:
 
 	virtual bool intersect_ray(Ray &ray, Intersection *intersection=NULL);
 	virtual BBoxT &bounds();
-	bool is_traceable(float32 ray_width) {
+	bool is_traceable() {
 		return true;
 	}
 	virtual void refine(std::vector<Primitive *> &primitives) {

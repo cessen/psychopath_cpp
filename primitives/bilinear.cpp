@@ -6,9 +6,8 @@
 #include "grid.hpp"
 #include "config.hpp"
 
-Bilinear::Bilinear(uint8 res_time_)
+Bilinear::Bilinear(uint16 res_time_)
 {
-	last_rayw = 99999999999999999999999.0;
 	has_bounds = false;
 	verts.init(res_time_);
 
@@ -16,12 +15,11 @@ Bilinear::Bilinear(uint8 res_time_)
 		verts[i] = new Vec3[4];
 	}
 
-	grid_key = 0;
+	microsurface_key = 0;
 }
 
 Bilinear::Bilinear(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4)
 {
-	last_rayw = 99999999999999999999999.0;
 	has_bounds = false;
 	verts.init(1);
 	verts[0] = new Vec3[4];
@@ -31,7 +29,7 @@ Bilinear::Bilinear(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4)
 	verts[0][2] = v3;
 	verts[0][3] = v4;
 
-	grid_key = 0;
+	microsurface_key = 0;
 }
 
 Bilinear::~Bilinear()
@@ -53,22 +51,20 @@ void Bilinear::add_time_sample(int samp, Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4)
 
 //////////////////////////////////////////////////////////////
 
-int Bilinear::dice_rate(float32 upoly_width)
+uint_i Bilinear::micro_estimate(float32 width)
 {
-	if (upoly_width <= 0.0f) {
-		return 1+8;
+	if (width <= Config::min_upoly_size) {
+		return 1;
 	} else {
 		// Approximate size of the patch
 		float32 size = (bounds()[0].max - bounds()[0].min).length() / 1.4;
 
-		// Dicing rate based on ray width
-		int rate = 1 + (size / (upoly_width * Config::dice_rate));
-		if (rate < 2)
-			rate = 2;
-		if (rate > Config::max_grid_size+1)
-			rate = Config::max_grid_size+1;
+		// Dicing rate based on target microelement width
+		int rate = size / (width * Config::dice_rate);
+		if (rate < 1)
+			rate = 1;
 
-		return rate;
+		return rate*rate;
 	}
 }
 
@@ -79,11 +75,11 @@ bool Bilinear::intersect_ray(Ray &ray, Intersection *intersection)
 
 
 	// Try to get an existing grid
-	Grid *grid = GridCache::cache.open(grid_key);
+	MicroSurface *micro_surface = MicroSurfaceCache::cache.open(microsurface_key);
 
 	// Dice the grid if we don't have one already
-	if (!grid) {
-		if (!(grid_key == 0))
+	if (!micro_surface) {
+		if (!(microsurface_key == 0))
 			Config::cache_misses++;
 
 		// Get closest intersection with the bounding box
@@ -91,20 +87,14 @@ bool Bilinear::intersect_ray(Ray &ray, Intersection *intersection)
 		if (!bounds().intersect_ray(ray, &tnear, &tfar))
 			return false;
 
-		// Get dicing rate
-		int rate = dice_rate(ray.min_width(tnear, tfar));
-		Config::grid_size_accum += rate;
-		Config::grid_count++;
+		micro_surface = micro_generate(ray.min_width(tnear, tfar));
 
-		// Dice away!
-		grid = dice(rate, rate);
-
-		grid_key = GridCache::cache.add_open(grid);
+		microsurface_key = MicroSurfaceCache::cache.add_open(micro_surface);
 	}
 
 	// Test the ray against the grid
-	const bool hit = grid->intersect_ray(ray, intersection);
-	GridCache::cache.close(grid_key);
+	const bool hit = micro_surface->intersect_ray(ray, intersection);
+	MicroSurfaceCache::cache.close(microsurface_key);
 
 	return hit;
 }
@@ -139,29 +129,14 @@ BBoxT &Bilinear::bounds()
 }
 
 
-bool Bilinear::is_traceable(float32 ray_width)
+bool Bilinear::is_traceable()
 {
-	if (ray_width < last_rayw && ray_width > 0.0f) {
-		float32 lu = (verts[0][0] - verts[0][1]).length() + (verts[0][3] - verts[0][2]).length();
-		float32 lv = (verts[0][0] - verts[0][3]).length() + (verts[0][1] - verts[0][2]).length();
-		float32 edge_ratio = lu / lv;
-
-		int r = dice_rate(ray_width);
-		if (r <= Config::max_grid_size && (edge_ratio <= 1.5 && edge_ratio >= 0.75)) {
-			last_rayw = ray_width;
-			return true;
-		} else {
-			return false;
-		}
-	} else
-		return true;
+	return true;
 }
 
 
-void Bilinear::refine(std::vector<Primitive *> &primitives)
+void Bilinear::split(std::vector<Primitive *> &primitives)
 {
-	Config::split_count++;
-
 	primitives.resize(2);
 	primitives[0] = new Bilinear(verts.state_count);
 	primitives[1] = new Bilinear(verts.state_count);
@@ -174,7 +149,6 @@ void Bilinear::refine(std::vector<Primitive *> &primitives)
 
 	// TODO
 	if (lu > lv) {
-		//std::cout << "U\n";
 		// Split on U
 		for (int i=0; i < verts.state_count; i++) {
 			((Bilinear *)(primitives[0]))->add_time_sample(i,
@@ -191,7 +165,6 @@ void Bilinear::refine(std::vector<Primitive *> &primitives)
 			                                              );
 		}
 	} else {
-		//std::cout << "V\n";
 		// Split on V
 		for (int i=0; i < verts.state_count; i++) {
 			((Bilinear *)(primitives[0]))->add_time_sample(i,
@@ -210,6 +183,25 @@ void Bilinear::refine(std::vector<Primitive *> &primitives)
 	}
 }
 
+
+MicroSurface *Bilinear::micro_generate(float32 width)
+{
+	// Get dicing rate
+	// TODO: figure this out
+	int rate = 8;
+	Config::grid_size_accum += rate;
+	Config::grid_count++;
+
+	// Dice away!
+	Grid *grid = dice(rate, rate);
+	MicroSurface *micro = new MicroSurface(grid);
+
+	delete grid;
+
+	return micro;
+}
+
+
 /*
  * Dice the patch into a micropoly grid.
  * ru and rv are the resolution of the grid in vertices
@@ -217,15 +209,28 @@ void Bilinear::refine(std::vector<Primitive *> &primitives)
  */
 Grid *Bilinear::dice(const int ru, const int rv)
 {
-	Config::upoly_gen_count += (ru-1)*(rv-1);
-	Grid *grid = new Grid(ru, rv, verts.state_count, 0);
+	// Initialize grid and fill in the basics
+	Grid *grid = new Grid(ru, rv, verts.state_count);
+
+	// Fill in face and uvs
+	// TODO: do this properly
+	grid->face_id = 0;
+	grid->u1 = 0.0;
+	grid->v1 = 0.0;
+	grid->u2 = 1.0;
+	grid->v2 = 0.0;
+	grid->u3 = 0.0;
+	grid->v3 = 1.0;
+	grid->u4 = 1.0;
+	grid->v4 = 1.0;
+
+	// Generate verts
 	Vec3 du1;
 	Vec3 du2;
 	Vec3 dv;
 	Vec3 p1, p2, p3;
 	int x, y;
 	int i, time;
-
 	// Dice for each time sample
 	for (time = 0; time < verts.state_count; time++) {
 		// Deltas
@@ -253,12 +258,8 @@ Grid *Bilinear::dice(const int ru, const int rv)
 			// Walk along v
 			for (y=0; y < rv; y++) {
 				// Set grid vertex coordinates
-				i = ru*y+x;
-				grid->verts[time][i].p = p3;
-
-				// Set variables
-				if (time == 0 and grid->vars)
-					grid->vars[i] = 0.5;
+				i = (ru*y+x) * grid->time_count + time;
+				grid->verts[i] = p3;
 
 				// Update point
 				p3 = p3 + dv;
@@ -269,9 +270,6 @@ Grid *Bilinear::dice(const int ru, const int rv)
 			p2 = p2 + du2;
 		}
 	}
-
-	grid->calc_normals();
-	grid->finalize();
 
 	return grid;
 }

@@ -44,6 +44,8 @@ class MicroSurface
 
 	// Important geometry information
 	std::vector<Vec3> normals;
+	std::vector<float32> uvs;
+	uint_i face_id;
 
 	// Number of time samples
 	uint16 time_count;
@@ -82,12 +84,13 @@ public:
 	/**
 	 * @brief Returns how much memory this MicroSurface occupies.
 	 */
-	uint_i size_in_bytes() const {
+	uint_i bytes() const {
 		const uint_i class_size = sizeof(MicroSurface);
 		const uint_i nodes_size = sizeof(MicroNode) * nodes.size();
 		const uint_i normals_size = sizeof(Vec3) * normals.size();
+		const uint_i uvs_size = sizeof(float32) * uvs.size();
 
-		return class_size + nodes_size + normals_size;
+		return class_size + nodes_size + normals_size + uvs_size;
 	}
 };
 

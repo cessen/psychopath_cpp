@@ -407,28 +407,17 @@ bool BVH::intersect_ray(Ray &ray, Intersection *intersection)
 	while (true) {
 		if (intersect_node(node, ray, &hitt0, &hitt1)) {
 			if (nodes[node].flags & IS_LEAF) {
-				if (nodes[node].data->is_traceable(ray.min_width(hitt0, hitt1))) {
-					// Trace!
-					hit |= nodes[node].data->intersect_ray(ray, intersection);
+				// Trace!
+				hit |= nodes[node].data->intersect_ray(ray, intersection);
 
-					// Early out for shadow rays
-					if (hit && ray.is_shadow_ray)
-						break;
+				// Early out for shadow rays
+				if (hit && ray.is_shadow_ray)
+					break;
 
-					if (todo_offset == 0)
-						break;
+				if (todo_offset == 0)
+					break;
 
-					node = todo[--todo_offset];
-				} else {
-					// Split!
-					nodes[node].data->refine(temp_prim);
-					add_primitives(temp_prim);
-					temp_prim.resize(0);
-					delete nodes[node].data;
-
-					recursive_build(nodes[node].parent_index, node, 0, bag.size()-1);
-					bag.resize(0);
-				}
+				node = todo[--todo_offset];
 			} else {
 				// Put far BVH node on todo stack, advance to near node
 				if (ray.d_is_neg[nodes[node].flags & SPLIT_MASK]) {

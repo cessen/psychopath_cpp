@@ -1,2 +1,2 @@
 add_library(micro_surface
-    micro_surface utriangle grid grid_cache)
+    micro_surface grid micro_surface_cache)
