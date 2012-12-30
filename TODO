@@ -1,19 +1,10 @@
 - Triangle primitive
 
-
-
-
 - Framework for surface primitives to manage their splitting and micropolygons
   in a thread-safe way.
 	- Should be generic enough for all surface primitives to use.
 	- Perhaps define an API that primitives must expose, which the framework
 	  can use.
-	- Two kinds of splitting: splitting to reduce individual grid size,
-	  and splitting that has to happen for tracing in the first place.
-	  E.g. a character made of nurbs patches naturally splits into
-	  the individual patches, which is different from the individual
-	  patches splitting to limit diced grid size.  It might be good
-	  to make a distinction between those in the API.
 	- How can this relate to a bigger picture that handles, e.g.,
 	  particles, curves, and volumes as well?
 
@@ -35,6 +26,10 @@
 	                        but by default the input will likely be a
 	                        grid.  The MicroSurface handles
 	                        displacements, etc.
+	                        The particular internal surface
+	                        representation the MicroSurface uses should
+	                        be isolated from the rest of psychopath, so
+	                        that it can be easily changed as needed.
 
 - Intersection data should include information about how to offset
   rays spawned from the intersection point to avoid self-intersections.

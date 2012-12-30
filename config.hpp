@@ -13,7 +13,7 @@ extern float grid_cache_size;
 
 // Statistics
 extern uint64 split_count;
-extern uint64 upoly_gen_count;
+extern uint64 microelement_gen_count;
 extern uint64 cache_misses;
 extern uint_i primitive_ray_tests;
 

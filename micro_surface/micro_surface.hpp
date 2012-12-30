@@ -22,12 +22,11 @@ struct MicroNode {
 	BBox bounds;
 	uint16 flags;
 
-	union {
-		uint16 child_index;
-		uint16 data_index; // Index into geometry data
-	};
-	uint16 data_du; // Deltas for the extent of geometry data that this node covers
-	uint16 data_dv;
+	uint16 child_index;
+
+	uint16 data_index; // Index into geometry data
+	uint8 data_du; // Deltas for the extent of geometry data that this node covers
+	uint8 data_dv;
 };
 
 
@@ -41,6 +40,8 @@ class MicroSurface
 {
 	// MicroSurface tree
 	std::vector<MicroNode> nodes;
+	uint_i res_u, res_v;
+
 
 	// Important geometry information
 	std::vector<Vec3> normals;

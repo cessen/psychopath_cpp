@@ -160,4 +160,20 @@ static inline T cross(const T &a, const T &b)
 	return a.cross(b);
 }
 
+static inline Vec3 min(const Vec3 &a, const Vec3 &b)
+{
+	Vec3 c;
+	for (int i = 0; i < 3; i++)
+		c[i] = a[i] < b[i] ? a[i] : b[i];
+	return c;
+}
+
+static inline Vec3 max(const Vec3 &a, const Vec3 &b)
+{
+	Vec3 c;
+	for (int i = 0; i < 3; i++)
+		c[i] = a[i] > b[i] ? a[i] : b[i];
+	return c;
+}
+
 #endif

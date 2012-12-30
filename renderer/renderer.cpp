@@ -68,11 +68,11 @@ bool Renderer::render(int thread_count)
 
 	// Print statistics
 	std::cout << "Splits during rendering: " << Config::split_count << std::endl;
-	std::cout << "Micropolygons generated during rendering: " << Config::upoly_gen_count << std::endl;
-	std::cout << "Grid cache misses during rendering: " << Config::cache_misses << std::endl;
+	std::cout << "MicroSurface elements generated during rendering: " << Config::microelement_gen_count << std::endl;
+	std::cout << "MicroSurface cache misses during rendering: " << Config::cache_misses << std::endl;
 	std::cout << "Primitive-ray tests during rendering: " << Config::primitive_ray_tests << std::endl;
 	const uint_i grid_res = Config::grid_size_accum / Config::grid_count;
-	std::cout << "Average grid resolution: " <<  grid_res << "x" << grid_res << std::endl;
+	std::cout << "Average MicroSurface elements: " <<  grid_res * grid_res << std::endl;
 
 	// Finished
 	return true;

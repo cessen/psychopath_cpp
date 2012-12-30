@@ -188,7 +188,7 @@ MicroSurface *Bilinear::micro_generate(float32 width)
 {
 	// Get dicing rate
 	// TODO: figure this out
-	int rate = 8;
+	int rate = 16;
 	Config::grid_size_accum += rate;
 	Config::grid_count++;
 

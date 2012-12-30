@@ -12,7 +12,7 @@ float grid_cache_size = 0.0; // In MB
 
 // Statistics
 uint64 split_count = 0;
-uint64 upoly_gen_count = 0;
+uint64 microelement_gen_count = 0;
 uint64 cache_misses = 0;
 uint_i primitive_ray_tests = 0;
 
