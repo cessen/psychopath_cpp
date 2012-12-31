@@ -76,7 +76,6 @@ public:
  * Stores state of a path in progress.
  */
 struct PTPath {
-	Ray prev_ray;
 	Intersection inter;
 	Color col; // Color of the sample collected so far
 	Color fcol; // Accumulated filter color from light path

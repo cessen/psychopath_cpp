@@ -57,16 +57,10 @@ public:
 		ray.d.normalize();
 
 		// Ray image plane differentials
-		ray.od[0] = Vec3(0.0f, 0.0f, 0.0f);
-		ray.od[1] = Vec3(0.0f, 0.0f, 0.0f);
-		ray.dd[0] = Vec3(dx, 0.0f, 0.0f);
-		ray.dd[1] = Vec3(0.0f, dy, 0.0f);
-
-		// Ray lens differentials
-		ray.od[2] = Vec3(lens_diameter * Config::focus_factor, 0.0f, 0.0f);
-		ray.od[3] = Vec3(0.0f, lens_diameter * Config::focus_factor, 0.0f);
-		ray.dd[2] = Vec3((-lens_diameter/focus_distance) * Config::focus_factor, 0.0f, 0.0f);
-		ray.dd[3] = Vec3(0.0f, (-lens_diameter/focus_distance) * Config::focus_factor, 0.0f);
+		ray.odx = Vec3(0.0f, 0.0f, 0.0f);
+		ray.ody = Vec3(0.0f, 0.0f, 0.0f);
+		ray.ddx = Vec3(dx, 0.0f, 0.0f);
+		ray.ddy = Vec3(0.0f, dy, 0.0f);
 
 		ray.has_differentials = true;
 

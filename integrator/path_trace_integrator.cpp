@@ -14,7 +14,7 @@
 
 #include "hilbert.hpp"
 
-#define RAYS_AT_A_TIME 1000000
+#define RAYS_AT_A_TIME 100000
 
 
 float32 lambert(Vec3 v1, Vec3 v2)
@@ -93,7 +93,6 @@ void PathTraceIntegrator::integrate()
 					float32 dy = (image->max_y - image->min_y) / image->height;
 					rayinters[i]->ray = scene->camera->generate_ray(rx, ry, dx, dy, samps[i*samp_dim+4], samps[i*samp_dim+2], samps[i*samp_dim+3]);
 					rayinters[i]->ray.finalize();
-					paths[i].prev_ray = rayinters[i]->ray;
 					rayinters[i]->hit = false;
 					rayinters[i]->id = i;
 				}
@@ -130,12 +129,14 @@ void PathTraceIntegrator::integrate()
 						rayinters[pri]->ray.min_t = 0.01;
 						rayinters[pri]->ray.max_t = 999999999999.0;
 						rayinters[pri]->ray.has_differentials = true;
-						for (uint_i zzz=0; zzz < NUM_DIFFERENTIALS; zzz++) {
-							rayinters[pri]->ray.od[zzz] = paths[i].prev_ray.od[zzz] + paths[i].prev_ray.dd[zzz] * paths[i].inter.t;
-							rayinters[pri]->ray.dd[zzz] = paths[i].prev_ray.dd[zzz] * 20;
-						}
+
+						// Ray differentials
+						rayinters[pri]->ray.odx = paths[i].inter.pdx();
+						rayinters[pri]->ray.ddx = rayinters[pri]->ray.odx.normalized() * paths[i].inter.ddx.length();
+						rayinters[pri]->ray.ody = paths[i].inter.pdy();
+						rayinters[pri]->ray.ddy = rayinters[pri]->ray.ody.normalized() * paths[i].inter.ddy.length();
+
 						rayinters[pri]->ray.finalize();
-						paths[pri].prev_ray = rayinters[pri]->ray;
 
 						// Increment path ray index
 						pri++;
@@ -191,10 +192,13 @@ void PathTraceIntegrator::integrate()
 					rayinters[sri]->ray.min_t = 0.01;
 					rayinters[sri]->ray.max_t = d;
 					rayinters[sri]->ray.has_differentials = true;
-					for (uint_i zzz=0; zzz < NUM_DIFFERENTIALS; zzz++) {
-						rayinters[sri]->ray.od[zzz] = paths[i].prev_ray.od[zzz] + paths[i].prev_ray.dd[zzz] * paths[i].inter.t;
-						rayinters[sri]->ray.dd[zzz] = paths[i].prev_ray.dd[zzz] * 20;
-					}
+
+					// Ray differentials
+					rayinters[sri]->ray.odx = paths[i].inter.pdx();
+					rayinters[sri]->ray.ddx = rayinters[sri]->ray.odx.normalized() * paths[i].inter.ddx.length();
+					rayinters[sri]->ray.ody = paths[i].inter.pdy();
+					rayinters[sri]->ray.ddy = rayinters[sri]->ray.ody.normalized() * paths[i].inter.ddy.length();
+
 					rayinters[sri]->ray.finalize();
 					rayinters[sri]->hit = false;
 					rayinters[sri]->id = i;

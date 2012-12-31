@@ -20,17 +20,14 @@ bool MicroSurface::intersect_ray(const Ray &ray, Intersection *inter)
 	while (true) {
 		if (intersect_node(node, ray, &tnear, &tfar, &t)) {
 			if (nodes[node].flags & IS_LEAF) {
-				// Check if it counts as a hit
-				const float32 hitt = (tnear + tfar) / 2;
-				if (hitt < t) {
-					hit = true;
-					hit_node = node;
-					t = hitt;
+				// Hit
+				hit = true;
+				hit_node = node;
+				t = tnear;
 
-					// Early out for shadow rays
-					if (ray.is_shadow_ray)
-						break;
-				}
+				// Early out for shadow rays
+				if (ray.is_shadow_ray)
+					break;
 
 				if (todo_offset == 0)
 					break;
@@ -51,19 +48,39 @@ bool MicroSurface::intersect_ray(const Ray &ray, Intersection *inter)
 
 	// Calculate intersection data
 	if (hit && !ray.is_shadow_ray) {
-		//inter->hit = true;
-		inter->p = ray.o + (ray.d * t);
-		inter->in = ray.d;
+		const uint_i d_index = nodes[hit_node].data_index;
+
+		// Information about the intersection point
 		inter->t = t;
+		inter->p = ray.o + (ray.d * t);
 
+		// Data about the ray that caused the intersection
+		inter->in = ray.d;
+		inter->odx = ray.odx;
+		inter->ddx = ray.ddx;
+		inter->ody = ray.ody;
+		inter->ddy = ray.ddy;
+
+		// Surface normal
 		// TODO: account for normal interpolation
-		const uint_i index = nodes[hit_node].data_index;
-		inter->n = normals[index*time_count];
+		// TODO: differentials
+		inter->n = normals[d_index*time_count];
 
+		// UVs
 		// TODO: account for uv interpolation
-		inter->col = Color(uvs[index*2], uvs[index*2+1], 0.0f);
+		// TODO: differentials
+		inter->u = uvs[d_index*2];
+		inter->v = uvs[d_index*2+1];
 
-		inter->offset = inter->n * nodes[hit_node].bounds.diagonal();
+		// Color
+		inter->col = Color(inter->u, inter->v, 0.0f);
+
+		// Generate origin offset for next ray
+		const float32 dl = std::max(ray.width(t)*1.5f, nodes[hit_node].bounds.diagonal()) * 1.01f;
+		//const float32 dl = 0.0f;
+		inter->offset = inter->n * dl;
+		//if (dot(inter->n, ray.d) > 0.0f)
+		//	inter->offset = inter->offset * -1.0f;
 	}
 
 	return hit;
@@ -84,8 +101,14 @@ void MicroSurface::init_from_grid(Grid *grid)
 	res_u = grid->res_u;
 	res_v = grid->res_v;
 
-	Config::microelement_count += (res_u-1) * (res_v-1);
+	// Update statistics
 	Config::microsurface_count++;
+	const uint64 element_count = (res_u-1) * (res_v-1);
+	Config::microelement_count += element_count;
+	if (element_count < Config::microelement_min_count)
+		Config::microelement_min_count = element_count;
+	if (element_count > Config::microelement_max_count)
+		Config::microelement_max_count = element_count;
 
 	// Store face ID
 	face_id = grid->face_id;

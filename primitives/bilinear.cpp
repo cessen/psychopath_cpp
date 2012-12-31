@@ -17,6 +17,7 @@ Bilinear::Bilinear(uint16 res_time_)
 	}
 
 	microsurface_key = 0;
+	last_ray_width = 999999999999999.0f;
 }
 
 Bilinear::Bilinear(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4)
@@ -31,6 +32,7 @@ Bilinear::Bilinear(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4)
 	verts[0][3] = v4;
 
 	microsurface_key = 0;
+	last_ray_width = 999999999999999.0f;
 }
 
 Bilinear::~Bilinear()
@@ -68,24 +70,48 @@ uint_i Bilinear::micro_estimate(float32 width)
 
 bool Bilinear::intersect_ray(Ray &ray, Intersection *intersection)
 {
+
 	Config::primitive_ray_tests++;
 
+	// Get bounding box intersection
+	float32 tnear, tfar;
+	if (!bounds().intersect_ray(ray, &tnear, &tfar))
+		return false;
 
-	// Try to get an existing grid
-	MicroSurface *micro_surface = MicroSurfaceCache::cache.open(microsurface_key);
+	// Calculate minimum ray footprint inside the bounding box
+	const float32 width = ray.min_width(tnear, tfar);
 
-	// Dice the grid if we don't have one already
-	if (!micro_surface) {
-		if (!(microsurface_key == 0))
-			Config::cache_misses++;
+	if (width == 0.0f) {
+		/*std::cout << "____" << std::endl;
+		std::cout << "Origin, Direction: " << ray.o << ", " << ray.d << std::endl;
+		std::cout << "dX Origin, Direction: " << ray.odx << ", " << ray.ddx << std::endl;
+		std::cout << "dY Origin, Direction: " << ray.ody << ", " << ray.ddy << std::endl;
+		std::cout << "Is shadow ray: " << ray.is_shadow_ray << std::endl;
+		*/
+		std::cout << "BOO\n";
+	}
 
-		// Get closest intersection with the bounding box
-		float32 tnear, tfar;
-		if (!bounds().intersect_ray(ray, &tnear, &tfar))
-			return false;
+	// Figure out if we need to redice or not
+	MicroSurface *micro_surface;
+	bool redice = false;
+	if (width < last_ray_width && width != 0.0f) {
+		last_ray_width = width;
+		redice = true;
+	} else {
+		// Try to get an existing grid
+		micro_surface = MicroSurfaceCache::cache.open(microsurface_key);
 
-		micro_surface = micro_generate(ray.min_width(tnear, tfar));
+		// Dice the grid if we don't have one already
+		if (!micro_surface) {
+			if (!(microsurface_key == 0))
+				Config::cache_misses++;
+			redice = true;
+		}
+	}
 
+	if (redice) {
+		// Redice
+		micro_surface = micro_generate(width);
 		microsurface_key = MicroSurfaceCache::cache.add_open(micro_surface);
 	}
 
@@ -93,6 +119,7 @@ bool Bilinear::intersect_ray(Ray &ray, Intersection *intersection)
 	const bool hit = micro_surface->intersect_ray(ray, intersection);
 	MicroSurfaceCache::cache.close(microsurface_key);
 
+	// Update ray if necessary
 	if (hit && intersection)
 		ray.max_t = intersection->t;
 
@@ -187,8 +214,8 @@ void Bilinear::split(std::vector<Primitive *> &primitives)
 MicroSurface *Bilinear::micro_generate(float32 width)
 {
 	// Get dicing rate
-	uint_i u_rate = 0;
-	uint_i v_rate = 0;
+	uint_i u_rate = 32;
+	uint_i v_rate = 32;
 	uv_dice_rate(&u_rate, &v_rate, width);
 
 	// TODO: this is temporary, while splitting is not yet implemented

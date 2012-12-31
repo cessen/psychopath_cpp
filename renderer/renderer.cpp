@@ -58,9 +58,9 @@ bool Renderer::render(int thread_count)
 	// Render
 	Tracer tracer(scene, thread_count);
 	//PathTraceIntegrator integrator(scene, &tracer, image, spp, thread_count, &image_writer);
-	//PathTraceIntegrator integrator(scene, &tracer, image, spp, thread_count);
+	PathTraceIntegrator integrator(scene, &tracer, image, spp, thread_count);
 	//DirectLightingIntegrator integrator(scene, &tracer, image, spp, thread_count, &image_writer);
-	VisIntegrator integrator(scene, &tracer, image, spp, thread_count, &image_writer);
+	//VisIntegrator integrator(scene, &tracer, image, spp, thread_count, &image_writer);
 	integrator.integrate();
 
 	// Save image
@@ -73,6 +73,8 @@ bool Renderer::render(int thread_count)
 	std::cout << "MicroSurfaces generated during rendering: " << Config::microsurface_count << std::endl;
 	std::cout << "MicroSurface elements generated during rendering: " << Config::microelement_count << std::endl;
 	std::cout << "Average MicroSurface elements per MicroSurface: " <<  Config::microelement_count / (float32)Config::microsurface_count << std::endl;
+	std::cout << "Minimum MicroSurface elements per MicroSurface: " <<  Config::microelement_min_count << std::endl;
+	std::cout << "Maximum MicroSurface elements per MicroSurface: " <<  Config::microelement_max_count << std::endl;
 
 	// Finished
 	return true;
