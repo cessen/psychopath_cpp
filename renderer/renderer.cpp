@@ -57,22 +57,22 @@ bool Renderer::render(int thread_count)
 
 	// Render
 	Tracer tracer(scene, thread_count);
-	PathTraceIntegrator integrator(scene, &tracer, image, spp, thread_count, &image_writer);
+	//PathTraceIntegrator integrator(scene, &tracer, image, spp, thread_count, &image_writer);
 	//PathTraceIntegrator integrator(scene, &tracer, image, spp, thread_count);
 	//DirectLightingIntegrator integrator(scene, &tracer, image, spp, thread_count, &image_writer);
-	//VisIntegrator integrator(scene, &tracer, image, spp, thread_count, &image_writer);
+	VisIntegrator integrator(scene, &tracer, image, spp, thread_count, &image_writer);
 	integrator.integrate();
 
 	// Save image
 	image_writer();
 
 	// Print statistics
-	std::cout << "Splits during rendering: " << Config::split_count << std::endl;
-	std::cout << "MicroSurface elements generated during rendering: " << Config::microelement_gen_count << std::endl;
-	std::cout << "MicroSurface cache misses during rendering: " << Config::cache_misses << std::endl;
 	std::cout << "Primitive-ray tests during rendering: " << Config::primitive_ray_tests << std::endl;
-	const uint_i grid_res = Config::grid_size_accum / Config::grid_count;
-	std::cout << "Average MicroSurface elements: " <<  grid_res * grid_res << std::endl;
+	std::cout << "Splits during rendering: " << Config::split_count << std::endl;
+	std::cout << "MicroSurface cache misses during rendering: " << Config::cache_misses << std::endl;
+	std::cout << "MicroSurfaces generated during rendering: " << Config::microsurface_count << std::endl;
+	std::cout << "MicroSurface elements generated during rendering: " << Config::microelement_count << std::endl;
+	std::cout << "Average MicroSurface elements per MicroSurface: " <<  Config::microelement_count / (float32)Config::microsurface_count << std::endl;
 
 	// Finished
 	return true;

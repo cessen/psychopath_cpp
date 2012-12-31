@@ -21,6 +21,20 @@
  */
 class Bilinear: public Surface
 {
+	void uv_dice_rate(uint_i *u_rate, uint_i *v_rate, float32 width) {
+		// longest u-side  and v-side of the patch
+		const float32 ul = std::max((verts[0][0] - verts[0][1]).length(), (verts[0][2] - verts[0][3]).length());
+		const float32 vl = std::max((verts[0][0] - verts[0][3]).length(), (verts[0][1] - verts[0][2]).length());
+
+		// Dicing rates in u and v based on target microelement width
+		*u_rate = ul / (width * Config::dice_rate);
+		if (*u_rate < 1)
+			*u_rate = 1;
+		*v_rate = vl / (width * Config::dice_rate);
+		if (*v_rate < 1)
+			*v_rate = 1;
+	}
+
 public:
 	TimeBox<Vec3 *> verts;
 	MicroSurfaceCacheKey microsurface_key;

@@ -27,6 +27,7 @@
 #include "intersection.hpp"
 #include "rayinter.hpp"
 #include "potentialinter.hpp"
+#include "micro_surface.hpp"
 
 
 #include "config.hpp"
@@ -84,11 +85,11 @@ namespace BPO = boost::program_options;
 #define XRES 1280
 #define YRES 720
 #define NUM_RAND_PATCHES 1000
-#define NUM_RAND_SPHERES 1000
+#define NUM_RAND_SPHERES 0000
 #define SPHERE_RADIUS 1.0
-#define FRAC_MB 0.1
+#define FRAC_MB 0.0
 #define CAMERA_SPIN 0.0
-#define LENS_DIAM 1.0
+#define LENS_DIAM 0.0
 
 
 // Holds a pair of integers as a resolution
@@ -145,18 +146,17 @@ int main(int argc, char **argv)
 
 #ifdef DEBUG
 	std::cout << std::endl << "Struct sizes:" << std::endl;
-	std::cout << "Ray: " << sizeof(Ray) << std::endl;
-	std::cout << "Intersection: " << sizeof(Intersection) << std::endl;
-	std::cout << "RayInter: " << sizeof(RayInter) << std::endl;
-	std::cout << "PotentialInter: " << sizeof(PotentialInter) << std::endl;
-	std::cout << "BBounds: " << sizeof(BBox) << std::endl;
-	std::cout << "BBox: " << sizeof(BBoxT) << std::endl;
-	std::cout << "BVHNode: " << sizeof(BVHNode) << std::endl;
-	std::cout << "Grid: " << sizeof(Grid) << std::endl;
-	std::cout << "GridBVHNode: " << sizeof(GridBVHNode) << std::endl;
-	std::cout << "Primitive *: " << sizeof(Primitive *) << std::endl;
-	std::cout << "TimeBox<int32>: " << sizeof(std::vector<int32>) << std::endl;
-	std::cout << "std::vector<int32>: " << sizeof(std::vector<int32>) << std::endl;
+	std::cout << "\tvoid*: " << sizeof(void*) << std::endl;
+	std::cout << "\tVec3: " << sizeof(Vec3) << std::endl;
+	std::cout << "\tBBox: " << sizeof(BBox) << std::endl;
+	std::cout << "\tRay: " << sizeof(Ray) << std::endl;
+	std::cout << "\tIntersection: " << sizeof(Intersection) << std::endl;
+	std::cout << "\tRayInter: " << sizeof(RayInter) << std::endl;
+	std::cout << "\tPotentialInter: " << sizeof(PotentialInter) << std::endl;
+	std::cout << "\tBVHNode: " << sizeof(BVHNode) << std::endl;
+	std::cout << "\tMicroSurface: " << sizeof(MicroSurface) << std::endl;
+	std::cout << "\tMicroNode: " << sizeof(MicroNode) << std::endl;
+	std::cout << "\tTimeBox<int32>: " << sizeof(std::vector<int32>) << std::endl;
 #endif
 
 

@@ -26,6 +26,9 @@ struct Grid {
 	// Constructors
 	Grid() {}
 	Grid(uint16 ru, uint16 rv, uint16 tc) {
+		assert(ru > 1);
+		assert(rv > 1);
+		assert(tc > 0);
 		res_u = ru;
 		res_v = rv;
 		time_count = tc;

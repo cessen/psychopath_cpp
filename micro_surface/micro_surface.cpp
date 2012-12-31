@@ -5,16 +5,68 @@
 
 #define IS_LEAF 1
 
+
 bool MicroSurface::intersect_ray(const Ray &ray, Intersection *inter)
 {
-	//uint16 todo[64];
+	uint32 todo[64];
+	uint_i todo_offset = 0;
+	uint_i node = 0;
+	float32 tnear, tfar;
+	bool hit = false;
+	uint_i hit_node = 0;
 
-	// TODO: traverse the MicroSurface tree, checking for leaf
-	// intersections
+	float32 t = ray.max_t;
+	// Intersect with the MicroSurface
+	while (true) {
+		if (intersect_node(node, ray, &tnear, &tfar, &t)) {
+			if (nodes[node].flags & IS_LEAF) {
+				// Check if it counts as a hit
+				const float32 hitt = (tnear + tfar) / 2;
+				if (hitt < t) {
+					hit = true;
+					hit_node = node;
+					t = hitt;
 
-	// TODO: calculate intersection data
+					// Early out for shadow rays
+					if (ray.is_shadow_ray)
+						break;
+				}
 
-	return false;
+				if (todo_offset == 0)
+					break;
+
+				node = todo[--todo_offset];
+			} else {
+				// Put far BVH node on todo stack, advance to near node
+				todo[todo_offset++] = nodes[node].child_index + time_count;
+				node = nodes[node].child_index;
+			}
+		} else {
+			if (todo_offset == 0)
+				break;
+
+			node = todo[--todo_offset];
+		}
+	}
+
+	// Calculate intersection data
+	if (hit && !ray.is_shadow_ray) {
+		//inter->hit = true;
+		inter->p = ray.o + (ray.d * t);
+		inter->in = ray.d;
+		inter->t = t;
+
+		// TODO: account for normal interpolation
+		const uint_i index = nodes[hit_node].data_index;
+		inter->n = normals[index*time_count];
+
+		// TODO: account for uv interpolation
+		inter->col = Color(uvs[index*2], uvs[index*2+1], 0.0f);
+
+		inter->offset = inter->n * nodes[hit_node].bounds.diagonal();
+	}
+
+	return hit;
 }
 
 
@@ -28,25 +80,24 @@ struct GridBVHBuildEntry {
 
 void MicroSurface::init_from_grid(Grid *grid)
 {
-	Config::microelement_gen_count += grid->res_u * grid->res_v;
-
 	time_count = grid->time_count;
 	res_u = grid->res_u;
 	res_v = grid->res_v;
 
-	// Allocate space for normals and uvs
-	normals.resize(grid->res_u * grid->res_v * grid->time_count);
-	uvs.resize(grid->res_u * grid->res_v * 2);
+	Config::microelement_count += (res_u-1) * (res_v-1);
+	Config::microsurface_count++;
 
 	// Store face ID
 	face_id = grid->face_id;
 
 	// Calculate uvs
+	uvs.resize(grid->res_u * grid->res_v * 2);
 	grid->calc_uvs(&(uvs[0]));
 
 	// TODO: Calculate displacements
 
 	// Calculate surface normals
+	normals.resize(grid->res_u * grid->res_v * grid->time_count);
 	grid->calc_normals(&(normals[0]));
 
 	////////////////////////////////
@@ -60,9 +111,9 @@ void MicroSurface::init_from_grid(Grid *grid)
 	// Prepare root todo item
 	todo[0].i = 0;
 	todo[0].u_start = 0;
-	todo[0].u_end = grid->res_u - 1;
+	todo[0].u_end = grid->res_u - 2;
 	todo[0].v_start = 0;
-	todo[0].v_end = grid->res_v - 1;
+	todo[0].v_end = grid->res_v - 2;
 
 	bool down = true; // Whether we're going up or down the stack
 	uint_i i = 0;
@@ -70,7 +121,6 @@ void MicroSurface::init_from_grid(Grid *grid)
 		trav_count++;
 		// Going down
 		if (down) {
-
 			// Clear flags
 			nodes[todo[i].i].flags = 0;
 
@@ -87,20 +137,27 @@ void MicroSurface::init_from_grid(Grid *grid)
 				// Build bboxes
 				const uint_i u = todo[i].u_start;
 				const uint_i v = todo[i].v_start;
+				const uint_i vert1_i = (v * grid->res_u + u) * time_count;
+				const uint_i vert2_i = (v * grid->res_u + u + 1) * time_count;
+				const uint_i vert3_i = ((v+1) * grid->res_u + u) * time_count;
+				const uint_i vert4_i = ((v+1) * grid->res_u + u + 1) * time_count;
+
 				for (uint_i ti = 0; ti < time_count; ti++) {
 					BBox bb;
 
 					// Min
-					bb.min =             grid->verts[(v*grid->res_u + u)*ti];
-					bb.min = min(bb.min, grid->verts[(v*grid->res_u + u+1)*ti]);
-					bb.min = min(bb.min, grid->verts[((v+1)*grid->res_u + u+1)*ti]);
-					bb.min = min(bb.min, grid->verts[((v+1)*grid->res_u + u)*ti]);
+					bb.min =             grid->verts[vert1_i+ti];
+					bb.min = min(bb.min, grid->verts[vert2_i+ti]);
+					bb.min = min(bb.min, grid->verts[vert3_i+ti]);
+					bb.min = min(bb.min, grid->verts[vert4_i+ti]);
 
 					// Max
-					bb.max =             grid->verts[(v*grid->res_u + u)*ti];
-					bb.max = max(bb.max, grid->verts[(v*grid->res_u + u+1)*ti]);
-					bb.max = max(bb.max, grid->verts[((v+1)*grid->res_u + u+1)*ti]);
-					bb.max = max(bb.max, grid->verts[((v+1)*grid->res_u + u)*ti]);
+					bb.max =             grid->verts[vert1_i+ti];
+					bb.max = max(bb.max, grid->verts[vert2_i+ti]);
+					bb.max = max(bb.max, grid->verts[vert3_i+ti]);
+					bb.max = max(bb.max, grid->verts[vert4_i+ti]);
+
+					nodes[todo[i].i+ti].bounds = bb;
 				}
 
 				// If root, finished

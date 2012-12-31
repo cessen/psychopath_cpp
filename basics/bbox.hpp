@@ -109,7 +109,7 @@ struct BBox {
 	 *
 	 * @returns True if the ray hits, false if the ray misses.
 	 */
-	inline bool intersect_ray(const Ray &ray, float32 *hitt0, float32 *hitt1) const {
+	inline bool intersect_ray(const Ray &ray, float32 *hitt0, float32 *hitt1, float32 *t=NULL) const {
 		const Vec3 *bounds = &min;
 
 		float32 tmin = (bounds[ray.d_is_neg[0]].x - ray.o.x) * ray.inv_d.x;
@@ -128,9 +128,10 @@ struct BBox {
 		if (tzmax < tmax)
 			tmax = tzmax;
 
-		if ((tmin < tmax) && (tmin < ray.max_t) && (tmax > ray.min_t)) {
+		const float32 tt = t ? *t : ray.max_t;
+		if ((tmin < tmax) && (tmin < tt) && (tmax > ray.min_t)) {
 			*hitt0 = tmin > ray.min_t ? tmin : ray.min_t;
-			*hitt1 = tmax < ray.max_t ? tmax : ray.max_t;
+			*hitt1 = tmax < tt ? tmax : tt;
 			return true;
 		} else {
 			return false;

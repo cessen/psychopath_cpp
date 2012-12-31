@@ -10,6 +10,7 @@
 #include "grid.hpp"
 #include "ray.hpp"
 #include "intersection.hpp"
+#include "utils.hpp"
 
 
 /**
@@ -50,6 +51,21 @@ class MicroSurface
 
 	// Number of time samples
 	uint16 time_count;
+
+	/**
+	 * @brief Calculates ray-bbox intersection with a node in the
+	 * MicroSurface tree.
+	 */
+	bool intersect_node(uint_i node, const Ray &ray, float32 *tnear, float32 *tfar, float32 *t) {
+		uint32 ti = 0;
+		float32 alpha = 0.0f;
+		if (calc_time_interp(time_count, ray.time, &ti, &alpha)) {
+			const BBox b = lerp<BBox>(alpha, nodes[node+ti].bounds, nodes[node+ti+1].bounds);
+			return b.intersect_ray(ray, tnear, tfar, t);
+		} else {
+			return nodes[node+ti].bounds.intersect_ray(ray, tnear, tfar, t);
+		}
+	}
 
 public:
 	// Constructors

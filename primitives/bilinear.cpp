@@ -1,5 +1,6 @@
 #include "numtype.h"
 
+#include <algorithm>
 #include <iostream>
 #include <stdlib.h>
 #include "bilinear.hpp"
@@ -56,15 +57,11 @@ uint_i Bilinear::micro_estimate(float32 width)
 	if (width <= Config::min_upoly_size) {
 		return 1;
 	} else {
-		// Approximate size of the patch
-		float32 size = (bounds()[0].max - bounds()[0].min).length() / 1.4;
+		uint_i u_rate = 0;
+		uint_i v_rate = 0;
+		uv_dice_rate(&u_rate, &v_rate, width);
 
-		// Dicing rate based on target microelement width
-		int rate = size / (width * Config::dice_rate);
-		if (rate < 1)
-			rate = 1;
-
-		return rate*rate;
+		return u_rate * v_rate;
 	}
 }
 
@@ -95,6 +92,9 @@ bool Bilinear::intersect_ray(Ray &ray, Intersection *intersection)
 	// Test the ray against the grid
 	const bool hit = micro_surface->intersect_ray(ray, intersection);
 	MicroSurfaceCache::cache.close(microsurface_key);
+
+	if (hit && intersection)
+		ray.max_t = intersection->t;
 
 	return hit;
 }
@@ -187,13 +187,18 @@ void Bilinear::split(std::vector<Primitive *> &primitives)
 MicroSurface *Bilinear::micro_generate(float32 width)
 {
 	// Get dicing rate
-	// TODO: figure this out
-	int rate = 16;
-	Config::grid_size_accum += rate;
-	Config::grid_count++;
+	uint_i u_rate = 0;
+	uint_i v_rate = 0;
+	uv_dice_rate(&u_rate, &v_rate, width);
+
+	// TODO: this is temporary, while splitting is not yet implemented
+	if (u_rate > Config::max_grid_size)
+		u_rate = Config::max_grid_size;
+	if (v_rate > Config::max_grid_size)
+		v_rate = Config::max_grid_size;
 
 	// Dice away!
-	Grid *grid = dice(rate, rate);
+	Grid *grid = dice(u_rate+1, v_rate+1);
 	MicroSurface *micro = new MicroSurface(grid);
 
 	delete grid;
