@@ -29,8 +29,7 @@
 #include "potentialinter.hpp"
 #include "micro_surface.hpp"
 
-
-#include "config.hpp"
+#include "global.hpp"
 
 //#include <OSL/oslexec.h>
 
@@ -130,8 +129,8 @@ void validate(boost::any& v, const std::vector<std::string>& values,
 
 int main(int argc, char **argv)
 {
-	RNG rng(42);
-	RNG rng2(865546);
+	RNG rng = RNG(0);
+	RNG rng2 = RNG(1);
 
 	/*
 	 **********************************************************************

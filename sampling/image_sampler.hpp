@@ -35,7 +35,6 @@ private:
 	/* Random number generator. */
 	RNG rng;
 
-
 public:
 	ImageSampler(uint spp_,
 	             uint res_x_, uint res_y_,

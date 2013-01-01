@@ -6,6 +6,7 @@
 #include "bilinear.hpp"
 #include "grid.hpp"
 #include "config.hpp"
+#include "global.hpp"
 
 Bilinear::Bilinear(uint16 res_time_)
 {
@@ -71,7 +72,7 @@ uint_i Bilinear::micro_estimate(float32 width)
 bool Bilinear::intersect_ray(Ray &ray, Intersection *intersection)
 {
 
-	Config::primitive_ray_tests++;
+	Global::Stats::primitive_ray_tests++;
 
 	// Get bounding box intersection
 	float32 tnear, tfar;
@@ -88,7 +89,7 @@ bool Bilinear::intersect_ray(Ray &ray, Intersection *intersection)
 		std::cout << "dY Origin, Direction: " << ray.ody << ", " << ray.ddy << std::endl;
 		std::cout << "Is shadow ray: " << ray.is_shadow_ray << std::endl;
 		*/
-		std::cout << "BOO\n";
+		//std::cout << "BOO\n";
 	}
 
 	// Figure out if we need to redice or not
@@ -104,7 +105,7 @@ bool Bilinear::intersect_ray(Ray &ray, Intersection *intersection)
 		// Dice the grid if we don't have one already
 		if (!micro_surface) {
 			if (!(microsurface_key == 0))
-				Config::cache_misses++;
+				Global::Stats::cache_misses++;
 			redice = true;
 		}
 	}

@@ -14,6 +14,7 @@
 #include "film.hpp"
 
 #include "config.hpp"
+#include "global.hpp"
 
 #define GAMMA 2.2
 
@@ -48,7 +49,7 @@ struct ImageWriter: public Functor {
 
 bool Renderer::render(int thread_count)
 {
-	RNG rng(123456);
+	RNG rng;
 	Film<Color> *image = new Film<Color>(res_x, res_y,
 	                                     -1.0, -(((float32)(res_y))/res_x),
 	                                     1.0, (((float32)(res_y))/res_x));
@@ -57,8 +58,8 @@ bool Renderer::render(int thread_count)
 
 	// Render
 	Tracer tracer(scene, thread_count);
-	//PathTraceIntegrator integrator(scene, &tracer, image, spp, thread_count, &image_writer);
-	PathTraceIntegrator integrator(scene, &tracer, image, spp, thread_count);
+	PathTraceIntegrator integrator(scene, &tracer, image, spp, thread_count, &image_writer);
+	//PathTraceIntegrator integrator(scene, &tracer, image, spp, thread_count);
 	//DirectLightingIntegrator integrator(scene, &tracer, image, spp, thread_count, &image_writer);
 	//VisIntegrator integrator(scene, &tracer, image, spp, thread_count, &image_writer);
 	integrator.integrate();
@@ -67,14 +68,14 @@ bool Renderer::render(int thread_count)
 	image_writer();
 
 	// Print statistics
-	std::cout << "Primitive-ray tests during rendering: " << Config::primitive_ray_tests << std::endl;
-	std::cout << "Splits during rendering: " << Config::split_count << std::endl;
-	std::cout << "MicroSurface cache misses during rendering: " << Config::cache_misses << std::endl;
-	std::cout << "MicroSurfaces generated during rendering: " << Config::microsurface_count << std::endl;
-	std::cout << "MicroSurface elements generated during rendering: " << Config::microelement_count << std::endl;
-	std::cout << "Average MicroSurface elements per MicroSurface: " <<  Config::microelement_count / (float32)Config::microsurface_count << std::endl;
-	std::cout << "Minimum MicroSurface elements per MicroSurface: " <<  Config::microelement_min_count << std::endl;
-	std::cout << "Maximum MicroSurface elements per MicroSurface: " <<  Config::microelement_max_count << std::endl;
+	std::cout << "Primitive-ray tests during rendering: " << Global::Stats::primitive_ray_tests << std::endl;
+	std::cout << "Splits during rendering: " << Global::Stats::split_count << std::endl;
+	std::cout << "MicroSurface cache misses during rendering: " << Global::Stats::cache_misses << std::endl;
+	std::cout << "MicroSurfaces generated during rendering: " << Global::Stats::microsurface_count << std::endl;
+	std::cout << "MicroSurface elements generated during rendering: " << Global::Stats::microelement_count << std::endl;
+	std::cout << "Average MicroSurface elements per MicroSurface: " <<  Global::Stats::microelement_count / (float32)Global::Stats::microsurface_count << std::endl;
+	std::cout << "Minimum MicroSurface elements per MicroSurface: " <<  Global::Stats::microelement_min_count << std::endl;
+	std::cout << "Maximum MicroSurface elements per MicroSurface: " <<  Global::Stats::microelement_max_count << std::endl;
 
 	// Finished
 	return true;

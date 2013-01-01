@@ -36,7 +36,7 @@ void DirectLightingIntegrator::integrate()
 {
 	const uint_i samp_dim = 8;
 
-	RNG rng(43643);
+	RNG rng;
 	ImageSampler image_sampler(spp, image->width, image->height);
 
 	// Sample array

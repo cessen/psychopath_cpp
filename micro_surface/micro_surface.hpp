@@ -11,6 +11,7 @@
 #include "ray.hpp"
 #include "intersection.hpp"
 #include "utils.hpp"
+#include "rng.hpp"
 
 
 /**
@@ -43,7 +44,6 @@ class MicroSurface
 	std::vector<MicroNode> nodes;
 	uint_i res_u, res_v;
 
-
 	// Important geometry information
 	std::vector<Vec3> normals;
 	std::vector<float32> uvs;
@@ -51,6 +51,9 @@ class MicroSurface
 
 	// Number of time samples
 	uint16 time_count;
+
+	// Random number generator
+	RNG rng;
 
 	/**
 	 * @brief Calculates ray-bbox intersection with a node in the

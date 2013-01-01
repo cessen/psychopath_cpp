@@ -14,7 +14,7 @@
 
 #include "hilbert.hpp"
 
-#define RAYS_AT_A_TIME 100000
+#define RAYS_AT_A_TIME 1000000
 
 
 float32 lambert(Vec3 v1, Vec3 v2)
@@ -32,7 +32,7 @@ void PathTraceIntegrator::integrate()
 {
 	const uint_i samp_dim = 5 + (path_length * 5);
 
-	RNG rng(43643);
+	RNG rng;
 	ImageSampler image_sampler(spp, image->width, image->height);
 
 	// Sample array
@@ -101,6 +101,10 @@ void PathTraceIntegrator::integrate()
 				uint32 pri = 0; // Path ray index
 				for (uint32 i = 0; i < samp_size; i++) {
 					if (!paths[i].done) {
+						Vec3 nn = paths[i].inter.n.normalized();
+						if (dot(paths[i].inter.in.normalized(), nn) > 0.0f)
+							nn = nn * -1.0f;
+
 						// Generate a random ray direction in the hemisphere
 						// of the surface.
 						// TODO: use BxDF distribution here
@@ -110,12 +114,12 @@ void PathTraceIntegrator::integrate()
 
 						if (pdf < 0.001)
 							pdf = 0.001;
-						dir = zup_to_vec(dir, paths[i].inter.n);
+						dir = zup_to_vec(dir, nn);
 
 						// Calculate the color filtering effect that the
 						// bounce from the current intersection will create.
 						// TODO: use actual shaders here.
-						paths[i].fcol *= lambert(dir, paths[i].inter.n) / pdf;
+						paths[i].fcol *= lambert(dir, nn) / pdf;
 
 						// Clear out the rayinter structure
 						rayinters[pri]->hit = false;

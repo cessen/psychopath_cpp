@@ -1,4 +1,5 @@
 #include "micro_surface.hpp"
+#include "global.hpp"
 #include "config.hpp"
 
 #include <iostream>
@@ -77,10 +78,9 @@ bool MicroSurface::intersect_ray(const Ray &ray, Intersection *inter)
 
 		// Generate origin offset for next ray
 		const float32 dl = std::max(ray.width(t)*1.5f, nodes[hit_node].bounds.diagonal()) * 1.01f;
-		//const float32 dl = 0.0f;
 		inter->offset = inter->n * dl;
-		//if (dot(inter->n, ray.d) > 0.0f)
-		//	inter->offset = inter->offset * -1.0f;
+		if (dot(inter->n, ray.d.normalized()) > 0.0f)
+			inter->offset = inter->offset * -1.0f;
 	}
 
 	return hit;
@@ -102,13 +102,13 @@ void MicroSurface::init_from_grid(Grid *grid)
 	res_v = grid->res_v;
 
 	// Update statistics
-	Config::microsurface_count++;
+	Global::Stats::microsurface_count++;
 	const uint64 element_count = (res_u-1) * (res_v-1);
-	Config::microelement_count += element_count;
-	if (element_count < Config::microelement_min_count)
-		Config::microelement_min_count = element_count;
-	if (element_count > Config::microelement_max_count)
-		Config::microelement_max_count = element_count;
+	Global::Stats::microelement_count += element_count;
+	if (element_count < Global::Stats::microelement_min_count)
+		Global::Stats::microelement_min_count = element_count;
+	if (element_count > Global::Stats::microelement_max_count)
+		Global::Stats::microelement_max_count = element_count;
 
 	// Store face ID
 	face_id = grid->face_id;

@@ -3,6 +3,7 @@
 
 #include <time.h>
 #include <stdint.h>
+#include <boost/thread.hpp>
 
 /**
  * @brief A psuedo-random number generator.
@@ -27,19 +28,24 @@ public:
 	/**
 	 * @brief Constructor.
 	 *
-	 * Initializes the RNG with a default seed (based on time).
-	 * Initializing an RNG this way is not recommended, especially in
-	 * software where multiple RNG's are used.
+	 * Initializes the RNG with a thread-safe incrementing seed.
+	 * TODO: verify thread safeness (probably needs work).
 	 */
 	RNG() {
-		seed(time(NULL) + clock());
+		static boost::mutex mut;
+
+		mut.lock();
+		static uint32_t starter_seed = time(NULL) + clock();
+		const uint32_t seed_ = ++starter_seed;
+		mut.unlock();
+
+		seed(seed_);
 	}
 
 	/**
 	 * @brief Constructor.
 	 *
-	 * Initializes the RNG with the given seed.  This is the
-	 * recommended way to initialize an RNG.
+	 * Initializes the RNG with the given seed.
 	 */
 	RNG(uint32_t seed_) {
 		seed(seed_);
@@ -58,6 +64,10 @@ public:
 		y = seed_ * 653005939;
 		z = seed_ * 1264700623;
 		c = seed_ * 37452703;
+
+		// Run the RNG a couple of times
+		next_uint();
+		next_uint();
 	}
 
 	/**

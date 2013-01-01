@@ -1,4 +1,16 @@
-- Triangle primitive
+- Move statistics collection variables to a "global" file.
+	- Also a thread-safe factory for spawning random number generators
+	  would be great to have in such a file.
+
+- Investigate ray differential corner-cases:
+	- Rays that are nearly tangent to the surfaces they intersect
+
+- Implement a basic shading system that does proper ray differential
+  propigation, so that the code for that is all in one convenient
+  place.
+
+- MicroSurface should calculate normal and uv differentials for
+  ray intersections.
 
 - Framework for surface primitives to manage their splitting and micropolygons
   in a thread-safe way.
@@ -20,16 +32,7 @@
 	                      the number of microelements that would have to
 	                      be generated to achieve it.
 	- micro_generate() -- generates the MicroSurface
-	- class MicroSurface -- the description that is actually directly
-	                        ray-tested against.  Different API's can be
-	                        added to allow surface primitives to seed it,
-	                        but by default the input will likely be a
-	                        grid.  The MicroSurface handles
-	                        displacements, etc.
-	                        The particular internal surface
-	                        representation the MicroSurface uses should
-	                        be isolated from the rest of psychopath, so
-	                        that it can be easily changed as needed.
+
 
 - Intersection data should include information about how to offset
   rays spawned from the intersection point to avoid self-intersections.
@@ -54,16 +57,11 @@
 
 - Simple scene-description format
 
-- Propagation of ray differentials on bounces
-
 - Adaptive sampling scheme
 	//- Calculate variance information per pixel
 	- Reduce the Sampler's responsibilities, migrating pixel/sample
 	  traversal to be the Integrator's responsibilitiy.
 	- Implement adaptive sample traversal based on variance
-
-- Simple material system (for testing purposes
-  only, eventually replace with OSL)
 
 - Refactor TimeBox template to use class methods for interpolation
 

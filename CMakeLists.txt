@@ -121,6 +121,8 @@ add_subdirectory(tracer)
 
 add_library(config
 	config)
+add_library(global
+	global)
 
 # Main library
 set (PSYCHO_LIB
@@ -132,7 +134,8 @@ set (PSYCHO_LIB
 	basics
 	micro_surface
 	collections
-	config)
+	config
+	global)
 
 # Main executable
 add_executable(psychopath

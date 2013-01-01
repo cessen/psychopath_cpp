@@ -39,8 +39,7 @@ ImageSampler::ImageSampler(uint spp_,
 	}
 	points_traversed = 0;
 
-	rng.seed(seed);
-
+	rng.seed(42);
 	seed_offset = rng.next_uint();
 }
 
