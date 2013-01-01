@@ -49,7 +49,16 @@ bool MicroSurface::intersect_ray(const Ray &ray, Intersection *inter)
 
 	// Calculate intersection data
 	if (hit && !ray.is_shadow_ray) {
-		const uint_i d_index = nodes[hit_node].data_index;
+		// Calculate time indices and alpha
+		uint32 t_i = 0;
+		float32 t_alpha = 0.0f;
+		calc_time_interp(time_count, ray.time, &t_i, &t_alpha);
+
+		// Calculate data indices
+		const uint d_iu = rng.next_uint() % nodes[hit_node].data_du;
+		const uint d_iv = rng.next_uint() % nodes[hit_node].data_dv;
+		const uint_i d_index = nodes[hit_node].data_index; // Standard
+		const uint_i rd_index = d_index + (d_iv * res_u) + d_iu; // Random within range
 
 		// Information about the intersection point
 		inter->t = t;
@@ -63,13 +72,27 @@ bool MicroSurface::intersect_ray(const Ray &ray, Intersection *inter)
 		inter->ddy = ray.ddy;
 
 		// Surface normal
-		// TODO: account for normal interpolation
 		// TODO: differentials
-		inter->n = normals[d_index*time_count];
+		const Vec3 n1t1 = normals[rd_index*time_count+t_i];
+		const Vec3 n2t1 = normals[(rd_index+1)*time_count+t_i];
+		const Vec3 n3t1 = normals[(rd_index+res_u)*time_count+t_i];
+		const Vec3 n4t1 = normals[(rd_index+res_u+1)*time_count+t_i];
+		const Vec3 nt1 = lerp2d<Vec3>(rng.next_float(), rng.next_float(), n1t1, n2t1, n3t1, n4t1);
+
+		if (time_count > 1) {
+			const Vec3 n1t2 = normals[rd_index*time_count+t_i+1];
+			const Vec3 n2t2 = normals[(rd_index+1)*time_count+t_i+1];
+			const Vec3 n3t2 = normals[(rd_index+res_u)*time_count+t_i+1];
+			const Vec3 n4t2 = normals[(rd_index+res_u+1)*time_count+t_i+1];
+			const Vec3 nt2 = lerp2d<Vec3>(rng.next_float(), rng.next_float(), n1t2, n2t2, n3t2, n4t2);
+
+			inter->n = lerp<Vec3>(t_alpha, nt1, nt2).normalized();
+		} else {
+			inter->n = nt1.normalized();
+		}
 
 		// UVs
-		// TODO: account for uv interpolation
-		// TODO: differentials
+		// TODO: differentials and correct coordinates for texturing
 		inter->u = uvs[d_index*2];
 		inter->v = uvs[d_index*2+1];
 
@@ -149,7 +172,7 @@ void MicroSurface::init_from_grid(Grid *grid)
 
 			// Calculate data indices
 			nodes[todo[i].i].data_index = todo[i].v_start * res_u + todo[i].u_start;
-			nodes[todo[i].i].data_du = 1 + todo[i].u_end - todo[i].v_start;
+			nodes[todo[i].i].data_du = 1 + todo[i].u_end - todo[i].u_start;
 			nodes[todo[i].i].data_dv = 1 + todo[i].v_end - todo[i].v_start;
 
 			// If leaf

@@ -217,7 +217,7 @@ MicroSurface *Bilinear::micro_generate(float32 width)
 	// Get dicing rate
 	uint_i u_rate = 32;
 	uint_i v_rate = 32;
-	uv_dice_rate(&u_rate, &v_rate, width);
+	//uv_dice_rate(&u_rate, &v_rate, width);
 
 	// TODO: this is temporary, while splitting is not yet implemented
 	if (u_rate > Config::max_grid_size)

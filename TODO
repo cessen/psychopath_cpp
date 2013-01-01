@@ -1,6 +1,5 @@
-- Move statistics collection variables to a "global" file.
-	- Also a thread-safe factory for spawning random number generators
-	  would be great to have in such a file.
+- MicroSurface should calculate normal and uv differentials for
+  ray intersections.
 
 - Investigate ray differential corner-cases:
 	- Rays that are nearly tangent to the surfaces they intersect
@@ -8,9 +7,6 @@
 - Implement a basic shading system that does proper ray differential
   propigation, so that the code for that is all in one convenient
   place.
-
-- MicroSurface should calculate normal and uv differentials for
-  ray intersections.
 
 - Framework for surface primitives to manage their splitting and micropolygons
   in a thread-safe way.
@@ -32,12 +28,6 @@
 	                      the number of microelements that would have to
 	                      be generated to achieve it.
 	- micro_generate() -- generates the MicroSurface
-
-
-- Intersection data should include information about how to offset
-  rays spawned from the intersection point to avoid self-intersections.
-  It should be a small vector which is added to the ray origin for
-  reflection and subtracted for transmission.
 
 - Two-stage ray tracing, similar to the Rayes (not Reyes) paper
 	- Assign each thread an object id to trace rays for.

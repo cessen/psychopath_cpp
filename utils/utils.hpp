@@ -26,8 +26,8 @@ template <class T>
 static inline T lerp2d(float32 alpha_u, float32 alpha_v,
                        T s00, T s10, T s01, T s11)
 {
-	T temp1 = (s00 * (1.0-alpha_u)) + (s10 * alpha_u);
-	T temp2 = (s01 * (1.0-alpha_u)) + (s11 * alpha_u);
+	const T temp1 = (s00 * (1.0-alpha_u)) + (s10 * alpha_u);
+	const T temp2 = (s01 * (1.0-alpha_u)) + (s11 * alpha_u);
 	return (temp1 * (1.0-alpha_v)) + (temp2 * alpha_v);
 }
 
