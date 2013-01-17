@@ -34,8 +34,8 @@ set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-unused-function")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-function")
 
 # Profiling
-set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg")
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+#set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg")
+#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
 
 # Define "DEBUG" in debug builds
 set (CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DDEBUG")
@@ -101,6 +101,7 @@ include_directories ("${PROJECT_BINARY_DIR}",
                      "${PROJECT_SOURCE_DIR}/renderer",
                      "${PROJECT_SOURCE_DIR}/sampling",
                      "${PROJECT_SOURCE_DIR}/scene",
+                     "${PROJECT_SOURCE_DIR}/shading",
                      "${PROJECT_SOURCE_DIR}/test",
                      "${PROJECT_SOURCE_DIR}/tracer",
                      "${PROJECT_SOURCE_DIR}/utils",)
@@ -146,6 +147,7 @@ target_link_libraries(psychopath
     ${ILMBASE_LIBRARIES}
     ${OIIO_LIBRARY}
     ${OSL_LIBRARYS}
+	profiler # Google perftools profiler library
     )
 
 # Unit-test executable

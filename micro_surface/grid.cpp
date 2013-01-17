@@ -14,9 +14,9 @@ bool Grid::calc_normals(Vec3 *normals)
 	uint_i upoly_i;
 	uint_i i2, n_count = 0;
 
-	for (uint_i time=0; time < time_count; time++) {
-		for (int32 v=0; v < res_v; v++) {
-			for (int32 u=0; u < res_u; u++) {
+	for (int32 v=0; v < res_v; v++) {
+		for (int32 u=0; u < res_u; u++) {
+			for (uint_i time=0; time < time_count; time++) {
 				upoly_i = (v * res_u) + u;
 
 				// Get the center point
@@ -84,13 +84,13 @@ bool Grid::calc_uvs(float32 *uvs)
 	Vec3 uv4 = Vec3(u4, v4, 0);
 
 	// Calculate deltas along y
-	const Vec3 uv_dy1 = (uv3 - uv1) / res_v;
-	const Vec3 uv_dy2 = (uv4 - uv2) / res_v;
+	const Vec3 uv_dy1 = (uv3 - uv1) / (res_v-1);
+	const Vec3 uv_dy2 = (uv4 - uv2) / (res_v-1);
 
 	Vec3 uv_y1 = uv1;
 	Vec3 uv_y2 = uv2;
 	for (uint_i y = 0; y < res_v; y++) {
-		const Vec3 uv_dx = (uv_y2 - uv_y1) / res_u; // Calculate delta along x
+		const Vec3 uv_dx = (uv_y2 - uv_y1) / (res_u-1); // Calculate delta along x
 		Vec3 uv_x = uv_y1;
 		for (uint_i x = 0; x < res_u; x++) {
 			uvs[(y*res_u+x)*2] = uv_x.x;

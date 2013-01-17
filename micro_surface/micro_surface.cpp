@@ -140,7 +140,15 @@ void MicroSurface::init_from_grid(Grid *grid)
 	uvs.resize(grid->res_u * grid->res_v * 2);
 	grid->calc_uvs(&(uvs[0]));
 
-	// TODO: Calculate displacements
+	// Calculate displacements
+	// TODO: Use shaders for displacements
+	normals.resize(grid->res_u * grid->res_v * grid->time_count);
+	grid->calc_normals(&(normals[0]));
+	for (uint_i i = 0; i < res_u*res_v; i++) {
+		for (uint_i t = 0; t < time_count; t++) {
+			grid->verts[i*time_count+t] += normals[i*time_count+t] * (cos(uvs[i*2]*32)+sin(uvs[i*2+1]*32)) * Config::displace_distance;
+		}
+	}
 
 	// Calculate surface normals
 	normals.resize(grid->res_u * grid->res_v * grid->time_count);

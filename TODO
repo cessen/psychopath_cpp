@@ -1,12 +1,31 @@
-- MicroSurface should calculate normal and uv differentials for
+- MicroSurface should calculate normal and point differentials for
   ray intersections.
+	- What is the minimum amount of data we need to store to calculate
+	  this efficiently?
+		- We can assume grids for now.  If we need to lift that
+		  assumption in the future, we can deal with that then.
+		- Goal is to keep things compact.  How much can we quantize
+		  things, especially if we limit grid size?
+			- UV's are always regular, so we can quantize them without
+			  it even being lossy.
+			- Quantizing normals might work if we still interpolate
+			  in unquantized values.
+		- Is there some innovative way to calculate good-enough
+		  approximations based on the bounding boxes themselves?
 
 - Investigate ray differential corner-cases:
 	- Rays that are nearly tangent to the surfaces they intersect
+	- Given that surfaces are approximated with bounding boxes,
+	  chances of a ray hitting a surface at tangent angle is
+	  non-zero.  That should be handled somehow.
+		- Probabilistic misses based on incident angle...?  Would likely
+		  creating tunneling--how to handle that?  Would it be a problem
+		  in practice?
 
 - Implement a basic shading system that does proper ray differential
   propigation, so that the code for that is all in one convenient
   place.
+	- A differential geometry class would be very useful for this.
 
 - Framework for surface primitives to manage their splitting and micropolygons
   in a thread-safe way.

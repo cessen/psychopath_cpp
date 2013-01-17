@@ -40,8 +40,10 @@ class Bilinear: public Surface
 
 public:
 	TimeBox<Vec3 *> verts;
+	float32 u_min, v_min, u_max, v_max;
 	MicroSurfaceCacheKey microsurface_key;
 	float32 last_ray_width;
+
 
 	BBoxT bbox;
 	bool has_bounds;

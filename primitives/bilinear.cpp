@@ -16,7 +16,10 @@ Bilinear::Bilinear(uint16 res_time_)
 	for (uint8 i=0; i < res_time_; i++) {
 		verts[i] = new Vec3[4];
 	}
-
+	
+	u_min = v_min = 0.0f;
+	u_max = v_max = 1.0f;
+	
 	microsurface_key = 0;
 	last_ray_width = 999999999999999.0f;
 }
@@ -31,6 +34,9 @@ Bilinear::Bilinear(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4)
 	verts[0][1] = v2;
 	verts[0][2] = v3;
 	verts[0][3] = v4;
+	
+	u_min = v_min = 0.0f;
+	u_max = v_max = 1.0f;
 
 	microsurface_key = 0;
 	last_ray_width = 999999999999999.0f;
@@ -149,6 +155,16 @@ BBoxT &Bilinear::bounds()
 				bbox[time].min.z = verts[time][i].z < bbox[time].min.z ? verts[time][i].z : bbox[time].min.z;
 				bbox[time].max.z = verts[time][i].z > bbox[time].max.z ? verts[time][i].z : bbox[time].max.z;
 			}
+
+			// Extend bounds for displacements
+			for (int i = 1; i < 4; i++) {
+				bbox[time].min.x -= Config::displace_distance;
+				bbox[time].max.x += Config::displace_distance;
+				bbox[time].min.y -= Config::displace_distance;
+				bbox[time].max.y += Config::displace_distance;
+				bbox[time].min.z -= Config::displace_distance;
+				bbox[time].max.z += Config::displace_distance;
+			}
 		}
 		has_bounds = true;
 	}
@@ -175,7 +191,7 @@ void Bilinear::split(std::vector<Primitive *> &primitives)
 	lu = (verts[0][0] - verts[0][1]).length() + (verts[0][3] - verts[0][2]).length();
 	lv = (verts[0][0] - verts[0][3]).length() + (verts[0][1] - verts[0][2]).length();
 
-	// TODO
+	// Split
 	if (lu > lv) {
 		// Split on U
 		for (int i=0; i < verts.state_count; i++) {
@@ -192,6 +208,17 @@ void Bilinear::split(std::vector<Primitive *> &primitives)
 			        (verts[i][2] + verts[i][3])*0.5
 			                                              );
 		}
+		
+		// Fill in uv's
+		((Bilinear *)(primitives[0]))->u_min = u_min;
+		((Bilinear *)(primitives[0]))->u_max = (u_min + u_max) / 2;
+		((Bilinear *)(primitives[0]))->v_min = v_min;
+		((Bilinear *)(primitives[0]))->v_max = v_max;
+		
+		((Bilinear *)(primitives[1]))->u_min = (u_min + u_max) / 2;
+		((Bilinear *)(primitives[1]))->u_max = u_max;
+		((Bilinear *)(primitives[1]))->v_min = v_min;
+		((Bilinear *)(primitives[1]))->v_max = v_max;
 	} else {
 		// Split on V
 		for (int i=0; i < verts.state_count; i++) {
@@ -208,6 +235,17 @@ void Bilinear::split(std::vector<Primitive *> &primitives)
 			        verts[i][3]
 			                                              );
 		}
+		
+		// Fill in uv's
+		((Bilinear *)(primitives[0]))->u_min = u_min;
+		((Bilinear *)(primitives[0]))->u_max = u_max;
+		((Bilinear *)(primitives[0]))->v_min = v_min;
+		((Bilinear *)(primitives[0]))->v_max = (v_min + v_max) / 2;
+		
+		((Bilinear *)(primitives[1]))->u_min = u_min;
+		((Bilinear *)(primitives[1]))->u_max = u_max;
+		((Bilinear *)(primitives[1]))->v_min = (v_min + v_max) / 2;
+		((Bilinear *)(primitives[1]))->v_max = v_max;
 	}
 }
 
@@ -246,16 +284,15 @@ Grid *Bilinear::dice(const int ru, const int rv)
 	Grid *grid = new Grid(ru, rv, verts.state_count);
 
 	// Fill in face and uvs
-	// TODO: do this properly
 	grid->face_id = 0;
-	grid->u1 = 0.0;
-	grid->v1 = 0.0;
-	grid->u2 = 1.0;
-	grid->v2 = 0.0;
-	grid->u3 = 0.0;
-	grid->v3 = 1.0;
-	grid->u4 = 1.0;
-	grid->v4 = 1.0;
+	grid->u1 = u_min;
+	grid->v1 = v_min;
+	grid->u2 = u_max;
+	grid->v2 = v_min;
+	grid->u3 = u_min;
+	grid->v3 = v_max;
+	grid->u4 = u_max;
+	grid->v4 = v_max;
 
 	// Generate verts
 	Vec3 du1;

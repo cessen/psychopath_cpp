@@ -31,6 +31,8 @@
 
 #include "global.hpp"
 
+#include <gperftools/profiler.h>
+
 //#include <OSL/oslexec.h>
 
 #include <boost/program_options.hpp>
@@ -88,7 +90,7 @@ namespace BPO = boost::program_options;
 #define SPHERE_RADIUS 1.0
 #define FRAC_MB 0.1
 #define CAMERA_SPIN 0.0
-#define LENS_DIAM 0.0
+#define LENS_DIAM 1.0
 
 
 // Holds a pair of integers as a resolution
@@ -129,6 +131,10 @@ void validate(boost::any& v, const std::vector<std::string>& values,
 
 int main(int argc, char **argv)
 {
+	// Profiling
+	ProfilerStart("psychopath.prof");
+	
+	// RNGs
 	RNG rng = RNG(0);
 	RNG rng2 = RNG(1);
 
@@ -318,7 +324,30 @@ int main(int argc, char **argv)
 			}
 		}
 
+//#define SPLIT_PATCH
+#ifdef SPLIT_PATCH
+		std::vector<Primitive *> splits1;
+		std::vector<Primitive *> splits2;
+		std::vector<Primitive *> splits3;
+		
+		patch->split(splits1);
+		delete patch;
+		
+		patch = (Bilinear *)(splits1[0]);
+		patch->split(splits2);
+		delete patch;
+		patch = (Bilinear *)(splits1[1]);
+		patch->split(splits3);
+		delete patch;
+		
+		scene.add_primitive(splits2[0]);
+		scene.add_primitive(splits2[1]);
+		scene.add_primitive(splits3[0]);
+		scene.add_primitive(splits3[1]);
+#else
 		scene.add_primitive(patch);
+#endif
+		
 	}
 	std::cout << " done." << std::endl;
 	std::cout.flush();
@@ -378,5 +407,6 @@ int main(int argc, char **argv)
 	Renderer r(&scene, resolution.x, resolution.y, spp, output_path);
 	r.render(threads);
 
+	ProfilerStop();
 	return 0;
 }

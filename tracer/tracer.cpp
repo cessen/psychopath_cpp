@@ -64,7 +64,7 @@ uint_i Tracer::accumulate_potential_intersections()
 
 	// Accumulate potential intersections
 	JobQueue<IndexRange> jq(32);
-	boost::thread acc_consumers[thread_count];
+	boost::thread *acc_consumers = new boost::thread[thread_count];
 	if (spi >= (uint_i)(thread_count)) {
 		// Start consumer threads
 		for (uint_i i=0; i < (uint_i)thread_count; i++) {
@@ -112,6 +112,8 @@ uint_i Tracer::accumulate_potential_intersections()
 	}
 	potential_inters.resize(pii);
 
+	delete [] acc_consumers;
+	
 	// Return the total number of potential intersections accumulated
 	return pii;
 }
