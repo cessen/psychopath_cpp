@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <vector>
 #include <boost/thread.hpp>
+#include "ring_buffer.hpp"
 
 /**
  * @brief A job queue for the producer/consumer model of managing threads.
@@ -15,9 +16,7 @@
 template <class T>
 class JobQueue
 {
-	std::vector<T> job_ring;
-	size_t next_job;
-	size_t job_count;
+	RingBuffer<T> queue;
 
 	size_t open_count;
 
@@ -26,17 +25,13 @@ class JobQueue
 	boost::condition_variable empty;
 
 public:
-	// Constructos
+	// Constructors
 	JobQueue() {
-		job_ring.resize(1);
-		next_job = 0;
-		job_count = 0;
+		queue.resize(1);
 		open_count = 1;
 	}
 	JobQueue(size_t queue_size) {
-		job_ring.resize(queue_size);
-		next_job = 0;
-		job_count = 0;
+		queue.resize(queue_size);
 		open_count = 1;
 	}
 
@@ -50,9 +45,8 @@ public:
 	void resize(size_t queue_size) {
 		mut.lock();
 
-		assert(job_count == 0);
-		const size_t old_size = job_ring.size();
-		job_ring.resize(queue_size);
+		assert(queue.is_empty());
+		queue.resize(queue_size);
 
 		mut.unlock();
 	}
@@ -97,7 +91,7 @@ public:
 		boost::unique_lock<boost::mutex> lock(mut);
 
 		// Wait for open space in the queue
-		while (job_count >= job_ring.size()) {
+		while (queue.is_full()) {
 			if (open_count == 0)
 				return false;
 			else
@@ -105,8 +99,7 @@ public:
 		}
 
 		// Add job to queue
-		job_ring[(next_job+job_count)%job_ring.size()] = job;
-		job_count++;
+		queue.push(job);
 
 		// Notify waiting consumers that there's a job
 		empty.notify_all();
@@ -127,7 +120,7 @@ public:
 		boost::unique_lock<boost::mutex> lock(mut);
 
 		// Wait for a job in the queue
-		while (job_count == 0) {
+		while (queue.is_empty()) {
 			if (open_count == 0)
 				return false;
 			else
@@ -135,10 +128,8 @@ public:
 		}
 
 		// Pop the next job
-		*job = job_ring[next_job];
-		job_count--;
-		next_job = (next_job+1) % job_ring.size();
-
+		*job = queue.pop();
+		
 		// Notify waiting producers that there's room for new jobs
 		full.notify_all();
 
