@@ -27,7 +27,7 @@ BOOST_AUTO_TEST_CASE(resize_1)
 {
 	RingBuffer<int> rb;
 	rb.resize(100);
-	
+
 	BOOST_CHECK(rb.size() == 100);
 }
 
@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE(resize_2)
 {
 	RingBuffer<int> rb(50);
 	rb.resize(100);
-	
+
 	BOOST_CHECK(rb.size() == 100);
 }
 
@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_CASE(is_empty_2)
 	RingBuffer<int> rb(100);
 	for (int i = 0; i < 5; i++)
 		rb.push(i);
-	
+
 	BOOST_CHECK(!rb.is_empty());
 }
 
@@ -67,7 +67,7 @@ BOOST_AUTO_TEST_CASE(is_empty_3)
 	RingBuffer<int> rb(100);
 	for (int i = 0; i < 100; i++)
 		rb.push(i);
-	
+
 	BOOST_CHECK(!rb.is_empty());
 }
 
@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE(is_empty_4)
 	RingBuffer<int> rb(100);
 	for (int i = 0; i < 350; i++)
 		rb.push(i);
-	
+
 	BOOST_CHECK(!rb.is_empty());
 }
 
@@ -89,7 +89,7 @@ BOOST_AUTO_TEST_CASE(is_empty_5)
 		rb.push(i);
 	for (int i = 0; i < 50; i++)
 		rb.pop();
-	
+
 	BOOST_CHECK(rb.is_empty());
 }
 
@@ -101,7 +101,7 @@ BOOST_AUTO_TEST_CASE(is_empty_6)
 		rb.push(i);
 	for (int i = 0; i < 25; i++)
 		rb.pop();
-	
+
 	BOOST_CHECK(!rb.is_empty());
 }
 
@@ -123,7 +123,7 @@ BOOST_AUTO_TEST_CASE(is_full_2)
 	RingBuffer<int> rb(100);
 	for (int i = 0; i < 5; i++)
 		rb.push(i);
-	
+
 	BOOST_CHECK(!rb.is_full());
 }
 
@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE(is_full_3)
 	RingBuffer<int> rb(100);
 	for (int i = 0; i < 100; i++)
 		rb.push(i);
-	
+
 	BOOST_CHECK(rb.is_full());
 }
 
@@ -143,7 +143,7 @@ BOOST_AUTO_TEST_CASE(is_full_4)
 	RingBuffer<int> rb(100);
 	for (int i = 0; i < 350; i++)
 		rb.push(i);
-	
+
 	BOOST_CHECK(rb.is_full());
 }
 
@@ -155,7 +155,7 @@ BOOST_AUTO_TEST_CASE(is_full_5)
 		rb.push(i);
 	for (int i = 0; i < 50; i++)
 		rb.pop();
-	
+
 	BOOST_CHECK(!rb.is_full());
 }
 
@@ -167,7 +167,7 @@ BOOST_AUTO_TEST_CASE(is_full_6)
 		rb.push(i);
 	for (int i = 0; i < 25; i++)
 		rb.pop();
-	
+
 	BOOST_CHECK(!rb.is_full());
 }
 
@@ -184,7 +184,7 @@ BOOST_AUTO_TEST_CASE(push_pop_1)
 		rb.push(i);
 	for (int i = 0; i < 50; i++)
 		test = test && (rb.pop() == i);
-	
+
 	BOOST_CHECK(test);
 }
 
@@ -197,7 +197,7 @@ BOOST_AUTO_TEST_CASE(push_pop_2)
 		rb.push(i);
 	for (int i = 0; i < 100; i++)
 		test = test && (rb.pop() == i);
-	
+
 	BOOST_CHECK(test);
 }
 
@@ -210,7 +210,7 @@ BOOST_AUTO_TEST_CASE(push_pop_3)
 		rb.push(i);
 	for (int i = 250; i < 350; i++)
 		test = test && (rb.pop() == i);
-	
+
 	BOOST_CHECK(test);
 }
 
@@ -223,7 +223,7 @@ BOOST_AUTO_TEST_CASE(push_pop_4)
 		rb.push(i);
 		test = test && (rb.pop() == i);
 	}
-	
+
 	BOOST_CHECK(test);
 }
 
@@ -246,7 +246,7 @@ BOOST_AUTO_TEST_CASE(push_pop_5)
 		test = test && (rb.pop() == i+4);
 		test = test && (rb.pop() == i+5);
 	}
-	
+
 	BOOST_CHECK(test);
 }
 

@@ -53,6 +53,35 @@ uint32 Tracer::trace_rays()
 }
 
 
+// Job class for accumulating potential intersections,
+// for use in accumulate_potential_intersections() below.
+class Job_accumulate_potential_intersections
+{
+	Tracer *tracer;
+	uint_i start_i, end_i;
+
+public:
+	Job_accumulate_potential_intersections() {}
+
+	Job_accumulate_potential_intersections(Tracer *tracer_, uint_i start_i_, uint_i end_i_) {
+		tracer = tracer_;
+		start_i = start_i_;
+		end_i = end_i_;
+	}
+
+	// Traces rays to find potential intersections
+	void operator()() {
+		uint_i potint_ids[MAX_POTINT];
+
+		for (uint_i i = start_i; i < end_i; i++) {
+			const uint_i pc = tracer->scene->world.get_potential_intersections(tracer->ray_inters[i]->ray, MAX_POTINT, potint_ids, &(tracer->states[i*tracer->RAY_STATE_SIZE]));
+			for (uint_i j = 0; j < pc; j++) {
+				tracer->potential_inters[(i*MAX_POTINT)+j].object_id = potint_ids[j];
+				tracer->potential_inters[(i*MAX_POTINT)+j].ray_inter = tracer->ray_inters[i];
+			}
+		}
+	}
+};
 
 uint_i Tracer::accumulate_potential_intersections()
 {
@@ -63,14 +92,8 @@ uint_i Tracer::accumulate_potential_intersections()
 		potential_inters[i].ray_inter = NULL;
 
 	// Accumulate potential intersections
-	JobQueue<IndexRange> jq(32);
-	boost::thread *acc_consumers = new boost::thread[thread_count];
+	JobQueue<Job_accumulate_potential_intersections> jq(thread_count);
 	if (spi >= (uint_i)(thread_count)) {
-		// Start consumer threads
-		for (uint_i i=0; i < (uint_i)thread_count; i++) {
-			acc_consumers[i] = boost::thread(&Tracer::accumulation_consumer, this, &jq);
-		}
-
 		// Dole out jobs
 		for (uint_i i = 0; i < ray_inters.size(); i += RAY_JOB_SIZE) {
 			uint_i start = i;
@@ -78,18 +101,12 @@ uint_i Tracer::accumulate_potential_intersections()
 			if (end > ray_inters.size())
 				end = ray_inters.size();
 
-			jq.push(IndexRange(start, end));
+			jq.push(Job_accumulate_potential_intersections(this, start, end));
 		}
-		jq.close();
-
-		// Join threads
-		for (int i=0; i < thread_count; i++) {
-			acc_consumers[i].join();
-		}
+		jq.finish();
 	} else {
-		jq.push(IndexRange(0, ray_inters.size()));
-		jq.close();
-		accumulation_consumer(&jq);
+		Job_accumulate_potential_intersections job(this, 0, ray_inters.size());
+		job();
 	}
 
 	// Compact the potential intersections
@@ -112,28 +129,10 @@ uint_i Tracer::accumulate_potential_intersections()
 	}
 	potential_inters.resize(pii);
 
-	delete [] acc_consumers;
-	
 	// Return the total number of potential intersections accumulated
 	return pii;
 }
 
-void Tracer::accumulation_consumer(JobQueue<IndexRange> *job_queue)
-{
-	uint_i potint_ids[MAX_POTINT];
-	IndexRange ir;
-
-	// Keep processing items in the queue as long as they keep coming
-	while (job_queue->pop(&ir)) {
-		for (uint_i i = ir.start; i < ir.end; i++) {
-			const uint_i pc = scene->world.get_potential_intersections(ray_inters[i]->ray, MAX_POTINT, potint_ids, &(states[i*RAY_STATE_SIZE]));
-			for (uint_i j = 0; j < pc; j++) {
-				potential_inters[(i*MAX_POTINT)+j].object_id = potint_ids[j];
-				potential_inters[(i*MAX_POTINT)+j].ray_inter = ray_inters[i];
-			}
-		}
-	}
-}
 
 void Tracer::sort_potential_intersections()
 {

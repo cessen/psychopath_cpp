@@ -9,76 +9,92 @@
 /**
  * @brief A job queue for the producer/consumer model of managing threads.
  *
+ * Consumer threads are created and managed by the queue.  To use this,
+ * simply add jobs to the queue and they will be processed.  All jobs
+ * must be thread-safe, as multiple jobs can be processed concurrently.
  *
- * The queue stores a maximum number of queued jobs in a ring, and is
- * first-in-first-out.
+ * A job can be any object that is callable without parameters.
  */
 template <class T>
 class JobQueue
 {
 	RingBuffer<T> queue;
+	std::vector<boost::thread *> threads;
 
-	size_t open_count;
+	bool done;
 
 	boost::mutex mut;
 	boost::condition_variable full;
 	boost::condition_variable empty;
 
+	// A consumer thread, which watches the queue for jobs and
+	// executes them.
+	void consumer_run() {
+		T job;
+		while (pop(&job)) {
+			job();
+		}
+	}
+
 public:
-	// Constructors
-	JobQueue() {
-		queue.resize(1);
-		open_count = 1;
-	}
-	JobQueue(size_t queue_size) {
-		queue.resize(queue_size);
-		open_count = 1;
-	}
-
-
 	/**
-	 * @brief Resizes the queue.
+	 * @brief Constructor.
 	 *
-	 * @warning Should only be called when there are no jobs in the
-	 *          queue.
+	 * By default uses 1 thread and creates a queue 4 times the size
+	 * of the thread count.
+	 *
+	 * @param thread_count Number of consumer threads to spawn for processing jobs.
+	 * @param queue_size Size of the job queue buffer.  Zero means determine
+	 *                   automatically from number of threads.
 	 */
-	void resize(size_t queue_size) {
-		mut.lock();
+	JobQueue(size_t thread_count=1, size_t queue_size=0) {
+		done = false;
 
-		assert(queue.is_empty());
+		// Set up queue
+		if (queue_size == 0)
+			queue_size = thread_count * 4;
 		queue.resize(queue_size);
 
-		mut.unlock();
+		// Create and start consumer threads
+		threads.resize(thread_count);
+		for (size_t i = 0; i < threads.size(); i++)
+			threads[i] = new boost::thread(&JobQueue<T>::consumer_run, this);
 	}
 
+	// Destructor. Joins and deletes threads.
+	~JobQueue() {
+		finish();
+	}
+
+
 	/**
-	 * @brief Marks the queue as closed.
+	 * @brief Marks the queue as done, and waits for all
+	 *        jobs to finish.
 	 *
-	 * Once the queue is closed, producers can no longer add jobs to
+	 * Once the queue is done, producers can no longer add jobs to
 	 * the queue, and consumers will be notified when the queue is
 	 * empty so they can terminate.
 	 */
-	void close() {
+	void finish() {
 		mut.lock();
-		open_count--;
+		if (!done) {
+			// Notify all threads that the queue is done
+			done = true;
+			full.notify_all();
+			empty.notify_all();
 
-		// Notify all threads that the queue is closed
-		full.notify_all();
-		empty.notify_all();
+			mut.unlock();
 
-		mut.unlock();
+			// Wait for threads to finish, then delete them
+			for (size_t i = 0; i < threads.size(); i++) {
+				threads[i]->join();
+				delete threads[i];
+			}
+		} else {
+			mut.unlock();
+		}
 	}
 
-	void open() {
-		mut.lock();
-		open_count++;
-
-		// Notify all threads that the queue is open
-		full.notify_all();
-		empty.notify_all();
-
-		mut.unlock();
-	}
 
 	/**
 	 * @brief Adds a job to the queue.
@@ -88,11 +104,11 @@ public:
 	 * @return True on success, false if the queue is closed.
 	 */
 	bool push(const T &job) {
-		boost::unique_lock<boost::mutex> lock(mut);
+		boost::mutex::scoped_lock lock(mut);
 
 		// Wait for open space in the queue
 		while (queue.is_full()) {
-			if (open_count == 0)
+			if (done)
 				return false;
 			else
 				full.wait(lock);
@@ -104,9 +120,9 @@ public:
 		// Notify waiting consumers that there's a job
 		empty.notify_all();
 
-		lock.unlock();
 		return true;
 	}
+
 
 	/**
 	 * @brief Gets the next job, removing it from the queue.
@@ -117,11 +133,11 @@ public:
 	 * @return True on success, false if the queue is empty and closed.
 	 */
 	bool pop(T *job) {
-		boost::unique_lock<boost::mutex> lock(mut);
+		boost::mutex::scoped_lock lock(mut);
 
 		// Wait for a job in the queue
 		while (queue.is_empty()) {
-			if (open_count == 0)
+			if (done)
 				return false;
 			else
 				empty.wait(lock);
@@ -129,11 +145,10 @@ public:
 
 		// Pop the next job
 		*job = queue.pop();
-		
+
 		// Notify waiting producers that there's room for new jobs
 		full.notify_all();
 
-		lock.unlock();
 		return true;
 	}
 };

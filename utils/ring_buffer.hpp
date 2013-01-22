@@ -15,10 +15,10 @@ class RingBuffer
 {
 private:
 	std::vector<T> buffer;
-	
+
 	size_t next;  // Index of the next item to be consumed
 	size_t count;  // Number of unconsumed items in the buffer
-	
+
 public:
 	/**
 	 * @brief Default constructor, buffer size of 1.
@@ -28,7 +28,7 @@ public:
 		count = 0;
 		buffer.resize(1);
 	}
-	
+
 	/**
 	 * @brief Constructor.
 	 *
@@ -39,7 +39,7 @@ public:
 		count = 0;
 		buffer.resize(buffer_size);
 	}
-	
+
 	/**
 	 * @brief Resizes the buffer.
 	 *
@@ -56,14 +56,14 @@ public:
 		count = 0;
 		buffer.resize(buffer_size);
 	}
-	
+
 	/**
 	 * @brief Returns the size of the buffer.
 	 */
 	size_t size() {
 		return buffer.size();
 	}
-	
+
 	/**
 	 * @brief Pushes an item onto the front of the buffer.
 	 *
@@ -76,14 +76,14 @@ public:
 	void push(const T &item) {
 		buffer[(next+count)%buffer.size()] = item;
 		count++;
-		
+
 		// If we overwrote a non-empty item in the buffer
 		if (count > buffer.size()) {
 			next = (next + 1) % buffer.size();
 			count = buffer.size();
 		}
 	}
-	
+
 	/**
 	 * @brief Pops an item off the back of the buffer.
 	 *
@@ -98,17 +98,17 @@ public:
 			next = (next + 1) % buffer.size();
 			count--;
 		}
-		
+
 		return buffer[i];
 	}
-	
+
 	/**
 	 * @brief Returns whether the buffer is full or not.
 	 */
 	bool is_full() {
 		return count == buffer.size();
 	}
-	
+
 	/**
 	 * @brief Returns whether the buffer is empty or not.
 	 */

@@ -16,18 +16,6 @@
 #include "potentialinter.hpp"
 #include "scene.hpp"
 
-struct IndexRange {
-	uint_i start, end;
-
-	IndexRange() {
-		start=0;
-		end=0;
-	}
-	IndexRange(uint_i start_, uint_i end_) {
-		start=start_;
-		end=end_;
-	}
-};
 
 struct PotintJob {
 	RayInter *ray_inters;
@@ -114,9 +102,6 @@ private:
 	 * @returns The total number of potential intersections accumulated.
 	 */
 	uint_i accumulate_potential_intersections();
-
-	// Thread helper for accumulate_potential_intersections()
-	void accumulation_consumer(JobQueue<IndexRange> *job_queue);
 
 	/**
 	 * Sorts the accumulated potential intersections by primitive
