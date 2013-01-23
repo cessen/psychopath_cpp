@@ -2,11 +2,13 @@
 #define LRU_CACHE_HPP
 
 #include <iostream>
-#include <stdlib.h>
-#include <map>
+#include <cstdlib>
+#include <unordered_map>
 #include <list>
 #include <utility>
-#include <boost/thread.hpp>
+#include <thread>
+#include <mutex>
+
 #include "config.hpp"
 
 typedef size_t LRUKey;
@@ -33,14 +35,15 @@ public:
 template <class T>
 class LRUCache
 {
-	boost::mutex mut;
+	std::mutex mut;
 
 	size_t max_bytes;
 	size_t byte_count;
 	LRUKey next_key;
 
 	// A map from indices to iterators into the list
-	std::map<LRUKey, typename std::list<LRU_PAIR >::iterator> map;
+	std::unordered_map<LRUKey, typename std::list<LRU_PAIR >::iterator> map;
+
 	// A list that contains the index and a pointer to the data of each element
 	std::list<LRU_PAIR > elements;
 
@@ -81,6 +84,9 @@ public:
 		max_bytes = max_bytes_;
 		byte_count = 0;
 		next_key = 1; // Starts at one so that 0 can mean NULL
+
+		const size_t map_size = max_bytes / (sizeof(T)*4);
+		map.reserve(map_size);
 	}
 
 	~LRUCache() {
@@ -104,7 +110,7 @@ public:
 	 * Returns the key.
 	 */
 	LRUKey add_open(T *data_ptr) {
-		boost::mutex::scoped_lock lock(mut);
+		std::unique_lock<std::mutex> lock(mut);
 
 		typename std::list<LRU_PAIR >::iterator it;
 		LRU_PAIR data_pair;
@@ -155,7 +161,7 @@ public:
 	 * }
 	 */
 	T *open(LRUKey key) {
-		boost::mutex::scoped_lock lock(mut);
+		std::unique_lock<std::mutex> lock(mut);
 
 		// Check if the key exists
 		const bool exists = (bool)(map.count(key));
@@ -172,7 +178,7 @@ public:
 	 * @brief Closes the given data key.
 	 */
 	void close(LRUKey key) {
-		boost::mutex::scoped_lock lock(mut);
+		std::unique_lock<std::mutex> lock(mut);
 
 		// Assert that the key exists
 		assert((bool)(map.count(key)));

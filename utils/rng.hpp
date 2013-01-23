@@ -1,9 +1,10 @@
 #ifndef RNG_HPP
 #define RNG_HPP
 
-#include <time.h>
-#include <stdint.h>
-#include <boost/thread.hpp>
+#include <ctime>
+#include <cstdint>
+
+#include <mutex>
 
 /**
  * @brief A psuedo-random number generator.
@@ -32,7 +33,7 @@ public:
 	 * TODO: verify thread safeness (probably needs work).
 	 */
 	RNG() {
-		static boost::mutex mut;
+		static std::mutex mut;
 
 		mut.lock();
 		static uint32_t starter_seed = time(NULL) + clock();

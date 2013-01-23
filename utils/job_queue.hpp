@@ -1,9 +1,12 @@
 #ifndef JOB_QUEUE_HPP
 #define JOB_QUEUE_HPP
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <vector>
-#include <boost/thread.hpp>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+
 #include "ring_buffer.hpp"
 
 /**
@@ -19,13 +22,13 @@ template <class T>
 class JobQueue
 {
 	RingBuffer<T> queue;
-	std::vector<boost::thread *> threads;
+	std::vector<std::thread> threads;
 
 	bool done;
 
-	boost::mutex mut;
-	boost::condition_variable full;
-	boost::condition_variable empty;
+	std::mutex mut;
+	std::condition_variable full;
+	std::condition_variable empty;
 
 	// A consumer thread, which watches the queue for jobs and
 	// executes them.
@@ -58,7 +61,7 @@ public:
 		// Create and start consumer threads
 		threads.resize(thread_count);
 		for (size_t i = 0; i < threads.size(); i++)
-			threads[i] = new boost::thread(&JobQueue<T>::consumer_run, this);
+			threads[i] = std::thread(&JobQueue<T>::consumer_run, this);
 	}
 
 	// Destructor. Joins and deletes threads.
@@ -87,8 +90,7 @@ public:
 
 			// Wait for threads to finish, then delete them
 			for (size_t i = 0; i < threads.size(); i++) {
-				threads[i]->join();
-				delete threads[i];
+				threads[i].join();
 			}
 		} else {
 			mut.unlock();
@@ -104,7 +106,7 @@ public:
 	 * @return True on success, false if the queue is closed.
 	 */
 	bool push(const T &job) {
-		boost::mutex::scoped_lock lock(mut);
+		std::unique_lock<std::mutex> lock(mut);
 
 		// Wait for open space in the queue
 		while (queue.is_full()) {
@@ -127,13 +129,13 @@ public:
 	/**
 	 * @brief Gets the next job, removing it from the queue.
 	 *
-	 * @param [out] The popped job is copied into here.  Must be a
-	 *              pointer to valid memory.
+	 * @param [out] job The popped job is copied into here.  Must be a
+	 *                  pointer to valid memory.
 	 *
 	 * @return True on success, false if the queue is empty and closed.
 	 */
 	bool pop(T *job) {
-		boost::mutex::scoped_lock lock(mut);
+		std::unique_lock<std::mutex> lock(mut);
 
 		// Wait for a job in the queue
 		while (queue.is_empty()) {

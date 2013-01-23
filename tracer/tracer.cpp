@@ -4,7 +4,6 @@
 #include <iostream>
 #include <algorithm>
 #include <assert.h>
-#include <boost/thread.hpp>
 #include "array.hpp"
 #include "counting_sort.hpp"
 
@@ -174,11 +173,6 @@ void Tracer::sort_potential_intersections()
 		}
 		traversal++;
 	}
-
-	/*for (uint_i i = 0; i < potential_inters.size(); i++) {
-		std::cout << potential_inters[i].object_id << ", ";
-	}
-	std::cout << "END" << std::endl;*/
 }
 
 void Tracer::trace_potints_consumer(JobQueue<PotintJob> *job_queue)
