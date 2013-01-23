@@ -40,7 +40,7 @@ BOOST_AUTO_TEST_CASE(factory_seed_1)
 	BOOST_CHECK(!equals);
 }
 
-// Test to see if the factory code functions properly inside object
+// Test to see if the factory code works properly inside object
 // initializations
 class RNGTest
 {

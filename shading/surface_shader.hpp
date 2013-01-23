@@ -6,9 +6,10 @@
 #include "intersection.hpp"
 #include "surface_closure.hpp"
 
-class SurfaceShader {
+class SurfaceShader
+{
 	virtual ~SurfaceShader() {}
-	
+
 	/**
 	 * @brief Calculates the SurfaceClosure for the given intersection.
 	 */

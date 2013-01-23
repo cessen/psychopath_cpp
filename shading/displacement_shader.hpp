@@ -1,9 +1,10 @@
 #ifndef DISPLACEMENT_SHADER_HPP
 #define DISPLACEMENT_SHADER_HPP
 
-class DisplacementShader {
+class DisplacementShader
+{
 	~DisplacementShader() {}
-	
+
 	/**
 	 * @brief Evaluates the displacement shader for the given surface
 	 *        parameters.

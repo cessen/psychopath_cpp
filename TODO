@@ -1,3 +1,27 @@
+- Two-stage ray tracing, similar to the Rayes (not Reyes) paper
+	- Make rays const throughout the tracing pipeline.
+	- All mutable data about tracing a ray are stored in intersections.
+	- Assign each thread an object id to trace rays for.
+		- Multiple threads can be tracing the same ray against different
+		  objects, so how to update intersections in a thread-safe way
+		  without too much contention between threads or threads waiting
+		  on each other?  Ideally we also want to update intersections
+		  as early as possible, to minimize unnecessary tracing work
+		  when a hit has already been found.  Really need to work out
+		  a solid design here.
+		- Maybe access to the shared intersection data is like a
+		  revolving door, where when a thread is ready to write its
+		  intersections, it gets a lock and writes, but also immediately
+		  does the reading necessary for the next round of ray tests
+		  before releasing the lock.  That way the wait time is strictly
+		  limited to the read/write time of the shared data.  And if
+		  we're able to keep intersection data very small, that
+		  read/write time will also be small.
+	- Refactor data structures and API to pass around/duplicate minimal
+	  data when handling ray reordering and ray tracing.
+		- Do we really need the RayInter structure at all?  And if so,
+		  why not make it more ubiquitous throughout the renderer?
+
 - MicroSurface should calculate normal and point differentials for
   ray intersections.
 	- What is the minimum amount of data we need to store to calculate
@@ -48,17 +72,7 @@
 	                      be generated to achieve it.
 	- micro_generate() -- generates the MicroSurface
 
-- Two-stage ray tracing, similar to the Rayes (not Reyes) paper
-	- Assign each thread an object id to trace rays for.
-		- Each thread needs its own ray cache, which gets merged with
-		  the main RayInter structers after the tracing is complete.
-		  How to manage those caches efficiently?  A maximum on the rays
-		  traced by a thread at once, maybe?  Tracing the rays in
-		  chunks?
-	- Refactor data structures and API to pass around/duplicate minimal
-	  data when handling ray reordering and ray tracing.
-		- Do we really need the RayInter structure at all?  And if so,
-		  why not make it more ubiquitous throughout the renderer?
+
 
 
 

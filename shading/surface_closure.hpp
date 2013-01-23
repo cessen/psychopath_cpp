@@ -7,9 +7,10 @@
 #include "color.hpp"
 #include "ray.hpp"
 
-class SurfaceClosure {
+class SurfaceClosure
+{
 	virtual ~SurfaceClosure() {}
-	
+
 	/**
 	 * @brief Returns whether the closure has a delta distribution
 	 *        or not.
@@ -30,7 +31,7 @@ class SurfaceClosure {
 	 */
 	virtual void sample(const Ray &in, const float32 &si, const float32 &sj, const float32 &sk,
 	                    Ray *out, Color *filter, float32 *pdf) = 0;
-	
+
 	/**
 	 * @brief Evaluates the closure for the given incoming and outgoing rays.
 	 *

@@ -77,6 +77,14 @@ namespace BPO = boost::program_options;
  * Intermediate image writing disabled
  * 2 potints
  * 23.5 second
+ *
+ * Threaded ray-reordering w/ counting sort and new ThreadQueue:
+ * 1000 spheres / 0 patches
+ * 1280x720 @ 4spp
+ * 4 threads
+ * Intermediate image writing disabled
+ * 2 potints
+ * 21.3 second
  */
 
 #define THREADS 4
@@ -133,10 +141,10 @@ int main(int argc, char **argv)
 {
 	// Profiling
 	ProfilerStart("psychopath.prof");
-	
+
 	// RNGs
-	RNG rng = RNG(0);
-	RNG rng2 = RNG(1);
+	RNG rng(0);
+	RNG rng2(1);
 
 	/*
 	 **********************************************************************
@@ -329,17 +337,17 @@ int main(int argc, char **argv)
 		std::vector<Primitive *> splits1;
 		std::vector<Primitive *> splits2;
 		std::vector<Primitive *> splits3;
-		
+
 		patch->split(splits1);
 		delete patch;
-		
+
 		patch = (Bilinear *)(splits1[0]);
 		patch->split(splits2);
 		delete patch;
 		patch = (Bilinear *)(splits1[1]);
 		patch->split(splits3);
 		delete patch;
-		
+
 		scene.add_primitive(splits2[0]);
 		scene.add_primitive(splits2[1]);
 		scene.add_primitive(splits3[0]);
@@ -347,7 +355,7 @@ int main(int argc, char **argv)
 #else
 		scene.add_primitive(patch);
 #endif
-		
+
 	}
 	std::cout << " done." << std::endl;
 	std::cout.flush();
