@@ -4,6 +4,7 @@
 #include <ctime>
 #include <cstdint>
 
+#include <random>
 #include <mutex>
 
 /**
@@ -29,43 +30,72 @@ public:
 	/**
 	 * @brief Constructor.
 	 *
-	 * Initializes the RNG with a thread-safe incrementing seed.
-	 * TODO: verify thread safeness (probably needs work).
+	 * Initializes the RNG with a thread-safe unique random seed.
+	 * Code that uses this constructor can depend on all RNG's from it
+	 * being independant with a high level of confidence.
 	 */
 	RNG() {
+		std::random_device rd;
+		
 		static std::mutex mut;
-
+		
+		// First RNG is seeded with random_device
+		static uint32_t next_seed_a = rd();
+		static uint32_t next_seed_b = rd();
+		static uint32_t next_seed_c = rd();
+		static uint32_t next_seed_d = rd();
+		
+		// Subsequent RNG's are seeded by incrementing the seeds by
+		// various primes.
 		mut.lock();
-		static uint32_t starter_seed = time(NULL) + clock();
-		const uint32_t seed_ = ++starter_seed;
+		seed(next_seed_a, next_seed_b, next_seed_c, next_seed_d);
+		next_seed_a += 3;
+		next_seed_b += 5;
+		next_seed_c += 7;
+		next_seed_d += 11;
 		mut.unlock();
-
-		seed(seed_);
 	}
 
 	/**
 	 * @brief Constructor.
 	 *
-	 * Initializes the RNG with the given seed.
+	 * Initializes the RNG with the given seed.  32-bit variant.
 	 */
 	RNG(uint32_t seed_) {
 		seed(seed_);
 	}
+	
+	/**
+	 * @brief Constructor.
+	 *
+	 * Initializes the RNG with the given seed.  Full 128-bit variant.
+	 */
+	RNG(uint32_t seed_a, uint32_t seed_b, uint32_t seed_c, uint32_t seed_d) {
+		seed(seed_a, seed_b, seed_c, seed_d);
+	}
 
 	/**
 	 * @brief Sets the seed of the RNG.
+	 *
+	 * 32-bit variant, for convenience.
 	 */
 	void seed(uint32_t seed_) {
-		// Make sure seed is large enough
-		seed_ += 42;
-
-		// Multiply the seed by various large primes to get our
-		// constituent seed values.
-		x = seed_ * 3885701021;
-		y = seed_ * 653005939;
-		z = seed_ * 1264700623;
-		c = seed_ * 37452703;
-
+		seed(seed_, seed_, seed_, seed_);
+	}
+	
+	/**
+	 * @brief Sets the seed of the RNG.
+	 *
+	 * Full 128-bit variant.
+	 */
+	void seed(uint32_t seed_a, uint32_t seed_b, uint32_t seed_c, uint32_t seed_d) {
+		// Scramble up the seeds with offsets and multiplications
+		// by large primes.
+		x = (seed_a + 5) * 3885701021;
+		y = (seed_b + 43) * 653005939;
+		z = (seed_c + 13) * 1264700623;
+		c = (seed_d + 67) * 37452703;
+		
 		// Run the RNG a couple of times
 		next_uint();
 		next_uint();
