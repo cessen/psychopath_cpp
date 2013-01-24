@@ -5,11 +5,11 @@
 #ifndef DIRECT_LIGHTING_INTEGRATOR_HPP
 #define DIRECT_LIGHTING_INTEGRATOR_HPP
 
-#include "integrator.hpp"
+#include <functional>
 
 #include "numtype.h"
-#include "functor.hpp"
 
+#include "integrator.hpp"
 #include "film.hpp"
 #include "scene.hpp"
 #include "tracer.hpp"
@@ -35,7 +35,7 @@ public:
 	Film<Color> *image;
 	int spp;
 	int thread_count;
-	Functor *callback;
+	std::function<void()> callback;
 
 	/**
 	 * @brief Constructor.
@@ -48,7 +48,7 @@ public:
 	 *                    initialized with 3 channels, for rgb.
 	 * @param spp_ The number of samples to take per pixel for integration.
 	 */
-	DirectLightingIntegrator(Scene *scene_, Tracer *tracer_, Film<Color> *image_, int spp_, int thread_count_=1, Functor *callback_=NULL) {
+	DirectLightingIntegrator(Scene *scene_, Tracer *tracer_, Film<Color> *image_, int spp_, int thread_count_=1, std::function<void()> callback_ = std::function<void()>()) {
 		scene = scene_;
 		tracer = tracer_;
 		image = image_;

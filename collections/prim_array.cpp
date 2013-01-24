@@ -76,7 +76,7 @@ uint PrimArray::get_potential_intersections(const Ray &ray, uint max_potential, 
 
 	// Fetch starting index
 	uint32 i = 0;
-	if (state != NULL)
+	if (state != nullptr)
 		i = *((uint64 *)state);
 
 	// Accumulate potential primitive intersections
@@ -89,7 +89,7 @@ uint PrimArray::get_potential_intersections(const Ray &ray, uint max_potential, 
 	}
 
 	// Write last index
-	if (state != NULL)
+	if (state != nullptr)
 		*((uint64 *)state) = i;
 
 	return hits_so_far;

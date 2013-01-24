@@ -83,7 +83,7 @@ public:
 	LRUCache(size_t max_bytes_=40) {
 		max_bytes = max_bytes_;
 		byte_count = 0;
-		next_key = 1; // Starts at one so that 0 can mean NULL
+		next_key = 1; // Starts at one so that 0 can mean null
 
 		const size_t map_size = max_bytes / (sizeof(T)*4);
 		map.reserve(map_size);
@@ -150,7 +150,7 @@ public:
 	 *
 	 * @param key The key of the data to fetch.
 	 *
-	 * @return Pointer to the data on success, NULL if the data isn't
+	 * @return Pointer to the data on success, nullptr if the data isn't
 	 *         in the cache.
 	 *
 	 * Example usage:
@@ -166,7 +166,7 @@ public:
 		// Check if the key exists
 		const bool exists = (bool)(map.count(key));
 		if (!exists)
-			return NULL;
+			return nullptr;
 
 		// Increment reader count
 		map[key]->active_readers++;

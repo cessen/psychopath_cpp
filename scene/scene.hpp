@@ -59,7 +59,7 @@ struct Scene {
 		world.finalize();
 	}
 
-	bool intersect_ray(Ray &ray, Intersection *intersection=NULL) {
+	bool intersect_ray(Ray &ray, Intersection *intersection=nullptr) {
 		return world.intersect_ray(ray, intersection);
 	}
 };

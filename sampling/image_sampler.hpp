@@ -42,8 +42,8 @@ public:
 	~ImageSampler();
 
 	void init_tile();
-	void get_sample(uint32 x, uint32 y, uint32 d, uint32 ns, float32 *sample, uint16 *coords=NULL);
-	bool get_next_sample(uint32 ns, float32 *sample, uint16 *coords=NULL);
+	void get_sample(uint32 x, uint32 y, uint32 d, uint32 ns, float32 *sample, uint16 *coords=nullptr);
+	bool get_next_sample(uint32 ns, float32 *sample, uint16 *coords=nullptr);
 
 	float percentage() const {
 		return ((float)(samp_taken)) / tot_samp;

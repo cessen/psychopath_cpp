@@ -16,7 +16,7 @@ class ChunkedArrayIterator: public std::iterator<std::random_access_iterator_tag
 
 public:
 	ChunkedArrayIterator() {
-		chunks = NULL;
+		chunks = nullptr;
 		base = 0;
 	}
 
@@ -90,7 +90,7 @@ private:
 		} else if (new_size == 0 || old_size == 0) {
 			if (old_size != 0) {
 				delete [] chunks;
-				chunks = NULL;
+				chunks = nullptr;
 				chunk_pointer_count = 0;
 			} else if (new_size != 0) {
 				chunks = new T*[new_size];
@@ -156,14 +156,14 @@ public:
 		element_count = 0;
 		chunk_count = 0;
 		chunk_pointer_count = 0;
-		chunks = NULL;
+		chunks = nullptr;
 	}
 
 	ChunkedArray(size_t size_) {
 		element_count = 0;
 		chunk_count = 0;
 		chunk_pointer_count = 0;
-		chunks = NULL;
+		chunks = nullptr;
 
 		resize(size_);
 	}

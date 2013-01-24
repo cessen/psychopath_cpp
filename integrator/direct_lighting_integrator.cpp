@@ -197,7 +197,7 @@ void DirectLightingIntegrator::integrate()
 		}
 
 		if (callback)
-			(*callback)();
+			callback();
 
 		if (last)
 			break;

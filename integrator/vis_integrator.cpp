@@ -132,7 +132,7 @@ void VisIntegrator::integrate()
 		}
 
 		if (callback)
-			(*callback)();
+			callback();
 
 		if (last)
 			break;

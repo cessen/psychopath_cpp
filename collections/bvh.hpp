@@ -37,7 +37,7 @@ public:
 	Vec3 bmin, bmax, c;
 
 	BVHPrimitive() {
-		data = NULL;
+		data = nullptr;
 	}
 
 	void init(Primitive *prim) {
@@ -76,7 +76,7 @@ public:
 	BVHNode() {
 		bbox_index = 0;
 		child_index = 0;
-		data = NULL;
+		data = nullptr;
 		ts = 0;
 		flags = 0;
 	}
@@ -130,9 +130,9 @@ public:
 	}
 
 	virtual BBoxT &bounds();
-	virtual bool intersect_ray(Ray &ray, Intersection *intersection=NULL);
+	virtual bool intersect_ray(Ray &ray, Intersection *intersection=nullptr);
 
-	unsigned split_primitives(uint_i first_prim, uint_i last_prim, int32 *axis=NULL);
+	unsigned split_primitives(uint_i first_prim, uint_i last_prim, int32 *axis=nullptr);
 	void recursive_build(uint_i parent, uint_i me, uint_i first_prim, uint_i last_prim);
 };
 

@@ -36,15 +36,15 @@ public:
 	 */
 	RNG() {
 		std::random_device rd;
-		
+
 		static std::mutex mut;
-		
+
 		// First RNG is seeded with random_device
 		static uint32_t next_seed_a = rd();
 		static uint32_t next_seed_b = rd();
 		static uint32_t next_seed_c = rd();
 		static uint32_t next_seed_d = rd();
-		
+
 		// Subsequent RNG's are seeded by incrementing the seeds by
 		// various primes.
 		mut.lock();
@@ -64,7 +64,7 @@ public:
 	RNG(uint32_t seed_) {
 		seed(seed_);
 	}
-	
+
 	/**
 	 * @brief Constructor.
 	 *
@@ -82,7 +82,7 @@ public:
 	void seed(uint32_t seed_) {
 		seed(seed_, seed_, seed_, seed_);
 	}
-	
+
 	/**
 	 * @brief Sets the seed of the RNG.
 	 *
@@ -95,7 +95,7 @@ public:
 		y = (seed_b + 43) * 653005939;
 		z = (seed_c + 13) * 1264700623;
 		c = (seed_d + 67) * 37452703;
-		
+
 		// Run the RNG a couple of times
 		next_uint();
 		next_uint();

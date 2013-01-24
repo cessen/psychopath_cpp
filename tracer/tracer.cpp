@@ -3,6 +3,7 @@
 #include <vector>
 #include <iostream>
 #include <algorithm>
+#include <functional>
 #include <assert.h>
 #include "array.hpp"
 #include "counting_sort.hpp"
@@ -52,35 +53,20 @@ uint32 Tracer::trace_rays()
 }
 
 
-// Job class for accumulating potential intersections,
+// Job function for accumulating potential intersections,
 // for use in accumulate_potential_intersections() below.
-class Job_accumulate_potential_intersections
+void job_accumulate_potential_intersections(Tracer *tracer, uint_i start_i, uint_i end_i)
 {
-	Tracer *tracer;
-	uint_i start_i, end_i;
+	uint_i potint_ids[MAX_POTINT];
 
-public:
-	Job_accumulate_potential_intersections() {}
-
-	Job_accumulate_potential_intersections(Tracer *tracer_, uint_i start_i_, uint_i end_i_) {
-		tracer = tracer_;
-		start_i = start_i_;
-		end_i = end_i_;
-	}
-
-	// Traces rays to find potential intersections
-	void operator()() {
-		uint_i potint_ids[MAX_POTINT];
-
-		for (uint_i i = start_i; i < end_i; i++) {
-			const uint_i pc = tracer->scene->world.get_potential_intersections(tracer->ray_inters[i]->ray, MAX_POTINT, potint_ids, &(tracer->states[i*tracer->RAY_STATE_SIZE]));
-			for (uint_i j = 0; j < pc; j++) {
-				tracer->potential_inters[(i*MAX_POTINT)+j].object_id = potint_ids[j];
-				tracer->potential_inters[(i*MAX_POTINT)+j].ray_inter = tracer->ray_inters[i];
-			}
+	for (uint_i i = start_i; i < end_i; i++) {
+		const uint_i pc = tracer->scene->world.get_potential_intersections(tracer->ray_inters[i]->ray, MAX_POTINT, potint_ids, &(tracer->states[i*tracer->RAY_STATE_SIZE]));
+		for (uint_i j = 0; j < pc; j++) {
+			tracer->potential_inters[(i*MAX_POTINT)+j].object_id = potint_ids[j];
+			tracer->potential_inters[(i*MAX_POTINT)+j].ray_inter = tracer->ray_inters[i];
 		}
 	}
-};
+}
 
 uint_i Tracer::accumulate_potential_intersections()
 {
@@ -88,10 +74,10 @@ uint_i Tracer::accumulate_potential_intersections()
 	potential_inters.resize(ray_inters.size()*MAX_POTINT);
 	const uint_i spi = potential_inters.size();
 	for (uint_i i = 0; i < spi; i++)
-		potential_inters[i].ray_inter = NULL;
+		potential_inters[i].ray_inter = nullptr;
 
 	// Accumulate potential intersections
-	JobQueue<Job_accumulate_potential_intersections> jq(thread_count);
+	JobQueue<std::function<void()> > jq(thread_count);
 	if (spi >= (uint_i)(thread_count)) {
 		// Dole out jobs
 		for (uint_i i = 0; i < ray_inters.size(); i += RAY_JOB_SIZE) {
@@ -100,12 +86,11 @@ uint_i Tracer::accumulate_potential_intersections()
 			if (end > ray_inters.size())
 				end = ray_inters.size();
 
-			jq.push(Job_accumulate_potential_intersections(this, start, end));
+			jq.push(std::bind(job_accumulate_potential_intersections, this, start, end));
 		}
 		jq.finish();
 	} else {
-		Job_accumulate_potential_intersections job(this, 0, ray_inters.size());
-		job();
+		job_accumulate_potential_intersections(this, 0, ray_inters.size());
 	}
 
 	// Compact the potential intersections
@@ -113,14 +98,14 @@ uint_i Tracer::accumulate_potential_intersections()
 	uint_i last = 0;
 	uint_i i = 0;
 	while (i < potential_inters.size()) {
-		while (potential_inters[last].ray_inter != NULL && last < potential_inters.size())
+		while (potential_inters[last].ray_inter != nullptr && last < potential_inters.size())
 			last++;
 
-		if (potential_inters[i].ray_inter != NULL) {
+		if (potential_inters[i].ray_inter != nullptr) {
 			pii++;
 			if (i > last) {
 				potential_inters[last] = potential_inters[i];
-				potential_inters[i].ray_inter = NULL;
+				potential_inters[i].ray_inter = nullptr;
 			}
 		}
 
@@ -197,7 +182,7 @@ void Tracer::trace_potints_consumer(JobQueue<PotintJob> *job_queue)
 			// Trace!
 			if (ray_inter->ray.is_shadow_ray) {
 				if (!ray_inter->hit)
-					ray_inter->hit |= scene->world.get_primitive(id).intersect_ray(ray_inter->ray, NULL);
+					ray_inter->hit |= scene->world.get_primitive(id).intersect_ray(ray_inter->ray, nullptr);
 			} else {
 				ray_inter->hit |= scene->world.get_primitive(id).intersect_ray(ray_inter->ray, &(ray_inter->inter));
 			}
@@ -215,7 +200,7 @@ void Tracer::trace_potential_intersections()
 
 		if (ray_inter->ray.is_shadow_ray) {
 			if (!ray_inter->hit)
-				ray_inter->hit |= scene->world.get_primitive(id).intersect_ray(ray_inter->ray, NULL);
+				ray_inter->hit |= scene->world.get_primitive(id).intersect_ray(ray_inter->ray, nullptr);
 		} else {
 			ray_inter->hit |= scene->world.get_primitive(id).intersect_ray(ray_inter->ray, &(ray_inter->inter));
 		}

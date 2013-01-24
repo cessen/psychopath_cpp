@@ -63,7 +63,7 @@ float logit(float p, float width = 1.5f)
 
 void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, uint32 ns, float32 *sample, uint16 *coords)
 {
-	if (coords != NULL) {
+	if (coords != nullptr) {
 		coords[0] = x;
 		coords[1] = y;
 	}

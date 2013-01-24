@@ -52,7 +52,7 @@ public:
 	Bilinear(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4);
 	virtual ~Bilinear();
 
-	virtual bool intersect_ray(Ray &ray, Intersection *intersection=NULL);
+	virtual bool intersect_ray(Ray &ray, Intersection *intersection=nullptr);
 	virtual BBoxT &bounds();
 
 	bool is_traceable();

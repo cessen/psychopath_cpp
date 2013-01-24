@@ -24,7 +24,7 @@ struct PotintJob {
 	PotintJob() {
 		start=0;
 		end=0;
-		ray_inters = NULL;
+		ray_inters = nullptr;
 	}
 	PotintJob(uint_i start_, uint_i end_, RayInter *ray_inters_) {
 		start=start_;

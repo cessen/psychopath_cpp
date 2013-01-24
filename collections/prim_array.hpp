@@ -35,7 +35,7 @@ public:
 	}
 
 	virtual BBoxT &bounds();
-	virtual bool intersect_ray(Ray &ray, Intersection *intersection=NULL);
+	virtual bool intersect_ray(Ray &ray, Intersection *intersection=nullptr);
 };
 
 

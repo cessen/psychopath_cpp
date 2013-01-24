@@ -109,7 +109,7 @@ struct BBox {
 	 *
 	 * @returns True if the ray hits, false if the ray misses.
 	 */
-	inline bool intersect_ray(const Ray &ray, float32 *hitt0, float32 *hitt1, float32 *t=NULL) const {
+	inline bool intersect_ray(const Ray &ray, float32 *hitt0, float32 *hitt1, float32 *t=nullptr) const {
 		const Vec3 *bounds = &min;
 
 		float32 tmin = (bounds[ray.d_is_neg[0]].x - ray.o.x) * ray.inv_d.x;

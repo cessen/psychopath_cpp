@@ -245,7 +245,7 @@ void PathTraceIntegrator::integrate()
 
 		// Callback
 		if (callback)
-			(*callback)();
+			callback();
 
 		if (last)
 			break;

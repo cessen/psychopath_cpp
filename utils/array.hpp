@@ -99,7 +99,7 @@ public:
 	 */
 	T *begin() const {
 		if (size_ == 0)
-			return NULL;
+			return nullptr;
 		else
 			return &(data[0]);
 	}
@@ -109,7 +109,7 @@ public:
 	 */
 	T *end() const {
 		if (size_ == 0)
-			return NULL;
+			return nullptr;
 		else
 			return &(data[size_-1]);
 	}

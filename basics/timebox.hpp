@@ -61,7 +61,7 @@ public:
 template <class T>
 TimeBox<T>::TimeBox()
 {
-	states = NULL;
+	states = nullptr;
 	state_count = 0;
 }
 

@@ -35,7 +35,7 @@ public:
 	Vec c;
 
 	SSHPrimitive() {
-		data = NULL;
+		data = nullptr;
 	}
 
 	void init(Primitive *prim) {
@@ -77,7 +77,7 @@ public:
 
 	SSHNode() {
 		child_index = 0;
-		data = NULL;
+		data = nullptr;
 		flags = 0;
 	}
 };
@@ -147,9 +147,9 @@ public:
 	virtual bool finalize();
 
 	virtual BBox &bounds();
-	virtual bool intersect_ray(Ray &ray, Intersection *intersection=NULL);
+	virtual bool intersect_ray(Ray &ray, Intersection *intersection=nullptr);
 
-	unsigned split_primitives(uint32 first_prim, uint32 last_prim, int32 *axis=NULL);
+	unsigned split_primitives(uint32 first_prim, uint32 last_prim, int32 *axis=nullptr);
 	void recursive_build(uint32 me, uint32 first_prim, uint32 last_prim, BBox &parent_bounds);
 };
 

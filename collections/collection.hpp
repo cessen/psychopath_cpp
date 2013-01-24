@@ -62,7 +62,7 @@ public:
 	 * @param max_potential The maximum number of results.
 	 * @param ids Output parameter, should be an array of ids at least as large as max_potential.
 	 * @param state Input/output parameter.  Should point to memory large enough to store the traversal
-	                state of the .  NULL just gets the first N potentially
+	                state of the ray.  nullptr just gets the first N potentially
 	 *                intersecting primitives.  Array values of all zeros starts as default.
 	 *
 	 * @returns The number of results acquired.  If zero, that means there were no potential intersections.

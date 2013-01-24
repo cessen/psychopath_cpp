@@ -452,7 +452,7 @@ uint BVH::get_potential_intersections(const Ray &ray, uint max_potential, uint_i
 	uint8 node_state;
 
 	// Initialize state
-	if (state == NULL) {
+	if (state == nullptr) {
 		node = 0;
 		node_state = FROM_PARENT;
 	} else {
@@ -581,7 +581,7 @@ uint BVH::get_potential_intersections(const Ray &ray, uint max_potential, uint_i
 	}
 
 	// Store state
-	if (state != NULL) {
+	if (state != nullptr) {
 		((uint64 *)state)[0] = node;
 		((uint64 *)state)[1] = node_state;
 	}

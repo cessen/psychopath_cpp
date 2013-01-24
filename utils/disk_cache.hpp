@@ -203,7 +203,7 @@ public:
 
 		// Clear the reference from the table
 		if (cache_info[cb_index].used)
-			data_table[b_index] = NULL;
+			data_table[b_index] = nullptr;
 
 		// Check if the cache block is modified, and if so, write it to disk
 		if (cache_info[cb_index].modified && cache_info[cb_index].used) {
