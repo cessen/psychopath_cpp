@@ -51,7 +51,7 @@ private:
 
 		return x_ + y_ + z_;
 	}
-	
+
 public:
 	/**
 	 * @brief Constructor.
@@ -63,7 +63,7 @@ public:
 	RNG() {
 		// The seeder is seeded with a combination of random_device,
 		// large primes, and the current time.  The idea is that if
-		// random_device doesn't function well, the time and the 
+		// random_device doesn't function well, the time and the
 		// primes function as an okay fall-back.  But ideally
 		// random_device functions well.
 		std::random_device rd;
@@ -71,7 +71,7 @@ public:
 		static uint32_t seeder_y = rd() + 1987607653 + std::chrono::high_resolution_clock::now().time_since_epoch().count();
 		static uint32_t seeder_z = rd() + 3569508323 + std::chrono::high_resolution_clock::now().time_since_epoch().count();
 		static uint32_t seeder_c = rd() + 5206151 + std::chrono::high_resolution_clock::now().time_since_epoch().count();
-		
+
 		// Use the seeder to create subsequent RNG's that are
 		// unique from each other.
 		static std::mutex mut;
@@ -91,7 +91,7 @@ public:
 	RNG(uint32_t seed_a, uint32_t seed_b, uint32_t seed_c, uint32_t seed_d) {
 		seed(seed_a, seed_b, seed_c, seed_d);
 	}
-	
+
 	/**
 	 * @brief Constructor.
 	 *
@@ -112,7 +112,7 @@ public:
 		z = seed_c;
 		c = seed_d;
 	}
-	
+
 	/**
 	 * @brief Sets the seed of the RNG.
 	 *
@@ -123,9 +123,9 @@ public:
 		// by large primes.
 		seed((seed_+ 5) * 3885701021,
 		     (seed_ + 43) * 653005939,
-			 (seed_ + 13) * 1264700623,
+		     (seed_ + 13) * 1264700623,
 		     (seed_ + 67) * 37452703);
-		
+
 		// Run the RNG a couple of times
 		n(x, y, z, c);
 		n(x, y, z, c);
