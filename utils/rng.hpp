@@ -5,7 +5,9 @@
 #include <cstdint>
 
 #include <random>
+#include <chrono>
 #include <mutex>
+
 
 /**
  * @brief A psuedo-random number generator.
@@ -24,8 +26,32 @@
  */
 class RNG
 {
+private:
 	uint32_t x, y, z, c;
 
+	/**
+	 * @brief Core algorithm of the RNG.
+	 *
+	 * Progresses an RNG with state variables x_, y_, z_, c_.
+	 *
+	 * @return The next unsigned 32-bit integer in the random sequence.
+	 */
+	uint32_t n(uint32_t &x_, uint32_t &y_, uint32_t &z_, uint32_t &c_) {
+		uint64_t t;
+
+		x_ = 314527869 * x_ + 1234567;
+
+		y_ ^= y_ << 5;
+		y_ ^= y_ >> 7;
+		y_ ^= y_ << 22;
+
+		t = 4294584393ULL * z_ + c_;
+		c_ = t >> 32;
+		z_ = t;
+
+		return x_ + y_ + z_;
+	}
+	
 public:
 	/**
 	 * @brief Constructor.
@@ -35,34 +61,26 @@ public:
 	 * being independant with a high level of confidence.
 	 */
 	RNG() {
+		// The seeder is seeded with a combination of random_device,
+		// large primes, and the current time.  The idea is that if
+		// random_device doesn't function well, the time and the 
+		// primes function as an okay fall-back.  But ideally
+		// random_device functions well.
 		std::random_device rd;
-
+		static uint32_t seeder_x = rd() + 2123403127 + std::chrono::high_resolution_clock::now().time_since_epoch().count();
+		static uint32_t seeder_y = rd() + 1987607653 + std::chrono::high_resolution_clock::now().time_since_epoch().count();
+		static uint32_t seeder_z = rd() + 3569508323 + std::chrono::high_resolution_clock::now().time_since_epoch().count();
+		static uint32_t seeder_c = rd() + 5206151 + std::chrono::high_resolution_clock::now().time_since_epoch().count();
+		
+		// Use the seeder to create subsequent RNG's that are
+		// unique from each other.
 		static std::mutex mut;
-
-		// First RNG is seeded with random_device
-		static uint32_t next_seed_a = rd();
-		static uint32_t next_seed_b = rd();
-		static uint32_t next_seed_c = rd();
-		static uint32_t next_seed_d = rd();
-
-		// Subsequent RNG's are seeded by incrementing the seeds by
-		// various primes.
 		mut.lock();
-		seed(next_seed_a, next_seed_b, next_seed_c, next_seed_d);
-		next_seed_a += 3;
-		next_seed_b += 5;
-		next_seed_c += 7;
-		next_seed_d += 11;
+		seed(n(seeder_x, seeder_y, seeder_z, seeder_c),
+		     n(seeder_x, seeder_y, seeder_z, seeder_c),
+		     n(seeder_x, seeder_y, seeder_z, seeder_c),
+		     n(seeder_x, seeder_y, seeder_z, seeder_c));
 		mut.unlock();
-	}
-
-	/**
-	 * @brief Constructor.
-	 *
-	 * Initializes the RNG with the given seed.  32-bit variant.
-	 */
-	RNG(uint32_t seed_) {
-		seed(seed_);
 	}
 
 	/**
@@ -73,14 +91,14 @@ public:
 	RNG(uint32_t seed_a, uint32_t seed_b, uint32_t seed_c, uint32_t seed_d) {
 		seed(seed_a, seed_b, seed_c, seed_d);
 	}
-
+	
 	/**
-	 * @brief Sets the seed of the RNG.
+	 * @brief Constructor.
 	 *
-	 * 32-bit variant, for convenience.
+	 * Initializes the RNG with the given seed.  32-bit variant.
 	 */
-	void seed(uint32_t seed_) {
-		seed(seed_, seed_, seed_, seed_);
+	RNG(uint32_t seed_) {
+		seed(seed_);
 	}
 
 	/**
@@ -89,38 +107,35 @@ public:
 	 * Full 128-bit variant.
 	 */
 	void seed(uint32_t seed_a, uint32_t seed_b, uint32_t seed_c, uint32_t seed_d) {
-		// Scramble up the seeds with offsets and multiplications
+		x = seed_a;
+		y = seed_b;
+		z = seed_c;
+		c = seed_d;
+	}
+	
+	/**
+	 * @brief Sets the seed of the RNG.
+	 *
+	 * 32-bit variant, for convenience.
+	 */
+	void seed(uint32_t seed_) {
+		// Scramble up the seed with offsets and multiplications
 		// by large primes.
-		x = (seed_a + 5) * 3885701021;
-		y = (seed_b + 43) * 653005939;
-		z = (seed_c + 13) * 1264700623;
-		c = (seed_d + 67) * 37452703;
-
+		seed((seed_+ 5) * 3885701021,
+		     (seed_ + 43) * 653005939,
+			 (seed_ + 13) * 1264700623,
+		     (seed_ + 67) * 37452703);
+		
 		// Run the RNG a couple of times
-		next_uint();
-		next_uint();
+		n(x, y, z, c);
+		n(x, y, z, c);
 	}
 
 	/**
 	 * @brief Returns a random unsigned 32-bit integer.
-	 *
-	 * This is the work-horse method of the RNG.  All the other next_XXX()
-	 * methods call this.
 	 */
 	uint32_t next_uint() {
-		uint64_t t;
-
-		x = 314527869 * x + 1234567;
-
-		y ^= y << 5;
-		y ^= y >> 7;
-		y ^= y << 22;
-
-		t = 4294584393ULL * z + c;
-		c = t >> 32;
-		z = t;
-
-		return x + y + z;
+		return n(x, y, z, c);
 	}
 
 	/**
@@ -131,12 +146,12 @@ public:
 		// Alternatively, you could just do "next_uint() / 4294967296.0" which
 		// would accomplish the same thing, albeit slower.
 		union {
-			float x;
+			float w;
 			uint32_t a;
 		};
-		a = next_uint() >> 9; // Take upper 23 bits
+		a = n(x, y, z, c) >> 9; // Take upper 23 bits
 		a |= 0x3F800000; // Make a float from bits
-		return x-1.f;
+		return w-1.f;
 	}
 
 	/**
