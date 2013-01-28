@@ -17,6 +17,9 @@ bool MicroSurface::intersect_ray(const Ray &ray, Intersection *inter)
 	uint_i hit_node = 0;
 
 	float32 t = ray.max_t;
+	if (inter)
+		t = t < inter->t ? t : inter->t;
+
 	// Intersect with the MicroSurface
 	while (true) {
 		if (intersect_node(node, ray, &tnear, &tfar, &t)) {
@@ -49,6 +52,9 @@ bool MicroSurface::intersect_ray(const Ray &ray, Intersection *inter)
 
 	// Calculate intersection data
 	if (hit && !ray.is_shadow_ray) {
+		if (t >= inter->t)
+			return false;
+
 		// Calculate time indices and alpha
 		uint32 t_i = 0;
 		float32 t_alpha = 0.0f;

@@ -394,7 +394,7 @@ BBoxT &BVH::bounds()
 	return bbox;
 }
 
-bool BVH::intersect_ray(Ray &ray, Intersection *intersection)
+bool BVH::intersect_ray(const Ray &ray, Intersection *intersection)
 {
 	bool hit = false;
 	std::vector<Primitive *> temp_prim;

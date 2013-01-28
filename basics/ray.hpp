@@ -8,6 +8,7 @@
 #include "transform.hpp"
 #include "config.hpp"
 #include <algorithm>
+#include <limits>
 #include <math.h>
 #include <iostream>
 #include <assert.h>
@@ -81,7 +82,7 @@ struct Ray {
 		time = time_;
 
 		min_t = 0.0;
-		max_t = 99999999999999999999999999.0;
+		max_t = std::numeric_limits<float32>::infinity();
 
 		is_shadow_ray = false;
 		has_differentials = false;

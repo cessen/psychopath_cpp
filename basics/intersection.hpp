@@ -3,6 +3,8 @@
 
 #include "numtype.h"
 
+#include <limits>
+
 #include "vector.hpp"
 #include "color.hpp"
 
@@ -36,6 +38,10 @@ struct Intersection {
 	Vec3 offset;
 
 	Color col;
+
+	Intersection() {
+		t = std::numeric_limits<float32>::infinity();
+	}
 
 
 	/**

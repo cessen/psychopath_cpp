@@ -1,7 +1,7 @@
 #include "numtype.h"
 
 #include <iostream>
-#include <stdlib.h>
+#include <cstdlib>
 #include "sphere.hpp"
 #include "global.hpp"
 
@@ -61,7 +61,7 @@ void Sphere::add_time_sample(int samp, Vec3 center_, float32 radius_)
 
 //////////////////////////////////////////////////////////////
 
-bool Sphere::intersect_ray(Ray &ray, Intersection *intersection)
+bool Sphere::intersect_ray(const Ray &ray, Intersection *intersection)
 {
 	Global::Stats::primitive_ray_tests++;
 
@@ -129,9 +129,8 @@ bool Sphere::intersect_ray(Ray &ray, Intersection *intersection)
 	}
 
 	// Check our intersection for validity against this ray's extents
-	if (t0 >= ray.max_t || t1 < ray.min_t) {
+	if (t0 >= ray.max_t || t1 < ray.min_t)
 		return false;
-	}
 
 	float32 t;
 	if (t0 >= ray.min_t) {
@@ -142,11 +141,13 @@ bool Sphere::intersect_ray(Ray &ray, Intersection *intersection)
 		return false;
 	}
 
-	// TODO: move this outside of primitive intersection routines
-	ray.max_t = t;
-
-	// Create our intersection data
+	// If we have an intersection struct
 	if (intersection) {
+		// Check out intersection for validity against this ray's previous
+		// intersection.
+		if (t > intersection->t)
+			return false;
+
 		intersection->p = ray.o + (ray.d * t);
 		intersection->n = intersection->p - cent;
 		intersection->n.normalize();

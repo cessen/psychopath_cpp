@@ -130,7 +130,7 @@ public:
 	}
 
 	virtual BBoxT &bounds();
-	virtual bool intersect_ray(Ray &ray, Intersection *intersection=nullptr);
+	virtual bool intersect_ray(const Ray &ray, Intersection *intersection=nullptr);
 
 	unsigned split_primitives(uint_i first_prim, uint_i last_prim, int32 *axis=nullptr);
 	void recursive_build(uint_i parent, uint_i me, uint_i first_prim, uint_i last_prim);

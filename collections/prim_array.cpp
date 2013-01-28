@@ -47,7 +47,7 @@ BBoxT &PrimArray::bounds()
 	return bbox;
 }
 
-bool PrimArray::intersect_ray(Ray &ray, Intersection *intersection)
+bool PrimArray::intersect_ray(const Ray &ray, Intersection *intersection)
 {
 	std::vector<Primitive *> temp_prim;
 	float32 tnear, tfar;

@@ -45,7 +45,7 @@ public:
 
 	 @return True on a hit, false on a miss.
 	 */
-	virtual bool intersect_ray(Ray &ray, Intersection *intersection=nullptr) = 0;
+	virtual bool intersect_ray(const Ray &ray, Intersection *intersection=nullptr) = 0;
 };
 
 

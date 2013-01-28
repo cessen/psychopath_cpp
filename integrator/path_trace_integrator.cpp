@@ -1,6 +1,7 @@
 #include "path_trace_integrator.hpp"
 
 #include <iostream>
+#include <limits>
 #include <assert.h>
 #include "image_sampler.hpp"
 #include "film.hpp"
@@ -95,6 +96,9 @@ void PathTraceIntegrator::integrate()
 					rayinters[i]->ray.finalize();
 					rayinters[i]->hit = false;
 					rayinters[i]->id = i;
+
+					// Reset intersection data
+					rayinters[i]->inter.t = std::numeric_limits<float32>::infinity();
 				}
 			} else {
 				// Other path segments are bounces
@@ -131,7 +135,7 @@ void PathTraceIntegrator::integrate()
 						rayinters[pri]->ray.time = samps[i*samp_dim+4];
 						rayinters[pri]->ray.is_shadow_ray = false;
 						rayinters[pri]->ray.min_t = 0.01;
-						rayinters[pri]->ray.max_t = 999999999999.0;
+						rayinters[pri]->ray.max_t = std::numeric_limits<float32>::infinity();
 						rayinters[pri]->ray.has_differentials = true;
 
 						// Ray differentials
@@ -141,6 +145,9 @@ void PathTraceIntegrator::integrate()
 						rayinters[pri]->ray.ddy = rayinters[pri]->ray.ody.normalized() * paths[i].inter.ddy.length();
 
 						rayinters[pri]->ray.finalize();
+
+						// Reset intersection data
+						rayinters[pri]->inter.t = std::numeric_limits<float32>::infinity();
 
 						// Increment path ray index
 						pri++;
@@ -206,6 +213,10 @@ void PathTraceIntegrator::integrate()
 					rayinters[sri]->ray.finalize();
 					rayinters[sri]->hit = false;
 					rayinters[sri]->id = i;
+
+					// Reset intersection data
+					rayinters[sri]->inter.t = std::numeric_limits<float32>::infinity();
+
 					sri++;
 				}
 			}

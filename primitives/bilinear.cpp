@@ -75,7 +75,7 @@ uint_i Bilinear::micro_estimate(float32 width)
 }
 
 
-bool Bilinear::intersect_ray(Ray &ray, Intersection *intersection)
+bool Bilinear::intersect_ray(const Ray &ray, Intersection *intersection)
 {
 
 	Global::Stats::primitive_ray_tests++;
@@ -125,10 +125,6 @@ bool Bilinear::intersect_ray(Ray &ray, Intersection *intersection)
 	// Test the ray against the grid
 	const bool hit = micro_surface->intersect_ray(ray, intersection);
 	MicroSurfaceCache::cache.close(microsurface_key);
-
-	// Update ray if necessary
-	if (hit && intersection)
-		ray.max_t = intersection->t;
 
 	return hit;
 }
