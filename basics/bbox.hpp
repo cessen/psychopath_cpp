@@ -17,67 +17,36 @@
 struct BBox {
 	Vec3 min, max;
 
-	BBox() {
-		min.x = 0.0;
-		min.y = 0.0;
-		min.z = 0.0;
+	BBox(): min {0.0f, 0.0f, 0.0f}, max {0.0f, 0.0f, 0.0f} {}
 
-		max.x = 0.0;
-		max.y = 0.0;
-		max.z = 0.0;
-	}
-
-	BBox(const Vec3 &min_, const Vec3 &max_) {
-		min = min_;
-		max = max_;
-	}
+	BBox(const Vec3 &min_, const Vec3 &max_): min {min_}, max {max_} {}
 
 	/**
 	 * @brief Adds two BBox's together in a component-wise manner.
 	 */
 	BBox operator+(const BBox &b) const {
-		BBox c;
-
-		c.min = min + b.min;
-		c.max = max + b.max;
-
-		return c;
+		return BBox(min + b.min, max + b.max);
 	}
 
 	/**
 	 * @brief Subtracts one BBox from another in a component-wise manner.
 	 */
 	BBox operator-(const BBox &b) const {
-		BBox c;
-
-		c.min = min - b.min;
-		c.max = max - b.max;
-
-		return c;
+		return BBox(min - b.min, max - b.max);
 	}
 
 	/**
 	 * @brief Multiples all the components of a BBox by a float.
 	 */
 	BBox operator*(const float32 &f) const {
-		BBox c;
-
-		c.min = min * f;
-		c.max = max * f;
-
-		return c;
+		return BBox(min * f, max * f);
 	}
 
 	/**
 	 * @brief Divides all the components of a BBox by a float.
 	 */
 	BBox operator/(const float32 &f) const {
-		BBox c;
-
-		c.min = min / f;
-		c.max = max / f;
-
-		return c;
+		return BBox(min / f, max / f);
 	}
 
 	/**

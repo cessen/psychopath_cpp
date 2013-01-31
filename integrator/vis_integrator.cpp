@@ -13,25 +13,6 @@
 #define RAYS_AT_A_TIME 1000000
 
 
-void resize_rayinters(Array<RayInter *> &rayinters, uint32 size)
-{
-	if (size > rayinters.size()) {
-		// Too small: enlarge
-		rayinters.reserve(size);
-		uint32 diff = size - rayinters.size();
-		for (uint32 i = 0; i < diff; i++) {
-			rayinters.push_back(new RayInter);
-		}
-	} else if (size < rayinters.size()) {
-		// Too large: shrink
-		uint32 s = rayinters.size();
-		for (uint32 i = size; i < s; i++)
-			delete rayinters[i];
-		rayinters.resize(size);
-	}
-}
-
-
 void VisIntegrator::integrate()
 {
 	const uint_i samp_dim = 8;
@@ -51,9 +32,12 @@ void VisIntegrator::integrate()
 	Array<VisPath> paths;
 	paths.resize(RAYS_AT_A_TIME);
 
-	// Ray array
-	Array<RayInter *> rayinters;
-	rayinters.reserve(RAYS_AT_A_TIME);
+	// Ray and Intersection arrays
+	Array<Ray> rays(RAYS_AT_A_TIME);
+	Array<Intersection> intersections(RAYS_AT_A_TIME);
+
+	// ids corresponding to the rays
+	Array<uint32> ids(RAYS_AT_A_TIME);
 
 	bool last = false;
 	while (true) {
@@ -74,8 +58,7 @@ void VisIntegrator::integrate()
 
 
 		// Size the ray buffer appropriately
-		resize_rayinters(rayinters, ssize);
-
+		rays.resize(ssize);
 
 		// Generate a bunch of camera rays
 		std::cout << "\tGenerating camera rays" << std::endl;
@@ -85,33 +68,31 @@ void VisIntegrator::integrate()
 			float32 ry = (0.5 - samps[i*samp_dim+1]) * (image->max_y - image->min_y);
 			float32 dx = (image->max_x - image->min_x) / image->width;
 			float32 dy = (image->max_y - image->min_y) / image->height;
-			rayinters[i]->ray = scene->camera->generate_ray(rx, ry, dx, dy, samps[i*samp_dim+4], samps[i*samp_dim+2], samps[i*samp_dim+3]);
-			rayinters[i]->ray.finalize();
-			rayinters[i]->hit = false;
-			rayinters[i]->id = i;
+			rays[i] = scene->camera->generate_ray(rx, ry, dx, dy, samps[i*samp_dim+4], samps[i*samp_dim+2], samps[i*samp_dim+3]);
+			rays[i].finalize();
+			ids[i] = i;
 		}
 
 
 		// Trace the camera rays
 		std::cout << "\tTracing camera rays" << std::endl;
 		std::cout.flush();
-		tracer->queue_rays(rayinters);
-		tracer->trace_rays();
+		tracer->trace(&rays, &intersections);
 
 
 		// Update paths
 		std::cout << "\tUpdating paths" << std::endl;
 		std::cout.flush();
-		uint32 rsize = rayinters.size();
+		uint32 rsize = rays.size();
 		for (uint32 i = 0; i < rsize; i++) {
-			if (rayinters[i]->hit) {
+			if (intersections[i].hit) {
 				// Ray hit something!  Store intersection data
-				paths[rayinters[i]->id].done = true;
-				paths[rayinters[i]->id].col = rayinters[i]->inter.col;
+				paths[ids[i]].done = true;
+				paths[ids[i]].col = intersections[i].col;
 			} else {
 				// Ray didn't hit anything, done and black background
-				paths[rayinters[i]->id].done = true;
-				paths[rayinters[i]->id].col = Color(0.0, 0.0, 0.0);
+				paths[ids[i]].done = true;
+				paths[ids[i]].col = Color(0.0, 0.0, 0.0);
 			}
 		}
 
@@ -136,10 +117,6 @@ void VisIntegrator::integrate()
 
 		if (last)
 			break;
-	}
-
-	for (uint32 i = 0; i < rayinters.size(); i++) {
-		delete rayinters[i];
 	}
 }
 

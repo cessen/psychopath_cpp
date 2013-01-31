@@ -1,37 +1,38 @@
 #include "tracer.hpp"
 
+#include <limits>
 #include <vector>
 #include <iostream>
 #include <algorithm>
 #include <functional>
 #include <assert.h>
+
 #include "array.hpp"
+#include "slice.hpp"
 #include "counting_sort.hpp"
 
 #include "ray.hpp"
+#include "intersection.hpp"
 #include "scene.hpp"
-#include "rayinter.hpp"
 
 #define RAY_STATE_SIZE scene->world.ray_state_size()
 #define MAX_POTINT 2
 #define RAY_JOB_SIZE 2048
 
 
-uint32 Tracer::queue_rays(const Array<RayInter *> &ray_inters_)
+uint32 Tracer::trace(Array<Ray> *rays_, Array<Intersection> *intersections_)
 {
-	const uint32 size = ray_inters.size() + ray_inters_.size();
-	ray_inters.reserve(size);
+	// Get rays
+	rays.init_from(*rays_);
 
-	uint32 s = ray_inters_.size();
-	for (uint32 i = 0; i < s; i++) {
-		ray_inters.push_back(ray_inters_[i]);
-	}
-	return size;
-}
+	// Get and initialize intersections
+	intersections_->resize(rays.size());
+	intersections.init_from(*intersections_);
+for (auto &inter: intersections)
+		inter = Intersection();
 
-uint32 Tracer::trace_rays()
-{
-	uint32 s = ray_inters.size();
+	// Constant for number of rays being traced
+	const uint32 s = rays.size();
 	std::cout << "\tTracing " << s << " rays" << std::endl;
 
 	// Allocate and clear out ray states
@@ -48,7 +49,6 @@ uint32 Tracer::trace_rays()
 		trace_potential_intersections();
 	}
 
-	ray_inters.clear();
 	return s;
 }
 
@@ -60,10 +60,11 @@ void job_accumulate_potential_intersections(Tracer *tracer, uint_i start_i, uint
 	uint_i potint_ids[MAX_POTINT];
 
 	for (uint_i i = start_i; i < end_i; i++) {
-		const uint_i pc = tracer->scene->world.get_potential_intersections(tracer->ray_inters[i]->ray, MAX_POTINT, potint_ids, &(tracer->states[i*tracer->RAY_STATE_SIZE]));
+		const uint_i pc = tracer->scene->world.get_potential_intersections(tracer->rays[i], MAX_POTINT, potint_ids, &(tracer->states[i*tracer->RAY_STATE_SIZE]));
 		for (uint_i j = 0; j < pc; j++) {
+			tracer->potential_inters[(i*MAX_POTINT)+j].valid = true;
 			tracer->potential_inters[(i*MAX_POTINT)+j].object_id = potint_ids[j];
-			tracer->potential_inters[(i*MAX_POTINT)+j].ray_inter = tracer->ray_inters[i];
+			tracer->potential_inters[(i*MAX_POTINT)+j].ray_index = i;
 		}
 	}
 }
@@ -71,26 +72,26 @@ void job_accumulate_potential_intersections(Tracer *tracer, uint_i start_i, uint
 uint_i Tracer::accumulate_potential_intersections()
 {
 	// Clear out potential intersection buffer
-	potential_inters.resize(ray_inters.size()*MAX_POTINT);
+	potential_inters.resize(rays.size()*MAX_POTINT);
 	const uint_i spi = potential_inters.size();
 	for (uint_i i = 0; i < spi; i++)
-		potential_inters[i].ray_inter = nullptr;
+		potential_inters[i].valid = false;
 
 	// Accumulate potential intersections
 	JobQueue<std::function<void()> > jq(thread_count);
 	if (spi >= (uint_i)(thread_count)) {
 		// Dole out jobs
-		for (uint_i i = 0; i < ray_inters.size(); i += RAY_JOB_SIZE) {
+		for (uint_i i = 0; i < rays.size(); i += RAY_JOB_SIZE) {
 			uint_i start = i;
 			uint_i end = i + RAY_JOB_SIZE;
-			if (end > ray_inters.size())
-				end = ray_inters.size();
+			if (end > rays.size())
+				end = rays.size();
 
 			jq.push(std::bind(job_accumulate_potential_intersections, this, start, end));
 		}
 		jq.finish();
 	} else {
-		job_accumulate_potential_intersections(this, 0, ray_inters.size());
+		job_accumulate_potential_intersections(this, 0, rays.size());
 	}
 
 	// Compact the potential intersections
@@ -98,14 +99,14 @@ uint_i Tracer::accumulate_potential_intersections()
 	uint_i last = 0;
 	uint_i i = 0;
 	while (i < potential_inters.size()) {
-		while (potential_inters[last].ray_inter != nullptr && last < potential_inters.size())
+		while (potential_inters[last].valid && last < potential_inters.size())
 			last++;
 
-		if (potential_inters[i].ray_inter != nullptr) {
+		if (potential_inters[i].valid) {
 			pii++;
 			if (i > last) {
 				potential_inters[last] = potential_inters[i];
-				potential_inters[i].ray_inter = nullptr;
+				potential_inters[i].valid = false;
 			}
 		}
 
@@ -160,80 +161,23 @@ void Tracer::sort_potential_intersections()
 	}
 }
 
-void Tracer::trace_potints_consumer(JobQueue<PotintJob> *job_queue)
-{
-	PotintJob potint_job;
-
-	// Keep processing items in the queue as long as they keep coming
-	while (job_queue->pop(&potint_job)) {
-		// Convenience
-		const uint_i start = potint_job.start;
-		const uint_i size = potint_job.size;
-
-		// Trace the ray inters into the buffer
-		for (uint_i i = 0; i < size; i++) {
-			// Copy the rayinter into the buffer
-			potint_job.ray_inters[i] = *(potential_inters[start+i].ray_inter);
-
-			// Convenience
-			RayInter *ray_inter = &(potint_job.ray_inters[i]);
-			const uint_i id = potential_inters[i].object_id;
-
-			// Trace!
-			if (ray_inter->ray.is_shadow_ray) {
-				if (!ray_inter->hit)
-					ray_inter->hit |= scene->world.get_primitive(id).intersect_ray(ray_inter->ray, nullptr);
-			} else {
-				ray_inter->hit |= scene->world.get_primitive(id).intersect_ray(ray_inter->ray, &(ray_inter->inter));
-			}
-		}
-	}
-}
 
 void Tracer::trace_potential_intersections()
 {
 	const uint64 spi = potential_inters.size();
 
 	for (uint32 i = 0; i < spi; i++) {
-		RayInter *ray_inter = potential_inters[i].ray_inter;
+		Ray &ray = rays[potential_inters[i].ray_index];
+		Intersection &intersection = intersections[potential_inters[i].ray_index];
 		uint64 id = potential_inters[i].object_id;
 
-		if (ray_inter->ray.is_shadow_ray) {
-			if (!ray_inter->hit)
-				ray_inter->hit |= scene->world.get_primitive(id).intersect_ray(ray_inter->ray, nullptr);
+		if (ray.is_shadow_ray) {
+			if (!intersection.hit)
+				intersection.hit |= scene->world.get_primitive(id).intersect_ray(ray, nullptr);
 		} else {
-			ray_inter->hit |= scene->world.get_primitive(id).intersect_ray(ray_inter->ray, &(ray_inter->inter));
+			intersection.hit |= scene->world.get_primitive(id).intersect_ray(ray, &intersection);
 		}
 	}
-
-	/*
-	JobQueue<PotintJob> jq(32);
-	jq.close();
-	Array<RayInter> ri_list;
-	ri_list.resize(RAY_JOB_SIZE);
-
-
-
-	for (uint_i i = 0; i < potential_inters.size(); i += RAY_JOB_SIZE) {
-		uint_i start = i;
-		uint_i end = i + RAY_JOB_SIZE;
-		if (end > potential_inters.size())
-			end = potential_inters.size();
-
-		jq.open();
-		jq.push(PotintJob(start, end, &(ri_list[0])) );
-		jq.close();
-		trace_potints_consumer(&jq);
-
-		for (uint_i j = 0; j < ri_list.size(); j++) {
-			if (ri_list[i].hit) {
-				potential_inters[start+i].ray_inter->hit = true;
-
-				if(potential_inters[start+i].ray_inter->inter.t > ri_list[i].inter.t)
-					*(potential_inters[start+i].ray_inter) = ri_list[i];
-			}
-		}
-	}*/
 }
 
 

@@ -48,16 +48,14 @@ void PathTraceIntegrator::integrate()
 	Array<PTPath> paths;
 	paths.resize(RAYS_AT_A_TIME);
 
-	// Allocate the RayInter structures in contiguous storage
-	RayInter *rayinters_ = new RayInter[RAYS_AT_A_TIME];
+	// Ray and Intersection arrays
+	Array<Ray> rays(RAYS_AT_A_TIME);
+	Array<Intersection> intersections(RAYS_AT_A_TIME);
 
-	// RayInter pointer array, points to contiguous storage above
-	Array<RayInter *> rayinters;
-	rayinters.reserve(RAYS_AT_A_TIME);
-	for (uint32 i=0; i < RAYS_AT_A_TIME; i++) {
-		rayinters.push_back(&rayinters_[i]);
-	}
+	// ids corresponding to the rays
+	Array<uint32> ids(RAYS_AT_A_TIME);
 
+	// Go for it!
 	bool last = false;
 	while (true) {
 		// Generate samples
@@ -79,7 +77,8 @@ void PathTraceIntegrator::integrate()
 		// Path tracing loop for the samples we have
 		for (int path_n=0; path_n < path_length; path_n++) {
 			// Size the ray buffer appropriately
-			rayinters.resize(samp_size);
+			rays.resize(samp_size);
+			intersections.resize(samp_size);
 
 			int32 so = (path_n * 5); // Sample offset
 
@@ -92,13 +91,9 @@ void PathTraceIntegrator::integrate()
 					float32 ry = (0.5 - samps[i*samp_dim + 1]) * (image->max_y - image->min_y);
 					float32 dx = (image->max_x - image->min_x) / image->width;
 					float32 dy = (image->max_y - image->min_y) / image->height;
-					rayinters[i]->ray = scene->camera->generate_ray(rx, ry, dx, dy, samps[i*samp_dim+4], samps[i*samp_dim+2], samps[i*samp_dim+3]);
-					rayinters[i]->ray.finalize();
-					rayinters[i]->hit = false;
-					rayinters[i]->id = i;
-
-					// Reset intersection data
-					rayinters[i]->inter.t = std::numeric_limits<float32>::infinity();
+					rays[i] = scene->camera->generate_ray(rx, ry, dx, dy, samps[i*samp_dim+4], samps[i*samp_dim+2], samps[i*samp_dim+3]);
+					rays[i].finalize();
+					ids[i] = i;
 				}
 			} else {
 				// Other path segments are bounces
@@ -125,50 +120,45 @@ void PathTraceIntegrator::integrate()
 						// TODO: use actual shaders here.
 						paths[i].fcol *= lambert(dir, nn) / pdf;
 
-						// Clear out the rayinter structure
-						rayinters[pri]->hit = false;
-						rayinters[pri]->id = i;
+						// Set the id
+						ids[pri] = i;
 
 						// Create a bounce ray for this path
-						rayinters[pri]->ray.o = paths[i].inter.p + paths[i].inter.offset;
-						rayinters[pri]->ray.d = dir;
-						rayinters[pri]->ray.time = samps[i*samp_dim+4];
-						rayinters[pri]->ray.is_shadow_ray = false;
-						rayinters[pri]->ray.min_t = 0.01;
-						rayinters[pri]->ray.max_t = std::numeric_limits<float32>::infinity();
-						rayinters[pri]->ray.has_differentials = true;
+						rays[pri].o = paths[i].inter.p + paths[i].inter.offset;
+						rays[pri].d = dir;
+						rays[pri].time = samps[i*samp_dim+4];
+						rays[pri].is_shadow_ray = false;
+						rays[pri].min_t = 0.01;
+						rays[pri].max_t = std::numeric_limits<float32>::infinity();
+						rays[pri].has_differentials = true;
 
 						// Ray differentials
-						rayinters[pri]->ray.odx = paths[i].inter.pdx();
-						rayinters[pri]->ray.ddx = rayinters[pri]->ray.odx.normalized() * paths[i].inter.ddx.length();
-						rayinters[pri]->ray.ody = paths[i].inter.pdy();
-						rayinters[pri]->ray.ddy = rayinters[pri]->ray.ody.normalized() * paths[i].inter.ddy.length();
+						rays[pri].odx = paths[i].inter.pdx();
+						rays[pri].ddx = rays[pri].odx.normalized() * paths[i].inter.ddx.length();
+						rays[pri].ody = paths[i].inter.pdy();
+						rays[pri].ddy = rays[pri].ody.normalized() * paths[i].inter.ddy.length();
 
-						rayinters[pri]->ray.finalize();
-
-						// Reset intersection data
-						rayinters[pri]->inter.t = std::numeric_limits<float32>::infinity();
+						rays[pri].finalize();
 
 						// Increment path ray index
 						pri++;
 					}
 				}
-				rayinters.resize(pri);
+				rays.resize(pri);
 			}
 
 
 			// Trace the rays
-			tracer->queue_rays(rayinters);
-			tracer->trace_rays();
+			tracer->trace(&rays, &intersections);
 
 
 			// Update paths
-			uint32 rsize = rayinters.size();
+			uint32 rsize = rays.size();
 			for (uint32 i = 0; i < rsize; i++) {
-				const uint32 id = rayinters[i]->id;
-				if (rayinters[i]->hit) {
+				const uint32 id = ids[i];
+				if (intersections[i].hit) {
 					// Ray hit something!  Store intersection data
-					paths[id].inter = rayinters[i]->inter;
+					paths[id].inter = intersections[i];
 				} else {
 					// Ray didn't hit anything, done and black background
 					paths[id].done = true;
@@ -190,52 +180,45 @@ void PathTraceIntegrator::integrate()
 					Vec3 ld;
 					paths[i].lcol = lighty->sample(paths[i].inter.p, samps[i*samp_dim+so+3], samps[i*samp_dim+so+4], samps[i*samp_dim+4], &ld)
 					                * (float32)(scene->finite_lights.size());
-					//paths[i].lcol = lighty->sample(paths[i].inter.p, rng.next_float(), rng.next_float(), samps[i].t, &ld)
-					//                * (float32)(scene->finite_lights.size());
 
 					// Create a shadow ray for this path
 					float d = ld.length();
 					ld.normalize();
-					rayinters[sri]->ray.o = paths[i].inter.p + paths[i].inter.offset;
-					rayinters[sri]->ray.d = ld;
-					rayinters[sri]->ray.time = samps[i*samp_dim+4];
-					rayinters[sri]->ray.is_shadow_ray = true;
-					rayinters[sri]->ray.min_t = 0.01;
-					rayinters[sri]->ray.max_t = d;
-					rayinters[sri]->ray.has_differentials = true;
+					rays[sri].o = paths[i].inter.p + paths[i].inter.offset;
+					rays[sri].d = ld;
+					rays[sri].time = samps[i*samp_dim+4];
+					rays[sri].is_shadow_ray = true;
+					rays[sri].min_t = 0.01;
+					rays[sri].max_t = d;
+					rays[sri].has_differentials = true;
 
 					// Ray differentials
-					rayinters[sri]->ray.odx = paths[i].inter.pdx();
-					rayinters[sri]->ray.ddx = rayinters[sri]->ray.odx.normalized() * paths[i].inter.ddx.length();
-					rayinters[sri]->ray.ody = paths[i].inter.pdy();
-					rayinters[sri]->ray.ddy = rayinters[sri]->ray.ody.normalized() * paths[i].inter.ddy.length();
+					rays[sri].odx = paths[i].inter.pdx();
+					rays[sri].ddx = rays[sri].odx.normalized() * paths[i].inter.ddx.length();
+					rays[sri].ody = paths[i].inter.pdy();
+					rays[sri].ddy = rays[sri].ody.normalized() * paths[i].inter.ddy.length();
 
-					rayinters[sri]->ray.finalize();
-					rayinters[sri]->hit = false;
-					rayinters[sri]->id = i;
-
-					// Reset intersection data
-					rayinters[sri]->inter.t = std::numeric_limits<float32>::infinity();
+					rays[sri].finalize();
+					ids[sri] = i;
 
 					sri++;
 				}
 			}
-			rayinters.resize(sri);
+			rays.resize(sri);
 
 
 			// Trace the shadow rays
-			tracer->queue_rays(rayinters);
-			tracer->trace_rays();
+			tracer->trace(&rays, &intersections);
 
 
 			// Calculate sample colors
-			rsize = rayinters.size();
+			rsize = rays.size();
 			for (uint32 i = 0; i < rsize; i++) {
-				const uint32 id = rayinters[i]->id;
-				if (!rayinters[i]->hit) {
+				const uint32 id = ids[i];
+				if (!intersections[i].hit) {
 					// Sample was lit
 					// TODO: use actual shaders here
-					float lam = lambert(rayinters[i]->ray.d, paths[id].inter.n);
+					float lam = lambert(rays[i].d, paths[id].inter.n);
 					paths[id].col += paths[id].fcol * paths[id].lcol * lam;
 				}
 			}
@@ -261,8 +244,5 @@ void PathTraceIntegrator::integrate()
 		if (last)
 			break;
 	}
-
-	// Delete the RayInter structures
-	delete [] rayinters_;
 }
 

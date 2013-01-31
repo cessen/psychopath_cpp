@@ -27,9 +27,7 @@ public:
 		to.makeIdentity();
 	}
 	// Initialize from a single matrix
-	Transform(const Matrix44 &to_) {
-		to = to_;
-	}
+	Transform(const Matrix44 &to_): to {to_} {}
 
 
 	/*

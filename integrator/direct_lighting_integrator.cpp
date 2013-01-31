@@ -13,24 +13,6 @@
 #define RAYS_AT_A_TIME 1000000
 
 
-void resize_rayinters(Array<RayInter *> &rayinters, uint32 size)
-{
-	if (size > rayinters.size()) {
-		// Too small: enlarge
-		rayinters.reserve(size);
-		uint32 diff = size - rayinters.size();
-		for (uint32 i = 0; i < diff; i++) {
-			rayinters.push_back(new RayInter);
-		}
-	} else if (size < rayinters.size()) {
-		// Too large: shrink
-		uint32 s = rayinters.size();
-		for (uint32 i = size; i < s; i++)
-			delete rayinters[i];
-		rayinters.resize(size);
-	}
-}
-
 
 void DirectLightingIntegrator::integrate()
 {
@@ -40,20 +22,20 @@ void DirectLightingIntegrator::integrate()
 	ImageSampler image_sampler(spp, image->width, image->height);
 
 	// Sample array
-	Array<float32> samps;
-	samps.resize(RAYS_AT_A_TIME * samp_dim);
+	Array<float32> samps(RAYS_AT_A_TIME * samp_dim);
 
 	// Sample pixel coordinate array
-	Array<uint16> coords;
-	coords.resize(RAYS_AT_A_TIME * 2);
+	Array<uint16> coords(RAYS_AT_A_TIME * 2);
 
 	// Light path array
-	Array<DLPath> paths;
-	paths.resize(RAYS_AT_A_TIME);
+	Array<DLPath> paths(RAYS_AT_A_TIME);
 
-	// Ray array
-	Array<RayInter *> rayinters;
-	rayinters.reserve(RAYS_AT_A_TIME);
+	// Ray and Intersection arrays
+	Array<Ray> rays(RAYS_AT_A_TIME);
+	Array<Intersection> intersections(RAYS_AT_A_TIME);
+
+	// ids corresponding to the rays
+	Array<uint32> ids(RAYS_AT_A_TIME);
 
 	bool last = false;
 	while (true) {
@@ -74,7 +56,7 @@ void DirectLightingIntegrator::integrate()
 
 
 		// Size the ray buffer appropriately
-		resize_rayinters(rayinters, ssize);
+		rays.resize(ssize);
 
 
 		// Generate a bunch of camera rays
@@ -85,32 +67,30 @@ void DirectLightingIntegrator::integrate()
 			float32 ry = (0.5 - samps[i*samp_dim+1]) * (image->max_y - image->min_y);
 			float32 dx = (image->max_x - image->min_x) / image->width;
 			float32 dy = (image->max_y - image->min_y) / image->height;
-			rayinters[i]->ray = scene->camera->generate_ray(rx, ry, dx, dy, samps[i*samp_dim+4], samps[i*samp_dim+2], samps[i*samp_dim+3]);
-			rayinters[i]->ray.finalize();
-			rayinters[i]->hit = false;
-			rayinters[i]->id = i;
+			rays[i] = scene->camera->generate_ray(rx, ry, dx, dy, samps[i*samp_dim+4], samps[i*samp_dim+2], samps[i*samp_dim+3]);
+			rays[i].finalize();
+			ids[i] = i;
 		}
 
 
 		// Trace the camera rays
 		std::cout << "\tTracing camera rays" << std::endl;
 		std::cout.flush();
-		tracer->queue_rays(rayinters);
-		tracer->trace_rays();
+		tracer->trace(&rays, &intersections);
 
 
 		// Update paths
 		std::cout << "\tUpdating paths" << std::endl;
 		std::cout.flush();
-		uint32 rsize = rayinters.size();
+		uint32 rsize = rays.size();
 		for (uint32 i = 0; i < rsize; i++) {
-			if (rayinters[i]->hit) {
+			if (intersections[i].hit) {
 				// Ray hit something!  Store intersection data
-				paths[rayinters[i]->id].inter = rayinters[i]->inter;
+				paths[ids[i]].inter = intersections[i];
 			} else {
 				// Ray didn't hit anything, done and black background
-				paths[rayinters[i]->id].done = true;
-				paths[rayinters[i]->id].col = Color(0.0, 0.0, 0.0);
+				paths[ids[i]].done = true;
+				paths[ids[i]].col = Color(0.0, 0.0, 0.0);
 			}
 		}
 
@@ -123,57 +103,53 @@ void DirectLightingIntegrator::integrate()
 			if (!paths[i].done) {
 				// Select a light and store the normalization factor for it's output
 				Light *lighty = scene->finite_lights[(uint32)(samps[i*samp_dim+5] * scene->finite_lights.size()) % scene->finite_lights.size()];
-				//Light *lighty = scene->finite_lights[rng.next_uint() % scene->finite_lights.size()];
 
 				// Sample the light source
 				Vec3 ld;
-				paths[i].lcol = lighty->sample(rayinters[i]->inter.p, samps[i*samp_dim+6], samps[i*samp_dim+7], rayinters[i]->ray.time, &ld)
+				paths[i].lcol = lighty->sample(intersections[i].p, samps[i*samp_dim+6], samps[i*samp_dim+7], rays[i].time, &ld)
 				                * (float32)(scene->finite_lights.size());
-				//paths[i].lcol = lighty->sample(rayinters[i]->inter.p, rng.next_float(), rng.next_float(), rayinters[i]->ray.time, &ld)
-				//                * (float32)(scene->finite_lights.size());
 
 				// Create a shadow ray for this path
-				float d = ld.length();
+				float32 d = ld.length();
 				ld.normalize();
-				rayinters[sri]->ray.o = paths[i].inter.p;
-				rayinters[sri]->ray.d = ld;
-				rayinters[sri]->ray.time = samps[i*samp_dim+4];
-				rayinters[sri]->ray.is_shadow_ray = true;
-				rayinters[sri]->ray.has_differentials = false;
-				rayinters[sri]->ray.min_t = 0.01;
-				rayinters[sri]->ray.max_t = d;
-				rayinters[sri]->ray.finalize();
-				rayinters[sri]->hit = false;
-				rayinters[sri]->id = i;
+				rays[sri].o = paths[i].inter.p + paths[i].inter.offset;
+				rays[sri].d = ld;
+				rays[sri].time = samps[i*samp_dim+4];
+				rays[sri].is_shadow_ray = true;
+				rays[sri].has_differentials = false;
+				rays[sri].min_t = 0.01;
+				rays[sri].max_t = d;
+				rays[sri].finalize();
+
+				ids[sri] = i;
 
 				// Increment shadow ray index
 				sri++;
 			}
 		}
-		resize_rayinters(rayinters, sri);
+		rays.resize(sri);
 
 
 		// Trace the shadow rays
 		std::cout << "\tTracing shadow rays" << std::endl;
 		std::cout.flush();
-		tracer->queue_rays(rayinters);
-		tracer->trace_rays();
+		tracer->trace(&rays, &intersections);
 
 
 		// Calculate sample colors
 		std::cout << "\tCalculating sample colors" << std::endl;
 		std::cout.flush();
-		rsize = rayinters.size();
+		rsize = rays.size();
 		for (uint32 i = 0; i < rsize; i++) {
-			uint32 id = rayinters[i]->id;
-			if (rayinters[i]->hit) {
+			uint32 id = ids[i];
+			if (intersections[i].hit) {
 				// Sample was shadowed
 				paths[id].done = true;
 				paths[id].col = Color(0.0, 0.0, 0.0);
 			} else {
 				// Sample was lit
 				paths[id].inter.n.normalize();
-				float lambert = dot(rayinters[i]->ray.d, paths[id].inter.n);
+				float lambert = dot(rays[i].d, paths[id].inter.n);
 				if (lambert < 0.0) lambert = 0.0;
 
 				paths[id].col = paths[id].lcol * lambert;
@@ -201,10 +177,6 @@ void DirectLightingIntegrator::integrate()
 
 		if (last)
 			break;
-	}
-
-	for (uint32 i = 0; i < rayinters.size(); i++) {
-		delete rayinters[i];
 	}
 }
 

@@ -5,34 +5,20 @@
 #ifndef TRACER_HPP
 #define TRACER_HPP
 
-#include "numtype.h"
-#include "array.hpp"
-#include "job_queue.hpp"
-
 #include <vector>
 
+#include "numtype.h"
+#include "array.hpp"
+#include "slice.hpp"
+#include "job_queue.hpp"
+
+
+
 #include "ray.hpp"
-#include "rayinter.hpp"
+#include "intersection.hpp"
 #include "potentialinter.hpp"
 #include "scene.hpp"
 
-
-struct PotintJob {
-	RayInter *ray_inters;
-	uint_i start, end, size;
-
-	PotintJob() {
-		start=0;
-		end=0;
-		ray_inters = nullptr;
-	}
-	PotintJob(uint_i start_, uint_i end_, RayInter *ray_inters_) {
-		start=start_;
-		end=end_;
-		size = end - start;
-		ray_inters = ray_inters_;
-	}
-};
 
 /**
  * @brief Traces rays in a scene.
@@ -62,7 +48,8 @@ public:
 	Scene *scene;
 	int thread_count;
 
-	Array<RayInter *> ray_inters; // Ray/Intersection data
+	Slice<Ray> rays; // Rays to trace
+	Slice<Intersection> intersections; // Resulting intersections
 	Array<byte> states; // Ray states, for interrupting and resuming traversal
 	Array<PotentialInter> potential_inters; // "Potential intersection" buffer
 
@@ -80,18 +67,14 @@ public:
 		item_fill_counts.resize(scene->world.max_primitive_id()+1);
 	}
 
-	/**
-	 * Adds a set of rays to the ray queue for tracing.
-	 * Returns the number of rays currently queued for tracing (includes
-	 * the rays queued with the call, so e.g. queuing the first five rays will
-	 * return 5, the second five rays will return 10, etc.).
-	 */
-	uint32 queue_rays(const Array<RayInter *> &rayinters_);
 
 	/**
-	 * Traces all queued rays, and returns the number of rays traced.
+	 * Traces the provided rays, filling in the corresponding intersections.
+	 *
+	 * @param [in] rays_ The rays to be traced.
+	 * @param [out] intersections_ The resulting intersections.
 	 */
-	uint32 trace_rays();
+	uint32 trace(Array<Ray> *rays_, Array<Intersection> *intersections_);
 
 private:
 	/**
@@ -117,9 +100,6 @@ private:
 	 * intersections.
 	 */
 	void trace_potential_intersections();
-
-	// Thread helper
-	void trace_potints_consumer(JobQueue<PotintJob> *job_queue);
 };
 
 #endif // TRACER_HPP

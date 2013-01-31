@@ -74,26 +74,23 @@ struct Ray {
 	 * Constructor.
 	 * Ray differentials need to be filled in manually after this.
 	 */
-	Ray(const Vec3 &o_=Vec3(0,0,0), const Vec3 &d_=Vec3(0,0,0),
-	    const float32 &time_ = 0.0) {
-		o = o_;
-		d = d_;
-
-		time = time_;
-
-		min_t = 0.0;
-		max_t = std::numeric_limits<float32>::infinity();
-
-		is_shadow_ray = false;
-		has_differentials = false;
-	}
+	Ray(const Vec3 &o_=Vec3(0.0f,0.0f,0.0f), const Vec3 &d_=Vec3(0.0f,0.0f,0.0f),
+	    const float32 &time_ = 0.0f):
+		o {o_},
+	  d {d_},
+	  time {time_},
+	  min_t {0.0f},
+	  max_t {std::numeric_limits<float32>::infinity()},
+	  has_differentials {false},
+	  is_shadow_ray {false}
+	{}
 
 
 	/**
 	 * Computes the acceleration data for speedy bbox intersection testing.
 	 */
 	void update_accel() {
-		inv_d = Vec3(1.0, 1.0, 1.0) / d;
+		inv_d = Vec3(1.0f, 1.0f, 1.0f) / d;
 
 		d_is_neg[0] = d.x < 0 ? 1 : 0;
 		d_is_neg[1] = d.y < 0 ? 1 : 0;
@@ -117,8 +114,8 @@ struct Ray {
 	 */
 	void finalize() {
 		// TODO: will normalizing things here mess anything up elsewhere?
-		assert(d.length() > 0.0);
-		float32 linv = 1.0 / d.length();
+		assert(d.length() > 0.0f);
+		float32 linv = 1.0f / d.length();
 		d.normalize();
 
 		// Adjust the ray differentials for the normalized ray
@@ -188,7 +185,7 @@ struct Ray {
 
 		const float32 d_n = dot(d, normal);
 
-		if (d_n == 0.0)
+		if (d_n == 0.0f)
 			return false;
 
 		// x

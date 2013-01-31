@@ -106,7 +106,10 @@ bool MicroSurface::intersect_ray(const Ray &ray, Intersection *inter)
 		inter->col = Color(inter->u, inter->v, 0.0f);
 
 		// Generate origin offset for next ray
-		const float32 dl = std::max(ray.width(t)*1.5f, nodes[hit_node].bounds.diagonal()) * 1.01f;
+		// TODO: this needs to be more robust.  Should take into account
+		// the intersected node's bbox size.
+		//const float32 dl = std::max(ray.width(t)*1.5f, nodes[hit_node].bounds.diagonal());
+		const float32 dl = ray.width(t) * 1.5f;
 		inter->offset = inter->n * dl;
 		if (dot(inter->n, ray.d.normalized()) > 0.0f)
 			inter->offset = inter->offset * -1.0f;
