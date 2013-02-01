@@ -1,8 +1,11 @@
 #ifndef ARRAY_HPP
 #define ARRAY_HPP
 
-#include <assert.h>
-#include <stdlib.h>
+#include <cassert>
+#include <cstdlib>
+
+#include <memory>
+
 #include "numtype.h"
 
 /**
@@ -20,25 +23,12 @@ class Array
 {
 	uint_i size_;
 	uint_i capacity_;
-	T *data;
+	std::unique_ptr<T[]> data;
 
 public:
-	Array() {
-		size_ = 0;
-		capacity_ = 0;
-		data = 0;
-	}
+	Array(): size_ {0}, capacity_ {0}, data {nullptr} {}
 
-	Array(uint_i size) {
-		data = new T[size];
-		size_ = size;
-		capacity_ = size;
-	}
-
-	~Array() {
-		if (data)
-			delete [] data;
-	}
+	Array(uint_i size): size_ {size}, capacity_ {size}, data {new T[size]} {}
 
 
 	/**
@@ -51,25 +41,22 @@ public:
 		if (cap <= capacity_)
 			return;
 
-		T *data2 = new T[cap];
-
+		std::unique_ptr<T[]> data2 {new T[cap]};
 		for (uint_i i=0; i < size_; i++)
 			data2[i] = data[i];
+		data.swap(data2);
 
-		delete [] data;
-		data = data2;
 		capacity_ = cap;
 	}
 
 	/**
 	 * @brief Resize the array.
 	 *
-	 * This does _not_ free any space.  The entire capacity is left alone.
+	 * This does _not_ free any space.  The capacity is only increased,
+	 * never decreased.
 	 */
 	void resize(uint_i size) {
-		if (size > capacity_)
-			reserve(size);
-
+		reserve(size);
 		size_ = size;
 	}
 
