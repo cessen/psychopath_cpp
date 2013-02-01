@@ -82,7 +82,7 @@ public:
 	}
 
 	/**
-	 * @brief Returns pointer to the first element in the array.
+	 * @brief Returns an iterator at the first element in the array.
 	 */
 	T *begin() const {
 		if (size_ == 0)
@@ -92,7 +92,7 @@ public:
 	}
 
 	/**
-	 * @brief Returns pointer to the last element in the array.
+	 * @brief Returns an iterator at the last element in the array.
 	 */
 	T *end() const {
 		if (size_ == 0)
