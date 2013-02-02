@@ -41,7 +41,7 @@ uint32 Tracer::trace(const Array<Ray> &rays_, Array<Intersection> *intersections
 		states[i] = 0;
 
 	// Allocate potential intersection buffer
-	potential_inters.resize(s*MAX_POTINT);
+	potential_intersections.resize(s*MAX_POTINT);
 
 	// Trace potential intersections
 	while (accumulate_potential_intersections()) {
@@ -62,9 +62,9 @@ void job_accumulate_potential_intersections(Tracer *tracer, uint_i start_i, uint
 	for (uint_i i = start_i; i < end_i; i++) {
 		const uint_i pc = tracer->scene->world.get_potential_intersections(tracer->rays[i], MAX_POTINT, potint_ids, &(tracer->states[i*tracer->RAY_STATE_SIZE]));
 		for (uint_i j = 0; j < pc; j++) {
-			tracer->potential_inters[(i*MAX_POTINT)+j].valid = true;
-			tracer->potential_inters[(i*MAX_POTINT)+j].object_id = potint_ids[j];
-			tracer->potential_inters[(i*MAX_POTINT)+j].ray_index = i;
+			tracer->potential_intersections[(i*MAX_POTINT)+j].valid = true;
+			tracer->potential_intersections[(i*MAX_POTINT)+j].object_id = potint_ids[j];
+			tracer->potential_intersections[(i*MAX_POTINT)+j].ray_index = i;
 		}
 	}
 }
@@ -72,10 +72,10 @@ void job_accumulate_potential_intersections(Tracer *tracer, uint_i start_i, uint
 uint_i Tracer::accumulate_potential_intersections()
 {
 	// Clear out potential intersection buffer
-	potential_inters.resize(rays.size()*MAX_POTINT);
-	const uint_i spi = potential_inters.size();
+	potential_intersections.resize(rays.size()*MAX_POTINT);
+	const uint_i spi = potential_intersections.size();
 	for (uint_i i = 0; i < spi; i++)
-		potential_inters[i].valid = false;
+		potential_intersections[i].valid = false;
 
 	// Accumulate potential intersections
 	JobQueue<std::function<void()>> jq(thread_count);
@@ -94,21 +94,21 @@ uint_i Tracer::accumulate_potential_intersections()
 	uint_i pii = 0;
 	uint_i last = 0;
 	uint_i i = 0;
-	while (i < potential_inters.size()) {
-		while (potential_inters[last].valid && last < potential_inters.size())
+	while (i < potential_intersections.size()) {
+		while (potential_intersections[last].valid && last < potential_intersections.size())
 			last++;
 
-		if (potential_inters[i].valid) {
+		if (potential_intersections[i].valid) {
 			pii++;
 			if (i > last) {
-				potential_inters[last] = potential_inters[i];
-				potential_inters[i].valid = false;
+				potential_intersections[last] = potential_intersections[i];
+				potential_intersections[i].valid = false;
 			}
 		}
 
 		i++;
 	}
-	potential_inters.resize(pii);
+	potential_intersections.resize(pii);
 
 	// Return the total number of potential intersections accumulated
 	return pii;
@@ -130,8 +130,8 @@ void Tracer::sort_potential_intersections()
 	}
 
 	// Count the items
-	for (uint_i i = 0; i < potential_inters.size(); i++) {
-		item_counts[potential_inters[i].object_id]++;
+	for (uint_i i = 0; i < potential_intersections.size(); i++) {
+		item_counts[potential_intersections[i].object_id]++;
 	}
 
 	// Set up start-index array
@@ -149,14 +149,14 @@ void Tracer::sort_potential_intersections()
 	// Sort the list
 	uint_i traversal = 0;
 	uint_i i = 0;
-	while (i < potential_inters.size()) {
-		const uint_i index = potential_inters[i].object_id;
+	while (i < potential_intersections.size()) {
+		const uint_i index = potential_intersections[i].object_id;
 		const uint_i next_place = item_start_indices[index] + item_fill_counts[index];
 
 		if (i >= item_start_indices[index] && i < next_place) {
 			i++;
 		} else {
-			std::swap(potential_inters[i], potential_inters[next_place]);
+			std::swap(potential_intersections[i], potential_intersections[next_place]);
 			item_fill_counts[index]++;
 		}
 		traversal++;
@@ -166,7 +166,7 @@ void Tracer::sort_potential_intersections()
 
 void Tracer::trace_potential_intersections()
 {
-	for (auto potential_intersection: potential_inters) {
+	for (auto potential_intersection: potential_intersections) {
 		// Shorthand references for current ray, intersection, and object id
 		const Ray& ray = rays[potential_intersection.ray_index];
 		Intersection& intersection = intersections[potential_intersection.ray_index];

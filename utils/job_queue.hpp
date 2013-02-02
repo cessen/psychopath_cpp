@@ -7,7 +7,7 @@
 #include <mutex>
 #include <condition_variable>
 
-#include "ring_buffer.hpp"
+#include "ring_buffer_concurrent.hpp"
 
 /**
  * @brief A job queue for the producer/consumer model of managing threads.
@@ -16,23 +16,20 @@
  * simply add jobs to the queue and they will be processed.  All jobs
  * must be thread-safe, as multiple jobs can be processed concurrently.
  *
- * A job can be any object that is callable without parameters.
+ * A job can be any object that is callable without parameters.  A good
+ * choice is std::function<void()>
  */
 template <class T>
 class JobQueue
 {
-	RingBuffer<T> queue;
+	RingBufferConcurrent<T> queue;
 	std::vector<std::thread> threads;
 
 	bool done;
 
-	std::mutex mut;
-	std::condition_variable full;
-	std::condition_variable empty;
-
 	// A consumer thread, which watches the queue for jobs and
 	// executes them.
-	void consumer_run() {
+	void run_consumer() {
 		T job;
 		while (pop(&job)) {
 			job();
@@ -60,8 +57,8 @@ public:
 
 		// Create and start consumer threads
 		threads.resize(thread_count);
-		for (size_t i = 0; i < threads.size(); i++)
-			threads[i] = std::thread(&JobQueue<T>::consumer_run, this);
+		for (auto &thread: threads)
+			thread = std::thread(&JobQueue<T>::run_consumer, this);
 	}
 
 	// Destructor. Joins and deletes threads.
@@ -79,21 +76,14 @@ public:
 	 * empty so they can terminate.
 	 */
 	void finish() {
-		mut.lock();
 		if (!done) {
 			// Notify all threads that the queue is done
 			done = true;
-			full.notify_all();
-			empty.notify_all();
+			queue.disallow_blocking();
 
-			mut.unlock();
-
-			// Wait for threads to finish, then delete them
-			for (size_t i = 0; i < threads.size(); i++) {
-				threads[i].join();
-			}
-		} else {
-			mut.unlock();
+			// Wait for threads to finish
+			for (auto &thread: threads)
+				thread.join();
 		}
 	}
 
@@ -106,23 +96,8 @@ public:
 	 * @return True on success, false if the queue is closed.
 	 */
 	bool push(const T &job) {
-		std::unique_lock<std::mutex> lock(mut);
-
-		// Wait for open space in the queue
-		while (queue.is_full()) {
-			if (done)
-				return false;
-			else
-				full.wait(lock);
-		}
-
 		// Add job to queue
-		queue.push(job);
-
-		// Notify waiting consumers that there's a job
-		empty.notify_all();
-
-		return true;
+		return queue.push_blocking(job);
 	}
 
 
@@ -135,23 +110,8 @@ public:
 	 * @return True on success, false if the queue is empty and closed.
 	 */
 	bool pop(T *job) {
-		std::unique_lock<std::mutex> lock(mut);
-
-		// Wait for a job in the queue
-		while (queue.is_empty()) {
-			if (done)
-				return false;
-			else
-				empty.wait(lock);
-		}
-
 		// Pop the next job
-		*job = queue.pop();
-
-		// Notify waiting producers that there's room for new jobs
-		full.notify_all();
-
-		return true;
+		return queue.pop_blocking(job);
 	}
 };
 

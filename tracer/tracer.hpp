@@ -51,7 +51,7 @@ public:
 	Slice<const Ray, Ray> rays; // Rays to trace
 	Slice<Intersection> intersections; // Resulting intersections
 	Array<byte> states; // Ray states, for interrupting and resuming traversal
-	Array<PotentialInter> potential_inters; // "Potential intersection" buffer
+	Array<PotentialInter> potential_intersections; // "Potential intersection" buffer
 
 	// Arrays for the counting sort
 	Array<uint32> item_counts;
