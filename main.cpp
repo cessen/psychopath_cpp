@@ -1,11 +1,15 @@
 #include "config.h"
 #include "numtype.h"
 
-#include <stdlib.h>
-#include <math.h>
+#include <cstdlib>
+#include <cmath>
+
 #include <iostream>
 #include <vector>
 
+#include <gperftools/profiler.h>
+//#include <OSL/oslexec.h>
+#include <boost/program_options.hpp>
 
 #include "rng.hpp"
 #include "renderer.hpp"
@@ -30,11 +34,8 @@
 
 #include "global.hpp"
 
-#include <gperftools/profiler.h>
+#include "timer.hpp"
 
-//#include <OSL/oslexec.h>
-
-#include <boost/program_options.hpp>
 namespace BPO = boost::program_options;
 
 /*
@@ -140,6 +141,8 @@ int main(int argc, char **argv)
 {
 	// Profiling
 	ProfilerStart("psychopath.prof");
+
+	Timer<> timer;
 
 	// RNGs
 	RNG rng(0);
@@ -414,6 +417,9 @@ int main(int argc, char **argv)
 	Renderer r(&scene, resolution.x, resolution.y, spp, output_path);
 	r.render(threads);
 
+	std::cout << "Render time (seconds): " << std::fixed << std::setprecision(3) << timer.time() << std::endl;
+
 	ProfilerStop();
+
 	return 0;
 }
