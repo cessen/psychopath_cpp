@@ -11,8 +11,10 @@
  * Useful for, e.g., accessing a subset of an Array.
  * Important is that this does not own the memory it accesses.  It
  * only references it.
+ *
+ * TODO: find better way to initialize from const Array.
  */
-template <class T>
+template <class T, class TT=T>
 class Slice
 {
 public:
@@ -30,6 +32,15 @@ public:
 	 * @brief Initialized the slice to reference the given Array.
 	 */
 	void init_from(Array<T> &array) {
+		size_ = array.size();
+
+		if (size_ == 0)
+			start_ = nullptr;
+		else
+			start_ = &(array[0]);
+	}
+
+	void init_from(const Array<TT> &array) {
 		size_ = array.size();
 
 		if (size_ == 0)

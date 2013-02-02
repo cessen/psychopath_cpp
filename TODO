@@ -1,6 +1,6 @@
 - Two-stage ray tracing, similar to the Rayes (not Reyes) paper
-	- Make rays const throughout the tracing pipeline.
-	- All mutable data about tracing a ray are stored in intersections.
+	//- Make rays const throughout the tracing pipeline.
+	//- All mutable data about tracing a ray are stored in intersections.
 	- Assign each thread an object id to trace rays for.
 		- Multiple threads can be tracing the same ray against different
 		  objects, so how to update intersections in a thread-safe way
@@ -19,8 +19,6 @@
 		  read/write time will also be small.
 	- Refactor data structures and API to pass around/duplicate minimal
 	  data when handling ray reordering and ray tracing.
-		- Do we really need the RayInter structure at all?  And if so,
-		  why not make it more ubiquitous throughout the renderer?
 
 - MicroSurface should calculate normal and point differentials for
   ray intersections.

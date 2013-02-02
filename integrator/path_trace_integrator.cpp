@@ -149,7 +149,7 @@ void PathTraceIntegrator::integrate()
 
 
 			// Trace the rays
-			tracer->trace(&rays, &intersections);
+			tracer->trace(rays, &intersections);
 
 
 			// Update paths
@@ -208,7 +208,7 @@ void PathTraceIntegrator::integrate()
 
 
 			// Trace the shadow rays
-			tracer->trace(&rays, &intersections);
+			tracer->trace(rays, &intersections);
 
 
 			// Calculate sample colors

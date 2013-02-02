@@ -48,7 +48,7 @@ public:
 	Scene *scene;
 	int thread_count;
 
-	Slice<Ray> rays; // Rays to trace
+	Slice<const Ray, Ray> rays; // Rays to trace
 	Slice<Intersection> intersections; // Resulting intersections
 	Array<byte> states; // Ray states, for interrupting and resuming traversal
 	Array<PotentialInter> potential_inters; // "Potential intersection" buffer
@@ -74,7 +74,7 @@ public:
 	 * @param [in] rays_ The rays to be traced.
 	 * @param [out] intersections_ The resulting intersections.
 	 */
-	uint32 trace(Array<Ray> *rays_, Array<Intersection> *intersections_);
+	uint32 trace(const Array<Ray> &rays_, Array<Intersection> *intersections_);
 
 private:
 	/**

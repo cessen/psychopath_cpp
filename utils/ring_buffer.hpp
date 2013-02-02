@@ -23,22 +23,14 @@ public:
 	/**
 	 * @brief Default constructor, buffer size of 1.
 	 */
-	RingBuffer() {
-		next = 0;
-		count = 0;
-		buffer.resize(1);
-	}
+	RingBuffer(): buffer(1), next {0}, count {0} {}
 
 	/**
 	 * @brief Constructor.
 	 *
 	 * @param size Size of the buffer in number-of-items.
 	 */
-	RingBuffer(size_t buffer_size) {
-		next = 0;
-		count = 0;
-		buffer.resize(buffer_size);
-	}
+	RingBuffer(size_t buffer_size): buffer(buffer_size), next {0}, count {0} {}
 
 	/**
 	 * @brief Resizes the buffer.

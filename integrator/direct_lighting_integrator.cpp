@@ -76,7 +76,7 @@ void DirectLightingIntegrator::integrate()
 		// Trace the camera rays
 		std::cout << "\tTracing camera rays" << std::endl;
 		std::cout.flush();
-		tracer->trace(&rays, &intersections);
+		tracer->trace(rays, &intersections);
 
 
 		// Update paths
@@ -133,7 +133,7 @@ void DirectLightingIntegrator::integrate()
 		// Trace the shadow rays
 		std::cout << "\tTracing shadow rays" << std::endl;
 		std::cout.flush();
-		tracer->trace(&rays, &intersections);
+		tracer->trace(rays, &intersections);
 
 
 		// Calculate sample colors

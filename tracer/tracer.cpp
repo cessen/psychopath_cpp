@@ -20,15 +20,15 @@
 #define RAY_JOB_SIZE 2048
 
 
-uint32 Tracer::trace(Array<Ray> *rays_, Array<Intersection> *intersections_)
+uint32 Tracer::trace(const Array<Ray> &rays_, Array<Intersection> *intersections_)
 {
 	// Get rays
-	rays.init_from(*rays_);
+	rays.init_from(rays_);
 
 	// Get and initialize intersections
 	intersections_->resize(rays.size());
 	intersections.init_from(*intersections_);
-for (auto &inter: intersections)
+	for (auto &inter: intersections)
 		inter = Intersection();
 
 	// Constant for number of rays being traced
@@ -78,21 +78,17 @@ uint_i Tracer::accumulate_potential_intersections()
 		potential_inters[i].valid = false;
 
 	// Accumulate potential intersections
-	JobQueue<std::function<void()> > jq(thread_count);
-	if (spi >= (uint_i)(thread_count)) {
+	JobQueue<std::function<void()>> jq(thread_count);
+	for (uint_i i = 0; i < rays.size(); i += RAY_JOB_SIZE) {
 		// Dole out jobs
-		for (uint_i i = 0; i < rays.size(); i += RAY_JOB_SIZE) {
-			uint_i start = i;
-			uint_i end = i + RAY_JOB_SIZE;
-			if (end > rays.size())
-				end = rays.size();
+		uint_i start = i;
+		uint_i end = i + RAY_JOB_SIZE;
+		if (end > rays.size())
+			end = rays.size();
 
-			jq.push(std::bind(job_accumulate_potential_intersections, this, start, end));
-		}
-		jq.finish();
-	} else {
-		job_accumulate_potential_intersections(this, 0, rays.size());
+		jq.push(std::bind(job_accumulate_potential_intersections, this, start, end));
 	}
+	jq.finish();
 
 	// Compact the potential intersections
 	uint_i pii = 0;
@@ -119,6 +115,12 @@ uint_i Tracer::accumulate_potential_intersections()
 }
 
 
+/**
+ * Uses a counting sort to sort the potential intersections by
+ * object_id.
+ *
+ * TODO: generate list of objects ids and where they start.
+ */
 void Tracer::sort_potential_intersections()
 {
 	const uint_i max_items = scene->world.max_primitive_id()+1;
@@ -164,13 +166,13 @@ void Tracer::sort_potential_intersections()
 
 void Tracer::trace_potential_intersections()
 {
-	const uint64 spi = potential_inters.size();
+	for (auto potential_intersection: potential_inters) {
+		// Shorthand references for current ray, intersection, and object id
+		const Ray& ray = rays[potential_intersection.ray_index];
+		Intersection& intersection = intersections[potential_intersection.ray_index];
+		uint_i& id = potential_intersection.object_id;
 
-	for (uint32 i = 0; i < spi; i++) {
-		Ray &ray = rays[potential_inters[i].ray_index];
-		Intersection &intersection = intersections[potential_inters[i].ray_index];
-		uint64 id = potential_inters[i].object_id;
-
+		// Trace
 		if (ray.is_shadow_ray) {
 			if (!intersection.hit)
 				intersection.hit |= scene->world.get_primitive(id).intersect_ray(ray, nullptr);

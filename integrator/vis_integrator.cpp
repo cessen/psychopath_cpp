@@ -77,7 +77,7 @@ void VisIntegrator::integrate()
 		// Trace the camera rays
 		std::cout << "\tTracing camera rays" << std::endl;
 		std::cout.flush();
-		tracer->trace(&rays, &intersections);
+		tracer->trace(rays, &intersections);
 
 
 		// Update paths
