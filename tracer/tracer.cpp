@@ -28,20 +28,17 @@ uint32 Tracer::trace(const Array<Ray> &rays_, Array<Intersection> *intersections
 	// Get and initialize intersections
 	intersections_->resize(rays.size());
 	intersections.init_from(*intersections_);
-	for (auto &inter: intersections)
-		inter = Intersection();
+	std::fill(intersections.begin(), intersections.end(), Intersection());
 
-	// Constant for number of rays being traced
-	const uint32 s = rays.size();
-	std::cout << "\tTracing " << s << " rays" << std::endl;
+	// Print number of rays being traced
+	std::cout << "\tTracing " << rays.size() << " rays" << std::endl;
 
 	// Allocate and clear out ray states
-	states.resize(s*RAY_STATE_SIZE);
-	for (uint_i i = 0; i < s*RAY_STATE_SIZE; i++)
-		states[i] = 0;
+	states.resize(rays.size()*RAY_STATE_SIZE);
+	std::fill(states.begin(), states.end(), 0);
 
 	// Allocate potential intersection buffer
-	potential_intersections.resize(s*MAX_POTINT);
+	potential_intersections.resize(rays.size()*MAX_POTINT);
 
 	// Trace potential intersections
 	while (accumulate_potential_intersections()) {
@@ -49,7 +46,7 @@ uint32 Tracer::trace(const Array<Ray> &rays_, Array<Intersection> *intersections
 		trace_potential_intersections();
 	}
 
-	return s;
+	return rays.size();
 }
 
 
@@ -78,7 +75,7 @@ uint_i Tracer::accumulate_potential_intersections()
 		potential_intersections[i].valid = false;
 
 	// Accumulate potential intersections
-	JobQueue<std::function<void()>> jq(thread_count);
+	JobQueue<> jq(thread_count);
 	for (uint_i i = 0; i < rays.size(); i += RAY_JOB_SIZE) {
 		// Dole out jobs
 		uint_i start = i;
@@ -164,22 +161,39 @@ void Tracer::sort_potential_intersections()
 }
 
 
-void Tracer::trace_potential_intersections()
-{
-	for (auto potential_intersection: potential_intersections) {
-		// Shorthand references for current ray, intersection, and object id
-		const Ray& ray = rays[potential_intersection.ray_index];
-		Intersection& intersection = intersections[potential_intersection.ray_index];
+void job_trace_potential_intersections(Tracer *tracer, uint_i start, uint_i end) {
+	for (uint_i i = start; i < end; i++) {
+		// Shorthand references
+		PotentialInter &potential_intersection = tracer->potential_intersections[i];
+		const Ray& ray = tracer->rays[potential_intersection.ray_index];
+		Intersection& intersection = tracer->intersections[potential_intersection.ray_index];
 		uint_i& id = potential_intersection.object_id;
 
 		// Trace
 		if (ray.is_shadow_ray) {
 			if (!intersection.hit)
-				intersection.hit |= scene->world.get_primitive(id).intersect_ray(ray, nullptr);
+				intersection.hit |= tracer->scene->world.get_primitive(id).intersect_ray(ray, nullptr);
 		} else {
-			intersection.hit |= scene->world.get_primitive(id).intersect_ray(ray, &intersection);
+			intersection.hit |= tracer->scene->world.get_primitive(id).intersect_ray(ray, &intersection);
 		}
 	}
+}
+
+void Tracer::trace_potential_intersections()
+{
+#define BLARGYFACE 10000
+	JobQueue<> jq(thread_count);
+	for (uint_i i = 0; i < potential_intersections.size(); i += BLARGYFACE) {
+		// Dole out jobs
+		uint_i start = i;
+		uint_i end = i + BLARGYFACE;
+		if (end > potential_intersections.size())
+			end = potential_intersections.size();
+
+		//jq.push(std::bind(job_trace_potential_intersections, this, Slice<Intersection>start, end));
+		job_trace_potential_intersections(this, start, end);
+	}
+	jq.finish();
 }
 
 

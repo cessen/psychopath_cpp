@@ -51,6 +51,9 @@ class MicroSurface
 
 	// Number of time samples
 	uint16 time_count;
+	
+	// Max width of the surface at the root node
+	float32 root_width;
 
 	// Random number generator
 	RNG rng;
@@ -98,7 +101,7 @@ public:
 	 *
 	 * @return True on a hit, false on a miss.
 	 */
-	bool intersect_ray(const Ray &ray, Intersection *inter);
+	bool intersect_ray(const Ray &ray, float32 width, Intersection *inter);
 
 
 	/**

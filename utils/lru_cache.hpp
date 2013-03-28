@@ -42,10 +42,10 @@ class LRUCache
 	LRUKey next_key;
 
 	// A map from indices to iterators into the list
-	std::unordered_map<LRUKey, typename std::list<LRU_PAIR >::iterator> map;
+	std::unordered_map<LRUKey, typename std::list<LRU_PAIR>::iterator> map;
 
 	// A list that contains the index and a pointer to the data of each element
-	std::list<LRU_PAIR > elements;
+	std::list<LRU_PAIR> elements;
 
 private:
 	/*
@@ -61,15 +61,14 @@ private:
 	/*
 	 * Erases the last inactive element in the cache.
 	 */
-	void erase_last() {
-		typedef typename std::list<LRU_PAIR >::reverse_iterator LRUitr;
-		LRUitr rit = elements.rbegin();
-
-		while (map[rit->key]->active_readers != 0 && rit != elements.rend())
-			rit++;
-
-		if (rit != elements.rend())
-			erase(rit->key);
+	bool erase_last() {
+		for (auto rit = elements.rbegin(); rit != elements.rend(); ++rit) {
+			if (rit->active_readers == 0) {
+				erase(rit->key);
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/*
@@ -123,11 +122,10 @@ public:
 		byte_count += data_ptr->bytes();
 
 		// Remove last element(s) if necessary to make room
-		// TODO: this needs to be smarter, because with multiple
-		// threads it's not always possible to get below max_bytes
-		// or down to zero size.
-		while (byte_count >= max_bytes && elements.size() > 0)
-			erase_last();
+		while (byte_count >= max_bytes) {
+			if (!erase_last())
+				break;
+		}
 
 		// Add the new data
 		data_pair.key = key;

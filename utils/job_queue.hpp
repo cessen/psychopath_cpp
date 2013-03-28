@@ -6,6 +6,7 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <functional>
 
 #include "ring_buffer_concurrent.hpp"
 
@@ -19,7 +20,7 @@
  * A job can be any object that is callable without parameters.  A good
  * choice is std::function<void()>
  */
-template <class T>
+template <class T=std::function<void()>>
 class JobQueue
 {
 	RingBufferConcurrent<T> queue;

@@ -9,13 +9,14 @@
 #include "tracer.hpp"
 #include "config.hpp"
 
+#include "job_queue.hpp"
 #include "array.hpp"
 
 #include "light.hpp"
 
 #include "hilbert.hpp"
 
-#define RAYS_AT_A_TIME 1000000
+#define RAYS_AT_A_TIME (1000000/16)
 
 
 float32 lambert(Vec3 v1, Vec3 v2)
@@ -26,6 +27,36 @@ float32 lambert(Vec3 v1, Vec3 v2)
 	if (f < 0.0)
 		f = 0.0;
 	return f;
+}
+
+/*
+ * A path tracing path.
+ * Stores state of a path in progress.
+ */
+struct PTPath {
+	Intersection inter;
+	Color col; // Color of the sample collected so far
+	Color fcol; // Accumulated filter color from light path
+	Color lcol; // Temporary storage for incoming light color
+
+	bool done;
+};
+
+
+void create_camera_rays(Camera *camera, Film<Color> *image, Array<Ray> *rays_, Array<float32> *samps_, Array<uint32> *ids_, uint_i samp_dim, uint_i first, uint_i last) {
+	Array<Ray> &rays = *rays_;
+	Array<float32> &samps = *samps_;
+	Array<uint32> &ids = *ids_;
+	
+	for (uint32 i = first; i < last; i++) {
+		float32 rx = (samps[i*samp_dim] - 0.5) * (image->max_x - image->min_x);
+		float32 ry = (0.5 - samps[i*samp_dim + 1]) * (image->max_y - image->min_y);
+		float32 dx = (image->max_x - image->min_x) / image->width;
+		float32 dy = (image->max_y - image->min_y) / image->height;
+		rays[i] = camera->generate_ray(rx, ry, dx, dy, samps[i*samp_dim+4], samps[i*samp_dim+2], samps[i*samp_dim+3]);
+		rays[i].finalize();
+		ids[i] = i;
+	}
 }
 
 
@@ -86,15 +117,15 @@ void PathTraceIntegrator::integrate()
 			std::cout << "\tGenerating path rays" << std::endl;
 			if (path_n == 0) {
 				// First segment of path is camera rays
-				for (uint32 i = 0; i < samp_size; i++) {
-					float32 rx = (samps[i*samp_dim] - 0.5) * (image->max_x - image->min_x);
-					float32 ry = (0.5 - samps[i*samp_dim + 1]) * (image->max_y - image->min_y);
-					float32 dx = (image->max_x - image->min_x) / image->width;
-					float32 dy = (image->max_y - image->min_y) / image->height;
-					rays[i] = scene->camera->generate_ray(rx, ry, dx, dy, samps[i*samp_dim+4], samps[i*samp_dim+2], samps[i*samp_dim+3]);
-					rays[i].finalize();
-					ids[i] = i;
+				JobQueue<> jq(thread_count);
+				const uint_i job_size = rays.size() / thread_count;
+				for (uint_i i = 0; i < rays.size(); i += job_size) {
+					uint_i end = i + job_size;
+					if (end > rays.size())
+						end = rays.size();
+					jq.push(std::bind(create_camera_rays, scene->camera, image, &rays, &samps, &ids, samp_dim, i, end));
 				}
+				jq.finish();
 			} else {
 				// Other path segments are bounces
 				uint32 pri = 0; // Path ray index
@@ -130,13 +161,15 @@ void PathTraceIntegrator::integrate()
 						rays[pri].is_shadow_ray = false;
 						rays[pri].min_t = 0.01;
 						rays[pri].max_t = std::numeric_limits<float32>::infinity();
-						rays[pri].has_differentials = true;
+						//rays[pri].has_differentials = true;
 
 						// Ray differentials
-						rays[pri].odx = paths[i].inter.pdx();
-						rays[pri].ddx = rays[pri].odx.normalized() * paths[i].inter.ddx.length();
-						rays[pri].ody = paths[i].inter.pdy();
-						rays[pri].ddy = rays[pri].ody.normalized() * paths[i].inter.ddy.length();
+						rays[pri].ow = paths[i].inter.owp();
+						rays[pri].dw = paths[i].inter.dw * 8;
+						//rays[pri].odx = paths[i].inter.pdx();
+						//rays[pri].ddx = rays[pri].odx.normalized() * paths[i].inter.ddx.length();
+						//rays[pri].ody = paths[i].inter.pdy();
+						//rays[pri].ddy = rays[pri].ody.normalized() * paths[i].inter.ddy.length();
 
 						rays[pri].finalize();
 
@@ -190,13 +223,15 @@ void PathTraceIntegrator::integrate()
 					rays[sri].is_shadow_ray = true;
 					rays[sri].min_t = 0.01;
 					rays[sri].max_t = d;
-					rays[sri].has_differentials = true;
+					//rays[sri].has_differentials = true;
 
 					// Ray differentials
-					rays[sri].odx = paths[i].inter.pdx();
-					rays[sri].ddx = rays[sri].odx.normalized() * paths[i].inter.ddx.length();
-					rays[sri].ody = paths[i].inter.pdy();
-					rays[sri].ddy = rays[sri].ody.normalized() * paths[i].inter.ddy.length();
+					rays[sri].ow = paths[i].inter.owp();
+					rays[sri].dw = 0.0f;
+					//rays[sri].odx = paths[i].inter.pdx();
+					//rays[sri].ddx = rays[sri].odx.normalized() * paths[i].inter.ddx.length();
+					//rays[sri].ody = paths[i].inter.pdy();
+					//rays[sri].ddy = rays[sri].ody.normalized() * paths[i].inter.ddy.length();
 
 					rays[sri].finalize();
 					ids[sri] = i;

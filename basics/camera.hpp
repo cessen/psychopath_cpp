@@ -57,12 +57,14 @@ public:
 		ray.d.normalize();
 
 		// Ray image plane differentials
-		ray.odx = Vec3(0.0f, 0.0f, 0.0f);
-		ray.ody = Vec3(0.0f, 0.0f, 0.0f);
-		ray.ddx = Vec3(dx, 0.0f, 0.0f);
-		ray.ddy = Vec3(0.0f, dy, 0.0f);
+		ray.ow = 0.0f;
+		ray.dw = std::min(dx, dy);
+		//ray.odx = Vec3(0.0f, 0.0f, 0.0f);
+		//ray.ody = Vec3(0.0f, 0.0f, 0.0f);
+		//ray.ddx = Vec3(dx, 0.0f, 0.0f);
+		//ray.ddy = Vec3(0.0f, dy, 0.0f);
 
-		ray.has_differentials = true;
+		//ray.has_differentials = true;
 
 		// Get transform matrix
 		uint32 ia;

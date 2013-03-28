@@ -1,3 +1,7 @@
+//- Temporarily make dicing rate based on camera projection.
+//  This will serve as a stop-gap until you get ray differentials
+//  working properly.
+
 - Two-stage ray tracing, similar to the Rayes (not Reyes) paper
 	//- Make rays const throughout the tracing pipeline.
 	//- All mutable data about tracing a ray are stored in intersections.

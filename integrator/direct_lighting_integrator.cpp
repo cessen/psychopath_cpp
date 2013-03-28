@@ -116,7 +116,9 @@ void DirectLightingIntegrator::integrate()
 				rays[sri].d = ld;
 				rays[sri].time = samps[i*samp_dim+4];
 				rays[sri].is_shadow_ray = true;
-				rays[sri].has_differentials = false;
+				rays[sri].ow = paths[i].inter.owp();
+				rays[sri].dw = 0.0f;
+				//rays[sri].has_differentials = false;
 				rays[sri].min_t = 0.01;
 				rays[sri].max_t = d;
 				rays[sri].finalize();

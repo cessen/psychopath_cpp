@@ -6,6 +6,7 @@
 #define TRACER_HPP
 
 #include <vector>
+#include <mutex>
 
 #include "numtype.h"
 #include "array.hpp"
@@ -47,6 +48,8 @@ class Tracer
 public:
 	Scene *scene;
 	int thread_count;
+
+	std::mutex intersections_mut;
 
 	Slice<const Ray, Ray> rays; // Rays to trace
 	Slice<Intersection> intersections; // Resulting intersections

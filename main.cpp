@@ -87,6 +87,8 @@ namespace BPO = boost::program_options;
  * 21.3 second
  */
 
+//#define GOOGLE_PROFILE
+
 #define THREADS 4
 #define SPP 4
 //#define XRES 512
@@ -139,9 +141,11 @@ void validate(boost::any& v, const std::vector<std::string>& values,
 
 int main(int argc, char **argv)
 {
+#ifdef GOOGLE_PROFILE
 	// Profiling
 	ProfilerStart("psychopath.prof");
-
+#endif
+	
 	Timer<> timer;
 
 	// RNGs
@@ -166,7 +170,6 @@ int main(int argc, char **argv)
 	std::cout << "\tBBox: " << sizeof(BBox) << std::endl;
 	std::cout << "\tRay: " << sizeof(Ray) << std::endl;
 	std::cout << "\tIntersection: " << sizeof(Intersection) << std::endl;
-	std::cout << "\tRayInter: " << sizeof(RayInter) << std::endl;
 	std::cout << "\tPotentialInter: " << sizeof(PotentialInter) << std::endl;
 	std::cout << "\tBVHNode: " << sizeof(BVHNode) << std::endl;
 	std::cout << "\tMicroSurface: " << sizeof(MicroSurface) << std::endl;
@@ -334,7 +337,7 @@ int main(int argc, char **argv)
 			}
 		}
 
-//#define SPLIT_PATCH
+#define SPLIT_PATCH
 #ifdef SPLIT_PATCH
 		std::vector<Primitive *> splits1;
 		std::vector<Primitive *> splits2;
@@ -419,7 +422,9 @@ int main(int argc, char **argv)
 
 	std::cout << "Render time (seconds): " << std::fixed << std::setprecision(3) << timer.time() << std::endl;
 
+#ifdef GOOGLE_PROFILE
 	ProfilerStop();
+#endif
 
 	return 0;
 }

@@ -59,29 +59,11 @@ public:
 		callback = callback_;
 	}
 
-	//virtual ~PathTraceIntegrator() {
-	//	delete accum;
-	//}
-
 	/**
 	 * @brief Begins integration.
 	 */
 	virtual void integrate();
 
-};
-
-
-/*
- * A path tracing path.
- * Stores state of a path in progress.
- */
-struct PTPath {
-	Intersection inter;
-	Color col; // Color of the sample collected so far
-	Color fcol; // Accumulated filter color from light path
-	Color lcol; // Temporary storage for incoming light color
-
-	bool done;
 };
 
 #endif // PATH_TRACE_INTEGRATOR_H

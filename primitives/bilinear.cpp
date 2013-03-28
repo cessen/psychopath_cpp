@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <limits>
 #include <stdlib.h>
 #include "bilinear.hpp"
 #include "grid.hpp"
@@ -21,7 +22,7 @@ Bilinear::Bilinear(uint16 res_time_)
 	u_max = v_max = 1.0f;
 
 	microsurface_key = 0;
-	last_ray_width = 999999999999999.0f;
+	last_ray_width = std::numeric_limits<float32>::infinity();
 }
 
 Bilinear::Bilinear(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4)
@@ -39,7 +40,7 @@ Bilinear::Bilinear(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4)
 	u_max = v_max = 1.0f;
 
 	microsurface_key = 0;
-	last_ray_width = 999999999999999.0f;
+	last_ray_width = std::numeric_limits<float32>::infinity();
 }
 
 Bilinear::~Bilinear()
@@ -88,21 +89,10 @@ bool Bilinear::intersect_ray(const Ray &ray, Intersection *intersection)
 	// Calculate minimum ray footprint inside the bounding box
 	const float32 width = ray.min_width(tnear, tfar);
 
-	if (width == 0.0f) {
-		/*std::cout << "____" << std::endl;
-		std::cout << "Origin, Direction: " << ray.o << ", " << ray.d << std::endl;
-		std::cout << "dX Origin, Direction: " << ray.odx << ", " << ray.ddx << std::endl;
-		std::cout << "dY Origin, Direction: " << ray.ody << ", " << ray.ddy << std::endl;
-		std::cout << "Is shadow ray: " << ray.is_shadow_ray << std::endl;
-		*/
-		//std::cout << "BOO\n";
-	}
-
 	// Figure out if we need to redice or not
 	MicroSurface *micro_surface;
 	bool redice = false;
 	if (width < last_ray_width && width != 0.0f) {
-		last_ray_width = width;
 		redice = true;
 	} else {
 		// Try to get an existing grid
@@ -120,10 +110,13 @@ bool Bilinear::intersect_ray(const Ray &ray, Intersection *intersection)
 		// Redice
 		micro_surface = micro_generate(width);
 		microsurface_key = MicroSurfaceCache::cache.add_open(micro_surface);
+		
+		// Record ray width
+		last_ray_width = width;
 	}
 
 	// Test the ray against the grid
-	const bool hit = micro_surface->intersect_ray(ray, intersection);
+	const bool hit = micro_surface->intersect_ray(ray, width, intersection);
 	MicroSurfaceCache::cache.close(microsurface_key);
 
 	return hit;
@@ -251,7 +244,7 @@ MicroSurface *Bilinear::micro_generate(float32 width)
 	// Get dicing rate
 	uint_i u_rate = 32;
 	uint_i v_rate = 32;
-	//uv_dice_rate(&u_rate, &v_rate, width);
+	uv_dice_rate(&u_rate, &v_rate, width);
 
 	// TODO: this is temporary, while splitting is not yet implemented
 	if (u_rate > Config::max_grid_size)

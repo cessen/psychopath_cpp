@@ -39,7 +39,7 @@ ImageSampler::ImageSampler(uint spp_,
 	}
 	points_traversed = 0;
 
-	rng.seed(42);
+	rng.seed(seed);
 	seed_offset = rng.next_uint();
 }
 
@@ -70,6 +70,8 @@ void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, uint32 ns, float32 *
 
 #define LDS_SAMP
 #ifdef LDS_SAMP
+	//uint32 hash =  (Morton::xy2d(x,y) * spp) + seed_offset;
+	
 	// Hash the x and y indices of the pixel and use that as an offset
 	// into the LDS sequence.  This gives the image a more random appearance
 	// before converging, which is less distracting than the LDS patterns.
@@ -77,23 +79,24 @@ void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, uint32 ns, float32 *
 	// this still gives very good convergence properties.
 	// This also means that each pixel can keep drawing samples in a
 	// "bottomless" kind of way, which is nice for e.g. adaptive sampling.
-	uint32 hash = x ^((y>>16) | (y<<16));
+	uint32 hash = x ^ ((y >> 16) | (y << 16));
 	hash *= 1936502639;
 	hash ^= hash >> 16;
 	hash += seed_offset;
 	hash *= 1936502639;
 	hash ^= hash >> 16;
 	hash += seed_offset;
+	
 	const uint32 samp_i = hash + d;
 
 	// Generate the sample
-	sample[0] = Halton::sample(5, samp_i);
-	sample[1] = Halton::sample(4, samp_i);
-	sample[2] = Halton::sample(3, samp_i);
-	sample[3] = Halton::sample(2, samp_i);
-	sample[4] = Halton::sample(1, samp_i);
+	sample[0] = Halton::sample(4, samp_i);
+	sample[1] = Halton::sample(3, samp_i);
+	sample[2] = Halton::sample(2, samp_i);
+	sample[3] = Halton::sample(1, samp_i);
+	sample[4] = Halton::sample(0, samp_i);
 	for (uint32 i = 5; i < ns; i++) {
-		sample[i] = Sobol::sample(i-5, samp_i);
+		sample[i] = Halton::sample(i, samp_i);
 	}
 #else
 	// Generate the sample

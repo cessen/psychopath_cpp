@@ -25,14 +25,14 @@
  *
  * Returns the origin differential transfered onto the surface intersection.
  */
-static inline Vec3 transfer_ray_origin_differential(const Vec3 normal, const Vec3 d, const float32 t,
+/*static inline Vec3 transfer_ray_origin_differential(const Vec3 normal, const Vec3 d, const float32 t,
         const Vec3 od, const Vec3 dd)
 {
 	const Vec3 temp = od + (dd * t);
 	const float32 td = dot(temp, normal) / dot(d, normal);
 
 	return temp + (d * td);
-}
+}*/
 
 
 
@@ -49,6 +49,10 @@ struct Ray {
 	float32 min_t;
 	float32 max_t;
 
+	float32 ow; // Origin width
+	float32 dw; // Width delta
+	
+	/*
 	// Ray differentials for origin and direction
 	Vec3 odx, ody; // Ray origin
 	Vec3 ddx, ddy; // Ray direction
@@ -60,7 +64,7 @@ struct Ray {
 	float32 diff_rate_x, diff_rate_y;
 
 	// Whether the ray has differentials or not
-	bool has_differentials;
+	bool has_differentials;*/
 
 	// Shadow ray or not
 	bool is_shadow_ray;
@@ -81,7 +85,7 @@ struct Ray {
 	  time {time_},
 	  min_t {0.0f},
 	  max_t {std::numeric_limits<float32>::infinity()},
-	  has_differentials {false},
+	  //has_differentials {false},
 	  is_shadow_ray {false}
 	{}
 
@@ -100,12 +104,12 @@ struct Ray {
 	/**
 	 * Pre-computes some useful data about the ray differentials.
 	 */
-	void update_differentials() {
+	/*void update_differentials() {
 		if (has_differentials) {
 			diff_rate_x = ddx.length();
 			diff_rate_y = ddy.length();
 		}
-	}
+	}*/
 
 
 	/*
@@ -119,15 +123,16 @@ struct Ray {
 		d.normalize();
 
 		// Adjust the ray differentials for the normalized ray
-		if (has_differentials) {
-			odx = odx * linv;
-			ody = ody * linv;
-			ddx = ddx * linv;
-			ddy = ddy * linv;
-		}
+		dw *= linv;
+		/*if (has_differentials) {
+			odx *= linv;
+			ody *= linv;
+			ddx *= linv;
+			ddy *= linv;
+		}*/
 
 		update_accel();
-		update_differentials();
+		//update_differentials();
 	}
 
 	/**
@@ -140,15 +145,15 @@ struct Ray {
 
 		// Differentials
 		// These can be transformed as directional vectors...?
-		if (has_differentials) {
+		/*if (has_differentials) {
 			odx = t.dir_to(odx);
 			ody = t.dir_to(ody);
 			ddx = t.dir_to(ddx);
 			ddy = t.dir_to(ddy);
-		}
+		}*/
 
 		update_accel();
-		update_differentials();
+		//update_differentials();
 	}
 
 	/**
@@ -161,15 +166,15 @@ struct Ray {
 
 		// Differentials
 		// These can be transformed as directional vectors...?
-		if (has_differentials) {
+		/*if (has_differentials) {
 			odx = t.dir_from(odx);
 			ody = t.dir_from(ody);
 			ddx = t.dir_from(ddx);
 			ddy = t.dir_from(ddy);
-		}
+		}*/
 
 		update_accel();
-		update_differentials();
+		//update_differentials();
 	}
 
 
@@ -179,7 +184,7 @@ struct Ray {
 	 *
 	 * Returns true on success.
 	 */
-	bool transfer_ray_differentials(const Vec3 normal, const float32 t) {
+	/*bool transfer_ray_differentials(const Vec3 normal, const float32 t) {
 		if (!has_differentials)
 			return false;
 
@@ -199,7 +204,7 @@ struct Ray {
 		ody = tempy + (d * tdy);
 
 		return true;
-	}
+	}*/
 
 
 	/*
@@ -209,7 +214,7 @@ struct Ray {
 	 * purpose as well: determining dicing rates.
 	 */
 	float32 width(const float32 &t) const {
-		if (!has_differentials)
+		/*if (!has_differentials)
 			return 0.0f;
 
 		// Calculate the width of each differential at t.
@@ -228,7 +233,9 @@ struct Ray {
 		wy = (tempy + (d * tdy)).length();
 
 		// Smaller of x and y
-		return std::min(wx, wy) * 0.5f;
+		return std::min(wx, wy) * 0.5f;*/
+		
+		return ow + (dw * t);
 	}
 
 	/*
@@ -236,7 +243,7 @@ struct Ray {
 	 * range along the ray.
 	 */
 	float32 min_width(const float32 &tnear, const float32 &tfar) const {
-		if (!has_differentials) {
+		/*if (!has_differentials) {
 			return 0.0f;
 			std::cout << "YAR\n";
 		}
@@ -264,7 +271,9 @@ struct Ray {
 		// Minimum of x and y
 		const float32 result = std::min(wx, wy) * 0.5f;
 
-		return result;
+		return result;*/
+		
+		return ow + (dw * tnear);
 	}
 
 };
