@@ -37,16 +37,18 @@ class Renderer
 private:
 	uint res_x, res_y;
 	uint spp;
+	uint seed;
 	std::string output_path;
 
 public:
 	Scene *scene;
 
-	Renderer(Scene *scene_, int res_x_, int res_y_, int spp_, std::string output_path_) {
+	Renderer(Scene *scene_, int res_x_, int res_y_, int spp_, uint seed_, std::string output_path_) {
 		scene = scene_;
 		res_x = res_x_;
 		res_y = res_y_;
 		spp = spp_;
+		seed = seed_;
 		output_path = output_path_;
 	}
 

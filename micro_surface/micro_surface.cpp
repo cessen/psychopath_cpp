@@ -20,15 +20,15 @@ bool MicroSurface::intersect_ray(const Ray &ray, float32 ray_width, Intersection
 	float32 t = ray.max_t;
 	if (inter)
 		t = t < inter->t ? t : inter->t;
-	
+
 	// Calculate the max depth the ray should traverse into the tree
 	const float32 l2 = 1.0f / std::log(2);
 	const uint32 rdepth = 2 * std::max(0.0f, (std::log(root_width)*l2) - (std::log(ray_width)*l2));
-	
+
 	// Intersect with the MicroSurface
 	while (true) {
 		if (intersect_node(node, ray, &tnear, &tfar, &t)) {
-			if (nodes[node].flags & IS_LEAF /*|| todo_offset >= rdepth*/) {
+			if (nodes[node].flags & IS_LEAF || todo_offset >= rdepth) {
 				// Hit
 				hit = true;
 				hit_node = node;
@@ -66,20 +66,21 @@ bool MicroSurface::intersect_ray(const Ray &ray, float32 ray_width, Intersection
 		calc_time_interp(time_count, ray.time, &t_i, &t_alpha);
 
 		// Calculate data indices
-		const uint d_iu = rng.next_uint() % nodes[hit_node].data_du;
-		const uint d_iv = rng.next_uint() % nodes[hit_node].data_dv;
+		const uint d_iu = /*rng.next_uint()*/ 727 % nodes[hit_node].data_du;
+		const uint d_iv = /*rng.next_uint()*/ 727 % nodes[hit_node].data_dv;
 		const uint_i d_index = nodes[hit_node].data_index; // Standard
 		const uint_i rd_index = d_index + (d_iv * res_u) + d_iu; // Random within range
 
 		// Information about the intersection point
 		inter->t = t;
-		inter->p = ray.o + (ray.d * t);
+		//inter->p = ray.o + (ray.d * t);
+		inter->p = nodes[hit_node].bounds.center();
 
 		// Data about the ray that caused the intersection
 		inter->in = ray.d;
 		inter->ow = ray.ow;
 		inter->dw = ray.dw;
-		
+
 		// Surface normal
 		// TODO: differentials
 		const Vec3 n1t1 = normals[rd_index*time_count+t_i];
@@ -98,7 +99,7 @@ bool MicroSurface::intersect_ray(const Ray &ray, float32 ray_width, Intersection
 			//const Vec3 nt2 = lerp2d<Vec3>(rng.next_float(), rng.next_float(), n1t2, n2t2, n3t2, n4t2);
 			const Vec3 nt2 = lerp2d<Vec3>(0.5f, 0.5f, n1t2, n2t2, n3t2, n4t2);
 
-			
+
 			inter->n = lerp<Vec3>(t_alpha, nt1, nt2).normalized();
 		} else {
 			inter->n = nt1.normalized();
@@ -113,10 +114,7 @@ bool MicroSurface::intersect_ray(const Ray &ray, float32 ray_width, Intersection
 		inter->col = Color(inter->u, inter->v, 0.0f);
 
 		// Generate origin offset for next ray
-		// TODO: this needs to be more robust.  Should take into account
-		// the intersected node's bbox size.
-		//const float32 dl = std::max(ray.width(t)*1.5f, nodes[hit_node].bounds.diagonal());
-		const float32 dl = ray.width(t) * 1.5f;
+		const float32 dl = std::max(ray.width(t) * Config::dice_rate, nodes[hit_node].bounds.diagonal() * 0.5f);
 		inter->offset = inter->n * dl;
 		if (dot(inter->n, ray.d.normalized()) > 0.0f)
 			inter->offset = inter->offset * -1.0f;
@@ -319,7 +317,7 @@ void MicroSurface::init_from_grid(Grid *grid)
 		}
 	}
 
-	
+
 	root_width = nodes[0].bounds.diagonal();
 	//std::cout << res_u*res_v << ": " << trav_count << ", " << trav_count / (float32)(res_u*res_v) << std::endl;
 

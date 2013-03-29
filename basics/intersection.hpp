@@ -76,7 +76,7 @@ struct Intersection {
 			return temp + (in * td);
 		}
 	}*/
-	
+
 	/**
 	 * @brief Returns the ray width at the intersection point.
 	 */

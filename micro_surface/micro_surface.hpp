@@ -51,7 +51,7 @@ class MicroSurface
 
 	// Number of time samples
 	uint16 time_count;
-	
+
 	// Max width of the surface at the root node
 	float32 root_width;
 

@@ -8,6 +8,7 @@
 #include <utility>
 #include <thread>
 #include <mutex>
+#include <atomic>
 
 #include "config.hpp"
 

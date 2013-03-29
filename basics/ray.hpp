@@ -51,7 +51,7 @@ struct Ray {
 
 	float32 ow; // Origin width
 	float32 dw; // Width delta
-	
+
 	/*
 	// Ray differentials for origin and direction
 	Vec3 odx, ody; // Ray origin
@@ -234,7 +234,7 @@ struct Ray {
 
 		// Smaller of x and y
 		return std::min(wx, wy) * 0.5f;*/
-		
+
 		return ow + (dw * t);
 	}
 
@@ -272,7 +272,7 @@ struct Ray {
 		const float32 result = std::min(wx, wy) * 0.5f;
 
 		return result;*/
-		
+
 		return ow + (dw * tnear);
 	}
 

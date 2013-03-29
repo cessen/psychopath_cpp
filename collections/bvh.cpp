@@ -36,6 +36,8 @@ void BVH::add_primitives(std::vector<Primitive *> &primitives)
 
 bool BVH::finalize()
 {
+	if (bag.size() == 0)
+		return true;
 	next_node = 1;
 	recursive_build(0, 0, 0, bag.size()-1);
 	bag.resize(0);
@@ -451,6 +453,10 @@ uint BVH::get_potential_intersections(const Ray &ray, uint max_potential, uint_i
 	uint64 node;
 	uint8 node_state;
 
+	// Check if it's an empty BVH
+	if (nodes.size() == 0)
+		return 0;
+
 	// Initialize state
 	if (state == nullptr) {
 		node = 0;
@@ -494,11 +500,18 @@ uint BVH::get_potential_intersections(const Ray &ray, uint max_potential, uint_i
 					ids[hits_so_far] = node;
 					hits_so_far++;
 
-					// Go to sibling node
-					if (ray.d_is_neg[parent.flags & SPLIT_MASK])
-						node--;
-					else
-						node++;
+					// If root node (i.e. only one node in the tree),
+					// then finished
+					if (node == 0) {
+						finished = true;
+						node_state = FROM_CHILD;
+					} else {
+						// Go to sibling node
+						if (ray.d_is_neg[parent.flags & SPLIT_MASK])
+							node--;
+						else
+							node++;
+					}
 
 					// State: from_sibling
 					node_state = FROM_SIBLING;

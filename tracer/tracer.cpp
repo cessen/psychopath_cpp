@@ -161,7 +161,8 @@ void Tracer::sort_potential_intersections()
 }
 
 
-void job_trace_potential_intersections(Tracer *tracer, uint_i start, uint_i end) {
+void job_trace_potential_intersections(Tracer *tracer, uint_i start, uint_i end)
+{
 	for (uint_i i = start; i < end; i++) {
 		// Shorthand references
 		PotentialInter &potential_intersection = tracer->potential_intersections[i];

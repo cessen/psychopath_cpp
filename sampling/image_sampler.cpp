@@ -71,7 +71,7 @@ void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, uint32 ns, float32 *
 #define LDS_SAMP
 #ifdef LDS_SAMP
 	//uint32 hash =  (Morton::xy2d(x,y) * spp) + seed_offset;
-	
+
 	// Hash the x and y indices of the pixel and use that as an offset
 	// into the LDS sequence.  This gives the image a more random appearance
 	// before converging, which is less distracting than the LDS patterns.
@@ -86,7 +86,7 @@ void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, uint32 ns, float32 *
 	hash *= 1936502639;
 	hash ^= hash >> 16;
 	hash += seed_offset;
-	
+
 	const uint32 samp_i = hash + d;
 
 	// Generate the sample

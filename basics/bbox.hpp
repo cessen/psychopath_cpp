@@ -137,6 +137,13 @@ struct BBox {
 	float32 diagonal() const {
 		return (max - min).length();
 	}
+
+	/**
+	 * @brief Returns the center point of the BBox.
+	 */
+	Vec3 center() const {
+		return (min + max) * 0.5f;
+	}
 };
 
 

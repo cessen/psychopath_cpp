@@ -3,6 +3,9 @@
 #--------------------------------------
 cmake_minimum_required (VERSION 2.8)
 
+# Show build commands
+#set (CMAKE_VERBOSE_MAKEFILE true)
+
 # Custom modules
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
 	"${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -25,7 +28,7 @@ set (CMAKE_BUILD_TYPE Release)
 configure_file ("${PROJECT_SOURCE_DIR}/config.h.in"
                 "${PROJECT_BINARY_DIR}/config.h")
 
-# C++11 for gcc
+# C++11 for gcc and clang
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
 
 # SSE3 support
@@ -52,7 +55,7 @@ set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 set (Boost_MULTITHREADED TRUE)
 set (Boost_USE_STATIC_LIBS FALSE)
 
-find_package (Boost 1.48 COMPONENTS program_options thread unit_test_framework REQUIRED)
+find_package (Boost 1.48 COMPONENTS program_options regex thread unit_test_framework REQUIRED)
 
 include_directories (${Boost_INCLUDE_DIRS})
 link_directories (${Boost_LIBRARY_DIRS})
@@ -99,6 +102,7 @@ include_directories ("${PROJECT_BINARY_DIR}",
                      "${PROJECT_SOURCE_DIR}/integrator",
                      "${PROJECT_SOURCE_DIR}/lights",
                      "${PROJECT_SOURCE_DIR}/math",
+                     "${PROJECT_SOURCE_DIR}/parser",
                      "${PROJECT_SOURCE_DIR}/primitives",
                      "${PROJECT_SOURCE_DIR}/film",
                      "${PROJECT_SOURCE_DIR}/renderer",
@@ -119,6 +123,7 @@ add_subdirectory(micro_surface)
 add_subdirectory(integrator)
 add_subdirectory(math)
 add_subdirectory(primitives)
+add_subdirectory(parser)
 add_subdirectory(renderer)
 add_subdirectory(sampling)
 add_subdirectory(tracer)
@@ -134,6 +139,7 @@ set (PSYCHO_LIB
 	integrator
 	tracer
 	sampling
+	parser
 	primitives
 	basics
 	micro_surface

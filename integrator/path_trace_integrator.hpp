@@ -34,6 +34,7 @@ public:
 	Tracer *tracer;
 	Film<Color> *image;
 	int spp;
+	uint seed;
 	int path_length;
 	int thread_count;
 	std::function<void()> callback;
@@ -49,11 +50,12 @@ public:
 	 *                    initialized with 3 channels, for rgb.
 	 * @param spp_ The number of samples to take per pixel for integration.
 	 */
-	PathTraceIntegrator(Scene *scene_, Tracer *tracer_, Film<Color> *image_, int spp_, int thread_count_=1, std::function<void()> callback_ = std::function<void()>()) {
+	PathTraceIntegrator(Scene *scene_, Tracer *tracer_, Film<Color> *image_, int spp_, uint seed_, int thread_count_=1, std::function<void()> callback_ = std::function<void()>()) {
 		scene = scene_;
 		tracer = tracer_;
 		image = image_;
 		spp = spp_;
+		seed = seed_;
 		thread_count = thread_count_;
 		path_length = 3;
 		callback = callback_;

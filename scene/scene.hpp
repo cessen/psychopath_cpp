@@ -31,6 +31,8 @@ struct Scene {
 	std::vector<Light *> finite_lights;
 	BVH world;
 
+	Scene(): camera {nullptr} {}
+
 	~Scene() {
 		uint32 s;
 
@@ -41,7 +43,8 @@ struct Scene {
 		}
 
 		// Delete camera
-		delete camera;
+		if (camera)
+			delete camera;
 	}
 
 

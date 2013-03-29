@@ -16,7 +16,7 @@
 
 #include "hilbert.hpp"
 
-#define RAYS_AT_A_TIME (1000000/16)
+#define RAYS_AT_A_TIME 1000000
 
 
 float32 lambert(Vec3 v1, Vec3 v2)
@@ -43,11 +43,12 @@ struct PTPath {
 };
 
 
-void create_camera_rays(Camera *camera, Film<Color> *image, Array<Ray> *rays_, Array<float32> *samps_, Array<uint32> *ids_, uint_i samp_dim, uint_i first, uint_i last) {
+void create_camera_rays(Camera *camera, Film<Color> *image, Array<Ray> *rays_, Array<float32> *samps_, Array<uint32> *ids_, uint_i samp_dim, uint_i first, uint_i last)
+{
 	Array<Ray> &rays = *rays_;
 	Array<float32> &samps = *samps_;
 	Array<uint32> &ids = *ids_;
-	
+
 	for (uint32 i = first; i < last; i++) {
 		float32 rx = (samps[i*samp_dim] - 0.5) * (image->max_x - image->min_x);
 		float32 ry = (0.5 - samps[i*samp_dim + 1]) * (image->max_y - image->min_y);
@@ -65,7 +66,7 @@ void PathTraceIntegrator::integrate()
 	const uint_i samp_dim = 5 + (path_length * 5);
 
 	RNG rng;
-	ImageSampler image_sampler(spp, image->width, image->height);
+	ImageSampler image_sampler(spp, image->width, image->height, seed);
 
 	// Sample array
 	Array<float32> samps;
@@ -165,7 +166,7 @@ void PathTraceIntegrator::integrate()
 
 						// Ray differentials
 						rays[pri].ow = paths[i].inter.owp();
-						rays[pri].dw = paths[i].inter.dw * 8;
+						rays[pri].dw = 0.2;
 						//rays[pri].odx = paths[i].inter.pdx();
 						//rays[pri].ddx = rays[pri].odx.normalized() * paths[i].inter.ddx.length();
 						//rays[pri].ody = paths[i].inter.pdy();
@@ -195,66 +196,68 @@ void PathTraceIntegrator::integrate()
 				} else {
 					// Ray didn't hit anything, done and black background
 					paths[id].done = true;
-					paths[id].col += Color(0.0);
+					paths[id].col += Color(0.0f);
 				}
 			}
 
 
 			// Generate a bunch of shadow rays
-			std::cout << "\tGenerating shadow rays" << std::endl;
-			uint32 sri = 0; // Shadow ray index
-			for (uint32 i = 0; i < paths.size(); i++) {
-				if (!paths[i].done) {
-					// Select a light and store the normalization factor for it's output
-					Light *lighty = scene->finite_lights[(uint32)(samps[i*samp_dim+so+2] * scene->finite_lights.size()) % scene->finite_lights.size()];
-					//Light *lighty = scene->finite_lights[rng.next_uint() % scene->finite_lights.size()];
+			if (scene->finite_lights.size() > 0) {
+				std::cout << "\tGenerating shadow rays" << std::endl;
+				uint32 sri = 0; // Shadow ray index
+				for (uint32 i = 0; i < paths.size(); i++) {
+					if (!paths[i].done) {
+						// Select a light and store the normalization factor for it's output
+						Light *lighty = scene->finite_lights[(uint32)(samps[i*samp_dim+so+2] * scene->finite_lights.size()) % scene->finite_lights.size()];
+						//Light *lighty = scene->finite_lights[rng.next_uint() % scene->finite_lights.size()];
 
-					// Sample the light source
-					Vec3 ld;
-					paths[i].lcol = lighty->sample(paths[i].inter.p, samps[i*samp_dim+so+3], samps[i*samp_dim+so+4], samps[i*samp_dim+4], &ld)
-					                * (float32)(scene->finite_lights.size());
+						// Sample the light source
+						Vec3 ld;
+						paths[i].lcol = lighty->sample(paths[i].inter.p, samps[i*samp_dim+so+3], samps[i*samp_dim+so+4], samps[i*samp_dim+4], &ld)
+						                * (float32)(scene->finite_lights.size());
 
-					// Create a shadow ray for this path
-					float d = ld.length();
-					ld.normalize();
-					rays[sri].o = paths[i].inter.p + paths[i].inter.offset;
-					rays[sri].d = ld;
-					rays[sri].time = samps[i*samp_dim+4];
-					rays[sri].is_shadow_ray = true;
-					rays[sri].min_t = 0.01;
-					rays[sri].max_t = d;
-					//rays[sri].has_differentials = true;
+						// Create a shadow ray for this path
+						float d = ld.length();
+						ld.normalize();
+						rays[sri].o = paths[i].inter.p + paths[i].inter.offset;
+						rays[sri].d = ld;
+						rays[sri].time = samps[i*samp_dim+4];
+						rays[sri].is_shadow_ray = true;
+						rays[sri].min_t = 0.01;
+						rays[sri].max_t = d;
+						//rays[sri].has_differentials = true;
 
-					// Ray differentials
-					rays[sri].ow = paths[i].inter.owp();
-					rays[sri].dw = 0.0f;
-					//rays[sri].odx = paths[i].inter.pdx();
-					//rays[sri].ddx = rays[sri].odx.normalized() * paths[i].inter.ddx.length();
-					//rays[sri].ody = paths[i].inter.pdy();
-					//rays[sri].ddy = rays[sri].ody.normalized() * paths[i].inter.ddy.length();
+						// Ray differentials
+						rays[sri].ow = paths[i].inter.owp();
+						rays[sri].dw = paths[i].inter.dw;
+						//rays[sri].odx = paths[i].inter.pdx();
+						//rays[sri].ddx = rays[sri].odx.normalized() * paths[i].inter.ddx.length();
+						//rays[sri].ody = paths[i].inter.pdy();
+						//rays[sri].ddy = rays[sri].ody.normalized() * paths[i].inter.ddy.length();
 
-					rays[sri].finalize();
-					ids[sri] = i;
+						rays[sri].finalize();
+						ids[sri] = i;
 
-					sri++;
+						sri++;
+					}
 				}
-			}
-			rays.resize(sri);
+				rays.resize(sri);
 
 
-			// Trace the shadow rays
-			tracer->trace(rays, &intersections);
+				// Trace the shadow rays
+				tracer->trace(rays, &intersections);
 
 
-			// Calculate sample colors
-			rsize = rays.size();
-			for (uint32 i = 0; i < rsize; i++) {
-				const uint32 id = ids[i];
-				if (!intersections[i].hit) {
-					// Sample was lit
-					// TODO: use actual shaders here
-					float lam = lambert(rays[i].d, paths[id].inter.n);
-					paths[id].col += paths[id].fcol * paths[id].lcol * lam;
+				// Calculate sample colors
+				rsize = rays.size();
+				for (uint32 i = 0; i < rsize; i++) {
+					const uint32 id = ids[i];
+					if (!intersections[i].hit) {
+						// Sample was lit
+						// TODO: use actual shaders here
+						float lam = lambert(rays[i].d, paths[id].inter.n);
+						paths[id].col += paths[id].fcol * paths[id].lcol * lam;
+					}
 				}
 			}
 		}

@@ -36,6 +36,8 @@
 
 #include "timer.hpp"
 
+#include "parser.hpp"
+
 namespace BPO = boost::program_options;
 
 /*
@@ -145,8 +147,6 @@ int main(int argc, char **argv)
 	// Profiling
 	ProfilerStart("psychopath.prof");
 #endif
-	
-	Timer<> timer;
 
 	// RNGs
 	RNG rng(0);
@@ -186,12 +186,14 @@ int main(int argc, char **argv)
 	int spp = SPP;
 	int threads = THREADS;
 	std::string output_path = "default.png";
+	std::string input_path = "";
 	Resolution resolution(XRES, YRES);
 
 	// Define them
 	BPO::options_description desc("Allowed options");
 	desc.add_options()
 	("help,h", "Print this help message")
+	("scenefile,i", BPO::value<std::string>(), "Input scene file")
 	("spp,s", BPO::value<int>(), "Number of samples to take per pixel")
 	("threads,t", BPO::value<int>(), "Number of threads to render with")
 	("output,o", BPO::value<std::string>(), "The PNG file to render to")
@@ -225,6 +227,12 @@ int main(int argc, char **argv)
 		std::cout << "Threads: " << threads << "\n";
 	}
 
+	// Input file
+	if (vm.count("scenefile")) {
+		input_path = vm["scenefile"].as<std::string>();
+		std::cout << "Input scene: " << output_path << "\n";
+	}
+
 	// Output file
 	if (vm.count("output")) {
 		output_path = vm["output"].as<std::string>();
@@ -239,188 +247,29 @@ int main(int argc, char **argv)
 
 
 	/*
-	 **********************************************************************
-	 * Build scene
-	 **********************************************************************
+	 *********************
+	 * Parse scene file, rendering frames as we go.
+	 *********************
 	 */
-	Scene scene;
+	Parser parser(input_path);
 
-	// Add camera
-	Matrix44 mat;
-	std::vector<Transform> cam_tra;
-	cam_tra.resize(4);
+	while (true) {
+		Timer<> timer;
+		std::unique_ptr<Renderer> r {parser.parse_next_frame()};
 
-	float angle = CAMERA_SPIN * (3.14159 / 180.0);
-	ImathVec3 axis(0.0, 0.0, 1.0);
+		if (r == nullptr)
+			break;
 
-	mat.makeIdentity();
-	mat.translate(ImathVec3(0.0, 0.0, -40.0));
-	mat.rotate(ImathVec3(0.0, 0.0, 0.0));
-	mat.translate(ImathVec3(0.0, 0.0, 20.0));
-	cam_tra[0] = mat;
+		/*
+		 **********************************************************************
+		 * Generate image
+		 **********************************************************************
+		 */
+		std::cout << "Starting render:" << std::endl;
+		r->render(threads);
 
-	mat.makeIdentity();
-	mat.translate(ImathVec3(0.0, 0.0, -40.0));
-	mat.rotate(ImathVec3(0.0, 0.0, (angle/3)*1));
-	mat.translate(ImathVec3(0.0, 0.0, 20.0));
-	cam_tra[1] = mat;
-
-	mat.makeIdentity();
-	mat.translate(ImathVec3(0.0, 0.0, -40.0));
-	mat.rotate(ImathVec3(0.0, 0.0, (angle/3)*2));
-	mat.translate(ImathVec3(0.0, 0.0, 20.0));
-	cam_tra[2] = mat;
-
-	mat.makeIdentity();
-	mat.translate(ImathVec3(0.0, 0.0, -40.0));
-	mat.rotate(ImathVec3(0.0, 0.0, (angle/3)*3));
-	mat.translate(ImathVec3(0.0, 0.0, 20.0));
-	cam_tra[3] = mat;
-
-#define FOCUS_DISTANCE 40.0
-#define FOV 55
-	scene.camera = new Camera(cam_tra, (3.14159/180.0)*FOV, LENS_DIAM, FOCUS_DISTANCE);
-
-
-	// Add lights
-	SphereLight *sl = new SphereLight(Vec3(10.0, 10.0, -10.0),
-	                                  2.0,
-	                                  Color(250.0));
-	scene.add_finite_light(sl);
-	//PointLight *pl = new PointLight(Vec3(-10.0, 0.0, -10.0),
-	//                                Color(20.0));
-	//scene.add_finite_light(pl);
-
-
-	// Add random patches
-	std::cout << "Generating random patches...";
-	std::cout.flush();
-
-	Bilinear *patch;
-	for (int i=0; i < NUM_RAND_PATCHES; i++) {
-		float32 x, y, z;
-		z = 15 + (rng.next_float() * NUM_RAND_PATCHES / 4);
-		float32 s = z / 15;
-		x = rng.next_float_c() * 40;
-		y = rng.next_float_c() * 20;
-
-		// Motion?
-		int ms = 1;
-		if (rng.next_float() < FRAC_MB)
-			ms = 2;
-
-		// Flipped?
-		bool flip = true;
-		//if (rng.next_float() < 0.5)
-		//	flip = false;
-
-		patch = new Bilinear(ms);
-
-		for (int j = 0; j < ms; j++) {
-			x += (rng.next_float_c() * j * 4) / s;
-			y += (rng.next_float_c() * j * 4) / s;
-			z += (rng.next_float_c() * j * 4) / s;
-
-			if (flip) {
-				patch->add_time_sample(j,
-				                       Vec3((x*s)+2, (y*s)+2, z+(rng.next_float_c()*8)),
-				                       Vec3((x*s)+2, (y*s)-2, z+(rng.next_float_c()*8)),
-				                       Vec3((x*s)-2, (y*s)-2, z+(rng.next_float_c()*8)),
-				                       Vec3((x*s)-2, (y*s)+2, z+(rng.next_float_c()*8)));
-			} else {
-				patch->add_time_sample(j,
-				                       Vec3((x*s)+2, (y*s)+2, z+(rng.next_float_c()*8)),
-				                       Vec3((x*s)-2, (y*s)+2, z+(rng.next_float_c()*8)),
-				                       Vec3((x*s)-2, (y*s)-2, z+(rng.next_float_c()*8)),
-				                       Vec3((x*s)+2, (y*s)-2, z+(rng.next_float_c()*8)));
-
-			}
-		}
-
-#define SPLIT_PATCH
-#ifdef SPLIT_PATCH
-		std::vector<Primitive *> splits1;
-		std::vector<Primitive *> splits2;
-		std::vector<Primitive *> splits3;
-
-		patch->split(splits1);
-		delete patch;
-
-		patch = (Bilinear *)(splits1[0]);
-		patch->split(splits2);
-		delete patch;
-		patch = (Bilinear *)(splits1[1]);
-		patch->split(splits3);
-		delete patch;
-
-		scene.add_primitive(splits2[0]);
-		scene.add_primitive(splits2[1]);
-		scene.add_primitive(splits3[0]);
-		scene.add_primitive(splits3[1]);
-#else
-		scene.add_primitive(patch);
-#endif
-
+		std::cout << "Render time (seconds): " << std::fixed << std::setprecision(3) << timer.time() << std::endl << std::endl;
 	}
-	std::cout << " done." << std::endl;
-	std::cout.flush();
-
-
-	// Add random spheres
-	std::cout << "Generating random spheres...";
-	std::cout.flush();
-
-	const float32 radius = 0.2;
-
-	Sphere *sphere;
-	for (int i=0; i < NUM_RAND_SPHERES; i++) {
-		float32 x, y, z;
-		z = 15 + (rng2.next_float() * NUM_RAND_SPHERES / 4) * radius;
-		float32 s = z / 15;
-		x = rng2.next_float_c() * 40;
-		y = rng2.next_float_c() * 20;
-
-		// Motion?
-		int ms = 1;
-		if (rng2.next_float() < FRAC_MB)
-			ms = 2;
-
-		sphere = new Sphere(ms);
-
-		for (int j = 0; j < ms; j++) {
-			x += (rng2.next_float_c() * j * 4) / s;
-			y += (rng2.next_float_c() * j * 4) / s;
-			z += (rng2.next_float_c() * j * 4) / s;
-
-			sphere->add_time_sample(j,
-			                        Vec3(x*s, y*s, z+(rng2.next_float_c()*2)),
-			                        SPHERE_RADIUS);
-		}
-
-		scene.add_primitive(sphere);
-	}
-	std::cout << " done." << std::endl;
-	std::cout.flush();
-
-	std::cout << "Finalizing scene... ";
-	std::cout.flush();
-	scene.finalize();
-	std::cout << " done." << std::endl;
-	std::cout.flush();
-
-
-	/*
-	 **********************************************************************
-	 * Generate image
-	 **********************************************************************
-	 */
-
-	std::cout << "\nStarting render: \n";
-	std::cout.flush();
-	Renderer r(&scene, resolution.x, resolution.y, spp, output_path);
-	r.render(threads);
-
-	std::cout << "Render time (seconds): " << std::fixed << std::setprecision(3) << timer.time() << std::endl;
 
 #ifdef GOOGLE_PROFILE
 	ProfilerStop();

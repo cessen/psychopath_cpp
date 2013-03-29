@@ -58,7 +58,7 @@ public:
 
 		// Ray image plane differentials
 		ray.ow = 0.0f;
-		ray.dw = std::min(dx, dy);
+		ray.dw = std::min(dx*tfov, dy*tfov);
 		//ray.odx = Vec3(0.0f, 0.0f, 0.0f);
 		//ray.ody = Vec3(0.0f, 0.0f, 0.0f);
 		//ray.ddx = Vec3(dx, 0.0f, 0.0f);

@@ -2,6 +2,10 @@
 //  This will serve as a stop-gap until you get ray differentials
 //  working properly.
 
+- Make ray offset take into account dicing rate
+	- Maybe easiest way to do this is simply to use the dicing rate
+	  to determine the starting ray differentials from the camera?
+
 - Two-stage ray tracing, similar to the Rayes (not Reyes) paper
 	//- Make rays const throughout the tracing pipeline.
 	//- All mutable data about tracing a ray are stored in intersections.
