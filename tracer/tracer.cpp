@@ -92,7 +92,7 @@ uint_i Tracer::accumulate_potential_intersections()
 	uint_i last = 0;
 	uint_i i = 0;
 	while (i < potential_intersections.size()) {
-		while (potential_intersections[last].valid && last < potential_intersections.size())
+		while (last < potential_intersections.size() && potential_intersections[last].valid)
 			last++;
 
 		if (potential_intersections[i].valid) {

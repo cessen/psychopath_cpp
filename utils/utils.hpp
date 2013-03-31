@@ -189,4 +189,48 @@ static inline Vec3 zup_to_vec(Vec3 from, Vec3 toz)
 }
 
 
+/**
+ * @brief Fast approximation of log2.
+ *
+ * Taken from http://fastapprox.googlecode.com/
+ * (C) 2011 Paul Mineiro
+ * Under a BSD style license.  See above URL for details.
+ */
+static inline float fastlog2(float x)
+{
+	union {
+		float f;
+		uint32 i;
+	} vx = { x };
+	union {
+		uint32 i;
+		float f;
+	} mx = { (vx.i & 0x007FFFFF) | 0x3f000000 };
+	float y = vx.i;
+	y *= 1.1920928955078125e-7f;
+
+	return y - 124.22551499f
+	       - 1.498030302f * mx.f
+	       - 1.72587999f / (0.3520887068f + mx.f);
+}
+
+/**
+ * @brief An even faster (but less accurate) approximation of log2.
+ *
+ * Taken from http://fastapprox.googlecode.com/
+ * (C) 2011 Paul Mineiro
+ * Under a BSD style license.  See above URL for details.
+ */
+static inline float fasterlog2(float x)
+{
+	union {
+		float f;
+		uint32_t i;
+	} vx = { x };
+	float y = vx.i;
+	y *= 1.1920928955078125e-7f;
+	return y - 126.94269504f;
+}
+
+
 #endif

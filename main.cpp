@@ -7,7 +7,6 @@
 #include <iostream>
 #include <vector>
 
-#include <gperftools/profiler.h>
 //#include <OSL/oslexec.h>
 #include <boost/program_options.hpp>
 
@@ -89,8 +88,6 @@ namespace BPO = boost::program_options;
  * 21.3 second
  */
 
-//#define GOOGLE_PROFILE
-
 #define THREADS 4
 #define SPP 4
 //#define XRES 512
@@ -143,11 +140,6 @@ void validate(boost::any& v, const std::vector<std::string>& values,
 
 int main(int argc, char **argv)
 {
-#ifdef GOOGLE_PROFILE
-	// Profiling
-	ProfilerStart("psychopath.prof");
-#endif
-
 	// RNGs
 	RNG rng(0);
 	RNG rng2(1);
@@ -161,7 +153,7 @@ int main(int argc, char **argv)
 #ifdef DEBUG
 	std::cout << " (DEBUG build)";
 #endif
-	std::cout << std::endl << std::endl;
+	std::cout << std::endl;
 
 #ifdef DEBUG
 	std::cout << std::endl << "Struct sizes:" << std::endl;
@@ -230,7 +222,7 @@ int main(int argc, char **argv)
 	// Input file
 	if (vm.count("scenefile")) {
 		input_path = vm["scenefile"].as<std::string>();
-		std::cout << "Input scene: " << output_path << "\n";
+		std::cout << "Input scene: " << input_path << "\n";
 	}
 
 	// Output file
@@ -244,6 +236,8 @@ int main(int argc, char **argv)
 		resolution = vm["resolution"].as<Resolution>();
 		std::cout << "Resolution: " << resolution.x << " " << resolution.y << "\n";
 	}
+
+	std::cout << std::endl;
 
 
 	/*
@@ -270,10 +264,6 @@ int main(int argc, char **argv)
 
 		std::cout << "Render time (seconds): " << std::fixed << std::setprecision(3) << timer.time() << std::endl << std::endl;
 	}
-
-#ifdef GOOGLE_PROFILE
-	ProfilerStop();
-#endif
 
 	return 0;
 }

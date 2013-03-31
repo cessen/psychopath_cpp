@@ -178,26 +178,18 @@ std::tuple<int, int, int, int, std::string> Parser::parse_frame_header()
 
 Camera *Parser::parse_camera()
 {
-	Vec3 location {0,0,0};
-	Vec3 rotation {0,0,0};
+	float matvals[16] {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
 	float fov {90.0f};
 
 	std::string line;
 	getline(psy_file, line);
 	if (line.find("Camera") == 0) { // Verify this is a "Frame" section
 		while (getline(psy_file, line)) { // Loop through the lines
-			if (line.find("Location:") == 0) {
+			if (line.find("Matrix:") == 0) {
 				// Get the camera's location
 				boost::sregex_iterator matches(line.begin(), line.end(), re_float);
-				for (int i = 0; matches != boost::sregex_iterator() && i < 3; ++matches) {
-					location[i] = std::stof(matches->str());
-					++i;
-				}
-			} else if (line.find("Rotation:") == 0) {
-				// Get the camera's rotation
-				boost::sregex_iterator matches(line.begin(), line.end(), re_float);
-				for (int i = 0; matches != boost::sregex_iterator() && i < 3; ++matches) {
-					rotation[i] = std::stof(matches->str());
+				for (int i = 0; matches != boost::sregex_iterator() && i < 16; ++matches) {
+					matvals[i] = std::stof(matches->str());
 					++i;
 				}
 			} else if (line.find("FOV:") == 0) {
@@ -216,17 +208,19 @@ Camera *Parser::parse_camera()
 
 
 	// Build camera transforms
-	std::vector<Transform> cam_tra;
-	cam_tra.resize(1);
-
 	Matrix44 mat;
-	mat.makeIdentity();
-	mat.translate(location);
-	mat.rotate(rotation);
-	cam_tra[0] = mat;
+	for (int i = 0; i < 4; ++i) {
+		for (int j = 0; j < 4; ++j) {
+			mat[i][j] = matvals[i*4 + j];
+		}
+	}
+
+	std::vector<Transform> cam_transform;
+	cam_transform.resize(1);
+	cam_transform[0] = mat;
 
 	// Construct camera
-	Camera *camera = new Camera(cam_tra, (3.14159/180.0)*fov, 0.0f, 10.0f);
+	Camera *camera = new Camera(cam_transform, (3.14159/180.0)*fov, 0.0f, 10.0f);
 
 	return camera;
 }

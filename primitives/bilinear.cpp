@@ -108,11 +108,11 @@ bool Bilinear::intersect_ray(const Ray &ray, Intersection *intersection)
 
 	if (redice) {
 		// Redice
-		micro_surface = micro_generate(width);
+		micro_surface = micro_generate(width*0.75f);
 		microsurface_key = MicroSurfaceCache::cache.add_open(micro_surface);
 
 		// Record ray width
-		last_ray_width = width;
+		last_ray_width = width*0.75f;
 	}
 
 	// Test the ray against the grid

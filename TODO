@@ -2,6 +2,9 @@
 //  This will serve as a stop-gap until you get ray differentials
 //  working properly.
 
+- Axis aligned faces don't render because their microgrid bboxes
+  collapse(?)
+
 - Make ray offset take into account dicing rate
 	- Maybe easiest way to do this is simply to use the dicing rate
 	  to determine the starting ray differentials from the camera?

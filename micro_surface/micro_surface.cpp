@@ -1,9 +1,12 @@
 #include "micro_surface.hpp"
-#include "global.hpp"
-#include "config.hpp"
 
 #include <iostream>
 #include <cmath>
+
+#include "global.hpp"
+#include "config.hpp"
+
+#include "utils.hpp"
 
 #define IS_LEAF 1
 
@@ -22,8 +25,7 @@ bool MicroSurface::intersect_ray(const Ray &ray, float32 ray_width, Intersection
 		t = t < inter->t ? t : inter->t;
 
 	// Calculate the max depth the ray should traverse into the tree
-	const float32 l2 = 1.0f / std::log(2);
-	const uint32 rdepth = 2 * std::max(0.0f, (std::log(root_width)*l2) - (std::log(ray_width)*l2));
+	const uint32 rdepth = 2 * std::max(0.0f, fasterlog2(root_width) - fasterlog2(ray_width));
 
 	// Intersect with the MicroSurface
 	while (true) {
@@ -156,13 +158,13 @@ void MicroSurface::init_from_grid(Grid *grid)
 
 	// Calculate displacements
 	// TODO: Use shaders for displacements
-	normals.resize(grid->res_u * grid->res_v * grid->time_count);
+	/*normals.resize(grid->res_u * grid->res_v * grid->time_count);
 	grid->calc_normals(&(normals[0]));
 	for (uint_i i = 0; i < res_u*res_v; i++) {
 		for (uint_i t = 0; t < time_count; t++) {
 			grid->verts[i*time_count+t] += normals[i*time_count+t] * (cos(uvs[i*2]*32)+sin(uvs[i*2+1]*32)) * Config::displace_distance;
 		}
-	}
+	}*/
 
 	// Calculate surface normals
 	normals.resize(grid->res_u * grid->res_v * grid->time_count);

@@ -37,6 +37,11 @@ bool PrimArray::finalize()
 	return true;
 }
 
+uint_i PrimArray::max_primitive_id() const
+{
+	return children.size();
+}
+
 Primitive &PrimArray::get_primitive(uint_i id)
 {
 	return *(children[id]);

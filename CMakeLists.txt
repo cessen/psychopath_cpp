@@ -40,8 +40,8 @@ set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-unused-function")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-function")
 
 # Profiling
-#set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg")
-#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+#set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
+#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 
 # Define "DEBUG" in debug builds
 set (CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DDEBUG")
@@ -156,7 +156,6 @@ target_link_libraries(psychopath
     ${ILMBASE_LIBRARIES}
     ${OIIO_LIBRARY}
     ${OSL_LIBRARYS}
-	profiler # Google perftools profiler library
     )
 
 # Unit-test executable
