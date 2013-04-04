@@ -246,9 +246,9 @@ int main(int argc, char **argv)
 	 *********************
 	 */
 	Parser parser(input_path);
-
+	Timer<> total_timer;
 	while (true) {
-		Timer<> timer;
+		Timer<> frame_timer;
 		std::unique_ptr<Renderer> r {parser.parse_next_frame()};
 
 		if (r == nullptr)
@@ -262,8 +262,11 @@ int main(int argc, char **argv)
 		std::cout << "Starting render:" << std::endl;
 		r->render(threads);
 
-		std::cout << "Render time (seconds): " << std::fixed << std::setprecision(3) << timer.time() << std::endl << std::endl;
+		std::cout << "Frame render time (seconds): " << std::fixed << std::setprecision(3) << frame_timer.time() << std::endl << std::endl;
 	}
+
+	std::cout << "Total render time (seconds): " << std::fixed << std::setprecision(3) << total_timer.time() << std::endl << std::endl;
+
 
 	return 0;
 }

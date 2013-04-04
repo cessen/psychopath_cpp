@@ -29,6 +29,7 @@ struct Scene {
 	Camera *camera;
 	std::vector<Primitive *> primitives;
 	std::vector<Light *> finite_lights;
+	//PrimArray world;
 	BVH world;
 
 	Scene(): camera {nullptr} {}

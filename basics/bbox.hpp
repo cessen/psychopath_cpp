@@ -3,6 +3,7 @@
 
 #include "numtype.h"
 
+#include <iostream>
 #include <stdlib.h>
 #include <x86intrin.h>
 #include "timebox.hpp"
@@ -75,6 +76,7 @@ struct BBox {
 	 *     distance to the closest intersection.
 	 * @param[out] hitt1 If there is a hit, this gets modified to the
 	 *     distance to the furthest intersection.
+	 * @param[in] an optional alternative ray max_t to use.
 	 *
 	 * @returns True if the ray hits, false if the ray misses.
 	 */
@@ -97,8 +99,8 @@ struct BBox {
 		if (tzmax < tmax)
 			tmax = tzmax;
 
-		const float32 tt = t ? *t : ray.max_t;
-		if ((tmin < tmax) && (tmin < tt) && (tmax > ray.min_t)) {
+		const float32 tt = (t != nullptr) ? *t : ray.max_t;
+		if ((tmin <= tmax) && (tmin < tt) && (tmax > ray.min_t)) {
 			*hitt0 = tmin > ray.min_t ? tmin : ray.min_t;
 			*hitt1 = tmax < tt ? tmax : tt;
 			return true;
@@ -144,9 +146,25 @@ struct BBox {
 	Vec3 center() const {
 		return (min + max) * 0.5f;
 	}
+
+	std::string to_string() const {
+		std::string s;
+		s.append("(");
+		s.append(std::to_string(min[0]));
+		s.append(", ");
+		s.append(std::to_string(min[1]));
+		s.append(", ");
+		s.append(std::to_string(min[2]));
+		s.append(") (");
+		s.append(std::to_string(max[0]));
+		s.append(", ");
+		s.append(std::to_string(max[1]));
+		s.append(", ");
+		s.append(std::to_string(max[2]));
+		s.append(")");
+		return s;
+	}
 };
-
-
 
 
 /**

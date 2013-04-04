@@ -16,8 +16,8 @@
 #include "scene.hpp"
 
 #define RAY_STATE_SIZE scene->world.ray_state_size()
-#define MAX_POTINT 2
-#define RAY_JOB_SIZE 2048
+#define MAX_POTINT 8
+#define RAY_JOB_SIZE (1024*4)
 
 
 uint32 Tracer::trace(const Array<Ray> &rays_, Array<Intersection> *intersections_)
@@ -37,6 +37,10 @@ uint32 Tracer::trace(const Array<Ray> &rays_, Array<Intersection> *intersections
 	states.resize(rays.size()*RAY_STATE_SIZE);
 	std::fill(states.begin(), states.end(), 0);
 
+	// Allocate and init rays_active flags
+	rays_active.resize(rays.size());
+	std::fill(rays_active.begin(), rays_active.end(), true);
+
 	// Allocate potential intersection buffer
 	potential_intersections.resize(rays.size()*MAX_POTINT);
 
@@ -44,6 +48,16 @@ uint32 Tracer::trace(const Array<Ray> &rays_, Array<Intersection> *intersections
 	while (accumulate_potential_intersections()) {
 		sort_potential_intersections();
 		trace_potential_intersections();
+
+		/*
+		// Print number of active rays
+		size_t active_rays = 0;
+		for (auto r: rays_active) {
+			if (r)
+				active_rays++;
+		}
+		std::cout << "Active rays: " << active_rays << std::endl;
+		*/
 	}
 
 	return rays.size();
@@ -57,11 +71,15 @@ void job_accumulate_potential_intersections(Tracer *tracer, uint_i start_i, uint
 	uint_i potint_ids[MAX_POTINT];
 
 	for (uint_i i = start_i; i < end_i; i++) {
-		const uint_i pc = tracer->scene->world.get_potential_intersections(tracer->rays[i], MAX_POTINT, potint_ids, &(tracer->states[i*tracer->RAY_STATE_SIZE]));
-		for (uint_i j = 0; j < pc; j++) {
-			tracer->potential_intersections[(i*MAX_POTINT)+j].valid = true;
-			tracer->potential_intersections[(i*MAX_POTINT)+j].object_id = potint_ids[j];
-			tracer->potential_intersections[(i*MAX_POTINT)+j].ray_index = i;
+		if (tracer->rays_active[i]) {
+			const uint_i pc = tracer->scene->world.get_potential_intersections(tracer->rays[i], tracer->intersections[i].t, MAX_POTINT, potint_ids, &(tracer->states[i*tracer->RAY_STATE_SIZE]));
+			tracer->rays_active[i] = (pc > 0);
+
+			for (uint_i j = 0; j < pc; j++) {
+				tracer->potential_intersections[(i*MAX_POTINT)+j].valid = true;
+				tracer->potential_intersections[(i*MAX_POTINT)+j].object_id = potint_ids[j];
+				tracer->potential_intersections[(i*MAX_POTINT)+j].ray_index = i;
+			}
 		}
 	}
 }
@@ -74,7 +92,9 @@ uint_i Tracer::accumulate_potential_intersections()
 	for (uint_i i = 0; i < spi; i++)
 		potential_intersections[i].valid = false;
 
+
 	// Accumulate potential intersections
+#if 1
 	JobQueue<> jq(thread_count);
 	for (uint_i i = 0; i < rays.size(); i += RAY_JOB_SIZE) {
 		// Dole out jobs
@@ -86,6 +106,21 @@ uint_i Tracer::accumulate_potential_intersections()
 		jq.push(std::bind(job_accumulate_potential_intersections, this, start, end));
 	}
 	jq.finish();
+#else
+	for (uint_i i = 0; i < rays.size(); i += RAY_JOB_SIZE) {
+
+		// Dole out jobs
+		uint_i start = i;
+		uint_i end = i + RAY_JOB_SIZE;
+		if (end > rays.size())
+			end = rays.size();
+
+
+		job_accumulate_potential_intersections(this, start, end);
+
+	}
+#endif
+
 
 	// Compact the potential intersections
 	uint_i pii = 0;
@@ -120,6 +155,8 @@ uint_i Tracer::accumulate_potential_intersections()
  */
 void Tracer::sort_potential_intersections()
 {
+	//std::sort(potential_intersections.begin(), potential_intersections.end());
+	//return;
 	const uint_i max_items = scene->world.max_primitive_id()+1;
 
 	for (uint_i i = 0; i < max_items; i++) {

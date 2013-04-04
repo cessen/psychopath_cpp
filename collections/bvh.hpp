@@ -120,7 +120,7 @@ public:
 	virtual bool finalize();
 	virtual uint_i max_primitive_id() const;
 	virtual Primitive &get_primitive(uint_i id);
-	virtual uint get_potential_intersections(const Ray &ray, uint max_potential, uint_i *ids, void *state);
+	virtual uint get_potential_intersections(const Ray &ray, float tmax, uint max_potential, uint_i *ids, void *state);
 	virtual uint_i size() {
 		// TODO
 		return 0;

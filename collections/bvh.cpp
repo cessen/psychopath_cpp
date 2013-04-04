@@ -13,8 +13,6 @@
 #define SPLIT_MASK 2
 #define IS_LEAF 4
 
-#define SAH
-
 BVH::~BVH()
 {
 	for (uint_i i=0; i < next_node; i++) {
@@ -84,13 +82,18 @@ struct CompareDim {
 
 
 
+#if 1
 /*
  * Determines the split of the primitives in bag starting
  * at first and ending at last.  May reorder that section of the
  * list.  Used in recursive_build for BVH construction.
  * Returns the split index (last index of the first group).
+ *
+ * TODO: SAH splitting can cause very deep trees, larger than the
+ * 64-element stack used for tracing.  Need to find some way
+ * to fix that.  It may also be that something is broken in the
+ * implementation.
  */
-#ifndef SAH
 uint32 BVH::split_primitives(uint_i first_prim, uint_i last_prim, int32 *axis)
 {
 	// Find the minimum and maximum centroid values on each axis
@@ -175,9 +178,16 @@ uint32 BVH::split_primitives(uint_i first_prim, uint_i last_prim, int32 *axis)
 		BucketInfo buckets_y[nBuckets];
 		BucketInfo buckets_z[nBuckets];
 		for (uint32 i = first_prim; i <= last_prim; i++) {
-			int32 b_x = nBuckets * ((bag[i].c[0] - min[0]) / (max[0] - min[0]));
-			int32 b_y = nBuckets * ((bag[i].c[1] - min[1]) / (max[1] - min[1]));
-			int32 b_z = nBuckets * ((bag[i].c[2] - min[2]) / (max[2] - min[2]));
+			int32 b_x = 0;
+			int32 b_y = 0;
+			int32 b_z = 0;
+
+			if (max[0] > min[0])
+				b_x = nBuckets * ((bag[i].c[0] - min[0]) / (max[0] - min[0]));
+			if (max[1] > min[1])
+				b_y = nBuckets * ((bag[i].c[1] - min[1]) / (max[1] - min[1]));
+			if (max[2] > min[2])
+				b_z = nBuckets * ((bag[i].c[2] - min[2]) / (max[2] - min[2]));
 
 			if (b_x == nBuckets)
 				b_x = nBuckets-1;
@@ -359,7 +369,7 @@ void BVH::recursive_build(uint_i parent, uint_i me, uint_i first_prim, uint_i la
 
 	// Calculate bounds
 	// If both children have same number of time samples
-	/*if (nodes[child1i].ts == nodes[child2i].ts) {
+	if (nodes[child1i].ts == nodes[child2i].ts) {
 		nodes[me].ts = nodes[child1i].ts;
 		if ((next_bbox + nodes[me].ts) >= bboxes.size()) // Make sure we have enough space
 			bboxes.resize(next_bbox + nodes[me].ts + 256); // Allocate space if not
@@ -372,20 +382,20 @@ void BVH::recursive_build(uint_i parent, uint_i me, uint_i first_prim, uint_i la
 
 	}
 	// If children have different number of time samples
-	else {*/
-	nodes[me].ts = 1;
-	if ((next_bbox + nodes[me].ts) >= bboxes.size()) // Make sure we have enough space
-		bboxes.resize(next_bbox + nodes[me].ts + 256); // Allocate space if not
+	else {
+		nodes[me].ts = 1;
+		if ((next_bbox + nodes[me].ts) >= bboxes.size()) // Make sure we have enough space
+			bboxes.resize(next_bbox + nodes[me].ts + 256); // Allocate space if not
 
-	// Merge children's bboxes to get our bbox
-	bboxes[next_bbox] = bboxes[nodes[child1i].bbox_index];
-	for (uint_i i = 1; i < nodes[child1i].ts; i++) {
-		bboxes[next_bbox].merge_with(bboxes[nodes[child1i].bbox_index+i]);
+		// Merge children's bboxes to get our bbox
+		bboxes[next_bbox] = bboxes[nodes[child1i].bbox_index];
+		for (uint_i i = 1; i < nodes[child1i].ts; i++) {
+			bboxes[next_bbox].merge_with(bboxes[nodes[child1i].bbox_index+i]);
+		}
+		for (uint_i i = 0; i < nodes[child2i].ts; i++) {
+			bboxes[next_bbox].merge_with(bboxes[nodes[child2i].bbox_index+i]);
+		}
 	}
-	for (uint_i i = 0; i < nodes[child2i].ts; i++) {
-		bboxes[next_bbox].merge_with(bboxes[nodes[child2i].bbox_index+i]);
-	}
-	//}
 	nodes[me].bbox_index = next_bbox;
 	next_bbox += nodes[me].ts;
 }
@@ -399,7 +409,6 @@ BBoxT &BVH::bounds()
 bool BVH::intersect_ray(const Ray &ray, Intersection *intersection)
 {
 	bool hit = false;
-	std::vector<Primitive *> temp_prim;
 
 	// Traverse the BVH and check for intersections. Yay!
 	float32 hitt0, hitt1;
@@ -441,6 +450,63 @@ bool BVH::intersect_ray(const Ray &ray, Intersection *intersection)
 	return hit;
 }
 
+#if 0
+uint BVH::get_potential_intersections(const Ray &ray, float tmax, uint max_potential, uint_i *ids, void *state)
+{
+	uint64 hits = 0;
+	uint hits_so_far = 0;
+	uint prior_hits = 0;
+	if (state) {
+		if (static_cast<uint64*>(state)[1])
+			return 0;
+		prior_hits = static_cast<uint64*>(state)[0];
+	}
+
+	// Traverse the BVH and check for intersections. Yay!
+	float32 hitt0, hitt1;
+	uint32 todo_offset = 0, node = 0;
+	uint32 todo[1000];
+
+	while (true) {
+		if (intersect_node(node, ray, &hitt0, &hitt1)) {
+			if (nodes[node].flags & IS_LEAF) {
+				if (hits_so_far >= prior_hits) {
+					ids[hits_so_far-prior_hits] = node;
+					hits++;
+				}
+
+				hits_so_far++;
+
+
+				if (todo_offset == 0 || hits_so_far >= max_potential + prior_hits)
+					break;
+
+				node = todo[--todo_offset];
+			} else {
+				// Put far BVH node on todo stack, advance to near node
+				if (ray.d_is_neg[nodes[node].flags & SPLIT_MASK]) {
+					todo[todo_offset++] = nodes[node].child_index;
+					node = nodes[node].child_index + 1;
+				} else {
+					todo[todo_offset++] = nodes[node].child_index + 1;
+					node = nodes[node].child_index;
+				}
+			}
+		} else {
+			if (todo_offset == 0)
+				break;
+
+			node = todo[--todo_offset];
+		}
+	}
+
+	if (hits_so_far - prior_hits == 0)
+		static_cast<uint64*>(state)[1] = 1;
+	static_cast<uint64*>(state)[0] = hits_so_far;
+	return hits_so_far - prior_hits;
+}
+
+#else
 #define FROM_PARENT 0
 #define FROM_SIBLING 1
 #define FROM_CHILD 2
@@ -448,7 +514,7 @@ bool BVH::intersect_ray(const Ray &ray, Intersection *intersection)
 // TODO: currently the "ids" returned are node id's, but they should be
 // primitive ids.  Similarly, get_primitve() should be changed to take
 // primitive ids.
-uint BVH::get_potential_intersections(const Ray &ray, uint max_potential, uint_i *ids, void *state)
+uint BVH::get_potential_intersections(const Ray &ray, float tmax, uint max_potential, uint_i *ids, void *state)
 {
 	uint64 node;
 	uint8 node_state;
@@ -477,7 +543,7 @@ uint BVH::get_potential_intersections(const Ray &ray, uint max_potential, uint_i
 
 		switch (node_state) {
 			case FROM_PARENT:
-				hit = intersect_node(node, ray, &hitt0, &hitt1);
+				hit = intersect_node(node, ray, &hitt0, &hitt1) && hitt0 < tmax;
 
 				if (!hit) {
 					// If ray misses BBox
@@ -530,7 +596,7 @@ uint BVH::get_potential_intersections(const Ray &ray, uint max_potential, uint_i
 				break;
 
 			case FROM_SIBLING:
-				hit = intersect_node(node, ray, &hitt0, &hitt1);
+				hit = intersect_node(node, ray, &hitt0, &hitt1) && hitt0 < tmax;
 
 				if (!hit) {
 					// If ray misses BBox, go to parent node.
@@ -602,4 +668,6 @@ uint BVH::get_potential_intersections(const Ray &ray, uint max_potential, uint_i
 	// Return the number of primitives accumulated
 	return hits_so_far;
 }
+
+#endif
 

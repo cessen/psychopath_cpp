@@ -178,25 +178,58 @@ std::tuple<int, int, int, int, std::string> Parser::parse_frame_header()
 
 Camera *Parser::parse_camera()
 {
-	float matvals[16] {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
-	float fov {90.0f};
+	std::vector<Matrix44> mats;
+	float fov = 90.0f;
+	float focus_distance = 10.0f;
+	float aperture_size = 0.0f;
 
 	std::string line;
 	getline(psy_file, line);
 	if (line.find("Camera") == 0) { // Verify this is a "Frame" section
-		while (getline(psy_file, line)) { // Loop through the lines
+		// Loop through the lines
+		while (getline(psy_file, line)) {
 			if (line.find("Matrix:") == 0) {
-				// Get the camera's location
-				boost::sregex_iterator matches(line.begin(), line.end(), re_float);
-				for (int i = 0; matches != boost::sregex_iterator() && i < 16; ++matches) {
-					matvals[i] = std::stof(matches->str());
-					++i;
+				// Get the camera matrix(s); multiple matrices means motion blur
+				ungetline(psy_file);
+				while (getline(psy_file, line)) {
+					if (line.find("Matrix:") == 0) {
+						float matvals[16] {1, 0, 0, 0,  0, 1, 0, 0,  0, 0, 1, 0,  0, 0, 0, 1};
+						boost::sregex_iterator matches(line.begin(), line.end(), re_float);
+						for (int i = 0; matches != boost::sregex_iterator() && i < 16; ++matches) {
+							matvals[i] = std::stof(matches->str());
+							++i;
+						}
+
+						Matrix44 mat;
+						for (int i = 0; i < 4; ++i) {
+							for (int j = 0; j < 4; ++j) {
+								mat[i][j] = matvals[i*4 + j];
+							}
+						}
+						mats.push_back(mat);
+					} else {
+						// No more verts
+						ungetline(psy_file);
+						break;
+					}
 				}
 			} else if (line.find("FOV:") == 0) {
 				// Get the camera's field of view
 				boost::sregex_iterator matches(line.begin(), line.end(), re_float);
 				if (matches != boost::sregex_iterator()) {
 					fov = std::stof(matches->str());
+				}
+			} else if (line.find("FocusDistance:") == 0) {
+				// Get the camera's field of view
+				boost::sregex_iterator matches(line.begin(), line.end(), re_float);
+				if (matches != boost::sregex_iterator()) {
+					focus_distance = std::stof(matches->str());
+				}
+			} else if (line.find("ApertureSize:") == 0) {
+				// Get the camera's field of view
+				boost::sregex_iterator matches(line.begin(), line.end(), re_float);
+				if (matches != boost::sregex_iterator()) {
+					aperture_size = std::stof(matches->str());
 				}
 			} else {
 				// Not a valid line for this section, stop
@@ -208,19 +241,13 @@ Camera *Parser::parse_camera()
 
 
 	// Build camera transforms
-	Matrix44 mat;
-	for (int i = 0; i < 4; ++i) {
-		for (int j = 0; j < 4; ++j) {
-			mat[i][j] = matvals[i*4 + j];
-		}
-	}
-
-	std::vector<Transform> cam_transform;
-	cam_transform.resize(1);
-	cam_transform[0] = mat;
+	std::vector<Transform> cam_transforms;
+	cam_transforms.resize(mats.size());
+	for (uint i = 0; i < mats.size(); ++i)
+		cam_transforms[i] = mats[i];
 
 	// Construct camera
-	Camera *camera = new Camera(cam_transform, (3.14159/180.0)*fov, 0.0f, 10.0f);
+	Camera *camera = new Camera(cam_transforms, (3.14159/180.0)*fov, aperture_size, focus_distance);
 
 	return camera;
 }
@@ -281,24 +308,29 @@ SphereLight *Parser::parse_sphere_light()
 }
 
 
+struct BilinearPatchVerts {
+	float v[12];
+};
+
 Bilinear *Parser::parse_bilinear_patch()
 {
-	//float v[12] = {1.0f, 1.0f, 20.0f, 1.0f, -1.0f, 20.0f, -1.0f, -1.0f, 20.0f, -1.0f, 1.0f, 20.0f};
-	float v[12] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+	std::vector<BilinearPatchVerts> patch_verts;
 
 	std::string line;
 	getline(psy_file, line);
 	if (line.find("BilinearPatch") == 0) { // Verify this is a "Frame" section
-		while (getline(psy_file, line)) { // Loop through the lines
+		// Get the vertices of the patch; multiple vert lines means motion blur
+		while (getline(psy_file, line)) {
 			if (line.find("Vertices:") == 0) {
-				// Get the vertices of the patch
+				BilinearPatchVerts verts;
 				boost::sregex_iterator matches(line.begin(), line.end(), re_float);
 				for (int i = 0; matches != boost::sregex_iterator() && i < 12; ++matches) {
-					v[i] = std::stof(matches->str());
+					verts.v[i] = std::stof(matches->str());
 					++i;
 				}
+				patch_verts.push_back(verts);
 			} else {
-				// Not a valid line for this section, stop
+				// No more verts
 				ungetline(psy_file);
 				break;
 			}
@@ -306,11 +338,14 @@ Bilinear *Parser::parse_bilinear_patch()
 	}
 
 	// Build the patch
-	Bilinear *patch = new Bilinear(1);
-	patch->add_time_sample(0, Vec3(v[0], v[1], v[2]),
-	                       Vec3(v[3], v[4], v[5]),
-	                       Vec3(v[6], v[7], v[8]),
-	                       Vec3(v[9], v[10], v[11]));
+	Bilinear *patch = new Bilinear(patch_verts.size());
+	for (uint i = 0; i < patch_verts.size(); ++i) {
+		auto p = patch_verts[i];
+		patch->add_time_sample(i, Vec3(p.v[0], p.v[1], p.v[2]),
+		                       Vec3(p.v[3], p.v[4], p.v[5]),
+		                       Vec3(p.v[6], p.v[7], p.v[8]),
+		                       Vec3(p.v[9], p.v[10], p.v[11]));
+	}
 
 	return patch;
 }

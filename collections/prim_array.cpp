@@ -74,7 +74,7 @@ bool PrimArray::intersect_ray(const Ray &ray, Intersection *intersection)
 }
 
 
-uint PrimArray::get_potential_intersections(const Ray &ray, uint max_potential, uint_i *ids, void *state)
+uint PrimArray::get_potential_intersections(const Ray &ray, float tmax, uint max_potential, uint_i *ids, void *state)
 {
 	const uint32 size = children.size();
 	float32 tnear, tfar;
@@ -84,10 +84,15 @@ uint PrimArray::get_potential_intersections(const Ray &ray, uint max_potential, 
 	if (state != nullptr)
 		i = *((uint64 *)state);
 
+	static uint count = 0;
+	count++;
+	if (!(count%20000))
+		std::cout << "State: " << i << std::endl;
+
 	// Accumulate potential primitive intersections
 	uint32 hits_so_far = 0;
 	for (; i < size && hits_so_far < max_potential; i++) {
-		if (children[i]->bounds().intersect_ray(ray, &tnear, &tfar)) {
+		if (children[i]->bounds().intersect_ray(ray, &tnear, &tfar) && tnear < tmax) {
 			ids[hits_so_far] = i;
 			hits_so_far++;
 		}

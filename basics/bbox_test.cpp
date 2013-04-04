@@ -175,6 +175,16 @@ BOOST_AUTO_TEST_CASE(intersect_ray_5)
 	BOOST_CHECK(bb.intersect_ray(r) == false);
 }
 
+BOOST_AUTO_TEST_CASE(intersect_ray_6)
+{
+	// Intersection with collapsed BBox, should be true
+	Ray r(Vec3(-4.0, 0.0, 0.0), Vec3(1.0, 0.0, 0.0));
+	r.finalize();
+	BBox bb(Vec3(1.0, -1.0, -1.0), Vec3(1.0, 1.0, 1.0));
+
+	BOOST_CHECK(bb.intersect_ray(r) == true);
+}
+
 // TODO: - diagonal rays
 //       - rays with different tmin/tmax values
 

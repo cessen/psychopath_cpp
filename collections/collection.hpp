@@ -67,7 +67,7 @@ public:
 	 *
 	 * @returns The number of results acquired.  If zero, that means there were no potential intersections.
 	 */
-	virtual uint get_potential_intersections(const Ray &ray, uint max_potential, uint_i *ids, void *state) = 0;
+	virtual uint get_potential_intersections(const Ray &ray, float tmax, uint max_potential, uint_i *ids, void *state) = 0;
 
 
 

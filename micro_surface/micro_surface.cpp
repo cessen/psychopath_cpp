@@ -75,8 +75,8 @@ bool MicroSurface::intersect_ray(const Ray &ray, float32 ray_width, Intersection
 
 		// Information about the intersection point
 		inter->t = t;
-		//inter->p = ray.o + (ray.d * t);
-		inter->p = nodes[hit_node].bounds.center();
+		inter->p = ray.o + (ray.d * t);
+		//inter->p = nodes[hit_node].bounds.center();
 
 		// Data about the ray that caused the intersection
 		inter->in = ray.d;
@@ -117,9 +117,10 @@ bool MicroSurface::intersect_ray(const Ray &ray, float32 ray_width, Intersection
 
 		// Generate origin offset for next ray
 		const float32 dl = std::max(ray.width(t) * Config::dice_rate, nodes[hit_node].bounds.diagonal() * 0.5f);
+		//const float32 dl = 1.5f;
 		inter->offset = inter->n * dl;
-		if (dot(inter->n, ray.d.normalized()) > 0.0f)
-			inter->offset = inter->offset * -1.0f;
+		//if (dot(inter->n, ray.d.normalized()) > 0.0f)
+		//	inter->offset = inter->offset * -1.0f;
 	}
 
 	return hit;
@@ -158,13 +159,13 @@ void MicroSurface::init_from_grid(Grid *grid)
 
 	// Calculate displacements
 	// TODO: Use shaders for displacements
-	/*normals.resize(grid->res_u * grid->res_v * grid->time_count);
+	normals.resize(grid->res_u * grid->res_v * grid->time_count);
 	grid->calc_normals(&(normals[0]));
 	for (uint_i i = 0; i < res_u*res_v; i++) {
 		for (uint_i t = 0; t < time_count; t++) {
 			grid->verts[i*time_count+t] += normals[i*time_count+t] * (cos(uvs[i*2]*32)+sin(uvs[i*2+1]*32)) * Config::displace_distance;
 		}
-	}*/
+	}
 
 	// Calculate surface normals
 	normals.resize(grid->res_u * grid->res_v * grid->time_count);

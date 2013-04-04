@@ -2,6 +2,9 @@
 //  This will serve as a stop-gap until you get ray differentials
 //  working properly.
 
+- Fix nasty bug in BVH traversal that causes "hitting" of tons and tons
+  of leaves.
+
 - Axis aligned faces don't render because their microgrid bboxes
   collapse(?)
 

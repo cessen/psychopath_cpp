@@ -21,9 +21,7 @@ public:
 	T *data_ptr;
 	size_t active_readers;
 
-	LRUPair() {
-		active_readers = 0;
-	}
+	LRUPair(): active_readers {0} {}
 };
 
 #define LRU_PAIR LRUPair<T>
