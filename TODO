@@ -1,16 +1,4 @@
-//- Temporarily make dicing rate based on camera projection.
-//  This will serve as a stop-gap until you get ray differentials
-//  working properly.
-
-- Fix nasty bug in BVH traversal that causes "hitting" of tons and tons
-  of leaves.
-
-- Axis aligned faces don't render because their microgrid bboxes
-  collapse(?)
-
-- Make ray offset take into account dicing rate
-	- Maybe easiest way to do this is simply to use the dicing rate
-	  to determine the starting ray differentials from the camera?
+- Investigate LRU caches that are lock-free for reading
 
 - Two-stage ray tracing, similar to the Rayes (not Reyes) paper
 	//- Make rays const throughout the tracing pipeline.

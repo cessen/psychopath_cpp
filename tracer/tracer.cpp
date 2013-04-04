@@ -16,7 +16,7 @@
 #include "scene.hpp"
 
 #define RAY_STATE_SIZE scene->world.ray_state_size()
-#define MAX_POTINT 8
+#define MAX_POTINT 4
 #define RAY_JOB_SIZE (1024*4)
 
 
@@ -150,51 +150,18 @@ uint_i Tracer::accumulate_potential_intersections()
 /**
  * Uses a counting sort to sort the potential intersections by
  * object_id.
- *
- * TODO: generate list of objects ids and where they start.
  */
 void Tracer::sort_potential_intersections()
 {
-	//std::sort(potential_intersections.begin(), potential_intersections.end());
-	//return;
-	const uint_i max_items = scene->world.max_primitive_id()+1;
-
-	for (uint_i i = 0; i < max_items; i++) {
-		item_counts[i] = 0;
-	}
-
-	// Count the items
-	for (uint_i i = 0; i < potential_intersections.size(); i++) {
-		item_counts[potential_intersections[i].object_id]++;
-	}
-
-	// Set up start-index array
-	uint_i running_count = 0;
-	for (uint_i i = 0; i < max_items; i++) {
-		item_start_indices[i] = running_count;
-		running_count += item_counts[i];
-	}
-
-	// Set up filled-so-far-count array
-	for (uint_i i = 0; i < max_items; i++) {
-		item_fill_counts[i] = 0;
-	}
-
-	// Sort the list
-	uint_i traversal = 0;
-	uint_i i = 0;
-	while (i < potential_intersections.size()) {
-		const uint_i index = potential_intersections[i].object_id;
-		const uint_i next_place = item_start_indices[index] + item_fill_counts[index];
-
-		if (i >= item_start_indices[index] && i < next_place) {
-			i++;
-		} else {
-			std::swap(potential_intersections[i], potential_intersections[next_place]);
-			item_fill_counts[index]++;
-		}
-		traversal++;
-	}
+#if 1
+	std::sort(potential_intersections.begin(), potential_intersections.end());
+#else
+	CountingSort::sort<PotentialInter>(&(*(potential_intersections.begin())),
+	                                   potential_intersections.size(),
+	                                   scene->world.max_primitive_id(),
+	                                   &index_potint);
+#endif
+	return;
 }
 
 

@@ -57,18 +57,9 @@ public:
 	Array<byte> states; // Ray states, for interrupting and resuming traversal
 	std::vector<PotentialInter> potential_intersections; // "Potential intersection" buffer
 
-	// Arrays for the counting sort
-	Array<uint32> item_counts;
-	Array<uint32> item_start_indices;
-	Array<uint32> item_fill_counts;
-
 	Tracer(Scene *scene_, int thread_count_=1) {
 		scene = scene_;
 		thread_count = thread_count_;
-
-		item_counts.resize(scene->world.max_primitive_id()+1);
-		item_start_indices.resize(scene->world.max_primitive_id()+1);
-		item_fill_counts.resize(scene->world.max_primitive_id()+1);
 	}
 
 

@@ -89,10 +89,7 @@ struct CompareDim {
  * list.  Used in recursive_build for BVH construction.
  * Returns the split index (last index of the first group).
  *
- * TODO: SAH splitting can cause very deep trees, larger than the
- * 64-element stack used for tracing.  Need to find some way
- * to fix that.  It may also be that something is broken in the
- * implementation.
+ * TODO: SAH splitting seems to be very buggy.  Fix.
  */
 uint32 BVH::split_primitives(uint_i first_prim, uint_i last_prim, int32 *axis)
 {
