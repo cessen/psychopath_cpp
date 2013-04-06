@@ -52,6 +52,19 @@ public:
 		output_path = output_path_;
 	}
 
+	~Renderer() {
+		delete scene;
+	}
+
+	void set_resolution(int res_x_, int res_y_) {
+		res_x = res_x_;
+		res_y = res_y_;
+	}
+
+	void set_spp(int spp_) {
+		spp = spp_;
+	}
+
 	// Starts a render with the given number of threads.
 	bool render(int thread_count=1);
 };

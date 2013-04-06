@@ -16,10 +16,13 @@ bool MicroSurface::intersect_ray(const Ray &ray, float32 ray_width, Intersection
 	uint32 todo[64];
 	uint_i todo_offset = 0;
 	uint_i node = 0;
-	float32 tnear, tfar;
+	float32 tnear = ray.max_t;
+	float32 tfar = ray.max_t;
 	bool hit = false;
 	uint_i hit_node = 0;
 
+	float32 hit_near = ray.max_t;
+	//float32 hit_far = ray.max_t;
 	float32 t = ray.max_t;
 	if (inter)
 		t = t < inter->t ? t : inter->t;
@@ -35,6 +38,8 @@ bool MicroSurface::intersect_ray(const Ray &ray, float32 ray_width, Intersection
 				hit = true;
 				hit_node = node;
 				t = tnear;
+				hit_near = tnear;
+				//hit_far = tfar;
 
 				// Early out for shadow rays
 				if (ray.is_shadow_ray)
@@ -74,9 +79,8 @@ bool MicroSurface::intersect_ray(const Ray &ray, float32 ray_width, Intersection
 		const uint_i rd_index = d_index + (d_iv * res_u) + d_iu; // Random within range
 
 		// Information about the intersection point
-		inter->t = t;
-		inter->p = ray.o + (ray.d * t);
-		//inter->p = nodes[hit_node].bounds.center();
+		inter->t = hit_near;
+		inter->p = ray.o + (ray.d * hit_near);
 
 		// Data about the ray that caused the intersection
 		inter->in = ray.d;
@@ -107,6 +111,10 @@ bool MicroSurface::intersect_ray(const Ray &ray, float32 ray_width, Intersection
 			inter->n = nt1.normalized();
 		}
 
+
+		const float32 dl = std::max(ray.width(t) * Config::dice_rate * 1.5f, nodes[hit_node].bounds.diagonal());
+		inter->offset = inter->n * dl * 1.0f; // Origin offset for next ray
+		inter->backfacing = dot(inter->n, ray.d.normalized()) > 0.0f; // Whether the hit was on the back of the surface
 		// UVs
 		// TODO: differentials and correct coordinates for texturing
 		inter->u = uvs[d_index*2];
@@ -114,13 +122,6 @@ bool MicroSurface::intersect_ray(const Ray &ray, float32 ray_width, Intersection
 
 		// Color
 		inter->col = Color(inter->u, inter->v, 0.0f);
-
-		// Generate origin offset for next ray
-		const float32 dl = std::max(ray.width(t) * Config::dice_rate, nodes[hit_node].bounds.diagonal() * 0.5f);
-		//const float32 dl = 1.5f;
-		inter->offset = inter->n * dl;
-		//if (dot(inter->n, ray.d.normalized()) > 0.0f)
-		//	inter->offset = inter->offset * -1.0f;
 	}
 
 	return hit;
@@ -163,7 +164,7 @@ void MicroSurface::init_from_grid(Grid *grid)
 	grid->calc_normals(&(normals[0]));
 	for (uint_i i = 0; i < res_u*res_v; i++) {
 		for (uint_i t = 0; t < time_count; t++) {
-			grid->verts[i*time_count+t] += normals[i*time_count+t] * (cos(uvs[i*2]*32)+sin(uvs[i*2+1]*32)) * Config::displace_distance;
+			grid->verts[i*time_count+t] += normals[i*time_count+t] * (cos(uvs[i*2]*3.14159*4)+cos(uvs[i*2+1]*3.14159*4)) * Config::displace_distance;
 		}
 	}
 

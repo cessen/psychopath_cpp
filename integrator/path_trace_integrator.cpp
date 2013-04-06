@@ -24,8 +24,8 @@ float32 lambert(Vec3 v1, Vec3 v2)
 	v1.normalize();
 	v2.normalize();
 	float32 f = dot(v1, v2);
-	if (f < 0.0)
-		f = 0.0;
+	if (f < 0.0f)
+		f = 0.0f;
 	return f;
 }
 
@@ -114,7 +114,7 @@ void PathTraceIntegrator::integrate()
 
 			int32 so = (path_n * 5); // Sample offset
 
-			// Calculate path rays
+			// Create path rays
 			std::cout << "\tGenerating path rays" << std::endl;
 			if (path_n == 0) {
 				// First segment of path is camera rays
@@ -132,9 +132,8 @@ void PathTraceIntegrator::integrate()
 				uint32 pri = 0; // Path ray index
 				for (uint32 i = 0; i < samp_size; i++) {
 					if (!paths[i].done) {
-						Vec3 nn = paths[i].inter.n.normalized();
-						if (dot(paths[i].inter.in.normalized(), nn) > 0.0f)
-							nn = nn * -1.0f;
+						const Vec3 nn = paths[i].inter.n.normalized();
+						const Vec3 nns = (!paths[i].inter.backfacing) ? nn : (nn * -1.0f); // Shading normal, flip for backfacing
 
 						// Generate a random ray direction in the hemisphere
 						// of the surface.
@@ -145,22 +144,25 @@ void PathTraceIntegrator::integrate()
 
 						if (pdf < 0.001)
 							pdf = 0.001;
-						dir = zup_to_vec(dir, nn);
+						dir = zup_to_vec(dir, nns);
 
 						// Calculate the color filtering effect that the
 						// bounce from the current intersection will create.
 						// TODO: use actual shaders here.
-						paths[i].fcol *= lambert(dir, nn) / pdf;
+						paths[i].fcol *= lambert(dir, nns) / pdf;
 
 						// Set the id
 						ids[pri] = i;
 
 						// Create a bounce ray for this path
-						rays[pri].o = paths[i].inter.p + paths[i].inter.offset;
+						if (dot(nn, dir.normalized()) >= 0.0f)
+							rays[pri].o = paths[i].inter.p + paths[i].inter.offset;
+						else
+							rays[pri].o = paths[i].inter.p + (paths[i].inter.offset * -1.0f);
 						rays[pri].d = dir;
 						rays[pri].time = samps[i*samp_dim+4];
 						rays[pri].is_shadow_ray = false;
-						rays[pri].min_t = 0.01;
+						rays[pri].min_t = 0.0001f;
 						rays[pri].max_t = std::numeric_limits<float32>::infinity();
 						//rays[pri].has_differentials = true;
 
@@ -219,11 +221,14 @@ void PathTraceIntegrator::integrate()
 						// Create a shadow ray for this path
 						float d = ld.length();
 						ld.normalize();
-						rays[sri].o = paths[i].inter.p + paths[i].inter.offset;
+						if (dot(paths[i].inter.n.normalized(), ld) >= 0.0f)
+							rays[sri].o = paths[i].inter.p + paths[i].inter.offset;
+						else
+							rays[sri].o = paths[i].inter.p + (paths[i].inter.offset * -1.0f);
 						rays[sri].d = ld;
 						rays[sri].time = samps[i*samp_dim+4];
 						rays[sri].is_shadow_ray = true;
-						rays[sri].min_t = 0.01;
+						rays[sri].min_t = 0.0001f;
 						rays[sri].max_t = d;
 						//rays[sri].has_differentials = true;
 
@@ -255,7 +260,11 @@ void PathTraceIntegrator::integrate()
 					if (!intersections[i].hit) {
 						// Sample was lit
 						// TODO: use actual shaders here
-						float lam = lambert(rays[i].d, paths[id].inter.n);
+						float lam = 0.0f;
+						if (paths[id].inter.backfacing)
+							lam = lambert(rays[i].d, paths[id].inter.n * -1.0f);
+						else
+							lam = lambert(rays[i].d, paths[id].inter.n);
 						paths[id].col += paths[id].fcol * paths[id].lcol * lam;
 					}
 				}

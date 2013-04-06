@@ -254,6 +254,12 @@ int main(int argc, char **argv)
 		if (r == nullptr)
 			break;
 
+		// Resolution and sampling overrides
+		if (vm.count("resolution"))
+			r->set_resolution(resolution.x, resolution.y);
+		if (vm.count("spp"))
+			r->set_spp(spp);
+
 		/*
 		 **********************************************************************
 		 * Generate image

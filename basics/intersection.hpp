@@ -16,6 +16,7 @@
 struct Intersection {
 	// Whether there's a hit or not
 	bool hit;
+	bool backfacing;
 
 	// Information about the intersection point
 	float32 t; // T-parameter along the ray at the intersection
