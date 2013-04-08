@@ -1,50 +1,47 @@
 #ifndef LRU_CACHE_HPP
 #define LRU_CACHE_HPP
 
-#include <iostream>
 #include <cstdlib>
 #include <unordered_map>
 #include <list>
-#include <utility>
-#include <thread>
-#include <mutex>
-#include <atomic>
 
-#include "config.hpp"
+#include "spinlock.hpp"
+
+template <class T> class LRUCache;
+template <class T> struct LRUPair;
 
 typedef size_t LRUKey;
+
 
 template <class T>
 struct LRUPair {
 public:
 	LRUKey key;
-	T *data_ptr;
+	T* data_ptr;
 	size_t active_readers;
 
 	LRUPair(): active_readers {0} {}
 };
 
-#define LRU_PAIR LRUPair<T>
-
 
 /*
- * A Least-Recently-Used cache.
+ * A thread-safe Least-Recently-Used cache.
  */
 
 template <class T>
 class LRUCache
 {
-	std::mutex mut;
+	SpinLock slock;
 
 	size_t max_bytes;
 	size_t byte_count;
 	LRUKey next_key;
 
 	// A map from indices to iterators into the list
-	std::unordered_map<LRUKey, typename std::list<LRU_PAIR>::iterator> map;
+	std::unordered_map<LRUKey, typename std::list<LRUPair<T>>::iterator> map;
 
 	// A list that contains the index and a pointer to the data of each element
-	std::list<LRU_PAIR> elements;
+	std::list<LRUPair<T>> elements;
 
 private:
 	/*
@@ -88,7 +85,7 @@ public:
 	}
 
 	~LRUCache() {
-		typename std::list<LRU_PAIR >::iterator it;
+		typename std::list<LRUPair<T>>::iterator it;
 
 		for (it = elements.begin(); it != elements.end(); it++) {
 			delete it->data_ptr;
@@ -108,10 +105,10 @@ public:
 	 * Returns the key.
 	 */
 	LRUKey add_open(T *data_ptr) {
-		std::unique_lock<std::mutex> lock(mut);
+		std::unique_lock<SpinLock> lock(slock);
 
-		typename std::list<LRU_PAIR >::iterator it;
-		LRU_PAIR data_pair;
+		typename std::list<LRUPair<T>>::iterator it;
+		LRUPair<T> data_pair;
 
 		LRUKey key;
 		do {
@@ -158,7 +155,7 @@ public:
 	 * }
 	 */
 	T *open(LRUKey key) {
-		std::unique_lock<std::mutex> lock(mut);
+		std::unique_lock<SpinLock> lock(slock);
 
 		// Check if the key exists
 		const bool exists = (bool)(map.count(key));
@@ -175,7 +172,7 @@ public:
 	 * @brief Closes the given data key.
 	 */
 	void close(LRUKey key) {
-		std::unique_lock<std::mutex> lock(mut);
+		std::unique_lock<SpinLock> lock(slock);
 
 		// Assert that the key exists
 		assert((bool)(map.count(key)));
