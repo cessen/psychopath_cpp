@@ -92,18 +92,15 @@ void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, uint32 ns, float32 *
 	const uint32 samp_i = hash + d;
 
 	// Generate the sample
-	const std::array<size_t, 10> d_order {{7, 6, 5, 4, 2, 9, 8, 3, 1, 0}}; // Reordering of first few dimensions for least image variance
+	const std::array<size_t, 10> d_order {{7, 6, 5, 4, 2, 9, 8, 3, 1, 0}}; // Reorder the first several dimensions for least image variance
 	size_t i = 0;
-	for (; i < ns && i < d_order.size(); ++i) {
+	for (; i < ns && i < d_order.size(); ++i)
 		sample[i] = Halton::sample(d_order[i], samp_i);
-	}
-
-	for (; i < ns; i++) {
+	for (; i < ns; ++i)
 		sample[i] = Halton::sample(i, samp_i);
-	}
 #else
 	// Generate the sample
-	for (size_t i = 0; i < ns; i++) {
+	for (size_t i = 0; i < ns; ++i) {
 		sample[i] = rng.next_float();
 	}
 #endif
