@@ -112,7 +112,7 @@ void PathTraceIntegrator::integrate()
 			rays.resize(samp_size);
 			intersections.resize(samp_size);
 
-			int32 so = (path_n * 5); // Sample offset
+			int32 so = path_n * 5; // Sample offset
 
 			// Create path rays
 			std::cout << "\tGenerating path rays" << std::endl;
@@ -210,13 +210,15 @@ void PathTraceIntegrator::integrate()
 				for (uint32 i = 0; i < paths.size(); i++) {
 					if (!paths[i].done) {
 						// Select a light and store the normalization factor for it's output
-						Light *lighty = scene->finite_lights[(uint32)(samps[i*samp_dim+so+2] * scene->finite_lights.size()) % scene->finite_lights.size()];
+						Light *lighty = scene->finite_lights[(uint32)(samps[i*samp_dim+5+so+2] * scene->finite_lights.size()) % scene->finite_lights.size()];
 						//Light *lighty = scene->finite_lights[rng.next_uint() % scene->finite_lights.size()];
 
 						// Sample the light source
 						Vec3 ld;
-						paths[i].lcol = lighty->sample(paths[i].inter.p, samps[i*samp_dim+so+3], samps[i*samp_dim+so+4], samps[i*samp_dim+4], &ld)
+						paths[i].lcol = lighty->sample(paths[i].inter.p, samps[i*samp_dim+5+so+3], samps[i*samp_dim+5+so+4], samps[i*samp_dim+4], &ld)
 						                * (float32)(scene->finite_lights.size());
+						//paths[i].lcol = lighty->sample(paths[i].inter.p, 0.0f, 0.0f, samps[i*samp_dim+4], &ld)
+						//                * (float32)(scene->finite_lights.size());
 
 						// Create a shadow ray for this path
 						float d = ld.length();

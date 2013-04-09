@@ -7,6 +7,7 @@
 #include "hilbert.hpp"
 #include "morton.hpp"
 
+#include <array>
 #include <limits.h>
 #include <stdlib.h>
 #include <iostream>
@@ -88,26 +89,21 @@ void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, uint32 ns, float32 *
 	hash ^= hash >> 16;
 	hash += seed_offset;
 #endif
-
 	const uint32 samp_i = hash + d;
 
 	// Generate the sample
-	sample[0] = Halton::sample(4, samp_i);
-	sample[1] = Halton::sample(3, samp_i);
-	sample[2] = Halton::sample(2, samp_i);
-	sample[3] = Halton::sample(1, samp_i);
-	sample[4] = Halton::sample(0, samp_i);
-	for (uint32 i = 5; i < ns; i++) {
+	const std::array<size_t, 10> d_order {{7, 6, 5, 4, 2, 9, 8, 3, 1, 0}}; // Reordering of first few dimensions for least image variance
+	size_t i = 0;
+	for (; i < ns && i < d_order.size(); ++i) {
+		sample[i] = Halton::sample(d_order[i], samp_i);
+	}
+
+	for (; i < ns; i++) {
 		sample[i] = Halton::sample(i, samp_i);
 	}
 #else
 	// Generate the sample
-	sample[0] = rng.next_float();
-	sample[1] = rng.next_float();
-	sample[2] = rng.next_float();
-	sample[3] = rng.next_float();
-	sample[4] = rng.next_float();
-	for (uint32 i = 5; i < ns; i++) {
+	for (size_t i = 0; i < ns; i++) {
 		sample[i] = rng.next_float();
 	}
 #endif
