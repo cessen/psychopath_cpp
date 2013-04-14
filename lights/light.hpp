@@ -29,7 +29,7 @@ public:
 	 *
 	 * @returns The light arriving at the point arr.
 	 */
-	virtual Color sample(const Vec3 &arr, float32 u, float32 v, float32 time,
+	virtual Color sample(const Vec3 &arr, float u, float v, float time,
 	                     Vec3 *shadow_vec) const = 0;
 
 
@@ -42,7 +42,7 @@ public:
 	 * @param v Random parameter V.
 	 * @param time The time to sample at.
 	 */
-	virtual Color outgoing(const Vec3 &dir, float32 u, float32 v, float32 time) const = 0;
+	virtual Color outgoing(const Vec3 &dir, float u, float v, float time) const = 0;
 
 
 	/**
@@ -57,7 +57,7 @@ public:
 	 * @param v Random parameter V.
 	 * @param time The time to sample at.
 	 */
-	virtual Color arriving(const Vec3 &arr, float32 u, float32 v, float32 time) const {
+	virtual Color arriving(const Vec3 &arr, float u, float v, float time) const {
 		// Default implementation
 		Vec3 temp;
 		return sample(arr, u, v, time, &temp);

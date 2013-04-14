@@ -11,12 +11,12 @@ bool Grid::calc_normals(Vec3 *normals)
 	Vec3 n[4] = {Vec3(0,0,0), Vec3(0,0,0), Vec3(0,0,0), Vec3(0,0,0)};
 	bool n_avail[4] = {false, false, false, false};
 
-	uint_i upoly_i;
-	uint_i i2, n_count = 0;
+	size_t upoly_i;
+	size_t i2, n_count = 0;
 
-	for (int32 v=0; v < res_v; v++) {
-		for (int32 u=0; u < res_u; u++) {
-			for (uint_i time=0; time < time_count; time++) {
+	for (int32_t v=0; v < res_v; v++) {
+		for (int32_t u=0; u < res_u; u++) {
+			for (size_t time=0; time < time_count; time++) {
 				upoly_i = (v * res_u) + u;
 
 				// Get the center point
@@ -44,7 +44,7 @@ bool Grid::calc_normals(Vec3 *normals)
 				}
 
 				// Calculate the normals
-				for (uint_i i=0; i < 4; i++) {
+				for (size_t i=0; i < 4; i++) {
 					i2 = (i + 1) % 4;
 
 					if (v_avail[i] && v_avail[i2]) {
@@ -56,11 +56,11 @@ bool Grid::calc_normals(Vec3 *normals)
 
 				// Average the normals
 				normals[upoly_i*time_count+time] = Vec3(0,0,0);
-				for (uint_i i=0; i < 4; i++) {
+				for (size_t i=0; i < 4; i++) {
 					if (n_avail[i])
 						normals[upoly_i*time_count+time] = normals[upoly_i*time_count+time] + n[i];
 				}
-				normals[upoly_i*time_count+time] = normals[upoly_i*time_count+time] / (float32)(n_count);
+				normals[upoly_i*time_count+time] = normals[upoly_i*time_count+time] / static_cast<float>(n_count);
 
 				// Normalize the normal
 				normals[upoly_i*time_count+time].normalize();
@@ -72,7 +72,7 @@ bool Grid::calc_normals(Vec3 *normals)
 }
 
 
-bool Grid::calc_uvs(float32 *uvs)
+bool Grid::calc_uvs(float *uvs)
 {
 	// Abusing "x" and "y" names here as substitute for u and v,
 	// to keep things clear.
@@ -89,10 +89,10 @@ bool Grid::calc_uvs(float32 *uvs)
 
 	Vec3 uv_y1 = uv1;
 	Vec3 uv_y2 = uv2;
-	for (uint_i y = 0; y < res_v; y++) {
+	for (size_t y = 0; y < res_v; y++) {
 		const Vec3 uv_dx = (uv_y2 - uv_y1) / (res_u-1); // Calculate delta along x
 		Vec3 uv_x = uv_y1;
-		for (uint_i x = 0; x < res_u; x++) {
+		for (size_t x = 0; x < res_u; x++) {
 			uvs[(y*res_u+x)*2] = uv_x.x;
 			uvs[(y*res_u+x)*2+1] = uv_x.y;
 			uv_x = uv_x + uv_dx;

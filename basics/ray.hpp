@@ -25,11 +25,11 @@
  *
  * Returns the origin differential transfered onto the surface intersection.
  */
-/*static inline Vec3 transfer_ray_origin_differential(const Vec3 normal, const Vec3 d, const float32 t,
+/*static inline Vec3 transfer_ray_origin_differential(const Vec3 normal, const Vec3 d, const float t,
         const Vec3 od, const Vec3 dd)
 {
 	const Vec3 temp = od + (dd * t);
-	const float32 td = dot(temp, normal) / dot(d, normal);
+	const float td = dot(temp, normal) / dot(d, normal);
 
 	return temp + (d * td);
 }*/
@@ -43,14 +43,14 @@
 struct Ray {
 	// Coordinates
 	Vec3 o, d; // Ray origin and direction
-	float32 time; // Time coordinate
+	float time; // Time coordinate
 
 	// Minimum and maximum extent along the ray
-	float32 min_t;
-	float32 max_t;
+	float min_t;
+	float max_t;
 
-	float32 ow; // Origin width
-	float32 dw; // Width delta
+	float ow; // Origin width
+	float dw; // Width delta
 
 	/*
 	// Ray differentials for origin and direction
@@ -61,7 +61,7 @@ struct Ray {
 	// along the ray.  This is useful for determining if
 	// the range of micropolygon sizes across a surface
 	// is going to be too broad for dicing.
-	float32 diff_rate_x, diff_rate_y;
+	float diff_rate_x, diff_rate_y;
 
 	// Whether the ray has differentials or not
 	bool has_differentials;*/
@@ -71,7 +71,7 @@ struct Ray {
 
 	// Pre-computed data for accelerating ray intersection
 	Vec3 inv_d;                 // 1.0/d
-	uint32 d_is_neg[3];  // Whether each component of d is negative
+	uint32_t d_is_neg[3];  // Whether each component of d is negative
 
 
 	/*
@@ -79,12 +79,12 @@ struct Ray {
 	 * Ray differentials need to be filled in manually after this.
 	 */
 	Ray(const Vec3 &o_=Vec3(0.0f,0.0f,0.0f), const Vec3 &d_=Vec3(0.0f,0.0f,0.0f),
-	    const float32 &time_ = 0.0f):
+	    const float &time_ = 0.0f):
 		o {o_},
 	  d {d_},
 	  time {time_},
 	  min_t {0.0f},
-	  max_t {std::numeric_limits<float32>::infinity()},
+	  max_t {std::numeric_limits<float>::infinity()},
 	  //has_differentials {false},
 	  is_shadow_ray {false}
 	{}
@@ -119,7 +119,7 @@ struct Ray {
 	void finalize() {
 		// TODO: will normalizing things here mess anything up elsewhere?
 		assert(d.length() > 0.0f);
-		float32 linv = 1.0f / d.length();
+		float linv = 1.0f / d.length();
 		d.normalize();
 
 		// Adjust the ray differentials for the normalized ray
@@ -184,23 +184,23 @@ struct Ray {
 	 *
 	 * Returns true on success.
 	 */
-	/*bool transfer_ray_differentials(const Vec3 normal, const float32 t) {
+	/*bool transfer_ray_differentials(const Vec3 normal, const float t) {
 		if (!has_differentials)
 			return false;
 
-		const float32 d_n = dot(d, normal);
+		const float d_n = dot(d, normal);
 
 		if (d_n == 0.0f)
 			return false;
 
 		// x
 		const Vec3 tempx = odx + (ddx * t);
-		const float32 tdx = dot(tempx, normal) / d_n;
+		const float tdx = dot(tempx, normal) / d_n;
 		odx = tempx + (d * tdx);
 
 		// y
 		const Vec3 tempy = ody + (ddy * t);
-		const float32 tdy = dot(tempy, normal) / d_n;
+		const float tdy = dot(tempy, normal) / d_n;
 		ody = tempy + (d * tdy);
 
 		return true;
@@ -213,23 +213,23 @@ struct Ray {
 	 * needs to be for this ray at that distance.  And that is its primary
 	 * purpose as well: determining dicing rates.
 	 */
-	float32 width(const float32 &t) const {
+	float width(const float &t) const {
 		/*if (!has_differentials)
 			return 0.0f;
 
 		// Calculate the width of each differential at t.
 		const Vec3 rev_d = d * -1.0f;
-		const float32 d_n = dot(d, rev_d);
-		float32 wx, wy;
+		const float d_n = dot(d, rev_d);
+		float wx, wy;
 
 		// x
 		const Vec3 tempx = odx + (ddx * t);
-		const float32 tdx = dot(tempx, rev_d) / d_n;
+		const float tdx = dot(tempx, rev_d) / d_n;
 		wx = (tempx + (d * tdx)).length();
 
 		// y
 		const Vec3 tempy = ody + (ddy * t);
-		const float32 tdy = dot(tempy, rev_d) / d_n;
+		const float tdy = dot(tempy, rev_d) / d_n;
 		wy = (tempy + (d * tdy)).length();
 
 		// Smaller of x and y
@@ -242,34 +242,34 @@ struct Ray {
 	 * Returns an estimate of the minimum ray width over a distance
 	 * range along the ray.
 	 */
-	float32 min_width(const float32 &tnear, const float32 &tfar) const {
+	float min_width(const float &tnear, const float &tfar) const {
 		/*if (!has_differentials) {
 			return 0.0f;
 			std::cout << "YAR\n";
 		}
 
 		// Calculate the min width of each differential at the average distance.
-		const float32 t = (tnear + tfar) / 2.0f;
+		const float t = (tnear + tfar) / 2.0f;
 		const Vec3 rev_d = d * -1.0f;
-		const float32 d_n = dot(d, rev_d);
-		float32 wx, wy;
+		const float d_n = dot(d, rev_d);
+		float wx, wy;
 
 		// x
 		const Vec3 tempx = odx + (ddx * t);
-		const float32 tdx = dot(tempx, rev_d) / d_n;
+		const float tdx = dot(tempx, rev_d) / d_n;
 		wx = (tempx + (d * tdx)).length() - (diff_rate_x * 0.5);
 		if (wx < 0.0f)
 			wx = 0.0f;
 
 		// y
 		const Vec3 tempy = ody + (ddy * t);
-		const float32 tdy = dot(tempy, rev_d) / d_n;
+		const float tdy = dot(tempy, rev_d) / d_n;
 		wy = (tempy + (d * tdy)).length() - (diff_rate_y * 0.5);
 		if (wy < 0.0f)
 			wy = 0.0f;
 
 		// Minimum of x and y
-		const float32 result = std::min(wx, wy) * 0.5f;
+		const float result = std::min(wx, wy) * 0.5f;
 
 		return result;*/
 

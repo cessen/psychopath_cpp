@@ -21,12 +21,12 @@ class Camera
 {
 public:
 	TimeBox<Transform> transforms;
-	float32 fov, tfov;
-	float32 lens_diameter, focus_distance;
+	float fov, tfov;
+	float lens_diameter, focus_distance;
 
-	Camera(std::vector<Transform> &trans, float32 fov_, float32 lens_diameter_, float32 focus_distance_) {
+	Camera(std::vector<Transform> &trans, float fov_, float lens_diameter_, float focus_distance_) {
 		transforms.init(trans.size());
-		for (uint32 i=0; i < trans.size(); i++)
+		for (uint32_t i=0; i < trans.size(); i++)
 			transforms[i] = trans[i];
 
 		fov = fov_;
@@ -39,7 +39,7 @@ public:
 	/*
 	 * Generates a camera ray based on the given information.
 	 */
-	Ray generate_ray(float32 x, float32 y, float32 dx, float32 dy, float32 time, float32 u, float32 v) const {
+	Ray generate_ray(float x, float y, float dx, float dy, float time, float u, float v) const {
 		Ray ray;
 
 		ray.time = time;
@@ -67,8 +67,8 @@ public:
 		//ray.has_differentials = true;
 
 		// Get transform matrix
-		uint32 ia;
-		float32 alpha;
+		uint32_t ia;
+		float alpha;
 
 		if (calc_time_interp(transforms.state_count, time, &ia, &alpha)) {
 			Transform trans;

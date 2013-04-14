@@ -8,13 +8,13 @@ namespace Global
 {
 namespace Stats
 {
-extern std::atomic<uint64> split_count;
-extern std::atomic<uint64> microsurface_count;
-extern std::atomic<uint64> microelement_count;
-extern std::atomic<uint64> microelement_min_count;
-extern std::atomic<uint64> microelement_max_count;
-extern std::atomic<uint64> cache_misses;
-extern std::atomic<uint_i> primitive_ray_tests;
+extern std::atomic<uint64_t> split_count;
+extern std::atomic<uint64_t> microsurface_count;
+extern std::atomic<uint64_t> microelement_count;
+extern std::atomic<uint64_t> microelement_min_count;
+extern std::atomic<uint64_t> microelement_max_count;
+extern std::atomic<uint64_t> cache_misses;
+extern std::atomic<size_t> primitive_ray_tests;
 } // Stats
 } // Global
 

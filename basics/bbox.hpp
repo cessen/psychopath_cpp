@@ -39,14 +39,14 @@ struct BBox {
 	/**
 	 * @brief Multiples all the components of a BBox by a float.
 	 */
-	BBox operator*(const float32 &f) const {
+	BBox operator*(const float &f) const {
 		return BBox(min * f, max * f);
 	}
 
 	/**
 	 * @brief Divides all the components of a BBox by a float.
 	 */
-	BBox operator/(const float32 &f) const {
+	BBox operator/(const float &f) const {
 		return BBox(min / f, max / f);
 	}
 
@@ -61,7 +61,7 @@ struct BBox {
 		min.m128 = _mm_min_ps(min.m128, b.min.m128);
 		max.m128 = _mm_max_ps(max.m128, b.max.m128);
 #else
-		for (uint_i i = 0; i < 3; i++) {
+		for (size_t i = 0; i < 3; i++) {
 			min[i] = min[i] < b.min[i] ? min[i] : b.min[i];
 			max[i] = max[i] > b.max[i] ? max[i] : b.max[i];
 		}
@@ -80,15 +80,15 @@ struct BBox {
 	 *
 	 * @returns True if the ray hits, false if the ray misses.
 	 */
-	inline bool intersect_ray(const Ray &ray, float32 *hitt0, float32 *hitt1, float32 *t=nullptr) const {
+	inline bool intersect_ray(const Ray &ray, float *hitt0, float *hitt1, float *t=nullptr) const {
 		const Vec3 *bounds = &min;
 
-		float32 tmin = (bounds[ray.d_is_neg[0]].x - ray.o.x) * ray.inv_d.x;
-		float32 tmax = (bounds[1-ray.d_is_neg[0]].x - ray.o.x) * ray.inv_d.x;
-		const float32 tymin = (bounds[ray.d_is_neg[1]].y - ray.o.y) * ray.inv_d.y;
-		const float32 tymax = (bounds[1-ray.d_is_neg[1]].y - ray.o.y) * ray.inv_d.y;
-		const float32 tzmin = (bounds[ray.d_is_neg[2]].z - ray.o.z) * ray.inv_d.z;
-		const float32 tzmax = (bounds[1-ray.d_is_neg[2]].z - ray.o.z) * ray.inv_d.z;
+		float tmin = (bounds[ray.d_is_neg[0]].x - ray.o.x) * ray.inv_d.x;
+		float tmax = (bounds[1-ray.d_is_neg[0]].x - ray.o.x) * ray.inv_d.x;
+		const float tymin = (bounds[ray.d_is_neg[1]].y - ray.o.y) * ray.inv_d.y;
+		const float tymax = (bounds[1-ray.d_is_neg[1]].y - ray.o.y) * ray.inv_d.y;
+		const float tzmin = (bounds[ray.d_is_neg[2]].z - ray.o.z) * ray.inv_d.z;
+		const float tzmax = (bounds[1-ray.d_is_neg[2]].z - ray.o.z) * ray.inv_d.z;
 
 		if (tymin > tmin)
 			tmin = tymin;
@@ -99,7 +99,7 @@ struct BBox {
 		if (tzmax < tmax)
 			tmax = tzmax;
 
-		const float32 tt = (t != nullptr) ? *t : ray.max_t;
+		const float tt = (t != nullptr) ? *t : ray.max_t;
 		if ((tmin <= tmax) && (tmin < tt) && (tmax > ray.min_t)) {
 			*hitt0 = tmin > ray.min_t ? tmin : ray.min_t;
 			*hitt1 = tmax < tt ? tmax : tt;
@@ -118,17 +118,17 @@ struct BBox {
 	 * @returns True if the ray hits, false if the ray misses.
 	 */
 	inline bool intersect_ray(const Ray &ray) const {
-		float32 hitt0, hitt1;
+		float hitt0, hitt1;
 		return intersect_ray(ray, &hitt0, &hitt1);
 	}
 
 	/**
 	 * @brief Returns the surface area of the BBox.
 	 */
-	float32 surface_area() const {
-		const float32 x = max.x - min.x;
-		const float32 y = max.y - min.y;
-		const float32 z = max.z - min.z;
+	float surface_area() const {
+		const float x = max.x - min.x;
+		const float y = max.y - min.y;
+		const float z = max.z - min.z;
 
 		return 2 * (x*y + x*z + y*z);
 	}
@@ -136,7 +136,7 @@ struct BBox {
 	/**
 	 * @brief Returns the length of the diagonal of the BBox.
 	 */
-	float32 diagonal() const {
+	float diagonal() const {
 		return (max - min).length();
 	}
 
@@ -177,14 +177,14 @@ struct BBoxT {
 public:
 	TimeBox<BBox> bbox;
 
-	BBoxT(const int32 &res_time=1);
+	BBoxT(const int32_t &res_time=1);
 	BBoxT(const Vec3 &bmin_, const Vec3 &bmax_);
 
-	bool init(const uint8 &state_count_) {
+	bool init(const uint8_t &state_count_) {
 		return bbox.init(state_count_);
 	}
 
-	void add_time_sample(const int32 &samp, const Vec3 &bmin_, const Vec3 &bmax_) {
+	void add_time_sample(const int32_t &samp, const Vec3 &bmin_, const Vec3 &bmax_) {
 		bbox[samp].min = bmin_;
 		bbox[samp].max = bmax_;
 	}
@@ -192,9 +192,9 @@ public:
 	/**
 	 * @brief Fetches the BBox at time t.
 	 */
-	BBox at_time(const float32 t) {
-		int32 ia=0, ib=0;
-		float32 alpha=0.0;
+	BBox at_time(const float t) {
+		int32_t ia=0, ib=0;
+		float alpha=0.0;
 		bool motion;
 
 		motion = bbox.query_time(t, &ia, &ib, &alpha);
@@ -209,15 +209,15 @@ public:
 	/**
 	 * @brief Number of time samples.
 	 */
-	uint_i size() {
+	size_t size() {
 		return bbox.size();
 	}
 
-	BBox &operator[](const int32 &i) {
+	BBox &operator[](const int32_t &i) {
 		return bbox.states[i];
 	}
 
-	const BBox &operator[](const int32 &i) const {
+	const BBox &operator[](const int32_t &i) const {
 		return bbox.states[i];
 	}
 
@@ -259,7 +259,7 @@ public:
 	 * @brief Returns the surface area of the BBoxT.
 	 * For now just takes the first time sample.
 	 */
-	float32 surface_area() const {
+	float surface_area() const {
 		return bbox[0].surface_area();
 	}
 
@@ -269,7 +269,7 @@ public:
 	 * @param[out] hitt0 Near hit is placed here if there is a hit.
 	 * @param[out] hitt1 Far hit is placed here if there is a hit.
 	 */
-	inline bool intersect_ray(const Ray &ray, float32 *hitt0, float32 *hitt1) {
+	inline bool intersect_ray(const Ray &ray, float *hitt0, float *hitt1) {
 		return at_time(ray.time).intersect_ray(ray, hitt0, hitt1);
 	}
 
@@ -277,7 +277,7 @@ public:
 	 * @brief Intersects a ray with the BBoxT.
 	 */
 	inline bool intersect_ray(const Ray &ray) {
-		float32 hitt0, hitt1;
+		float hitt0, hitt1;
 		return at_time(ray.time).intersect_ray(ray, &hitt0, &hitt1);
 	}
 };

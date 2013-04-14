@@ -79,20 +79,20 @@ public:
 
 
 	// Scalar multiplication
-	Transform operator*(const float32 &b) const {
+	Transform operator*(const float &b) const {
 		return Transform(to*b);
 	}
-	const Transform &operator*=(const float32 &b) {
+	const Transform &operator*=(const float &b) {
 		to *= b;
 		return *this;
 	}
 
 
 	// Scalar division
-	Transform operator/(const float32 &b) const {
+	Transform operator/(const float &b) const {
 		return Transform(to/b);
 	}
-	const Transform &operator/=(const float32 &b) {
+	const Transform &operator/=(const float &b) {
 		to /= b;
 		return *this;
 	}

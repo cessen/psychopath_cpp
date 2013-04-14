@@ -3,7 +3,7 @@
 
 class DifferentialGeometry
 {
-	float32 u, v;
+	float u, v;
 
 	Vec3 p;
 	Vec3 dpdu, dpdv;

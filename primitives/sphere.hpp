@@ -17,17 +17,17 @@ class Sphere: public Surface
 {
 public:
 	TimeBox<Vec3> center;
-	TimeBox<float32> radius;
+	TimeBox<float> radius;
 
 	BBoxT bbox;
 	bool has_bounds;
 
 
-	Sphere(Vec3 center_, float32 radius_);
-	Sphere(uint8 res_time_);
+	Sphere(Vec3 center_, float radius_);
+	Sphere(uint8_t res_time_);
 	virtual ~Sphere();
 
-	void add_time_sample(int samp, Vec3 center_, float32 radius_);
+	void add_time_sample(int samp, Vec3 center_, float radius_);
 
 	virtual bool intersect_ray(const Ray &ray, Intersection *intersection=nullptr);
 	virtual BBoxT &bounds();

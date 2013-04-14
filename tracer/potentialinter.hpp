@@ -8,9 +8,9 @@
  */
 struct PotentialInter {
 	bool valid; // The potential intersection data is filled and valid
-	uint_i object_id;
-	uint_i ray_index;
-	float32 nearest_hit_t; // The nearest possible hit distance along the ray
+	size_t object_id;
+	size_t ray_index;
+	float nearest_hit_t; // The nearest possible hit distance along the ray
 
 	bool operator<(const PotentialInter &b) const {
 		return object_id < b.object_id;
@@ -23,7 +23,7 @@ static bool compare_potint(const PotentialInter &a, const PotentialInter &b)
 	return a.object_id < b.object_id;
 }
 
-static uint_i index_potint(const PotentialInter &a)
+static size_t index_potint(const PotentialInter &a)
 {
 	return a.object_id;
 }

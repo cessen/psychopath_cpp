@@ -54,7 +54,7 @@ public:
 	Slice<const Ray, Ray> rays; // Rays to trace
 	Slice<Intersection> intersections; // Resulting intersections
 	std::vector<bool> rays_active;
-	Array<byte> states; // Ray states, for interrupting and resuming traversal
+	Array<uint8_t> states; // Ray states, for interrupting and resuming traversal
 	std::vector<PotentialInter> potential_intersections; // "Potential intersection" buffer
 
 	Tracer(Scene *scene_, int thread_count_=1) {
@@ -69,7 +69,7 @@ public:
 	 * @param [in] rays_ The rays to be traced.
 	 * @param [out] intersections_ The resulting intersections.
 	 */
-	uint32 trace(const Array<Ray> &rays_, Array<Intersection> *intersections_);
+	uint32_t trace(const Array<Ray> &rays_, Array<Intersection> *intersections_);
 
 private:
 	/**
@@ -79,7 +79,7 @@ private:
 	 *
 	 * @returns The total number of potential intersections accumulated.
 	 */
-	uint_i accumulate_potential_intersections();
+	size_t accumulate_potential_intersections();
 
 	/**
 	 * Sorts the accumulated potential intersections by primitive

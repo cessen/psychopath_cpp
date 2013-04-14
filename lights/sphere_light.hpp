@@ -14,17 +14,17 @@
 class SphereLight: public Light
 {
 	Vec3 pos;
-	float32 radius;
+	float radius;
 	Color col;
 
 public:
-	SphereLight(Vec3 pos_, float32 radius_, Color col_) {
+	SphereLight(Vec3 pos_, float radius_, Color col_) {
 		pos = pos_;
 		radius = radius_;
 		col = col_;
 	}
 
-	virtual Color sample(const Vec3 &arr, float32 u, float32 v, float32 time,
+	virtual Color sample(const Vec3 &arr, float u, float v, float time,
 	                     Vec3 *shadow_vec) const {
 		Vec3 n = uniform_sample_sphere(u, v);
 		Vec3 p = (n * radius) + pos;
@@ -43,7 +43,7 @@ public:
 			return col * ndot; // Fudge for divide by zero.
 	}
 
-	virtual Color outgoing(const Vec3 &dir, float32 u, float32 v, float32 time) const {
+	virtual Color outgoing(const Vec3 &dir, float u, float v, float time) const {
 		return col;
 	}
 

@@ -3,7 +3,7 @@
 #include "bbox.hpp"
 #include "utils.hpp"
 
-BBoxT::BBoxT(const int32 &res_time)
+BBoxT::BBoxT(const int &res_time)
 {
 	bbox.init(res_time);
 }
@@ -22,7 +22,7 @@ void BBoxT::copy(const BBoxT &b)
 	if (bbox.state_count != b.bbox.state_count)
 		bbox.init(b.bbox.state_count);
 
-	for (int32 time=0; time < bbox.state_count; time++) {
+	for (int time=0; time < bbox.state_count; time++) {
 		bbox[time] = b.bbox[time];
 	}
 }

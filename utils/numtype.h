@@ -9,7 +9,11 @@
 #define NUMTYPE_H
 
 #include <stdlib.h>
+#include <stdint.h>
 
+typedef unsigned int		uint;
+
+/*
 typedef unsigned char      byte;
 
 typedef char               int8;
@@ -25,10 +29,11 @@ typedef unsigned long long uint64;
 
 typedef float              float32;
 typedef double             float64;
+*/
 
 /*
  * Some psychopath-specific types.
  */
-typedef size_t uint_i; // For id's/indices of e.g. lists of objects, rays, etc.
+//typedef size_t uint_i; // For id's/indices of e.g. lists of objects, rays, etc.
 
 #endif // NUMTYPE_H

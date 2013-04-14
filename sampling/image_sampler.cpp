@@ -62,7 +62,7 @@ float logit(float p, float width = 1.5f)
 	return logf(p/(1.0f-p)) * width * (0.6266f/4);
 }
 
-void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, uint32 ns, float32 *sample, uint16 *coords)
+void ImageSampler::get_sample(uint32_t x, uint32_t y, uint32_t d, uint32_t ns, float *sample, uint16_t *coords)
 {
 	if (coords != nullptr) {
 		coords[0] = x;
@@ -72,7 +72,7 @@ void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, uint32 ns, float32 *
 #define LDS_SAMP
 #ifdef LDS_SAMP
 #if 1
-	uint32 hash = (Morton::xy2d(x,y) * spp) + (seed_offset*4096);
+	uint32_t hash = (Morton::xy2d(x,y) * spp) + (seed_offset*4096);
 #else
 	// Hash the x and y indices of the pixel and use that as an offset
 	// into the LDS sequence.  This gives the image a more random appearance
@@ -81,7 +81,7 @@ void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, uint32 ns, float32 *
 	// this still gives very good convergence properties.
 	// This also means that each pixel can keep drawing samples in a
 	// "bottomless" kind of way, which is nice for e.g. adaptive sampling.
-	uint32 hash = x ^ ((y >> 16) | (y << 16));
+	uint32_t hash = x ^ ((y >> 16) | (y << 16));
 	hash *= 1936502639;
 	hash ^= hash >> 16;
 	hash += seed_offset;
@@ -89,7 +89,7 @@ void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, uint32 ns, float32 *
 	hash ^= hash >> 16;
 	hash += seed_offset;
 #endif
-	const uint32 samp_i = hash + d;
+	const uint32_t samp_i = hash + d;
 
 	// Generate the sample
 	const std::array<size_t, 10> d_order {{7, 6, 5, 4, 2, 9, 8, 3, 1, 0}}; // Reorder the first several dimensions for least image variance
@@ -127,7 +127,7 @@ void ImageSampler::get_sample(uint32 x, uint32 y, uint32 d, uint32 ns, float32 *
  */
 //#define PROGRESSIVE_SAMPLING
 #ifndef PROGRESSIVE_SAMPLING
-bool ImageSampler::get_next_sample(uint32 ns, float32 *sample, uint16 *coords)
+bool ImageSampler::get_next_sample(uint32_t ns, float *sample, uint16_t *coords)
 {
 	//std::cout << s << " " << x << " " << y << std::endl;
 	// Check if we're done
@@ -154,7 +154,7 @@ bool ImageSampler::get_next_sample(uint32 ns, float32 *sample, uint16 *coords)
 	return true;
 }
 #else
-bool ImageSampler::get_next_sample(uint32 ns, float32 *sample, uint16 *coords)
+bool ImageSampler::get_next_sample(uint32_t ns, float *sample, uint16_t *coords)
 {
 	//std::cout << s << " " << x << " " << y << std::endl;
 	// Check if we're done

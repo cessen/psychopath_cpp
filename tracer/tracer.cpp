@@ -20,7 +20,7 @@
 #define RAY_JOB_SIZE (1024*4)
 
 
-uint32 Tracer::trace(const Array<Ray> &rays_, Array<Intersection> *intersections_)
+uint32_t Tracer::trace(const Array<Ray> &rays_, Array<Intersection> *intersections_)
 {
 	// Get rays
 	rays.init_from(rays_);
@@ -66,16 +66,16 @@ uint32 Tracer::trace(const Array<Ray> &rays_, Array<Intersection> *intersections
 
 // Job function for accumulating potential intersections,
 // for use in accumulate_potential_intersections() below.
-void job_accumulate_potential_intersections(Tracer *tracer, uint_i start_i, uint_i end_i)
+void job_accumulate_potential_intersections(Tracer *tracer, size_t start_i, size_t end_i)
 {
-	uint_i potint_ids[MAX_POTINT];
+	size_t potint_ids[MAX_POTINT];
 
-	for (uint_i i = start_i; i < end_i; i++) {
+	for (size_t i = start_i; i < end_i; i++) {
 		if (tracer->rays_active[i]) {
-			const uint_i pc = tracer->scene->world.get_potential_intersections(tracer->rays[i], tracer->intersections[i].t, MAX_POTINT, potint_ids, &(tracer->states[i*tracer->RAY_STATE_SIZE]));
+			const size_t pc = tracer->scene->world.get_potential_intersections(tracer->rays[i], tracer->intersections[i].t, MAX_POTINT, potint_ids, &(tracer->states[i*tracer->RAY_STATE_SIZE]));
 			tracer->rays_active[i] = (pc > 0);
 
-			for (uint_i j = 0; j < pc; j++) {
+			for (size_t j = 0; j < pc; j++) {
 				tracer->potential_intersections[(i*MAX_POTINT)+j].valid = true;
 				tracer->potential_intersections[(i*MAX_POTINT)+j].object_id = potint_ids[j];
 				tracer->potential_intersections[(i*MAX_POTINT)+j].ray_index = i;
@@ -84,22 +84,22 @@ void job_accumulate_potential_intersections(Tracer *tracer, uint_i start_i, uint
 	}
 }
 
-uint_i Tracer::accumulate_potential_intersections()
+size_t Tracer::accumulate_potential_intersections()
 {
 	// Clear out potential intersection buffer
 	potential_intersections.resize(rays.size()*MAX_POTINT);
-	const uint_i spi = potential_intersections.size();
-	for (uint_i i = 0; i < spi; i++)
+	const size_t spi = potential_intersections.size();
+	for (size_t i = 0; i < spi; i++)
 		potential_intersections[i].valid = false;
 
 
 	// Accumulate potential intersections
 #if 1
 	JobQueue<> jq(thread_count);
-	for (uint_i i = 0; i < rays.size(); i += RAY_JOB_SIZE) {
+	for (size_t i = 0; i < rays.size(); i += RAY_JOB_SIZE) {
 		// Dole out jobs
-		uint_i start = i;
-		uint_i end = i + RAY_JOB_SIZE;
+		size_t start = i;
+		size_t end = i + RAY_JOB_SIZE;
 		if (end > rays.size())
 			end = rays.size();
 
@@ -107,11 +107,11 @@ uint_i Tracer::accumulate_potential_intersections()
 	}
 	jq.finish();
 #else
-	for (uint_i i = 0; i < rays.size(); i += RAY_JOB_SIZE) {
+	for (size_t i = 0; i < rays.size(); i += RAY_JOB_SIZE) {
 
 		// Dole out jobs
-		uint_i start = i;
-		uint_i end = i + RAY_JOB_SIZE;
+		size_t start = i;
+		size_t end = i + RAY_JOB_SIZE;
 		if (end > rays.size())
 			end = rays.size();
 
@@ -123,9 +123,9 @@ uint_i Tracer::accumulate_potential_intersections()
 
 
 	// Compact the potential intersections
-	uint_i pii = 0;
-	uint_i last = 0;
-	uint_i i = 0;
+	size_t pii = 0;
+	size_t last = 0;
+	size_t i = 0;
 	while (i < potential_intersections.size()) {
 		while (last < potential_intersections.size() && potential_intersections[last].valid)
 			last++;
@@ -165,14 +165,14 @@ void Tracer::sort_potential_intersections()
 }
 
 
-void job_trace_potential_intersections(Tracer *tracer, uint_i start, uint_i end)
+void job_trace_potential_intersections(Tracer *tracer, size_t start, size_t end)
 {
-	for (uint_i i = start; i < end; i++) {
+	for (size_t i = start; i < end; i++) {
 		// Shorthand references
 		PotentialInter &potential_intersection = tracer->potential_intersections[i];
 		const Ray& ray = tracer->rays[potential_intersection.ray_index];
 		Intersection& intersection = tracer->intersections[potential_intersection.ray_index];
-		uint_i& id = potential_intersection.object_id;
+		size_t& id = potential_intersection.object_id;
 
 		// Trace
 		if (ray.is_shadow_ray) {
@@ -188,10 +188,10 @@ void Tracer::trace_potential_intersections()
 {
 #define BLARGYFACE 10000
 	JobQueue<> jq(thread_count);
-	for (uint_i i = 0; i < potential_intersections.size(); i += BLARGYFACE) {
+	for (size_t i = 0; i < potential_intersections.size(); i += BLARGYFACE) {
 		// Dole out jobs
-		uint_i start = i;
-		uint_i end = i + BLARGYFACE;
+		size_t start = i;
+		size_t end = i + BLARGYFACE;
 		if (end > potential_intersections.size())
 			end = potential_intersections.size();
 

@@ -11,24 +11,24 @@
 #define IS_LEAF 1
 
 
-bool MicroSurface::intersect_ray(const Ray &ray, float32 ray_width, Intersection *inter)
+bool MicroSurface::intersect_ray(const Ray &ray, float ray_width, Intersection *inter)
 {
-	uint32 todo[64];
-	uint_i todo_offset = 0;
-	uint_i node = 0;
-	float32 tnear = ray.max_t;
-	float32 tfar = ray.max_t;
+	uint32_t todo[64];
+	size_t todo_offset = 0;
+	size_t node = 0;
+	float tnear = ray.max_t;
+	float tfar = ray.max_t;
 	bool hit = false;
-	uint_i hit_node = 0;
+	size_t hit_node = 0;
 
-	float32 hit_near = ray.max_t;
-	//float32 hit_far = ray.max_t;
-	float32 t = ray.max_t;
+	float hit_near = ray.max_t;
+	//float hit_far = ray.max_t;
+	float t = ray.max_t;
 	if (inter)
 		t = t < inter->t ? t : inter->t;
 
 	// Calculate the max depth the ray should traverse into the tree
-	const uint32 rdepth = 2 * std::max(0.0f, fasterlog2(root_width) - fasterlog2(ray_width));
+	const uint32_t rdepth = 2 * std::max(0.0f, fasterlog2(root_width) - fasterlog2(ray_width*Config::dice_rate));
 
 	// Intersect with the MicroSurface
 	while (true) {
@@ -68,15 +68,15 @@ bool MicroSurface::intersect_ray(const Ray &ray, float32 ray_width, Intersection
 			return false;
 
 		// Calculate time indices and alpha
-		uint32 t_i = 0;
-		float32 t_alpha = 0.0f;
+		uint32_t t_i = 0;
+		float t_alpha = 0.0f;
 		calc_time_interp(time_count, ray.time, &t_i, &t_alpha);
 
 		// Calculate data indices
 		const uint d_iu = /*rng.next_uint()*/ 727 % nodes[hit_node].data_du;
 		const uint d_iv = /*rng.next_uint()*/ 727 % nodes[hit_node].data_dv;
-		const uint_i d_index = nodes[hit_node].data_index; // Standard
-		const uint_i rd_index = d_index + (d_iv * res_u) + d_iu; // Random within range
+		const size_t d_index = nodes[hit_node].data_index; // Standard
+		const size_t rd_index = d_index + (d_iv * res_u) + d_iu; // Random within range
 
 		// Information about the intersection point
 		inter->t = hit_near;
@@ -112,7 +112,7 @@ bool MicroSurface::intersect_ray(const Ray &ray, float32 ray_width, Intersection
 		}
 
 
-		const float32 dl = std::max(ray.width(t) * Config::dice_rate * 1.5f, nodes[hit_node].bounds.diagonal());
+		const float dl = std::max(ray.width(t) * Config::dice_rate * 1.5f, nodes[hit_node].bounds.diagonal());
 		inter->offset = inter->n * dl * 1.0f; // Origin offset for next ray
 		inter->backfacing = dot(inter->n, ray.d.normalized()) > 0.0f; // Whether the hit was on the back of the surface
 		// UVs
@@ -130,10 +130,10 @@ bool MicroSurface::intersect_ray(const Ray &ray, float32 ray_width, Intersection
 
 struct GridBVHBuildEntry {
 	bool first; // Used to tell if it's the first or second child.
-	uint_i i;
+	size_t i;
 
-	uint_i u_start, u_end;
-	uint_i v_start, v_end;
+	size_t u_start, u_end;
+	size_t v_start, v_end;
 };
 
 void MicroSurface::init_from_grid(Grid *grid)
@@ -144,7 +144,7 @@ void MicroSurface::init_from_grid(Grid *grid)
 
 	// Update statistics
 	Global::Stats::microsurface_count++;
-	const uint64 element_count = (res_u-1) * (res_v-1);
+	const uint64_t element_count = (res_u-1) * (res_v-1);
 	Global::Stats::microelement_count += element_count;
 	if (element_count < Global::Stats::microelement_min_count)
 		Global::Stats::microelement_min_count = element_count;
@@ -162,9 +162,9 @@ void MicroSurface::init_from_grid(Grid *grid)
 	// TODO: Use shaders for displacements
 	normals.resize(grid->res_u * grid->res_v * grid->time_count);
 	grid->calc_normals(&(normals[0]));
-	for (uint_i i = 0; i < res_u*res_v; i++) {
-		for (uint_i t = 0; t < time_count; t++) {
-			grid->verts[i*time_count+t] += normals[i*time_count+t] * (cos(uvs[i*2]*3.14159*4)+cos(uvs[i*2+1]*3.14159*4)) * Config::displace_distance;
+	for (size_t i = 0; i < res_u*res_v; i++) {
+		for (size_t t = 0; t < time_count; t++) {
+			grid->verts[i*time_count+t] += normals[i*time_count+t] * (cos(uvs[i*2]*3.14159*2)+cos(uvs[i*2+1]*3.14159*2)) * Config::displace_distance;
 		}
 	}
 
@@ -174,10 +174,10 @@ void MicroSurface::init_from_grid(Grid *grid)
 
 	////////////////////////////////
 	// WIP: Build MicroSurface tree
-	uint_i trav_count = 0;
+	size_t trav_count = 0;
 
 	nodes.resize(grid->res_u * grid->res_v * grid->time_count * 2);
-	uint_i next_node_i = time_count;
+	size_t next_node_i = time_count;
 
 	GridBVHBuildEntry todo[64];
 	// Prepare root todo item
@@ -188,7 +188,7 @@ void MicroSurface::init_from_grid(Grid *grid)
 	todo[0].v_end = grid->res_v - 2;
 
 	bool down = true; // Whether we're going up or down the stack
-	uint_i i = 0;
+	size_t i = 0;
 	while (true) {
 		trav_count++;
 		// Going down
@@ -207,14 +207,14 @@ void MicroSurface::init_from_grid(Grid *grid)
 				nodes[todo[i].i].flags |= IS_LEAF;
 
 				// Build bboxes
-				const uint_i u = todo[i].u_start;
-				const uint_i v = todo[i].v_start;
-				const uint_i vert1_i = (v * grid->res_u + u) * time_count;
-				const uint_i vert2_i = (v * grid->res_u + u + 1) * time_count;
-				const uint_i vert3_i = ((v+1) * grid->res_u + u) * time_count;
-				const uint_i vert4_i = ((v+1) * grid->res_u + u + 1) * time_count;
+				const size_t u = todo[i].u_start;
+				const size_t v = todo[i].v_start;
+				const size_t vert1_i = (v * grid->res_u + u) * time_count;
+				const size_t vert2_i = (v * grid->res_u + u + 1) * time_count;
+				const size_t vert3_i = ((v+1) * grid->res_u + u) * time_count;
+				const size_t vert4_i = ((v+1) * grid->res_u + u + 1) * time_count;
 
-				for (uint_i ti = 0; ti < time_count; ti++) {
+				for (size_t ti = 0; ti < time_count; ti++) {
 					BBox bb;
 
 					// Min
@@ -296,10 +296,10 @@ void MicroSurface::init_from_grid(Grid *grid)
 		// Going up
 		else {
 			// Merge children's BBoxes into this node's BBoxes
-			const uint_i self_i = todo[i].i;
-			const uint_i child1_i = nodes[todo[i].i].child_index;
-			const uint_i child2_i = nodes[todo[i].i].child_index + time_count;
-			for (uint_i ti = 0; ti < time_count; ti++) {
+			const size_t self_i = todo[i].i;
+			const size_t child1_i = nodes[todo[i].i].child_index;
+			const size_t child2_i = nodes[todo[i].i].child_index + time_count;
+			for (size_t ti = 0; ti < time_count; ti++) {
 				nodes[self_i+ti].bounds = nodes[child1_i+ti].bounds;
 				nodes[self_i+ti].bounds.merge_with(nodes[child2_i+ti].bounds);
 			}
@@ -323,7 +323,7 @@ void MicroSurface::init_from_grid(Grid *grid)
 
 
 	root_width = nodes[0].bounds.diagonal();
-	//std::cout << res_u*res_v << ": " << trav_count << ", " << trav_count / (float32)(res_u*res_v) << std::endl;
+	//std::cout << res_u*res_v << ": " << trav_count << ", " << trav_count / (float)(res_u*res_v) << std::endl;
 
 }
 

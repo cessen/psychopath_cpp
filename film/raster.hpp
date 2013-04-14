@@ -15,10 +15,10 @@ template <class PIXFMT>
 class Raster
 {
 public:
-	uint16 width, height; // Resolution of the image
-	float32 min_x, min_y; // Minimum x/y coordinates of the image
-	float32 max_x, max_y; // Maximum x/y coordinates of the image
-	uint16 channels; // Channels per pixel
+	uint16_t width, height; // Resolution of the image
+	float min_x, min_y; // Minimum x/y coordinates of the image
+	float max_x, max_y; // Maximum x/y coordinates of the image
+	uint16_t channels; // Channels per pixel
 	PIXFMT *pixels; // Pixel data
 
 	/**
@@ -26,7 +26,7 @@ public:
 	 *
 	 * Creates a new Raster buffer.  All pixel data is initialized to zero.
 	 */
-	Raster(int w, int h, int cc, float32 x1, float32 y1, float32 x2, float32 y2) {
+	Raster(int w, int h, int cc, float x1, float y1, float x2, float y2) {
 		width = w;
 		height = h;
 		min_x = x1 < x2 ? x1 : x2;

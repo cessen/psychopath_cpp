@@ -26,38 +26,38 @@ namespace CountingSort
  * @param indexer Pointer to a function that can turn type T into an integer.
  */
 template <class T>
-bool sort(T *list, uint_i list_length, uint_i max_items, uint_i(*indexer)(const T &))
+bool sort(T *list, size_t list_length, size_t max_items, size_t(*indexer)(const T &))
 {
-	uint_i item_counts[max_items];
-	for (uint_i i = 0; i < max_items; i++) {
+	size_t item_counts[max_items];
+	for (size_t i = 0; i < max_items; i++) {
 		item_counts[i] = 0;
 	}
 
 	// Count the items
-	for (uint_i i = 0; i < list_length; i++) {
+	for (size_t i = 0; i < list_length; i++) {
 		item_counts[indexer(list[i])]++;
 	}
 
 	// Set up start-index array
-	uint_i item_start_indices[max_items];
-	uint_i running_count = 0;
-	for (uint_i i = 0; i < max_items; i++) {
+	size_t item_start_indices[max_items];
+	size_t running_count = 0;
+	for (size_t i = 0; i < max_items; i++) {
 		item_start_indices[i] = running_count;
 		running_count += item_counts[i];
 	}
 
 	// Set up filled-so-far-count array
-	uint_i item_fill_counts[max_items];
-	for (uint_i i = 0; i < max_items; i++) {
+	size_t item_fill_counts[max_items];
+	for (size_t i = 0; i < max_items; i++) {
 		item_fill_counts[i] = 0;
 	}
 
 	// Sort the list
-	uint_i traversal = 0;
-	uint_i i = 0;
+	size_t traversal = 0;
+	size_t i = 0;
 	while (i < list_length) {
-		const uint_i index = indexer(list[i]);
-		const uint_i next_place = item_start_indices[index] + item_fill_counts[index];
+		const size_t index = indexer(list[i]);
+		const size_t next_place = item_start_indices[index] + item_fill_counts[index];
 
 		if (i >= item_start_indices[index] && i < next_place) {
 			i++;

@@ -27,7 +27,7 @@ public:
 			start_ = &(array[0]);
 	}
 
-	Slice(Array<T> &array, uint_i start, uint_i end): size_ {end-start} {
+	Slice(Array<T> &array, size_t start, size_t end): size_ {end-start} {
 		if (size_ == 0)
 			start_ = nullptr;
 		else

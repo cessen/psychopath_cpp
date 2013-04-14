@@ -12,20 +12,20 @@
  */
 struct Grid {
 	// Resolution
-	uint16 res_u, res_v; // In vertices, not faces
-	uint16 time_count;
+	uint16_t res_u, res_v; // In vertices, not faces
+	uint16_t time_count;
 
 	// Data
 	std::vector<Vec3> verts; // v1_t1, v1_t2, v1_t3, v2_t1, v2_t2, v2_t3...
-	float32 u1, v1,
-	        u2, v2,
-	        u3, v3,
-	        u4, v4;
-	uint_i face_id;
+	float u1, v1,
+	      u2, v2,
+	      u3, v3,
+	      u4, v4;
+	size_t face_id;
 
 	// Constructors
 	Grid() {}
-	Grid(uint16 ru, uint16 rv, uint16 tc): res_u {ru}, res_v {rv}, time_count {tc}, verts(ru*rv*tc) {
+	Grid(uint16_t ru, uint16_t rv, uint16_t tc): res_u {ru}, res_v {rv}, time_count {tc}, verts(ru*rv*tc) {
 		assert(ru > 1);
 		assert(rv > 1);
 		assert(tc > 0);
@@ -51,7 +51,7 @@ struct Grid {
 	 *
 	 * @param uvs Pointer to already allocated space to store the uvs.
 	 */
-	bool calc_uvs(float32 *uvs);
+	bool calc_uvs(float *uvs);
 };
 
 #endif

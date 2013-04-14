@@ -20,17 +20,17 @@ public:
 		col = col_;
 	}
 
-	virtual Color sample(const Vec3 &arr, float32 u, float32 v, float32 time,
+	virtual Color sample(const Vec3 &arr, float u, float v, float time,
 	                     Vec3 *shadow_vec) const {
 		*shadow_vec = pos - arr;
-		float32 d2 = shadow_vec->length2();
+		float d2 = shadow_vec->length2();
 		if (d2 > 0)
 			return col / d2;
 		else
 			return col; // Fudge for divide by zero.
 	}
 
-	virtual Color outgoing(const Vec3 &dir, float32 u, float32 v, float32 time) const {
+	virtual Color outgoing(const Vec3 &dir, float u, float v, float time) const {
 		return col;
 	}
 

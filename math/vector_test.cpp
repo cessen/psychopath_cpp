@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE(normalize)
 {
 	Vec3 v(1.2, -2.6, 1.0);
 
-	float32 l = v.length();
+	float l = v.length();
 	v.normalize();
 
 	BOOST_CHECK_CLOSE(l,    3.03315017762062, 0.0001);
@@ -123,7 +123,7 @@ BOOST_AUTO_TEST_CASE(dot_)
 	Vec3 v1(1.2, -2.6, 1.0);
 	Vec3 v2(-23.4, 2.2, 9.0);
 
-	float32 d = dot(v1, v2);
+	float d = dot(v1, v2);
 
 	BOOST_CHECK_CLOSE(d, -24.8, 0.00001);
 }

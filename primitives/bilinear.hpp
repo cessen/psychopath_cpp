@@ -21,10 +21,10 @@
  */
 class Bilinear: public Surface
 {
-	void uv_dice_rate(uint_i *u_rate, uint_i *v_rate, float32 width) {
+	void uv_dice_rate(size_t *u_rate, size_t *v_rate, float width) {
 		// longest u-side  and v-side of the patch
-		const float32 ul = (verts[0][0] - verts[0][1]).length() > (verts[0][2] - verts[0][3]).length() ? (verts[0][0] - verts[0][1]).length() : (verts[0][2] - verts[0][3]).length();
-		const float32 vl = (verts[0][0] - verts[0][3]).length() > (verts[0][1] - verts[0][2]).length() ? (verts[0][0] - verts[0][3]).length() : (verts[0][1] - verts[0][2]).length();
+		const float ul = (verts[0][0] - verts[0][1]).length() > (verts[0][2] - verts[0][3]).length() ? (verts[0][0] - verts[0][1]).length() : (verts[0][2] - verts[0][3]).length();
+		const float vl = (verts[0][0] - verts[0][3]).length() > (verts[0][1] - verts[0][2]).length() ? (verts[0][0] - verts[0][3]).length() : (verts[0][1] - verts[0][2]).length();
 
 		// Dicing rates in u and v based on target microelement width
 		*u_rate = ul / (width * Config::dice_rate);
@@ -40,15 +40,15 @@ class Bilinear: public Surface
 
 public:
 	TimeBox<Vec3 *> verts;
-	float32 u_min, v_min, u_max, v_max;
+	float u_min, v_min, u_max, v_max;
 	MicroSurfaceCacheKey microsurface_key;
-	float32 last_ray_width;
+	float last_ray_width;
 
 
 	BBoxT bbox;
 	bool has_bounds;
 
-	Bilinear(uint16 res_time_);
+	Bilinear(uint16_t res_time_);
 	Bilinear(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4);
 	virtual ~Bilinear();
 
@@ -58,8 +58,8 @@ public:
 	bool is_traceable();
 	virtual void split(std::vector<Primitive *> &primitives);
 
-	virtual uint_i micro_estimate(float32 width);
-	virtual MicroSurface *micro_generate(float32 width);
+	virtual size_t micro_estimate(float width);
+	virtual MicroSurface *micro_generate(float width);
 
 	void add_time_sample(int samp, Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4);
 	Grid *dice(const int ru, const int rv);

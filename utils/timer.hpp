@@ -16,7 +16,7 @@ public:
 	 */
 	float time() {
 		const auto end = CLOCK::now();
-		const float dur = (float)((end-start).count());
+		const float dur = static_cast<float>((end-start).count());
 		return (dur * CLOCK::period::num) / CLOCK::period::den;
 	}
 };

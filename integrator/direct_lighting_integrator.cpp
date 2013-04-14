@@ -16,16 +16,16 @@
 
 void DirectLightingIntegrator::integrate()
 {
-	const uint_i samp_dim = 8;
+	const size_t samp_dim = 8;
 
 	RNG rng;
 	ImageSampler image_sampler(spp, image->width, image->height);
 
 	// Sample array
-	Array<float32> samps(RAYS_AT_A_TIME * samp_dim);
+	Array<float> samps(RAYS_AT_A_TIME * samp_dim);
 
 	// Sample pixel coordinate array
-	Array<uint16> coords(RAYS_AT_A_TIME * 2);
+	Array<uint16_t> coords(RAYS_AT_A_TIME * 2);
 
 	// Light path array
 	Array<DLPath> paths(RAYS_AT_A_TIME);
@@ -35,7 +35,7 @@ void DirectLightingIntegrator::integrate()
 	Array<Intersection> intersections(RAYS_AT_A_TIME);
 
 	// ids corresponding to the rays
-	Array<uint32> ids(RAYS_AT_A_TIME);
+	Array<uint32_t> ids(RAYS_AT_A_TIME);
 
 	bool last = false;
 	while (true) {
@@ -52,7 +52,7 @@ void DirectLightingIntegrator::integrate()
 				paths[i].done = false;
 			}
 		}
-		uint32 ssize = samps.size() / samp_dim;
+		uint32_t ssize = samps.size() / samp_dim;
 
 
 		// Size the ray buffer appropriately
@@ -62,11 +62,11 @@ void DirectLightingIntegrator::integrate()
 		// Generate a bunch of camera rays
 		std::cout << "\tGenerating camera rays" << std::endl;
 		std::cout.flush();
-		for (uint32 i = 0; i < ssize; i++) {
-			float32 rx = (samps[i*samp_dim] - 0.5) * (image->max_x - image->min_x);
-			float32 ry = (0.5 - samps[i*samp_dim+1]) * (image->max_y - image->min_y);
-			float32 dx = (image->max_x - image->min_x) / image->width;
-			float32 dy = (image->max_y - image->min_y) / image->height;
+		for (uint32_t i = 0; i < ssize; i++) {
+			float rx = (samps[i*samp_dim] - 0.5) * (image->max_x - image->min_x);
+			float ry = (0.5 - samps[i*samp_dim+1]) * (image->max_y - image->min_y);
+			float dx = (image->max_x - image->min_x) / image->width;
+			float dy = (image->max_y - image->min_y) / image->height;
 			rays[i] = scene->camera->generate_ray(rx, ry, dx, dy, samps[i*samp_dim+4], samps[i*samp_dim+2], samps[i*samp_dim+3]);
 			rays[i].finalize();
 			ids[i] = i;
@@ -82,8 +82,8 @@ void DirectLightingIntegrator::integrate()
 		// Update paths
 		std::cout << "\tUpdating paths" << std::endl;
 		std::cout.flush();
-		uint32 rsize = rays.size();
-		for (uint32 i = 0; i < rsize; i++) {
+		uint32_t rsize = rays.size();
+		for (uint32_t i = 0; i < rsize; i++) {
 			if (intersections[i].hit) {
 				// Ray hit something!  Store intersection data
 				paths[ids[i]].inter = intersections[i];
@@ -98,19 +98,19 @@ void DirectLightingIntegrator::integrate()
 		// Generate a bunch of shadow rays
 		std::cout << "\tGenerating shadow rays" << std::endl;
 		std::cout.flush();
-		uint32 sri = 0; // Shadow ray index
-		for (uint32 i = 0; i < ssize; i++) {
+		uint32_t sri = 0; // Shadow ray index
+		for (uint32_t i = 0; i < ssize; i++) {
 			if (!paths[i].done) {
 				// Select a light and store the normalization factor for it's output
-				Light *lighty = scene->finite_lights[(uint32)(samps[i*samp_dim+5] * scene->finite_lights.size()) % scene->finite_lights.size()];
+				Light *lighty = scene->finite_lights[(uint32_t)(samps[i*samp_dim+5] * scene->finite_lights.size()) % scene->finite_lights.size()];
 
 				// Sample the light source
 				Vec3 ld;
 				paths[i].lcol = lighty->sample(intersections[i].p, samps[i*samp_dim+6], samps[i*samp_dim+7], rays[i].time, &ld)
-				                * (float32)(scene->finite_lights.size());
+				                * (float)(scene->finite_lights.size());
 
 				// Create a shadow ray for this path
-				float32 d = ld.length();
+				float d = ld.length();
 				ld.normalize();
 				rays[sri].o = paths[i].inter.p + paths[i].inter.offset;
 				rays[sri].d = ld;
@@ -142,8 +142,8 @@ void DirectLightingIntegrator::integrate()
 		std::cout << "\tCalculating sample colors" << std::endl;
 		std::cout.flush();
 		rsize = rays.size();
-		for (uint32 i = 0; i < rsize; i++) {
-			uint32 id = ids[i];
+		for (uint32_t i = 0; i < rsize; i++) {
+			uint32_t id = ids[i];
 			if (intersections[i].hit) {
 				// Sample was shadowed
 				paths[id].done = true;
@@ -162,13 +162,13 @@ void DirectLightingIntegrator::integrate()
 		// Accumulate the samples
 		std::cout << "\tAccumulating samples" << std::endl;
 		std::cout.flush();
-		for (uint_i i = 0; i < ssize; i++) {
+		for (size_t i = 0; i < ssize; i++) {
 			image->add_sample(paths[i].col, coords[i*2], coords[i*2+1]);
 		}
 
 		// Print percentage complete
-		static int32 last_perc = -1;
-		int32 perc = image_sampler.percentage() * 100;
+		static int32_t last_perc = -1;
+		int32_t perc = image_sampler.percentage() * 100;
 		if (perc > last_perc) {
 			std::cout << perc << "%" << std::endl;
 			last_perc = perc;

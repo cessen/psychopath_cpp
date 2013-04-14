@@ -21,12 +21,12 @@ private:
 	/* General settings. */
 	uint spp;  // Approximate number of samples per pixel
 	uint res_x, res_y;  // Image resolution in pixels
-	uint32 seed_offset;
+	uint32_t seed_offset;
 
 	/* State information. */
 	uint curve_res; // Space filling curve resolution
 	uint points_traversed;
-	uint32 x, y, s;
+	uint32_t x, y, s;
 
 	/* For reporting percentages. */
 	uint samp_taken;
@@ -42,8 +42,8 @@ public:
 	~ImageSampler();
 
 	void init_tile();
-	void get_sample(uint32 x, uint32 y, uint32 d, uint32 ns, float32 *sample, uint16 *coords=nullptr);
-	bool get_next_sample(uint32 ns, float32 *sample, uint16 *coords=nullptr);
+	void get_sample(uint32_t x, uint32_t y, uint32_t d, uint32_t ns, float *sample, uint16_t *coords=nullptr);
+	bool get_next_sample(uint32_t ns, float *sample, uint16_t *coords=nullptr);
 
 	float percentage() const {
 		return ((float)(samp_taken)) / tot_samp;

@@ -7,13 +7,13 @@
 #include "ImathMatrix.h"
 
 // 4x4 transform matrix
-typedef Imath::Matrix44<float32> Matrix44;
+typedef Imath::Matrix44<float> Matrix44;
 
 // Tranforms a vector with the transpose of a matrix
 static inline ImathVec3 vec_transform_transpose(const Matrix44 &m, const ImathVec3 &v)
 {
 	ImathVec3 r;
-	float32 w;
+	float w;
 
 	r.x = v[0] * m[0][0] + v[1] * m[0][1] + v[2] * m[0][2] + m[0][3];
 	r.y = v[0] * m[1][0] + v[1] * m[1][1] + v[2] * m[1][2] + m[1][3];

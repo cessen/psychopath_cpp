@@ -12,7 +12,7 @@
  * @param center_ Center of the sphere.
  * @param radius_ Radius of the sphere.
  */
-Sphere::Sphere(Vec3 center_, float32 radius_)
+Sphere::Sphere(Vec3 center_, float radius_)
 {
 	has_bounds = false;
 	center.init(1);
@@ -31,7 +31,7 @@ Sphere::Sphere(Vec3 center_, float32 radius_)
  *
  * @param res_time_ Number of time samples.
  */
-Sphere::Sphere(uint8 res_time_)
+Sphere::Sphere(uint8_t res_time_)
 {
 	has_bounds = false;
 	center.init(res_time_);
@@ -52,7 +52,7 @@ Sphere::~Sphere()
  * @param center_ Center of the sphere for this time sample.
  * @param radius_ Radius of the sphere for this time sample.
  */
-void Sphere::add_time_sample(int samp, Vec3 center_, float32 radius_)
+void Sphere::add_time_sample(int samp, Vec3 center_, float radius_)
 {
 	center[samp] = center_;
 	radius[samp] = radius_;
@@ -67,9 +67,9 @@ bool Sphere::intersect_ray(const Ray &ray, Intersection *intersection)
 
 	// Get the center and radius of the sphere at the ray's time
 	int ia, ib;
-	float32 alpha;
+	float alpha;
 	Vec3 cent; // Center of the sphere
-	float32 radi; // Radius of the sphere
+	float radi; // Radius of the sphere
 	if (center.query_time(ray.time, &ia, &ib, &alpha)) {
 		cent = lerp(alpha, center[ia], center[ib]);
 		radi = lerp(alpha, radius[ia], radius[ib]);
@@ -91,11 +91,11 @@ bool Sphere::intersect_ray(const Ray &ray, Intersection *intersection)
 	// we use that method to keep everything accurate.
 
 	// Calculate quadratic coeffs
-	float32 a = d.length2();
-	float32 b = 2.0f * dot(d, o);
-	float32 c = o.length2() - radi * radi;
+	float a = d.length2();
+	float b = 2.0f * dot(d, o);
+	float c = o.length2() - radi * radi;
 
-	float32 t0, t1, discriminant;
+	float t0, t1, discriminant;
 	discriminant = b * b - 4.0f * a * c;
 	if (discriminant < 0.0f) {
 		// Discriminant less than zero?  No solution => no intersection.
@@ -106,7 +106,7 @@ bool Sphere::intersect_ray(const Ray &ray, Intersection *intersection)
 	// Compute a more stable form of our param t (t0 = q/a, t1 = c/q)
 	// q = -0.5 * (b - sqrt(b * b - 4.0 * a * c)) if b < 0, or
 	// q = -0.5 * (b + sqrt(b * b - 4.0 * a * c)) if b >= 0
-	float32 q;
+	float q;
 	if (b < 0.0f) {
 		q = -0.5f * (b - discriminant);
 	} else {
@@ -123,7 +123,7 @@ bool Sphere::intersect_ray(const Ray &ray, Intersection *intersection)
 
 	// Swap them so they are ordered right
 	if (t0 > t1) {
-		float32 temp = t1;
+		float temp = t1;
 		t1 = t0;
 		t0 = temp;
 	}
@@ -132,7 +132,7 @@ bool Sphere::intersect_ray(const Ray &ray, Intersection *intersection)
 	if (t0 >= ray.max_t || t1 < ray.min_t)
 		return false;
 
-	float32 t;
+	float t;
 	if (t0 >= ray.min_t) {
 		t = t0;
 	} else if (t1 < ray.max_t) {

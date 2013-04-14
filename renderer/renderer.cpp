@@ -24,7 +24,7 @@
 void write_png_from_film(Film<Color> *image, std::string path)
 {
 	// Gamma correction + dithering(256)
-	std::unique_ptr<uint8[]> im {image->scanline_image_8bbc(2.2)};
+	std::unique_ptr<uint8_t[]> im {image->scanline_image_8bbc(2.2)};
 
 	// Save image
 	std::unique_ptr<OpenImageIO::ImageOutput> out {OpenImageIO::ImageOutput::create(".png")};
@@ -42,8 +42,8 @@ bool Renderer::render(int thread_count)
 {
 	RNG rng;
 	std::unique_ptr<Film<Color>> image {new Film<Color>(res_x, res_y,
-		        -1.0, -(((float32)(res_y))/res_x),
-		        1.0, (((float32)(res_y))/res_x))
+		        -1.0, -((static_cast<float>(res_y))/res_x),
+		        1.0, ((static_cast<float>(res_y))/res_x))
 	};
 
 
@@ -65,7 +65,7 @@ bool Renderer::render(int thread_count)
 	std::cout << "MicroSurface cache misses during rendering: " << Global::Stats::cache_misses << std::endl;
 	std::cout << "MicroSurfaces generated during rendering: " << Global::Stats::microsurface_count << std::endl;
 	std::cout << "MicroSurface elements generated during rendering: " << Global::Stats::microelement_count << std::endl;
-	std::cout << "Average MicroSurface elements per MicroSurface: " <<  Global::Stats::microelement_count / (float32)Global::Stats::microsurface_count << std::endl;
+	std::cout << "Average MicroSurface elements per MicroSurface: " <<  Global::Stats::microelement_count / static_cast<float>(Global::Stats::microsurface_count) << std::endl;
 	std::cout << "Minimum MicroSurface elements per MicroSurface: " <<  Global::Stats::microelement_min_count << std::endl;
 	std::cout << "Maximum MicroSurface elements per MicroSurface: " <<  Global::Stats::microelement_max_count << std::endl;
 

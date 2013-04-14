@@ -8,20 +8,20 @@
 
 PrimArray::~PrimArray()
 {
-	int32 size = children.size();
+	int32_t size = children.size();
 
-	for (int32 i=0; i < size; i++) {
+	for (int32_t i=0; i < size; i++) {
 		delete children[i];
 	}
 }
 
 void PrimArray::add_primitives(std::vector<Primitive *> &primitives)
 {
-	int32 start = children.size();
-	int32 added = primitives.size();
+	int32_t start = children.size();
+	int32_t added = primitives.size();
 	children.resize(start + added);
 
-	for (int32 i=0; i < added; i++) {
+	for (int32_t i=0; i < added; i++) {
 		children[start + i] = primitives[i];
 	}
 }
@@ -29,20 +29,20 @@ void PrimArray::add_primitives(std::vector<Primitive *> &primitives)
 bool PrimArray::finalize()
 {
 	// Initialize primitive's bounding boxes
-	uint32 s = children.size();
-	for (uint32 i = 0; i < s; i++) {
+	uint32_t s = children.size();
+	for (uint32_t i = 0; i < s; i++) {
 		children[i]->bounds();
 	}
 
 	return true;
 }
 
-uint_i PrimArray::max_primitive_id() const
+size_t PrimArray::max_primitive_id() const
 {
 	return children.size();
 }
 
-Primitive &PrimArray::get_primitive(uint_i id)
+Primitive &PrimArray::get_primitive(size_t id)
 {
 	return *(children[id]);
 }
@@ -55,11 +55,11 @@ BBoxT &PrimArray::bounds()
 bool PrimArray::intersect_ray(const Ray &ray, Intersection *intersection)
 {
 	std::vector<Primitive *> temp_prim;
-	float32 tnear, tfar;
+	float tnear, tfar;
 	bool hit = false;
-	int32 size = children.size();
+	int32_t size = children.size();
 
-	for (int32 i=0; i < size; i++) {
+	for (int32_t i=0; i < size; i++) {
 		if (children[i]->bounds().intersect_ray(ray, &tnear, &tfar)) {
 			// Trace!
 			hit |= children[i]->intersect_ray(ray, intersection);
@@ -74,15 +74,15 @@ bool PrimArray::intersect_ray(const Ray &ray, Intersection *intersection)
 }
 
 
-uint PrimArray::get_potential_intersections(const Ray &ray, float tmax, uint max_potential, uint_i *ids, void *state)
+uint PrimArray::get_potential_intersections(const Ray &ray, float tmax, uint max_potential, size_t *ids, void *state)
 {
-	const uint32 size = children.size();
-	float32 tnear, tfar;
+	const uint32_t size = children.size();
+	float tnear, tfar;
 
 	// Fetch starting index
-	uint32 i = 0;
+	uint32_t i = 0;
 	if (state != nullptr)
-		i = *((uint64 *)state);
+		i = *((uint64_t *)state);
 
 	static uint count = 0;
 	count++;
@@ -90,7 +90,7 @@ uint PrimArray::get_potential_intersections(const Ray &ray, float tmax, uint max
 		std::cout << "State: " << i << std::endl;
 
 	// Accumulate potential primitive intersections
-	uint32 hits_so_far = 0;
+	uint32_t hits_so_far = 0;
 	for (; i < size && hits_so_far < max_potential; i++) {
 		if (children[i]->bounds().intersect_ray(ray, &tnear, &tfar) && tnear < tmax) {
 			ids[hits_so_far] = i;
@@ -100,7 +100,7 @@ uint PrimArray::get_potential_intersections(const Ray &ray, float tmax, uint max
 
 	// Write last index
 	if (state != nullptr)
-		*((uint64 *)state) = i;
+		*((uint64_t *)state) = i;
 
 	return hits_so_far;
 }

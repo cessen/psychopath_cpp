@@ -14,7 +14,7 @@ namespace Morton
  * In practice x and y need to be within the range of an unsigned 16 bit
  * integer, since the output is a single 32 bit index.
  */
-static inline uint32 xy2d(uint32 x, uint32 y)
+static inline uint32_t xy2d(uint32_t x, uint32_t y)
 {
 	x &= 0x0000ffff;
 	y &= 0x0000ffff;
@@ -40,7 +40,7 @@ static inline uint32 xy2d(uint32 x, uint32 y)
 /**
  * @brief Decodes a morton code index into x and y coordinates.
  */
-static inline void d2xy(uint32 d, uint32 *x, uint32 *y)
+static inline void d2xy(uint32_t d, uint32_t *x, uint32_t *y)
 {
 	*x = d;
 	*y = (*x >> 1);

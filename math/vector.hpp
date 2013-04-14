@@ -8,7 +8,7 @@
 #include "ImathVec.h"
 
 // 3D vector
-typedef Imath::Vec3<float32> ImathVec3;
+typedef Imath::Vec3<float> ImathVec3;
 
 
 #if 0
@@ -20,14 +20,14 @@ typedef Imath::Vec3<float32> ImathVec3;
 struct __attribute__((aligned(16))) Vec3 {
     union {
         struct {
-            float32 x,y,z,w;
+            float x,y,z,w;
         };
         __m128 m128;
     };
 
     // Constructors
 Vec3() {}
-Vec3(float32 x_, float32 y_, float32 z_, float32 w_=1.0f) {
+Vec3(float x_, float y_, float z_, float w_=1.0f) {
 	x = x_;
 	y = y_;
 	z = z_;
@@ -38,11 +38,11 @@ Vec3(__m128 m) {
 }
 
 // Element access
-float32 &operator[](uint n) {
+float &operator[](uint_t n) {
 	assert(n < 4);
 	return (&x)[n];
 }
-const float32 &operator[](uint n) const {
+const float &operator[](uint_t n) const {
 	assert(n < 4);
 	return (&x)[n];
 }
@@ -75,7 +75,7 @@ Vec3 operator/(const Vec3& b) const {
 }
 
 // Products
-float32 dot(const Vec3 &b) const {
+float dot(const Vec3 &b) const {
 	return x*b.x + y*b.y + z*b.z;
 }
 Vec3 cross(const Vec3 &b) const {
@@ -97,7 +97,7 @@ Vec3 max(const Vec3 &b) const {
 	return (Vec3)_mm_max_ps(m128, b.m128);
 }
 
-float32 length() const {
+float length() const {
 	Vec3 a = *this;
 	a.w = 0.0f;
 
@@ -111,7 +111,7 @@ float32 length() const {
 	return a.x;
 }
 
-float32 length2() const {
+float length2() const {
 	Vec3 a = *this;
 	a.w = 0.0f;
 
@@ -144,12 +144,12 @@ const Vec3 &normalize() {
 
 };
 #else
-typedef Imath::Vec3<float32> Vec3;
+typedef Imath::Vec3<float> Vec3;
 #endif
 
 
 template <class T>
-static inline float32 dot(const T &a, const T &b)
+static inline float dot(const T &a, const T &b)
 {
 	return a.dot(b);
 }

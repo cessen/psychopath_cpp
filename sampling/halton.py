@@ -116,13 +116,13 @@ print '''// Copyright (c) 2012 Leonhard Gruenschloss (leonhard@gruenschloss.org)
 namespace Halton
 {
 
-uint32 max_dimension()
+uint32_t max_dimension()
 {
     return %du;
 }
 
 // Special case: radical inverse in base 2, with direct bit reversal.
-inline float32 halton2(uint32 index)
+inline float halton2(uint32_t index)
 {
     index = (index << 16) | (index >> 16);
     index = ((index & 0x00ff00ff) << 8) | ((index & 0xff00ff00) >> 8);
@@ -155,9 +155,9 @@ for i in range(1, num_dimensions): # Skip base 2.
         
     power = max_power / pow_base
     print '''
-static const uint16 perm%d[] = { %s };
+static const uint16_t perm%d[] = { %s };
 
-inline float32 halton%d(const uint32 index)
+inline float halton%d(const uint32_t index)
 {
     return (perm%d[index %% %du] * %du +''' % \
         (base, ', '.join(str(k) for k in perm), base, base, pow_base, power)
@@ -173,7 +173,7 @@ inline float32 halton%d(const uint32 index)
 }''' % (base, div * pow_base, pow_base, max_power)
 
 print '''
-float32 sample(const uint32 dimension, const uint32 index)
+float sample(const uint32_t dimension, const uint32_t index)
 {
     switch (dimension)
     {

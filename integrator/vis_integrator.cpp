@@ -15,17 +15,17 @@
 
 void VisIntegrator::integrate()
 {
-	const uint_i samp_dim = 8;
+	const size_t samp_dim = 8;
 
 	RNG rng;
 	ImageSampler image_sampler(spp, image->width, image->height);
 
 	// Sample array
-	Array<float32> samps;
+	Array<float> samps;
 	samps.resize(RAYS_AT_A_TIME * samp_dim);
 
 	// Sample pixel coordinate array
-	Array<uint16> coords;
+	Array<uint16_t> coords;
 	coords.resize(RAYS_AT_A_TIME * 2);
 
 	// Light path array
@@ -37,7 +37,7 @@ void VisIntegrator::integrate()
 	Array<Intersection> intersections(RAYS_AT_A_TIME);
 
 	// ids corresponding to the rays
-	Array<uint32> ids(RAYS_AT_A_TIME);
+	Array<uint32_t> ids(RAYS_AT_A_TIME);
 
 	bool last = false;
 	while (true) {
@@ -54,7 +54,7 @@ void VisIntegrator::integrate()
 				paths[i].done = false;
 			}
 		}
-		uint32 ssize = samps.size() / samp_dim;
+		uint32_t ssize = samps.size() / samp_dim;
 
 
 		// Size the ray buffer appropriately
@@ -63,11 +63,11 @@ void VisIntegrator::integrate()
 		// Generate a bunch of camera rays
 		std::cout << "\tGenerating camera rays" << std::endl;
 		std::cout.flush();
-		for (uint32 i = 0; i < ssize; i++) {
-			float32 rx = (samps[i*samp_dim] - 0.5) * (image->max_x - image->min_x);
-			float32 ry = (0.5 - samps[i*samp_dim+1]) * (image->max_y - image->min_y);
-			float32 dx = (image->max_x - image->min_x) / image->width;
-			float32 dy = (image->max_y - image->min_y) / image->height;
+		for (uint32_t i = 0; i < ssize; i++) {
+			float rx = (samps[i*samp_dim] - 0.5) * (image->max_x - image->min_x);
+			float ry = (0.5 - samps[i*samp_dim+1]) * (image->max_y - image->min_y);
+			float dx = (image->max_x - image->min_x) / image->width;
+			float dy = (image->max_y - image->min_y) / image->height;
 			rays[i] = scene->camera->generate_ray(rx, ry, dx, dy, samps[i*samp_dim+4], samps[i*samp_dim+2], samps[i*samp_dim+3]);
 			rays[i].finalize();
 			ids[i] = i;
@@ -83,8 +83,8 @@ void VisIntegrator::integrate()
 		// Update paths
 		std::cout << "\tUpdating paths" << std::endl;
 		std::cout.flush();
-		uint32 rsize = rays.size();
-		for (uint32 i = 0; i < rsize; i++) {
+		uint32_t rsize = rays.size();
+		for (uint32_t i = 0; i < rsize; i++) {
 			if (intersections[i].hit) {
 				// Ray hit something!  Store intersection data
 				paths[ids[i]].done = true;
@@ -100,13 +100,13 @@ void VisIntegrator::integrate()
 		// Accumulate the samples
 		std::cout << "\tAccumulating samples" << std::endl;
 		std::cout.flush();
-		for (uint_i i = 0; i < ssize; i++) {
+		for (size_t i = 0; i < ssize; i++) {
 			image->add_sample(paths[i].col, coords[i*2], coords[i*2+1]);
 		}
 
 		// Print percentage complete
-		static int32 last_perc = -1;
-		int32 perc = image_sampler.percentage() * 100;
+		static int32_t last_perc = -1;
+		int32_t perc = image_sampler.percentage() * 100;
 		if (perc > last_perc) {
 			std::cout << perc << "%" << std::endl;
 			last_perc = perc;

@@ -113,7 +113,7 @@ BOOST_AUTO_TEST_CASE(intersect_ray_1)
 	Ray r(Vec3(0.125, -8.0, 0.25), Vec3(0.0, 1.0, 0.0));
 	r.finalize();
 	BBox bb(Vec3(-1.0, -2.5, -0.5), Vec3(8.0, 7.25, 2.0));
-	float32 hitt0=0.0, hitt1=0.0;
+	float hitt0=0.0, hitt1=0.0;
 	bool hit=false;
 
 	hit = bb.intersect_ray(r, &hitt0, &hitt1);
@@ -129,7 +129,7 @@ BOOST_AUTO_TEST_CASE(intersect_ray_2)
 	Ray r(Vec3(0.125, -8.0, 0.25), Vec3(0.0, 2.0, 0.0));
 	r.update_accel();
 	BBox bb(Vec3(-1.0, -2.5, -0.5), Vec3(8.0, 7.25, 2.0));
-	float32 hitt0=0.0, hitt1=0.0;
+	float hitt0=0.0, hitt1=0.0;
 	bool hit=false;
 
 	hit = bb.intersect_ray(r, &hitt0, &hitt1);
@@ -155,7 +155,7 @@ BOOST_AUTO_TEST_CASE(intersect_ray_4)
 	Ray r(Vec3(0.0, 0.0, 0.0), Vec3(0, 1.0, 0));
 	r.finalize();
 	BBox bb(Vec3(-1.0, -2.5, -0.5), Vec3(8.0, 7.25, 2.0));
-	float32 hitt0=0.0, hitt1=0.0;
+	float hitt0=0.0, hitt1=0.0;
 	bool hit=false;
 
 	hit = bb.intersect_ray(r, &hitt0, &hitt1);

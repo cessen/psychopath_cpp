@@ -21,14 +21,14 @@
 template <class T>
 class Array
 {
-	uint_i size_;
-	uint_i capacity_;
+	size_t size_;
+	size_t capacity_;
 	std::unique_ptr<T[]> data;
 
 public:
 	Array(): size_ {0}, capacity_ {0}, data {nullptr} {}
 
-	Array(uint_i size): size_ {size}, capacity_ {size}, data {new T[size]} {}
+	Array(size_t size): size_ {size}, capacity_ {size}, data {new T[size]} {}
 
 
 	/**
@@ -37,12 +37,12 @@ public:
 	 * This does _not_ shrink the capacity, only increases.
 	 * If cap is less then the current capacity, it does nothing.
 	 */
-	void reserve(uint_i cap) {
+	void reserve(size_t cap) {
 		if (cap <= capacity_)
 			return;
 
 		std::unique_ptr<T[]> data2 {new T[cap]};
-		for (uint_i i=0; i < size_; i++)
+		for (size_t i=0; i < size_; i++)
 			data2[i] = data[i];
 		data.swap(data2);
 
@@ -55,7 +55,7 @@ public:
 	 * This does _not_ free any space.  The capacity is only increased,
 	 * never decreased.
 	 */
-	void resize(uint_i size) {
+	void resize(size_t size) {
 		reserve(size);
 		size_ = size;
 	}
@@ -70,14 +70,14 @@ public:
 	/**
 	 * @brief Returns the current capacity of the array.
 	 */
-	const uint_i &capacity() const {
+	const size_t &capacity() const {
 		return capacity_;
 	}
 
 	/**
 	 * @brief Returns the current size of the array.
 	 */
-	const uint_i &size() const {
+	const size_t &size() const {
 		return size_;
 	}
 
@@ -104,14 +104,14 @@ public:
 	/**
 	 * @brief Access to array elements.
 	 */
-	T& operator[](const uint_i &n) {
+	T& operator[](const size_t &n) {
 		assert(n >= 0 && n < size_);
 		return data[n];
 	}
 	/**
 	 * @brief Access to array elements.
 	 */
-	const T& operator[](const uint_i &n) const {
+	const T& operator[](const size_t &n) const {
 		assert(n >= 0 && n < size_);
 		return data[n];
 	}

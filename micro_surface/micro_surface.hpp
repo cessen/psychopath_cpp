@@ -22,13 +22,13 @@
  */
 struct MicroNode {
 	BBox bounds;
-	uint16 flags;
+	uint16_t flags;
 
-	uint16 child_index;
+	uint16_t child_index;
 
-	uint16 data_index; // Index into geometry data
-	uint8 data_du; // Deltas for the extent of geometry data that this node covers
-	uint8 data_dv;
+	uint16_t data_index; // Index into geometry data
+	uint8_t data_du; // Deltas for the extent of geometry data that this node covers
+	uint8_t data_dv;
 };
 
 
@@ -42,18 +42,18 @@ class MicroSurface
 {
 	// MicroSurface tree
 	std::vector<MicroNode> nodes;
-	uint_i res_u, res_v;
+	size_t res_u, res_v;
 
 	// Important geometry information
 	std::vector<Vec3> normals;
-	std::vector<float32> uvs;
-	uint_i face_id;
+	std::vector<float> uvs;
+	size_t face_id;
 
 	// Number of time samples
-	uint16 time_count;
+	uint16_t time_count;
 
 	// Max width of the surface at the root node
-	float32 root_width;
+	float root_width;
 
 	// Random number generator
 	RNG rng;
@@ -62,9 +62,9 @@ class MicroSurface
 	 * @brief Calculates ray-bbox intersection with a node in the
 	 * MicroSurface tree.
 	 */
-	bool intersect_node(uint_i node, const Ray &ray, float32 *tnear, float32 *tfar, float32 *t) {
-		uint32 ti = 0;
-		float32 alpha = 0.0f;
+	bool intersect_node(size_t node, const Ray &ray, float *tnear, float *tfar, float *t) {
+		uint32_t ti = 0;
+		float alpha = 0.0f;
 		if (calc_time_interp(time_count, ray.time, &ti, &alpha)) {
 			const BBox b = lerp<BBox>(alpha, nodes[node+ti].bounds, nodes[node+ti+1].bounds);
 			return b.intersect_ray(ray, tnear, tfar, t);
@@ -101,17 +101,17 @@ public:
 	 *
 	 * @return True on a hit, false on a miss.
 	 */
-	bool intersect_ray(const Ray &ray, float32 width, Intersection *inter);
+	bool intersect_ray(const Ray &ray, float width, Intersection *inter);
 
 
 	/**
 	 * @brief Returns how much memory this MicroSurface occupies.
 	 */
-	uint_i bytes() const {
-		const uint_i class_size = sizeof(MicroSurface);
-		const uint_i nodes_size = sizeof(MicroNode) * nodes.size();
-		const uint_i normals_size = sizeof(Vec3) * normals.size();
-		const uint_i uvs_size = sizeof(float32) * uvs.size();
+	size_t bytes() const {
+		const size_t class_size = sizeof(MicroSurface);
+		const size_t nodes_size = sizeof(MicroNode) * nodes.size();
+		const size_t normals_size = sizeof(Vec3) * normals.size();
+		const size_t uvs_size = sizeof(float) * uvs.size();
 
 		return class_size + nodes_size + normals_size + uvs_size;
 	}

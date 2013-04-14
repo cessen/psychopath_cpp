@@ -9,12 +9,12 @@
 #include "config.hpp"
 #include "global.hpp"
 
-Bilinear::Bilinear(uint16 res_time_)
+Bilinear::Bilinear(uint16_t res_time_)
 {
 	has_bounds = false;
 	verts.init(res_time_);
 
-	for (uint8 i=0; i < res_time_; i++) {
+	for (uint8_t i=0; i < res_time_; i++) {
 		verts[i] = new Vec3[4];
 	}
 
@@ -22,7 +22,7 @@ Bilinear::Bilinear(uint16 res_time_)
 	u_max = v_max = 1.0f;
 
 	microsurface_key = 0;
-	last_ray_width = std::numeric_limits<float32>::infinity();
+	last_ray_width = std::numeric_limits<float>::infinity();
 }
 
 Bilinear::Bilinear(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4)
@@ -40,7 +40,7 @@ Bilinear::Bilinear(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4)
 	u_max = v_max = 1.0f;
 
 	microsurface_key = 0;
-	last_ray_width = std::numeric_limits<float32>::infinity();
+	last_ray_width = std::numeric_limits<float>::infinity();
 }
 
 Bilinear::~Bilinear()
@@ -62,13 +62,13 @@ void Bilinear::add_time_sample(int samp, Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4)
 
 //////////////////////////////////////////////////////////////
 
-uint_i Bilinear::micro_estimate(float32 width)
+size_t Bilinear::micro_estimate(float width)
 {
 	if (width <= Config::min_upoly_size) {
 		return 1;
 	} else {
-		uint_i u_rate = 0;
-		uint_i v_rate = 0;
+		size_t u_rate = 0;
+		size_t v_rate = 0;
 		uv_dice_rate(&u_rate, &v_rate, width);
 
 		return u_rate * v_rate;
@@ -82,12 +82,12 @@ bool Bilinear::intersect_ray(const Ray &ray, Intersection *intersection)
 	Global::Stats::primitive_ray_tests++;
 
 	// Get bounding box intersection
-	float32 tnear, tfar;
+	float tnear, tfar;
 	if (!bounds().intersect_ray(ray, &tnear, &tfar))
 		return false;
 
 	// Calculate minimum ray footprint inside the bounding box
-	const float32 width = ray.min_width(tnear, tfar);
+	const float width = ray.min_width(tnear, tfar);
 
 	// Figure out if we need to redice or not
 	MicroSurface *micro_surface;
@@ -174,8 +174,8 @@ void Bilinear::split(std::vector<Primitive *> &primitives)
 	primitives[0] = new Bilinear(verts.state_count);
 	primitives[1] = new Bilinear(verts.state_count);
 
-	float32 lu;
-	float32 lv;
+	float lu;
+	float lv;
 
 	lu = (verts[0][0] - verts[0][1]).length() + (verts[0][3] - verts[0][2]).length();
 	lv = (verts[0][0] - verts[0][3]).length() + (verts[0][1] - verts[0][2]).length();
@@ -239,11 +239,11 @@ void Bilinear::split(std::vector<Primitive *> &primitives)
 }
 
 
-MicroSurface *Bilinear::micro_generate(float32 width)
+MicroSurface *Bilinear::micro_generate(float width)
 {
 	// Get dicing rate
-	uint_i u_rate = 32;
-	uint_i v_rate = 32;
+	size_t u_rate = 32;
+	size_t v_rate = 32;
 	uv_dice_rate(&u_rate, &v_rate, width);
 
 	// TODO: this is temporary, while splitting is not yet implemented

@@ -16,14 +16,14 @@
  */
 
 template <class T>
-static inline T lerp(const float32 &alpha, const T &a, const T &b)
+static inline T lerp(const float &alpha, const T &a, const T &b)
 {
 	return (a * (1.0-alpha)) + (b * alpha);
 }
 
 
 template <class T>
-static inline T lerp2d(float32 alpha_u, float32 alpha_v,
+static inline T lerp2d(float alpha_u, float alpha_v,
                        T s00, T s10, T s01, T s11)
 {
 	const T temp1 = (s00 * (1.0-alpha_u)) + (s10 * alpha_u);
@@ -37,15 +37,15 @@ static inline T lerp2d(float32 alpha_u, float32 alpha_v,
  * time samples.
  * The first index and alpha are put into i and alpha respectively.
  */
-static inline bool calc_time_interp(const uint8& time_count, const float32 &time, uint32 *i, float32 *alpha)
+static inline bool calc_time_interp(const uint8_t& time_count, const float &time, uint32_t *i, float *alpha)
 {
 	if (time_count < 2)
 		return false;
 
 	if (time < 1.0) {
-		const float32 temp = time * (time_count - 1);
+		const float temp = time * (time_count - 1);
 		*i = temp;
-		*alpha = temp - (float32)(*i);
+		*alpha = temp - (float)(*i);
 	} else {
 		*i = time_count - 2;
 		*alpha = 1.0;
@@ -55,16 +55,16 @@ static inline bool calc_time_interp(const uint8& time_count, const float32 &time
 }
 
 template <class T, class iterator>
-static inline const T lerp_seq(const float32 &alpha, const iterator &seq, const uint_i &seq_length)
+static inline const T lerp_seq(const float &alpha, const iterator &seq, const size_t &seq_length)
 {
 	if (seq_length == 1)
 		return seq[0];
 	else if (seq_length == 2)
 		return lerp(alpha, seq[0], seq[1]);
 	else if (alpha < 1.0) {
-		const float32 temp = alpha * (seq_length - 1);
-		const uint_i index = (uint_i)temp;
-		const float32 nalpha = temp - index;
+		const float temp = alpha * (seq_length - 1);
+		const size_t index = static_cast<size_t>(temp);
+		const float nalpha = temp - index;
 		return lerp(nalpha, seq[index], seq[index+1]);
 	}
 
@@ -79,14 +79,14 @@ static inline const T lerp_seq(const float32 &alpha, const iterator &seq, const 
  * NOTE: x and y should be distributed within [-1, 1],
  * not [0, 1].
  */
-static inline void square_to_circle(float32 *x, float32 *y)
+static inline void square_to_circle(float *x, float *y)
 {
 	assert(*x >= -1.0 && *x <= 1.0 && *y >= -1.0 && *y <= 1.0);
 
 	if (*x == 0.0 && *y == 0.0)
 		return;
 
-	float32 radius, angle;
+	float radius, angle;
 
 	if (*x > std::abs(*y)) { // Quadrant 1
 		radius = *x;
@@ -106,43 +106,43 @@ static inline void square_to_circle(float32 *x, float32 *y)
 	*y = radius * std::sin(angle);
 }
 
-static inline Vec3 cosine_sample_hemisphere(float32 u, float32 v)
+static inline Vec3 cosine_sample_hemisphere(float u, float v)
 {
 	u = (u*2)-1;
 	v = (v*2)-1;
 	square_to_circle(&u, &v);
-	const float32 z = std::sqrt(std::max(0.0, 1.0 - ((u*u) + (v*v))));
+	const float z = std::sqrt(std::max(0.0, 1.0 - ((u*u) + (v*v))));
 	return Vec3(u, v, z);
 }
 
-static inline Vec3 cosine_sample_hemisphere_polar(float32 u, float32 v)
+static inline Vec3 cosine_sample_hemisphere_polar(float u, float v)
 {
-	const float32 r = std::sqrt(u);
-	const float32 theta = 2 * M_PI * v;
+	const float r = std::sqrt(u);
+	const float theta = 2 * M_PI * v;
 
-	const float32 x = r * std::cos(theta);
-	const float32 y = r * std::sin(theta);
+	const float x = r * std::cos(theta);
+	const float y = r * std::sin(theta);
 
 	return Vec3(x, y, std::sqrt(std::max(0.0f, 1 - u)));
 }
 
-static inline Vec3 uniform_sample_hemisphere(float32 u, float32 v)
+static inline Vec3 uniform_sample_hemisphere(float u, float v)
 {
-	float32 z = u;
-	float32 r = std::sqrt(std::max(0.f, 1.f - z*z));
-	float32 phi = 2 * M_PI * v;
-	float32 x = r * std::cos(phi);
-	float32 y = r * std::sin(phi);
+	float z = u;
+	float r = std::sqrt(std::max(0.f, 1.f - z*z));
+	float phi = 2 * M_PI * v;
+	float x = r * std::cos(phi);
+	float y = r * std::sin(phi);
 	return Vec3(x, y, z);
 }
 
-static inline Vec3 uniform_sample_sphere(float32 u, float32 v)
+static inline Vec3 uniform_sample_sphere(float u, float v)
 {
-	float32 z = 1.f - (2.f * u);
-	float32 r = std::sqrt(std::max(0.f, 1.f - z*z));
-	float32 phi = 2.f * M_PI * v;
-	float32 x = r * std::cos(phi);
-	float32 y = r * std::sin(phi);
+	float z = 1.f - (2.f * u);
+	float r = std::sqrt(std::max(0.f, 1.f - z*z));
+	float phi = 2.f * M_PI * v;
+	float x = r * std::cos(phi);
+	float y = r * std::sin(phi);
 	return Vec3(x, y, z);
 }
 
@@ -153,10 +153,10 @@ static inline Vec3 uniform_sample_sphere(float32 u, float32 v)
 static inline void coordinate_system_from_vec3(const Vec3 &v1, Vec3 *v2, Vec3 *v3)
 {
 	if (std::abs(v1.x) > std::fabs(v1.y)) {
-		float32 invlen = 1.f / std::sqrt(v1.x*v1.x + v1.z*v1.z);
+		float invlen = 1.f / std::sqrt(v1.x*v1.x + v1.z*v1.z);
 		*v2 = Vec3(-v1.z * invlen, 0.f, v1.x * invlen);
 	} else {
-		float32 invlen = 1.f / std::sqrt(v1.y*v1.y + v1.z*v1.z);
+		float invlen = 1.f / std::sqrt(v1.y*v1.y + v1.z*v1.z);
 		*v2 = Vec3(0.f, v1.z * invlen, -v1.y * invlen);
 	}
 	*v3 = cross(v1, *v2);
@@ -200,10 +200,10 @@ static inline float fastlog2(float x)
 {
 	union {
 		float f;
-		uint32 i;
+		uint32_t i;
 	} vx = { x };
 	union {
-		uint32 i;
+		uint32_t i;
 		float f;
 	} mx = { (vx.i & 0x007FFFFF) | 0x3f000000 };
 	float y = vx.i;

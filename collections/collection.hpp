@@ -42,12 +42,12 @@ public:
 	 * This should also be the largest possible primitive id, as taken by
 	 * e.g. get_primitive().
 	 */
-	virtual uint_i size() = 0;
+	virtual size_t size() = 0;
 
 	/**
 	 * @brief Fetches a primitive based on id.
 	 */
-	virtual Primitive &get_primitive(uint_i id) = 0;
+	virtual Primitive &get_primitive(size_t id) = 0;
 
 	/**
 	 * @brief Returns the number of bytes used to store per-ray traversal state.
@@ -67,7 +67,7 @@ public:
 	 *
 	 * @returns The number of results acquired.  If zero, that means there were no potential intersections.
 	 */
-	virtual uint get_potential_intersections(const Ray &ray, float tmax, uint max_potential, uint_i *ids, void *state) = 0;
+	virtual uint get_potential_intersections(const Ray &ray, float tmax, uint max_potential, size_t *ids, void *state) = 0;
 
 
 

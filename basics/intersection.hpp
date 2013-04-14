@@ -19,13 +19,13 @@ struct Intersection {
 	bool backfacing;
 
 	// Information about the intersection point
-	float32 t; // T-parameter along the ray at the intersection
+	float t; // T-parameter along the ray at the intersection
 	Vec3 p;  // Intersection postion
 
 
 	// Information about the ray that caused the intersection
 	Vec3 in; // The incoming ray direction
-	float32 ow, dw;
+	float ow, dw;
 	//Vec3 odx, ody; // Origin differentials
 	//Vec3 ddx, ddy; // Direction differentials
 
@@ -34,9 +34,9 @@ struct Intersection {
 	//Vec3 ndx, ndy;
 
 	// Information about the UVs at the point
-	float32 u, v;
-	//float32 udx, vdx;
-	//float32 udy, vdy;
+	float u, v;
+	//float udx, vdx;
+	//float udy, vdy;
 
 	// Offset for subsequent spawned rays to avoid self-intersection
 	// Should be added for reflection, subtracted for transmission
@@ -44,7 +44,7 @@ struct Intersection {
 
 	Color col;
 
-	Intersection(): hit {false}, t {std::numeric_limits<float32>::infinity()} {}
+	Intersection(): hit {false}, t {std::numeric_limits<float>::infinity()} {}
 
 
 	/**
@@ -52,13 +52,13 @@ struct Intersection {
 	 * the intersection.
 	 */
 	/*Vec3 pdx() const {
-		const float32 dn = dot(in, n);
+		const float dn = dot(in, n);
 		if (dn < DIFFERENTIAL_DOT_EPSILON && dn > -DIFFERENTIAL_DOT_EPSILON) {
 			std::cout << "YAR\n";
 			return in.normalized() * (odx + (ddx * t)).length();
 		} else {
 			const Vec3 temp = odx + (ddx * t);
-			const float32 td = dot(temp, n) / dn;
+			const float td = dot(temp, n) / dn;
 			return temp + (in * td);
 		}
 	}*/
@@ -68,12 +68,12 @@ struct Intersection {
 	 * the intersection.
 	 */
 	/*Vec3 pdy() const {
-		const float32 dn = dot(in, n);
+		const float dn = dot(in, n);
 		if (dn < DIFFERENTIAL_DOT_EPSILON && dn > -DIFFERENTIAL_DOT_EPSILON) {
 			return cross(n, in).normalized() * (ody + (ddy * t)).length();
 		} else {
 			const Vec3 temp = ody + (ddy * t);
-			const float32 td = dot(temp, n) / dn;
+			const float td = dot(temp, n) / dn;
 			return temp + (in * td);
 		}
 	}*/
@@ -81,7 +81,7 @@ struct Intersection {
 	/**
 	 * @brief Returns the ray width at the intersection point.
 	 */
-	float32 owp() const {
+	float owp() const {
 		return ow + (dw * t);
 	}
 

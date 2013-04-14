@@ -35,11 +35,11 @@ struct Scene {
 	Scene(): camera {nullptr} {}
 
 	~Scene() {
-		uint32 s;
+		uint32_t s;
 
 		// Delete finite lights
 		s = finite_lights.size();
-		for (uint32 i = 0; i < s; i++) {
+		for (uint32_t i = 0; i < s; i++) {
 			delete finite_lights[i];
 		}
 

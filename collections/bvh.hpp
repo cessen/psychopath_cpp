@@ -21,7 +21,7 @@ struct BucketInfo {
 	BucketInfo() {
 		count = 0;
 	}
-	uint_i count;
+	size_t count;
 	BBoxT bb;
 };
 
@@ -64,14 +64,14 @@ public:
 class BVHNode
 {
 public:
-	uint_i bbox_index;
+	size_t bbox_index;
 	union {
-		uint_i child_index;
+		size_t child_index;
 		Primitive *data;
 	};
-	uint_i parent_index;
-	uint16 ts; // Time sample count
-	uint16 flags;
+	size_t parent_index;
+	uint16_t ts; // Time sample count
+	uint16_t flags;
 
 	BVHNode() {
 		bbox_index = 0;
@@ -93,13 +93,13 @@ private:
 	BBoxT bbox;
 	ChunkedArray<BVHNode, BVH_NODE_CHUNK_SIZE> nodes;
 	ChunkedArray<BBox, BVH_NODE_CHUNK_SIZE> bboxes;
-	uint_i next_node, next_bbox;
+	size_t next_node, next_bbox;
 	std::vector<BVHPrimitive> bag;  // Temporary holding spot for primitives not yet added to the hierarchy
 
 	/**
 	 * @brief Tests whether a ray intersects a node or not.
 	 */
-	bool intersect_node(uint_i node, const Ray &ray, float32 *near_t, float32 *far_t) {
+	bool intersect_node(size_t node, const Ray &ray, float *near_t, float *far_t) {
 		if (nodes[node].ts == 1) {
 			return bboxes[nodes[node].bbox_index].intersect_ray(ray, near_t, far_t);
 		} else {
@@ -118,10 +118,10 @@ public:
 	// Inherited
 	virtual void add_primitives(std::vector<Primitive *> &primitives);
 	virtual bool finalize();
-	virtual uint_i max_primitive_id() const;
-	virtual Primitive &get_primitive(uint_i id);
-	virtual uint get_potential_intersections(const Ray &ray, float tmax, uint max_potential, uint_i *ids, void *state);
-	virtual uint_i size() {
+	virtual size_t max_primitive_id() const;
+	virtual Primitive &get_primitive(size_t id);
+	virtual uint get_potential_intersections(const Ray &ray, float tmax, uint max_potential, size_t *ids, void *state);
+	virtual size_t size() {
 		// TODO
 		return 0;
 	}
@@ -132,8 +132,8 @@ public:
 	virtual BBoxT &bounds();
 	virtual bool intersect_ray(const Ray &ray, Intersection *intersection=nullptr);
 
-	unsigned split_primitives(uint_i first_prim, uint_i last_prim, int32 *axis=nullptr);
-	void recursive_build(uint_i parent, uint_i me, uint_i first_prim, uint_i last_prim);
+	unsigned split_primitives(size_t first_prim, size_t last_prim, int32_t *axis=nullptr);
+	void recursive_build(size_t parent, size_t me, size_t first_prim, size_t last_prim);
 };
 
 

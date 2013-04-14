@@ -26,9 +26,9 @@
 namespace Halton
 {
 
-uint32 max_dimension();
+uint32_t max_dimension();
 
-float32 sample(const uint32 dimension, const uint32 index);
+float sample(const uint32_t dimension, const uint32_t index);
 
 }
 

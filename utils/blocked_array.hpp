@@ -9,22 +9,22 @@
 /**
  * @brief A 2d array optimized for cache coherency.
  */
-template <class T, uint32 LOG_BLOCK_SIZE>
+template <class T, uint32_t LOG_BLOCK_SIZE>
 class BlockedArray
 {
 private:
-	uint32 block_size, block_mask;
-	uint32 u_blocks, v_blocks;
-	uint32 block_elements;
+	uint32_t block_size, block_mask;
+	uint32_t u_blocks, v_blocks;
+	uint32_t block_elements;
 
 	std::vector<T> data;
 
 public:
-	uint32 width, height;
+	uint32_t width, height;
 
 	BlockedArray() {}
 
-	BlockedArray(uint32 w, uint32 h) {
+	BlockedArray(uint32_t w, uint32_t h) {
 		block_size = 1 << LOG_BLOCK_SIZE;
 		block_mask = block_size - 1;
 		width = w;
@@ -47,26 +47,26 @@ public:
 
 	~BlockedArray() {}
 
-	uint32 index(uint32 u, uint32 v) const {
+	uint32_t index(uint32_t u, uint32_t v) const {
 		// Find the start of the block
-		const uint32 bu = u >> LOG_BLOCK_SIZE;
-		const uint32 bv = v >> LOG_BLOCK_SIZE;
-		const uint32 i1 = block_elements * ((bv * u_blocks) + bu);
+		const uint32_t bu = u >> LOG_BLOCK_SIZE;
+		const uint32_t bv = v >> LOG_BLOCK_SIZE;
+		const uint32_t i1 = block_elements * ((bv * u_blocks) + bu);
 
 		// Find the index within the block
 		u &= block_mask;
 		v &= block_mask;
-		const uint32 i2 = Morton::xy2d(u, v);
+		const uint32_t i2 = Morton::xy2d(u, v);
 
 		return i1 + i2;
 	}
 
 	// Element addressing
-	T &operator()(uint32 u, uint32 v) {
+	T &operator()(uint32_t u, uint32_t v) {
 		return data[index(u, v)];
 	}
 
-	const T &operator()(uint32 u, uint32 v) const {
+	const T &operator()(uint32_t u, uint32_t v) const {
 		return data[index(u, v)];
 	}
 
