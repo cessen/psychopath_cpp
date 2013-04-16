@@ -8,19 +8,14 @@
 
 #include "utils.hpp"
 
-#define IS_LEAF 1
+#define IS_LEAF 256
+#define DEPTH_MASK 255
 
 
 bool MicroSurface::intersect_ray(const Ray &ray, float ray_width, Intersection *inter)
 {
-	uint32_t todo[64];
-	size_t todo_offset = 0;
-	size_t node = 0;
-	float tnear = ray.max_t;
-	float tfar = ray.max_t;
 	bool hit = false;
 	size_t hit_node = 0;
-
 	float hit_near = ray.max_t;
 	//float hit_far = ray.max_t;
 	float t = ray.max_t;
@@ -30,10 +25,18 @@ bool MicroSurface::intersect_ray(const Ray &ray, float ray_width, Intersection *
 	// Calculate the max depth the ray should traverse into the tree
 	const uint32_t rdepth = 2 * std::max(0.0f, fasterlog2(root_width) - fasterlog2(ray_width*Config::dice_rate));
 
+// Switch between simple traversal vs fast traversal (simple = 1, fast = 0)
+#if 0
 	// Intersect with the MicroSurface
+	uint32_t todo[64];
+	size_t todo_offset = 0;
+	size_t node = 0;
+	float tnear = ray.max_t;
+	float tfar = ray.max_t;
+
 	while (true) {
 		if (intersect_node(node, ray, &tnear, &tfar, &t)) {
-			if (nodes[node].flags & IS_LEAF || todo_offset >= rdepth) {
+			if (nodes[node].flags & IS_LEAF || (nodes[node].flags & DEPTH_MASK) >= rdepth) {
 				// Hit
 				hit = true;
 				hit_node = node;
@@ -61,6 +64,78 @@ bool MicroSurface::intersect_ray(const Ray &ray, float ray_width, Intersection *
 			node = todo[--todo_offset];
 		}
 	}
+#else
+	// Intersect with the MicroSurface
+	float tnear = 0.0f;
+	float tfar = ray.max_t;
+
+	// Working set
+	uint64_t todo[64];
+	float todo_t[64];
+	int32_t stackptr = 0;
+
+	// Test against the root node, and push it onto the stack
+	todo[stackptr] = 0;
+	if (intersect_node(todo[stackptr]*time_count, ray, &tnear, &tfar, &t)) {
+		todo_t[stackptr] = tnear;
+
+		while (stackptr >= 0) {
+			// Pop off the next node to work on.
+			const int node_index = todo[stackptr];
+			const float near = todo_t[stackptr];
+			const MicroNode &node(nodes[node_index]);
+			stackptr--;
+
+			// If this node is further than the closest found intersection, continue
+			if (near > t)
+				continue;
+
+			// If it's a leaf, store intersection information
+			if (node.flags & IS_LEAF || (node.flags & DEPTH_MASK) >= rdepth) {
+				hit = true;
+				hit_node = node_index;
+				t = near;
+				hit_near = near;
+
+				// Early out for shadow rays
+				if (ray.is_shadow_ray)
+					break;
+			} else { // Not a leaf
+				float hit_near1 = 0.0f; // Hit near 1
+				float hit_near2 = 0.0f; // Hit near 2
+				const bool hit1 = intersect_node(node.child_index, ray, &hit_near1, &tfar, &t);
+				const bool hit2 = intersect_node(node.child_index+time_count, ray, &hit_near2, &tfar, &t);
+
+				// Did we hit both nodes?
+				if (hit1 && hit2) {
+					if (hit_near1 < hit_near2) {
+						// Left child is nearer
+						// Push right first
+						todo[++stackptr] = node.child_index + time_count;
+						todo_t[stackptr] = hit_near2;
+
+						todo[++stackptr] = node.child_index;
+						todo_t[stackptr] = hit_near1;
+					} else {
+						// Right child is nearer
+						// Push left first
+						todo[++stackptr] = node.child_index;
+						todo_t[stackptr] = hit_near1;
+
+						todo[++stackptr] = node.child_index + time_count;
+						todo_t[stackptr] = hit_near2;
+					}
+				} else if (hit1) {
+					todo[++stackptr] = node.child_index;
+					todo_t[stackptr] = hit_near1;
+				} else if (hit2) {
+					todo[++stackptr] = node.child_index + time_count;
+					todo_t[stackptr] = hit_near2;
+				}
+			}
+		}
+	}
+#endif
 
 	// Calculate intersection data
 	if (hit && !ray.is_shadow_ray) {
@@ -175,6 +250,7 @@ void MicroSurface::init_from_grid(Grid *grid)
 	////////////////////////////////
 	// WIP: Build MicroSurface tree
 	size_t trav_count = 0;
+	uint8_t depth = 0; // For tracking the depth of each node
 
 	nodes.resize(grid->res_u * grid->res_v * grid->time_count * 2);
 	size_t next_node_i = time_count;
@@ -195,6 +271,8 @@ void MicroSurface::init_from_grid(Grid *grid)
 		if (down) {
 			// Clear flags
 			nodes[todo[i].i].flags = 0;
+			// Store the depth of the node
+			nodes[todo[i].i].flags = depth;
 
 			// Calculate data indices
 			nodes[todo[i].i].data_index = todo[i].v_start * res_u + todo[i].u_start;
@@ -245,6 +323,7 @@ void MicroSurface::init_from_grid(Grid *grid)
 				else {
 					down = false;
 					i -= 3;
+					depth--;
 				}
 			}
 			// If not leaf
@@ -291,6 +370,7 @@ void MicroSurface::init_from_grid(Grid *grid)
 				// Go to first child
 				down = true;
 				i += 2;
+				depth++;
 			}
 		}
 		// Going up
@@ -317,6 +397,7 @@ void MicroSurface::init_from_grid(Grid *grid)
 			else {
 				down = false;
 				i -= 3;
+				depth--;
 			}
 		}
 	}
