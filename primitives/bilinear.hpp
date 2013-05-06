@@ -19,7 +19,7 @@
  * | v4----v3
  * \/
  */
-class Bilinear: public Surface
+class Bilinear: public SurfacePrimitive
 {
 	void uv_dice_rate(size_t *u_rate, size_t *v_rate, float width) {
 		// longest u-side  and v-side of the patch

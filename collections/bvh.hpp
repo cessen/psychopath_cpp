@@ -99,12 +99,12 @@ private:
 	/**
 	 * @brief Tests whether a ray intersects a node or not.
 	 */
-	bool intersect_node(size_t node, const Ray &ray, float *near_t, float *far_t) {
+	bool intersect_node(size_t node, const Ray &ray, const Vec3 inv_d, const std::array<uint32_t, 3> d_is_neg, float *near_t, float *far_t) {
 		if (nodes[node].ts == 1) {
-			return bboxes[nodes[node].bbox_index].intersect_ray(ray, near_t, far_t);
+			return bboxes[nodes[node].bbox_index].intersect_ray(ray, inv_d, d_is_neg, near_t, far_t);
 		} else {
 			const BBox b = lerp_seq<BBox, ChunkedArrayIterator<BBox, BVH_NODE_CHUNK_SIZE> >(ray.time, bboxes.get_iterator(nodes[node].bbox_index), nodes[node].ts);
-			return b.intersect_ray(ray, near_t, far_t);
+			return b.intersect_ray(ray, inv_d, d_is_neg, near_t, far_t);
 		}
 	}
 

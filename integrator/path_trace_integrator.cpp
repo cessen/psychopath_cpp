@@ -16,8 +16,7 @@
 
 #include "hilbert.hpp"
 
-#define RAYS_AT_A_TIME 1000000
-
+#define RAYS_AT_A_TIME 250000
 
 float lambert(Vec3 v1, Vec3 v2)
 {
@@ -162,13 +161,12 @@ void PathTraceIntegrator::integrate()
 						rays[pri].d = dir;
 						rays[pri].time = samps[i*samp_dim+4];
 						rays[pri].is_shadow_ray = false;
-						rays[pri].min_t = 0.0001f;
 						rays[pri].max_t = std::numeric_limits<float>::infinity();
 						//rays[pri].has_differentials = true;
 
 						// Ray differentials
 						rays[pri].ow = paths[i].inter.owp();
-						rays[pri].dw = 0.2;
+						rays[pri].dw = 0.15;
 						//rays[pri].odx = paths[i].inter.pdx();
 						//rays[pri].ddx = rays[pri].odx.normalized() * paths[i].inter.ddx.length();
 						//rays[pri].ody = paths[i].inter.pdy();
@@ -230,7 +228,6 @@ void PathTraceIntegrator::integrate()
 						rays[sri].d = ld;
 						rays[sri].time = samps[i*samp_dim+4];
 						rays[sri].is_shadow_ray = true;
-						rays[sri].min_t = 0.0001f;
 						rays[sri].max_t = d;
 						//rays[sri].has_differentials = true;
 

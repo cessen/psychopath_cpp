@@ -412,8 +412,11 @@ bool BVH::intersect_ray(const Ray &ray, Intersection *intersection)
 	uint32_t todo_offset = 0, node = 0;
 	uint32_t todo[64];
 
+	const Vec3 inv_d = ray.get_inverse_d();
+	const std::array<uint32_t, 3> d_is_neg = ray.get_d_is_neg();
+
 	while (true) {
-		if (intersect_node(node, ray, &hitt0, &hitt1)) {
+		if (intersect_node(node, ray, inv_d, d_is_neg, &hitt0, &hitt1)) {
 			if (nodes[node].flags & IS_LEAF) {
 				// Trace!
 				hit |= nodes[node].data->intersect_ray(ray, intersection);
@@ -428,7 +431,7 @@ bool BVH::intersect_ray(const Ray &ray, Intersection *intersection)
 				node = todo[--todo_offset];
 			} else {
 				// Put far BVH node on todo stack, advance to near node
-				if (ray.d_is_neg[nodes[node].flags & SPLIT_MASK]) {
+				if (d_is_neg[nodes[node].flags & SPLIT_MASK]) {
 					todo[todo_offset++] = nodes[node].child_index;
 					node = nodes[node].child_index + 1;
 				} else {
@@ -529,6 +532,9 @@ uint BVH::get_potential_intersections(const Ray &ray, float tmax, uint max_poten
 		node_state = ((uint64_t *)state)[1];
 	}
 
+	const Vec3 inv_d = ray.get_inverse_d();
+	const std::array<uint32_t, 3> d_is_neg = ray.get_d_is_neg();
+
 	// Traverse the BVH
 	bool hit;
 	uint32_t hits_so_far = 0;
@@ -540,7 +546,7 @@ uint BVH::get_potential_intersections(const Ray &ray, float tmax, uint max_poten
 
 		switch (node_state) {
 			case FROM_PARENT:
-				hit = intersect_node(node, ray, &hitt0, &hitt1) && hitt0 < tmax;
+				hit = intersect_node(node, ray, inv_d, d_is_neg, &hitt0, &hitt1) && hitt0 < tmax;
 
 				if (!hit) {
 					// If ray misses BBox
@@ -550,7 +556,7 @@ uint BVH::get_potential_intersections(const Ray &ray, float tmax, uint max_poten
 						node_state = FROM_CHILD;
 					} else {
 						// Go to sibling node
-						if (ray.d_is_neg[parent.flags & SPLIT_MASK])
+						if (d_is_neg[parent.flags & SPLIT_MASK])
 							node--;
 						else
 							node++;
@@ -570,7 +576,7 @@ uint BVH::get_potential_intersections(const Ray &ray, float tmax, uint max_poten
 						node_state = FROM_CHILD;
 					} else {
 						// Go to sibling node
-						if (ray.d_is_neg[parent.flags & SPLIT_MASK])
+						if (d_is_neg[parent.flags & SPLIT_MASK])
 							node--;
 						else
 							node++;
@@ -581,7 +587,7 @@ uint BVH::get_potential_intersections(const Ray &ray, float tmax, uint max_poten
 				} else {
 					// If ray hits BBox and node is not leaf
 					// Go to near child
-					if (ray.d_is_neg[current.flags & SPLIT_MASK])
+					if (d_is_neg[current.flags & SPLIT_MASK])
 						node = current.child_index+1;
 					else
 						node = current.child_index;
@@ -593,7 +599,7 @@ uint BVH::get_potential_intersections(const Ray &ray, float tmax, uint max_poten
 				break;
 
 			case FROM_SIBLING:
-				hit = intersect_node(node, ray, &hitt0, &hitt1) && hitt0 < tmax;
+				hit = intersect_node(node, ray, inv_d, d_is_neg, &hitt0, &hitt1) && hitt0 < tmax;
 
 				if (!hit) {
 					// If ray misses BBox, go to parent node.
@@ -614,7 +620,7 @@ uint BVH::get_potential_intersections(const Ray &ray, float tmax, uint max_poten
 				} else {
 					// If ray hits BBox and node is not leaf
 					// Go to near child
-					if (ray.d_is_neg[current.flags & SPLIT_MASK])
+					if (d_is_neg[current.flags & SPLIT_MASK])
 						node = current.child_index+1;
 					else
 						node = current.child_index;
@@ -629,14 +635,14 @@ uint BVH::get_potential_intersections(const Ray &ray, float tmax, uint max_poten
 				if (node == 0) {
 					// If root node, finished
 					finished = true;
-				} else if (ray.d_is_neg[parent.flags & SPLIT_MASK] && node == (parent.child_index+1)) {
+				} else if (d_is_neg[parent.flags & SPLIT_MASK] && node == (parent.child_index+1)) {
 					// If node is the near child of its parent
 					// Go to sibling
 					node--;
 
 					// State: from_sibling
 					node_state = FROM_SIBLING;
-				} else if (!(ray.d_is_neg[parent.flags & SPLIT_MASK]) && node == (parent.child_index)) {
+				} else if (!(d_is_neg[parent.flags & SPLIT_MASK]) && node == (parent.child_index)) {
 					// If node is the near child of its parent
 					// Go to sibling
 					node++;

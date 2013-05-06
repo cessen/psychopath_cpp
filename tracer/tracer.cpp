@@ -16,7 +16,7 @@
 #include "scene.hpp"
 
 #define RAY_STATE_SIZE scene->world.ray_state_size()
-#define MAX_POTINT 4
+#define MAX_POTINT 2
 #define RAY_JOB_SIZE (1024*4)
 
 

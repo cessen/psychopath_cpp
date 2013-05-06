@@ -129,11 +129,11 @@ bool Sphere::intersect_ray(const Ray &ray, Intersection *intersection)
 	}
 
 	// Check our intersection for validity against this ray's extents
-	if (t0 >= ray.max_t || t1 < ray.min_t)
+	if (t0 >= ray.max_t || t1 < 0.0001f)
 		return false;
 
 	float t;
-	if (t0 >= ray.min_t) {
+	if (t0 >= 0.0001f) {
 		t = t0;
 	} else if (t1 < ray.max_t) {
 		t = t1;

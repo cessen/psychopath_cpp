@@ -86,10 +86,10 @@ public:
 /**
  * @brief An interface for surface primitives.
  */
-class Surface: public Primitive
+class SurfacePrimitive: public Primitive
 {
 public:
-	virtual ~Surface() {}
+	virtual ~SurfacePrimitive() {}
 
 	/**
 	 @brief Splits a primitive into two or more sub-primitives.

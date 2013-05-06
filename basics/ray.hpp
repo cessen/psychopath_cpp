@@ -1,17 +1,20 @@
 #ifndef RAY_HPP
 #define RAY_HPP
 
+#include <array>
+#include <algorithm>
+#include <limits>
+#include <math.h>
+#include <iostream>
+#include <assert.h>
+
 #include "numtype.h"
 
 #include "vector.hpp"
 #include "matrix.hpp"
 #include "transform.hpp"
 #include "config.hpp"
-#include <algorithm>
-#include <limits>
-#include <math.h>
-#include <iostream>
-#include <assert.h>
+
 
 /*
  * Transfer's a ray differential onto a surface intersection.
@@ -46,7 +49,7 @@ struct Ray {
 	float time; // Time coordinate
 
 	// Minimum and maximum extent along the ray
-	float min_t;
+	// No min_t, it is implicitly 0.0f for all rays
 	float max_t;
 
 	float ow; // Origin width
@@ -69,10 +72,6 @@ struct Ray {
 	// Shadow ray or not
 	bool is_shadow_ray;
 
-	// Pre-computed data for accelerating ray intersection
-	Vec3 inv_d;                 // 1.0/d
-	uint32_t d_is_neg[3];  // Whether each component of d is negative
-
 
 	/*
 	 * Constructor.
@@ -83,22 +82,28 @@ struct Ray {
 		o {o_},
 	  d {d_},
 	  time {time_},
-	  min_t {0.0f},
 	  max_t {std::numeric_limits<float>::infinity()},
 	  //has_differentials {false},
 	  is_shadow_ray {false}
 	{}
 
+	Vec3 get_inverse_d() const {
+		return Vec3(1.0f, 1.0f, 1.0f) / d;
+	}
+
+	std::array<uint32_t, 3> get_d_is_neg() const {
+		return std::array<uint32_t, 3> {{
+				static_cast<uint32_t>(d.x < 0 ? 1 : 0),
+				static_cast<uint32_t>(d.y < 0 ? 1 : 0),
+				static_cast<uint32_t>(d.z < 0 ? 1 : 0)
+			}
+		};
+	}
 
 	/**
 	 * Computes the acceleration data for speedy bbox intersection testing.
 	 */
 	void update_accel() {
-		inv_d = Vec3(1.0f, 1.0f, 1.0f) / d;
-
-		d_is_neg[0] = d.x < 0 ? 1 : 0;
-		d_is_neg[1] = d.y < 0 ? 1 : 0;
-		d_is_neg[2] = d.z < 0 ? 1 : 0;
 	}
 
 	/**

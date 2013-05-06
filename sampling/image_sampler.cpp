@@ -69,7 +69,7 @@ void ImageSampler::get_sample(uint32_t x, uint32_t y, uint32_t d, uint32_t ns, f
 		coords[1] = y;
 	}
 
-#define LDS_SAMP
+//#define LDS_SAMP
 #ifdef LDS_SAMP
 #if 1
 	uint32_t hash = (Morton::xy2d(x,y) * spp) + (seed_offset*4096);
@@ -108,8 +108,8 @@ void ImageSampler::get_sample(uint32_t x, uint32_t y, uint32_t d, uint32_t ns, f
 
 
 #define WIDTH 1.5f
-	sample[0] = logit(sample[0], WIDTH) + 0.5f;
-	sample[1] = logit(sample[1], WIDTH) + 0.5f;
+	//sample[0] = logit(sample[0], WIDTH) + 0.5f;
+	//sample[1] = logit(sample[1], WIDTH) + 0.5f;
 	sample[0] = (sample[0] + x) / res_x;  // Return image x/y in normalized [0,1] range
 	sample[1] = (sample[1] + y) / res_y;
 }

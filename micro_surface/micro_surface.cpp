@@ -25,6 +25,10 @@ bool MicroSurface::intersect_ray(const Ray &ray, float ray_width, Intersection *
 	// Calculate the max depth the ray should traverse into the tree
 	const uint32_t rdepth = 2 * std::max(0.0f, fasterlog2(root_width) - fasterlog2(ray_width*Config::dice_rate));
 
+	// Precalculated constants about the ray, for optimized BBox intersection
+	const Vec3 inv_d = ray.get_inverse_d();
+	const std::array<uint32_t, 3> d_is_neg = ray.get_d_is_neg();
+
 // Switch between simple traversal vs fast traversal (simple = 1, fast = 0)
 #if 0
 	// Intersect with the MicroSurface
@@ -35,7 +39,7 @@ bool MicroSurface::intersect_ray(const Ray &ray, float ray_width, Intersection *
 	float tfar = ray.max_t;
 
 	while (true) {
-		if (intersect_node(node, ray, &tnear, &tfar, &t)) {
+		if (intersect_node(node, ray, inv_d, d_is_neg, &tnear, &tfar, &t)) {
 			if (nodes[node].flags & IS_LEAF || (nodes[node].flags & DEPTH_MASK) >= rdepth) {
 				// Hit
 				hit = true;
@@ -76,7 +80,7 @@ bool MicroSurface::intersect_ray(const Ray &ray, float ray_width, Intersection *
 
 	// Test against the root node, and push it onto the stack
 	todo[stackptr] = 0;
-	if (intersect_node(todo[stackptr]*time_count, ray, &tnear, &tfar, &t)) {
+	if (intersect_node(todo[stackptr]*time_count, ray, inv_d, d_is_neg, &tnear, &tfar, &t)) {
 		todo_t[stackptr] = tnear;
 
 		while (stackptr >= 0) {
@@ -103,8 +107,8 @@ bool MicroSurface::intersect_ray(const Ray &ray, float ray_width, Intersection *
 			} else { // Not a leaf
 				float hit_near1 = 0.0f; // Hit near 1
 				float hit_near2 = 0.0f; // Hit near 2
-				const bool hit1 = intersect_node(node.child_index, ray, &hit_near1, &tfar, &t);
-				const bool hit2 = intersect_node(node.child_index+time_count, ray, &hit_near2, &tfar, &t);
+				const bool hit1 = intersect_node(node.child_index, ray, inv_d, d_is_neg, &hit_near1, &tfar, &t);
+				const bool hit2 = intersect_node(node.child_index+time_count, ray, inv_d, d_is_neg, &hit_near2, &tfar, &t);
 
 				// Did we hit both nodes?
 				if (hit1 && hit2) {

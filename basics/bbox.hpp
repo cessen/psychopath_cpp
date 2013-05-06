@@ -80,15 +80,15 @@ struct BBox {
 	 *
 	 * @returns True if the ray hits, false if the ray misses.
 	 */
-	inline bool intersect_ray(const Ray &ray, float *hitt0, float *hitt1, float *t=nullptr) const {
+	inline bool intersect_ray(const Ray &ray, const Vec3 inv_d, const std::array<uint32_t, 3> d_is_neg, float *hitt0, float *hitt1, float *t=nullptr) const {
 		const Vec3 *bounds = &min;
 
-		float tmin = (bounds[ray.d_is_neg[0]].x - ray.o.x) * ray.inv_d.x;
-		float tmax = (bounds[1-ray.d_is_neg[0]].x - ray.o.x) * ray.inv_d.x;
-		const float tymin = (bounds[ray.d_is_neg[1]].y - ray.o.y) * ray.inv_d.y;
-		const float tymax = (bounds[1-ray.d_is_neg[1]].y - ray.o.y) * ray.inv_d.y;
-		const float tzmin = (bounds[ray.d_is_neg[2]].z - ray.o.z) * ray.inv_d.z;
-		const float tzmax = (bounds[1-ray.d_is_neg[2]].z - ray.o.z) * ray.inv_d.z;
+		float tmin = (bounds[d_is_neg[0]].x - ray.o.x) * inv_d.x;
+		float tmax = (bounds[1-d_is_neg[0]].x - ray.o.x) * inv_d.x;
+		const float tymin = (bounds[d_is_neg[1]].y - ray.o.y) * inv_d.y;
+		const float tymax = (bounds[1-d_is_neg[1]].y - ray.o.y) * inv_d.y;
+		const float tzmin = (bounds[d_is_neg[2]].z - ray.o.z) * inv_d.z;
+		const float tzmax = (bounds[1-d_is_neg[2]].z - ray.o.z) * inv_d.z;
 
 		if (tymin > tmin)
 			tmin = tymin;
@@ -100,13 +100,20 @@ struct BBox {
 			tmax = tzmax;
 
 		const float tt = (t != nullptr) ? *t : ray.max_t;
-		if ((tmin <= tmax) && (tmin < tt) && (tmax > ray.min_t)) {
-			*hitt0 = tmin > ray.min_t ? tmin : ray.min_t;
+		if ((tmin <= tmax) && (tmin < tt) && (tmax > 0.0f)) {
+			*hitt0 = tmin > 0.0f ? tmin : 0.0f;
 			*hitt1 = tmax < tt ? tmax : tt;
 			return true;
 		} else {
 			return false;
 		}
+	}
+
+	inline bool intersect_ray(const Ray &ray, float *hitt0, float *hitt1, float *t=nullptr) const {
+		const Vec3 inv_d = ray.get_inverse_d();
+		const std::array<uint32_t, 3> d_is_neg = ray.get_d_is_neg();
+
+		return intersect_ray(ray, inv_d, d_is_neg, hitt0, hitt1, t);
 	}
 
 
@@ -117,6 +124,11 @@ struct BBox {
 	 *
 	 * @returns True if the ray hits, false if the ray misses.
 	 */
+	inline bool intersect_ray(const Ray &ray, const Vec3 inv_d, const std::array<uint32_t, 3> d_is_neg) const {
+		float hitt0, hitt1;
+		return intersect_ray(ray, inv_d, d_is_neg, &hitt0, &hitt1);
+	}
+
 	inline bool intersect_ray(const Ray &ray) const {
 		float hitt0, hitt1;
 		return intersect_ray(ray, &hitt0, &hitt1);

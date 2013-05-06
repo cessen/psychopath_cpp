@@ -13,7 +13,7 @@
  *
  * This serves as a simple example of how to implement a surface primitive.
  */
-class Sphere: public Surface
+class Sphere: public SurfacePrimitive
 {
 public:
 	TimeBox<Vec3> center;
