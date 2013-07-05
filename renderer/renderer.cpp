@@ -24,7 +24,7 @@
 void write_png_from_film(Film<Color> *image, std::string path)
 {
 	// Gamma correction + dithering(256)
-	std::unique_ptr<uint8_t[]> im {image->scanline_image_8bbc(2.2)};
+	std::vector<uint8_t> im {image->scanline_image_8bbc(2.2)};
 
 	// Save image
 	std::unique_ptr<OpenImageIO::ImageOutput> out {OpenImageIO::ImageOutput::create(".png")};
@@ -33,7 +33,7 @@ void write_png_from_film(Film<Color> *image, std::string path)
 	}
 	OpenImageIO::ImageSpec spec(image->width, image->height, 3, OpenImageIO::TypeDesc::UINT8);
 	out->open(path, spec);
-	out->write_image(OpenImageIO::TypeDesc::UINT8, im.get());
+	out->write_image(OpenImageIO::TypeDesc::UINT8, &(im[0]));
 	out->close();
 }
 
@@ -50,9 +50,9 @@ bool Renderer::render(int thread_count)
 	std::function<void()> image_writer = std::bind(write_png_from_film, image.get(), output_path);
 
 	// Render
-	Tracer tracer(scene, thread_count);
-	//PathTraceIntegrator integrator(scene, &tracer, image.get(), spp, seed, thread_count, image_writer);
-	PathTraceIntegrator integrator(scene, &tracer, image.get(), spp, seed, thread_count);
+	Tracer tracer(scene.get(), thread_count);
+	PathTraceIntegrator integrator(scene.get(), &tracer, image.get(), spp, seed, thread_count, image_writer);
+	//PathTraceIntegrator integrator(scene, &tracer, image.get(), spp, seed, thread_count);
 	//DirectLightingIntegrator integrator(scene, &tracer, image.get(), spp, seed, thread_count, image_writer);
 	//VisIntegrator integrator(scene, &tracer, image.get(), spp, thread_count, seed, image_writer);
 	integrator.integrate();
@@ -69,6 +69,10 @@ bool Renderer::render(int thread_count)
 	std::cout << "Average MicroSurface elements per MicroSurface: " <<  Global::Stats::microelement_count / static_cast<float>(Global::Stats::microsurface_count) << std::endl;
 	std::cout << "Minimum MicroSurface elements per MicroSurface: " <<  Global::Stats::microelement_min_count << std::endl;
 	std::cout << "Maximum MicroSurface elements per MicroSurface: " <<  Global::Stats::microelement_max_count << std::endl;
+
+	std::cout << "NaN's encountered: " <<  Global::Stats::nan_count << std::endl;
+	std::cout << "Bad Inf's encountered: " <<  Global::Stats::inf_count << std::endl;
+
 
 	// Finished
 	return true;

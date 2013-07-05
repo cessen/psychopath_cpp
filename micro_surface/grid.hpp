@@ -25,7 +25,8 @@ struct Grid {
 
 	// Constructors
 	Grid() {}
-	Grid(uint16_t ru, uint16_t rv, uint16_t tc): res_u {ru}, res_v {rv}, time_count {tc}, verts(ru*rv*tc) {
+	Grid(uint16_t ru, uint16_t rv, uint16_t tc):
+		res_u {ru}, res_v {rv}, time_count {tc}, verts(ru*rv*tc) {
 		assert(ru > 1);
 		assert(rv > 1);
 		assert(tc > 0);

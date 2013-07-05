@@ -76,8 +76,11 @@ struct Ray {
 	/*
 	 * Constructor.
 	 * Ray differentials need to be filled in manually after this.
+	 *
+	 * By default, origin (o) and direction (d) are initialized with NaN's.
 	 */
-	Ray(const Vec3 &o_=Vec3(0.0f,0.0f,0.0f), const Vec3 &d_=Vec3(0.0f,0.0f,0.0f),
+	Ray(const Vec3 &o_ = Vec3(std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN()),
+	    const Vec3 &d_ = Vec3(std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN()),
 	    const float &time_ = 0.0f):
 		o {o_},
 	  d {d_},

@@ -6,11 +6,9 @@
 template <class CLOCK=std::chrono::high_resolution_clock>
 class Timer
 {
-	std::chrono::time_point<CLOCK> start;
+	std::chrono::time_point<CLOCK> start {CLOCK::now()};
 
 public:
-	Timer(): start {CLOCK::now()} {}
-
 	/**
 	 * Reports the time elapsed so far in seconds.
 	 */

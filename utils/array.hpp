@@ -21,13 +21,12 @@
 template <class T>
 class Array
 {
-	size_t size_;
-	size_t capacity_;
-	std::unique_ptr<T[]> data;
+	size_t size_ {0};
+	size_t capacity_ {0};
+	std::unique_ptr<T[]> data {nullptr};
 
 public:
-	Array(): size_ {0}, capacity_ {0}, data {nullptr} {}
-
+	Array() {}
 	Array(size_t size): size_ {size}, capacity_ {size}, data {new T[size]} {}
 
 

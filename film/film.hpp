@@ -94,15 +94,11 @@ public:
 	 *
 	 * Creates a new Film.  All pixel values are initialized to a zeroed state.
 	 */
-	Film(int w, int h, float x1, float y1, float x2, float y2) {
-		// Store meta data
-		width = w;
-		height = h;
-		min_x = std::min(x1, x2);
-		min_y = std::min(y1, y2);
-		max_x = std::max(x1, x2);
-		max_y = std::max(y1, y2);
-
+	Film(uint16_t w, uint16_t h, float x1, float y1, float x2, float y2):
+		rng {RNG(7373546)},
+	    width {w}, height {h},
+	    min_x {std::min(x1, x2)}, min_y {std::min(y1, y2)},
+	max_x {std::max(x1, x2)}, max_y {std::max(y1, y2)} {
 		// Allocate pixel and accum data
 		pixels.init(width, height);
 		accum.init(width, height);
@@ -122,9 +118,6 @@ public:
 				var_f(u,v) = PIXFMT(0);
 			}
 		}
-
-		// Set up RNG
-		rng = RNG(7373546);
 	}
 
 	/**
@@ -206,8 +199,8 @@ public:
 	 * TODO: currently assumes the film will be templated from Color struct.
 	 *       Remove that assumption.
 	 */
-	uint8_t *scanline_image_8bbc(float gamma=2.2) {
-		uint8_t *im = new uint8_t[width*height*3];
+	std::vector<uint8_t> scanline_image_8bbc(float gamma=2.2) {
+		auto im = std::vector<uint8_t>(width*height*3);
 		float inv_gamma = 1.0 / gamma;
 
 		for (uint32_t y=0; y < height; y++) {

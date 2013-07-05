@@ -21,26 +21,25 @@ template <class T, uint32_t LOG_BLOCK_SIZE>
 class BlockedArrayDiskCache
 {
 private:
-	uint32_t block_size, block_mask;
-	uint32_t u_blocks, v_blocks;
-	uint32_t block_elements;
+	uint32_t block_size {1 << LOG_BLOCK_SIZE};
+	uint32_t block_mask {block_size - 1};
+	uint32_t u_blocks {0};
+	uint32_t v_blocks {0};
+	uint32_t block_elements {block_size * block_size};
 
-	DiskCache::Cache<T, (1<<LOG_BLOCK_SIZE)> data;
+	DiskCache::Cache<T, (1<<LOG_BLOCK_SIZE)> data {};
 
 public:
-	uint32_t width, height;
+	uint32_t width {0};
+	uint32_t height {0};
 
 	BlockedArrayDiskCache() {}
 
-	BlockedArrayDiskCache(uint32_t w, uint32_t h) {
+	BlockedArrayDiskCache(uint32_t w, uint32_t h): BlockedArrayDiskCache() {
 		init(w, h);
 	}
 
-	~BlockedArrayDiskCache() {}
-
 	void init(uint32_t w, uint32_t h) {
-		block_size = 1 << LOG_BLOCK_SIZE;
-		block_mask = block_size - 1;
 		width = w;
 		height = h;
 
@@ -52,9 +51,6 @@ public:
 
 		// Calculate the number of blocks in the horizontal direction
 		u_blocks = width >> LOG_BLOCK_SIZE;
-
-		// Calculate the number of elements in a block
-		block_elements = block_size * block_size;
 
 		data.init(width*height, BLOCK_CACHE_SIZE);
 	}

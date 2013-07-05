@@ -46,7 +46,7 @@ public:
 	 * @param queue_size Size of the job queue buffer.  Zero means determine
 	 *                   automatically from number of threads.
 	 */
-	JobQueue(size_t thread_count=1, size_t queue_size=0) {
+	explicit JobQueue(size_t thread_count=1, size_t queue_size=0) {
 		done = false;
 
 		// Set up queue

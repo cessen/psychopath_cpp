@@ -4,6 +4,7 @@
 #include "numtype.h"
 
 #include "rng.hpp"
+#include "hash.hpp"
 #include <vector>
 
 /*
@@ -34,10 +35,11 @@ private:
 
 	/* Random number generator. */
 	RNG rng;
+	Hash hash;
 
 public:
-	ImageSampler(uint spp_,
-	             uint res_x_, uint res_y_,
+	ImageSampler(uint spp,
+	             uint res_x, uint res_y,
 	             uint seed=0);
 	~ImageSampler();
 

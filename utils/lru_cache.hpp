@@ -107,7 +107,6 @@ public:
 	LRUKey add_open(T *data_ptr) {
 		std::unique_lock<SpinLock> lock(slock);
 
-		typename std::list<LRUPair<T>>::iterator it;
 		LRUPair<T> data_pair;
 
 		LRUKey key;
@@ -127,7 +126,7 @@ public:
 		data_pair.key = key;
 		data_pair.data_ptr = data_ptr;
 		data_pair.active_readers = 1;
-		it = elements.begin();
+		auto it = elements.begin();
 		it = elements.insert(it, data_pair);
 
 		// Log it in the map
@@ -158,7 +157,7 @@ public:
 		std::unique_lock<SpinLock> lock(slock);
 
 		// Check if the key exists
-		const bool exists = (bool)(map.count(key));
+		const auto exists = static_cast<bool>(map.count(key));
 		if (!exists)
 			return nullptr;
 
@@ -175,7 +174,7 @@ public:
 		std::unique_lock<SpinLock> lock(slock);
 
 		// Assert that the key exists
-		assert((bool)(map.count(key)));
+		assert(static_cast<bool>(map.count(key)));
 
 		// Assert that there are readers
 		assert(map[key]->active_readers > 0);

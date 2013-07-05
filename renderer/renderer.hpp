@@ -6,6 +6,7 @@
 #define RENDERER_HPP
 
 #include "numtype.h"
+#include <memory>
 #include <string>
 #include <vector>
 #include <OpenImageIO/imageio.h>
@@ -41,20 +42,16 @@ private:
 	std::string output_path;
 
 public:
-	Scene *scene;
+	std::unique_ptr<Scene> scene;
 
-	Renderer(Scene *scene_, int res_x_, int res_y_, int spp_, uint seed_, std::string output_path_) {
-		scene = scene_;
-		res_x = res_x_;
-		res_y = res_y_;
-		spp = spp_;
-		seed = seed_;
-		output_path = output_path_;
-	}
-
-	~Renderer() {
-		delete scene;
-	}
+	Renderer(Scene *scene, uint res_x, uint res_y, uint spp, uint seed, std::string output_path):
+		res_x {res_x},
+	      res_y {res_y},
+	      spp {spp},
+	      seed {seed},
+	      output_path {output_path},
+	      scene {scene}
+	{}
 
 	void set_resolution(int res_x_, int res_y_) {
 		res_x = res_x_;

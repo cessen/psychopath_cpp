@@ -20,6 +20,11 @@ set (Psychopath_VERSION_MAJOR 0)
 set (Psychopath_VERSION_MINOR 0)
 set (Psychopath_VERSION_PATCH 0)
 
+# Set dummy compiler for clang static analysis
+# Run 'scan-build make' to peform the analysis
+#set (CMAKE_C_COMPILER /usr/share/clang/scan-build/ccc-analyzer)
+#set (CMAKE_CXX_COMPILER /usr/share/clang/scan-build/c++-analyzer)
+
 # Build type (Release, Debug)
 set (CMAKE_BUILD_TYPE Release)
 
@@ -29,7 +34,13 @@ configure_file ("${PROJECT_SOURCE_DIR}/config.h.in"
                 "${PROJECT_BINARY_DIR}/config.h")
 
 # C++11 for gcc and clang
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -ffast-math")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
+
+# Disable "register" deprecation warning (for some Imath includes)
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-register")
+
+# Fast math
+#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math")
 
 # SSE3 support
 #set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse3")
@@ -55,7 +66,7 @@ set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 set (Boost_MULTITHREADED TRUE)
 set (Boost_USE_STATIC_LIBS FALSE)
 
-find_package (Boost 1.48 COMPONENTS program_options regex thread unit_test_framework REQUIRED)
+find_package (Boost 1.48 COMPONENTS program_options regex unit_test_framework REQUIRED)
 
 include_directories (${Boost_INCLUDE_DIRS})
 link_directories (${Boost_LIBRARY_DIRS})
@@ -162,7 +173,7 @@ target_link_libraries(psychopath
 file(GLOB_RECURSE TEST_FILES *_test.cpp) # Find all tests
 
 add_executable(unit_tests
-	"test/test_main" ${TEST_FILES})
+	"test/test_main" "test/test_float.cpp" ${TEST_FILES})
 target_link_libraries(unit_tests
 	${PSYCHO_LIB}
 	${Boost_LIBRARIES}

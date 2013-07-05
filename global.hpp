@@ -15,6 +15,9 @@ extern std::atomic<uint64_t> microelement_min_count;
 extern std::atomic<uint64_t> microelement_max_count;
 extern std::atomic<uint64_t> cache_misses;
 extern std::atomic<size_t> primitive_ray_tests;
+
+extern std::atomic<uint64_t> nan_count;
+extern std::atomic<uint64_t> inf_count;
 } // Stats
 } // Global
 

@@ -152,19 +152,14 @@ private:
 
 
 public:
-	ChunkedArray() {
-		element_count = 0;
-		chunk_count = 0;
-		chunk_pointer_count = 0;
-		chunks = nullptr;
-	}
+	ChunkedArray():
+		element_count {0},
+	              chunk_count {0},
+	              chunk_pointer_count {0},
+	              chunks {nullptr}
+	{}
 
-	ChunkedArray(size_t size_) {
-		element_count = 0;
-		chunk_count = 0;
-		chunk_pointer_count = 0;
-		chunks = nullptr;
-
+	ChunkedArray(size_t size_): ChunkedArray() {
 		resize(size_);
 	}
 

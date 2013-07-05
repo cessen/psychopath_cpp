@@ -3,9 +3,12 @@
 
 #include "numtype.h"
 
+#include <limits>
 #include <iostream>
+#include <cmath>
 #include <stdlib.h>
 #include <x86intrin.h>
+#include "global.hpp"
 #include "timebox.hpp"
 #include "vector.hpp"
 #include "ray.hpp"
@@ -16,38 +19,70 @@
  * @brief An axis-aligned bounding box.
  */
 struct BBox {
-	Vec3 min, max;
+	// Default is a degenerate BBox with min as Inf and max as -Inf.
+	Vec3 min {std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()};
+	Vec3 max {-std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity()};
 
-	BBox(): min {0.0f, 0.0f, 0.0f}, max {0.0f, 0.0f, 0.0f} {}
+	/**
+	 * @brief Default constructor.
+	 */
+	BBox() {}
 
-	BBox(const Vec3 &min_, const Vec3 &max_): min {min_}, max {max_} {}
+	/**
+	 * Initializing constructor.
+	 */
+	BBox(const Vec3& min_, const Vec3& max_): min {min_}, max {max_} {}
 
 	/**
 	 * @brief Adds two BBox's together in a component-wise manner.
 	 */
-	BBox operator+(const BBox &b) const {
+	BBox operator+(const BBox& b) const {
 		return BBox(min + b.min, max + b.max);
 	}
 
 	/**
 	 * @brief Subtracts one BBox from another in a component-wise manner.
 	 */
-	BBox operator-(const BBox &b) const {
+	BBox operator-(const BBox& b) const {
 		return BBox(min - b.min, max - b.max);
 	}
 
 	/**
 	 * @brief Multiples all the components of a BBox by a float.
 	 */
-	BBox operator*(const float &f) const {
+	BBox operator*(const float& f) const {
 		return BBox(min * f, max * f);
 	}
 
 	/**
 	 * @brief Divides all the components of a BBox by a float.
 	 */
-	BBox operator/(const float &f) const {
+	BBox operator/(const float& f) const {
 		return BBox(min / f, max / f);
+	}
+
+	/**
+	 * @brief Union of two BBoxes.
+	 */
+	BBox operator|(const BBox& b) {
+		BBox temp;
+		for (size_t i = 0; i < 3; i++) {
+			temp.min[i] = min[i] < b.min[i] ? min[i] : b.min[i];
+			temp.max[i] = max[i] > b.max[i] ? max[i] : b.max[i];
+		}
+		return temp;
+	}
+
+	/**
+	 * @brief Intersection of two BBoxes.
+	 */
+	BBox operator&(const BBox& b) {
+		BBox temp;
+		for (size_t i = 0; i < 3; i++) {
+			temp.min[i] = min[i] > b.min[i] ? min[i] : b.min[i];
+			temp.max[i] = max[i] < b.max[i] ? max[i] : b.max[i];
+		}
+		return temp;
 	}
 
 	/**
@@ -56,7 +91,7 @@ struct BBox {
 	 * Merges another BBox into this one, resulting in a BBox that fully
 	 * encompasses both.
 	 */
-	void merge_with(const BBox &b) {
+	void merge_with(const BBox& b) {
 #if 0
 		min.m128 = _mm_min_ps(min.m128, b.min.m128);
 		max.m128 = _mm_max_ps(max.m128, b.max.m128);
@@ -80,7 +115,25 @@ struct BBox {
 	 *
 	 * @returns True if the ray hits, false if the ray misses.
 	 */
-	inline bool intersect_ray(const Ray &ray, const Vec3 inv_d, const std::array<uint32_t, 3> d_is_neg, float *hitt0, float *hitt1, float *t=nullptr) const {
+	inline bool intersect_ray(const Ray& ray, const Vec3 inv_d, const std::array<uint32_t, 3> d_is_neg, float *hitt0, float *hitt1, float *t=nullptr) const {
+		// Test for nan and inf
+		if (std::isnan(ray.o.x) || std::isnan(ray.o.y) || std::isnan(ray.o.z) ||
+		        std::isnan(ray.d.x) || std::isnan(ray.d.y) || std::isnan(ray.d.z) ||
+		        std::isnan(inv_d.x) || std::isnan(inv_d.y) || std::isnan(inv_d.z) ||
+		        std::isnan(min.x) || std::isnan(min.y) || std::isnan(min.z) ||
+		        std::isnan(max.x) || std::isnan(max.y) || std::isnan(max.z)) {
+			std::cout << "NaN found!" << std::endl;
+			Global::Stats::nan_count++;
+		}
+
+		if (std::isinf(ray.o.x) || std::isinf(ray.o.y) || std::isinf(ray.o.z) ||
+		        std::isinf(ray.d.x) || std::isinf(ray.d.y) || std::isinf(ray.d.z) ||
+		        std::isinf(min.x) || std::isinf(min.y) || std::isinf(min.z) ||
+		        std::isinf(max.x) || std::isinf(max.y) || std::isinf(max.z)) {
+			std::cout << "Inf found!" << std::endl;
+			Global::Stats::inf_count++;
+		}
+
 		const Vec3 *bounds = &min;
 
 		float tmin = (bounds[d_is_neg[0]].x - ray.o.x) * inv_d.x;
@@ -109,7 +162,7 @@ struct BBox {
 		}
 	}
 
-	inline bool intersect_ray(const Ray &ray, float *hitt0, float *hitt1, float *t=nullptr) const {
+	inline bool intersect_ray(const Ray& ray, float *hitt0, float *hitt1, float *t=nullptr) const {
 		const Vec3 inv_d = ray.get_inverse_d();
 		const std::array<uint32_t, 3> d_is_neg = ray.get_d_is_neg();
 
@@ -124,12 +177,12 @@ struct BBox {
 	 *
 	 * @returns True if the ray hits, false if the ray misses.
 	 */
-	inline bool intersect_ray(const Ray &ray, const Vec3 inv_d, const std::array<uint32_t, 3> d_is_neg) const {
+	inline bool intersect_ray(const Ray& ray, const Vec3 inv_d, const std::array<uint32_t, 3> d_is_neg) const {
 		float hitt0, hitt1;
 		return intersect_ray(ray, inv_d, d_is_neg, &hitt0, &hitt1);
 	}
 
-	inline bool intersect_ray(const Ray &ray) const {
+	inline bool intersect_ray(const Ray& ray) const {
 		float hitt0, hitt1;
 		return intersect_ray(ray, &hitt0, &hitt1);
 	}

@@ -13,10 +13,8 @@
  */
 class SpinLock
 {
-	std::atomic_flag lock_flag;
+	std::atomic_flag lock_flag {ATOMIC_FLAG_INIT};
 public:
-	SpinLock(): lock_flag {ATOMIC_FLAG_INIT} {}
-
 	/**
 	 * @brief Acquires the lock, spinning until success.
 	 */
@@ -51,11 +49,9 @@ public:
  */
 class SpinLockRW
 {
-	std::atomic_flag w_lock; // Writer lock
-	std::atomic<unsigned int> r_lock_count; // Reader lock count
+	std::atomic_flag w_lock {ATOMIC_FLAG_INIT}; // Writer lock
+	std::atomic<unsigned int> r_lock_count {0}; // Reader lock count
 public:
-	SpinLockRW(): w_lock {ATOMIC_FLAG_INIT}, r_lock_count {0} {}
-
 	/**
 	 * @brief Acquires the writer lock, spinning until success.
 	 */

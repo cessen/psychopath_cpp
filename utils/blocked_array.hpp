@@ -13,23 +13,22 @@ template <class T, uint32_t LOG_BLOCK_SIZE>
 class BlockedArray
 {
 private:
-	uint32_t block_size, block_mask;
-	uint32_t u_blocks, v_blocks;
-	uint32_t block_elements;
+	uint32_t block_size {1 << LOG_BLOCK_SIZE};
+	uint32_t block_mask {block_size - 1};
+	uint32_t u_blocks {0};
+	uint32_t v_blocks {0};
+	uint32_t block_elements {block_size * block_size};
 
-	std::vector<T> data;
+	std::vector<T> data {};
 
 public:
-	uint32_t width, height;
+	uint32_t width {0};
+	uint32_t height {0};
 
 	BlockedArray() {}
 
-	BlockedArray(uint32_t w, uint32_t h) {
-		block_size = 1 << LOG_BLOCK_SIZE;
-		block_mask = block_size - 1;
-		width = w;
-		height = h;
-
+	BlockedArray(uint32_t w, uint32_t h):
+		width {w}, height {h} {
 		// Round width and height up to the nearest multiple of block_size
 		if (width % block_size)
 			width = width - (width % block_size) + block_size;
@@ -39,13 +38,8 @@ public:
 		// Calculate the number of blocks in the horizontal direction
 		u_blocks = width >> LOG_BLOCK_SIZE;
 
-		// Calculate the number of elements in a block
-		block_elements = block_size * block_size;
-
 		data.resize(width*height);
 	}
-
-	~BlockedArray() {}
 
 	uint32_t index(uint32_t u, uint32_t v) const {
 		// Find the start of the block

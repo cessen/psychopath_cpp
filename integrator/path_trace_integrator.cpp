@@ -16,7 +16,7 @@
 
 #include "hilbert.hpp"
 
-#define RAYS_AT_A_TIME 250000
+#define RAYS_AT_A_TIME 1000000
 
 float lambert(Vec3 v1, Vec3 v2)
 {

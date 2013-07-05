@@ -166,7 +166,7 @@ int main(int argc, char **argv)
 	std::cout << "\tBVHNode: " << sizeof(BVHNode) << std::endl;
 	std::cout << "\tMicroSurface: " << sizeof(MicroSurface) << std::endl;
 	std::cout << "\tMicroNode: " << sizeof(MicroNode) << std::endl;
-	std::cout << "\tTimeBox<int32>: " << sizeof(std::vector<int32>) << std::endl;
+	std::cout << "\tTimeBox<int32_t>: " << sizeof(std::vector<int32_t>) << std::endl;
 #endif
 
 
@@ -272,7 +272,6 @@ int main(int argc, char **argv)
 	}
 
 	std::cout << "Total render time (seconds): " << std::fixed << std::setprecision(3) << total_timer.time() << std::endl << std::endl;
-
 
 	return 0;
 }

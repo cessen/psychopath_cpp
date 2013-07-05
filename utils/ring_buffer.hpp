@@ -14,23 +14,23 @@ template <class T>
 class RingBuffer
 {
 private:
-	std::vector<T> buffer;
+	std::vector<T> buffer {T{}}; // Default 1 item large
 
-	size_t next;  // Index of the next item to be consumed
-	size_t count;  // Number of unconsumed items in the buffer
+	size_t next {0};  // Index of the next item to be consumed
+	size_t count {0};  // Number of unconsumed items in the buffer
 
 public:
 	/**
-	 * @brief Default constructor, buffer size of 1.
+	 * @brief Default constructor.
 	 */
-	RingBuffer(): buffer(1), next {0}, count {0} {}
+	RingBuffer() {}
 
 	/**
 	 * @brief Constructor.
 	 *
 	 * @param size Size of the buffer in number-of-items.
 	 */
-	RingBuffer(size_t buffer_size): buffer(buffer_size), next {0}, count {0} {}
+	RingBuffer(size_t buffer_size): buffer(buffer_size) {}
 
 	/**
 	 * @brief Resizes the buffer.

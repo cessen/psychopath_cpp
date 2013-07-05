@@ -1,3 +1,11 @@
+- Add NaN and Inf catching to key places in code
+- Make BBoxes start with min +inf and max -inf by default
+- Track down bug where single rays from each round hit something even
+  when there's nothing to hit.
+
+- Eliminate geometry cache:
+	- All tracing API's should accept collections of rays
+
 - Investigate LRU caches that are lock-free for reading
 
 - Two-stage ray tracing, similar to the Rayes (not Reyes) paper

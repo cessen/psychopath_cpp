@@ -15,13 +15,10 @@
 #include <algorithm>
 
 
-ImageSampler::ImageSampler(uint spp_,
-                           uint res_x_, uint res_y_,
-                           uint seed)
-{
-	spp = spp_;
-	res_x = res_x_;
-	res_y = res_y_;
+ImageSampler::ImageSampler(uint spp,
+                           uint res_x, uint res_y,
+                           uint seed):
+	spp {spp}, res_x {res_x}, res_y {res_y}, rng {seed}, hash {seed} {
 
 	x = 0;
 	y = 0;
@@ -40,7 +37,6 @@ ImageSampler::ImageSampler(uint spp_,
 	}
 	points_traversed = 0;
 
-	rng.seed(seed);
 	seed_offset = rng.next_uint();
 }
 
@@ -69,10 +65,19 @@ void ImageSampler::get_sample(uint32_t x, uint32_t y, uint32_t d, uint32_t ns, f
 		coords[1] = y;
 	}
 
-//#define LDS_SAMP
+	const std::array<size_t, 10> d_order {{7, 6, 5, 4, 2, 9, 8, 3, 1, 0}}; // Reorder the first several dimensions for least image variance
+
+
+#define LDS_SAMP
 #ifdef LDS_SAMP
-#if 1
-	uint32_t hash = (Morton::xy2d(x,y) * spp) + (seed_offset*4096);
+#if 0
+	uint32_t h = (Morton::xy2d(x,y) * spp) + (seed_offset*4096);
+	const uint32_t samp_i = d + h;
+	size_t i = 0;
+	for (; i < ns && i < d_order.size(); ++i)
+		sample[i] = Halton::sample(d_order[i], samp_i);
+	for (; i < ns; ++i)
+		sample[i] = Halton::sample(i, samp_i);
 #else
 	// Hash the x and y indices of the pixel and use that as an offset
 	// into the LDS sequence.  This gives the image a more random appearance
@@ -81,23 +86,16 @@ void ImageSampler::get_sample(uint32_t x, uint32_t y, uint32_t d, uint32_t ns, f
 	// this still gives very good convergence properties.
 	// This also means that each pixel can keep drawing samples in a
 	// "bottomless" kind of way, which is nice for e.g. adaptive sampling.
-	uint32_t hash = x ^ ((y >> 16) | (y << 16));
-	hash *= 1936502639;
-	hash ^= hash >> 16;
-	hash += seed_offset;
-	hash *= 1936502639;
-	hash ^= hash >> 16;
-	hash += seed_offset;
-#endif
-	const uint32_t samp_i = hash + d;
+	uint32_t h = x ^ ((y >> 16) | (y << 16));
+	const uint32_t samp_i = d + hash.get_int(h);
 
 	// Generate the sample
-	const std::array<size_t, 10> d_order {{7, 6, 5, 4, 2, 9, 8, 3, 1, 0}}; // Reorder the first several dimensions for least image variance
 	size_t i = 0;
 	for (; i < ns && i < d_order.size(); ++i)
 		sample[i] = Halton::sample(d_order[i], samp_i);
 	for (; i < ns; ++i)
 		sample[i] = Halton::sample(i, samp_i);
+#endif
 #else
 	// Generate the sample
 	for (size_t i = 0; i < ns; ++i) {

@@ -18,28 +18,42 @@ namespace DiskCache
 class TemporaryFile
 {
 private:
-	FILE* f;
+	FILE* f {nullptr};
+	bool is_open {false};
 public:
 	TemporaryFile() {}
 
-	~TemporaryFile() {}
+	~TemporaryFile() {
+		if (is_open)
+			close();
+	}
 
 	/**
 	 * Opens the file.  Must be called before using the file.
 	 */
 	int open() {
-		f = tmpfile();
-		if (f) {
-			setbuf(f, NULL);
-			return 1;
-		} else
+		if (!is_open) {
+			f = tmpfile();
+			if (f) {
+				// Success
+				setbuf(f, NULL);
+				is_open = true;
+				return 1;
+			} else {
+				// Failure
+				return 0;
+			}
+		} else {
+			// Already open, failure
 			return 0;
+		}
 	}
 
 	/**
 	 * Closes the file.
 	 */
 	int close() {
+		is_open = false;
 		return fclose(f);
 	}
 
@@ -108,27 +122,23 @@ template <class T, size_t BLOCK_SIZE>
 class Cache
 {
 private:
-	size_t priority_tally;
+	size_t priority_tally {1};
 
-	size_t e_count; // element_count
-	size_t block_count;
-	size_t cache_size;
+	size_t e_count {0}; // element_count
+	size_t block_count {0};
+	size_t cache_size {0};
 
-	std::vector<T> cache; // Loaded cached data
-	std::vector<BlockInfo> cache_info; // Information about the cached blocks
-	std::vector<BlockInfo*> data_table; // Reference table for all data, including uncached data
+	std::vector<T> cache {}; // Loaded cached data
+	std::vector<BlockInfo> cache_info {}; // Information about the cached blocks
+	std::vector<BlockInfo*> data_table {}; // Reference table for all data, including uncached data
 
-	TemporaryFile data_file;
+	TemporaryFile data_file {};
 
 public:
 	Cache() {}
 
 	Cache(size_t element_count_, size_t cache_size_) {
 		init(element_count_, cache_size_);
-	}
-
-	~Cache() {
-		data_file.close();
 	}
 
 
@@ -142,8 +152,6 @@ public:
 	 * @param cache_size_ The max number of data blocks to hold in RAM at once.
 	 */
 	void init(size_t element_count_, size_t cache_size_) {
-		priority_tally = 1;
-
 		block_count = (element_count_ / BLOCK_SIZE) + 1;
 		e_count = block_count * BLOCK_SIZE;
 		cache_size = cache_size_;
