@@ -1,5 +1,4 @@
 - Add NaN and Inf catching to key places in code
-- Make BBoxes start with min +inf and max -inf by default
 - Track down bug where single rays from each round hit something even
   when there's nothing to hit.
 

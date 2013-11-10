@@ -2,6 +2,7 @@
 #define SLICE_HPP
 
 #include <cstdlib>
+#include <type_traits>
 
 #include "array.hpp"
 
@@ -11,12 +12,12 @@
  * Useful for, e.g., accessing a subset of an Array.
  * Important is that this does not own the memory it accesses.  It
  * only references it.
- *
- * TODO: find better way to initialize from const Array.
  */
-template <class T, class TT=T>
+template <class T>
 class Slice
 {
+	typedef typename std::remove_const<T>::type T_non_const;
+	
 public:
 	Slice(): start_ {nullptr}, size_ {0} {};
 
@@ -47,7 +48,7 @@ public:
 			start_ = &(array[0]);
 	}
 
-	void init_from(const Array<TT> &array) {
+	void init_from(const Array<T_non_const> &array) {
 		size_ = array.size();
 
 		if (size_ == 0)

@@ -51,7 +51,7 @@ public:
 
 	std::mutex intersections_mut;
 
-	Slice<const Ray, Ray> rays; // Rays to trace
+	Slice<const Ray> rays; // Rays to trace
 	Slice<Intersection> intersections; // Resulting intersections
 	std::vector<bool> rays_active;
 	Array<uint8_t> states; // Ray states, for interrupting and resuming traversal
