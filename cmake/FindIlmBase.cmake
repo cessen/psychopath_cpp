@@ -114,6 +114,7 @@ set (IlmBase_generic_include_paths
   /opt/local/include)
 set (IlmBase_generic_library_paths
   /usr/lib
+  /usr/lib/x86_64-linux-gnu
   /usr/local/lib
   /sw/lib
   /opt/local/lib)

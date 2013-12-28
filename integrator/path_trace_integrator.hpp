@@ -31,7 +31,7 @@ class PathTraceIntegrator: Integrator
 {
 public:
 	Scene *scene;
-	Tracer *tracer;
+	std::vector<Tracer> tracers;
 	Film<Color> *image;
 	int spp;
 	uint seed;
@@ -44,15 +44,15 @@ public:
 	 *
 	 * @param[in] scene_ A pointer to the scene to render.  Should be fully
 	 *                   finalized for rendering.
-	 * @param[in] tracer_ A Tracer instance to use for the ray tracing.  It
+	 * @param[in] tracers_ A Tracer instance to use for the ray tracing.  It
 	 *                    should already be fully initialized.
 	 * @param[out] image_ The image to render to.  Should be already
 	 *                    initialized with 3 channels, for rgb.
 	 * @param spp_ The number of samples to take per pixel for integration.
 	 */
-	PathTraceIntegrator(Scene *scene_, Tracer *tracer_, Film<Color> *image_, int spp_, uint seed_, int thread_count_=1, std::function<void()> callback_ = std::function<void()>()) {
+	PathTraceIntegrator(Scene *scene_, std::vector<Tracer> tracers_, Film<Color> *image_, int spp_, uint seed_, int thread_count_=1, std::function<void()> callback_ = std::function<void()>()) {
 		scene = scene_;
-		tracer = tracer_;
+		tracers = tracers_;
 		image = image_;
 		spp = spp_;
 		seed = seed_;

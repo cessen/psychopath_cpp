@@ -29,6 +29,17 @@ public:
 	Array() {}
 	Array(size_t size): size_ {size}, capacity_ {size}, data {new T[size]} {}
 
+	// Copy constructor
+	Array(const Array& b): size_ {b.size_}, capacity_ {b.capacity_}, data {new T[b.capacity_]} {
+		for (size_t i=0; i < size_; i++)
+			data[i] = b.data[i];
+	}
+
+	// Move constructor
+	Array(const Array&& b): size_ {b.size_}, capacity_ {b.capacity_} {
+		data.swap(b.data);
+	}
+
 
 	/**
 	 * @brief Increase capacity of the array.

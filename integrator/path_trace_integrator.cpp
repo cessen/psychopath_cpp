@@ -116,8 +116,8 @@ void PathTraceIntegrator::integrate()
 			// Create path rays
 			std::cout << "\tGenerating path rays" << std::endl;
 			if (path_n == 0) {
-				// First segment of path is camera rays
 				JobQueue<> jq(thread_count);
+				// First segment of path is camera rays
 				const size_t job_size = rays.size() / thread_count;
 				for (size_t i = 0; i < rays.size(); i += job_size) {
 					size_t end = i + job_size;
@@ -183,7 +183,23 @@ void PathTraceIntegrator::integrate()
 
 
 			// Trace the rays
-			tracer->trace(rays, &intersections);
+			intersections.resize(rays.size());
+			//tracers[0].trace(Slice<Ray>(rays), Slice<Intersection>(intersections));
+			//tracers[0].trace(Slice<Ray>(rays, 0, rays.size()), Slice<Intersection>(intersections, 0, rays.size()));
+
+			{
+				JobQueue<> jq(thread_count);
+				const size_t job_size = (rays.size() / thread_count);
+				for (int i = 0; i < thread_count; ++i) {
+					size_t start = i * job_size;
+					size_t end = (i+1) * job_size;
+					if (end > rays.size())
+						end = rays.size();
+					//tracers[i].trace(Slice<Ray>(rays, start, end), Slice<Intersection>(intersections, start, end));
+					jq.push(std::bind(&Tracer::trace, &(tracers[i]), Slice<Ray>(rays, start, end), Slice<Intersection>(intersections, start, end)));
+				}
+				jq.finish();
+			}
 
 
 			// Update paths
@@ -249,7 +265,22 @@ void PathTraceIntegrator::integrate()
 
 
 				// Trace the shadow rays
-				tracer->trace(rays, &intersections);
+				intersections.resize(rays.size());
+				//tracers[0].trace(Slice<Ray>(rays), Slice<Intersection>(intersections));
+
+				{
+					JobQueue<> jq(thread_count);
+					const size_t job_size = (rays.size() / thread_count);
+					for (int i = 0; i < thread_count; ++i) {
+						size_t start = i * job_size;
+						size_t end = (i+1) * job_size;
+						if (end > rays.size())
+							end = rays.size();
+						//tracers[i].trace(Slice<Ray>(rays, start, end), Slice<Intersection>(intersections, start, end));
+						jq.push(std::bind(&Tracer::trace, &(tracers[i]), Slice<Ray>(rays, start, end), Slice<Intersection>(intersections, start, end)));
+					}
+					jq.finish();
+				}
 
 
 				// Calculate sample colors

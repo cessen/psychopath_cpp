@@ -50,8 +50,8 @@ bool Renderer::render(int thread_count)
 	std::function<void()> image_writer = std::bind(write_png_from_film, image.get(), output_path);
 
 	// Render
-	Tracer tracer(scene.get(), thread_count);
-	PathTraceIntegrator integrator(scene.get(), &tracer, image.get(), spp, seed, thread_count, image_writer);
+	std::vector<Tracer> tracers(thread_count, Tracer(scene.get()));
+	PathTraceIntegrator integrator(scene.get(), tracers, image.get(), spp, seed, thread_count, image_writer);
 	//PathTraceIntegrator integrator(scene, &tracer, image.get(), spp, seed, thread_count);
 	//DirectLightingIntegrator integrator(scene, &tracer, image.get(), spp, seed, thread_count, image_writer);
 	//VisIntegrator integrator(scene, &tracer, image.get(), spp, thread_count, seed, image_writer);

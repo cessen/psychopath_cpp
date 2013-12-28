@@ -20,14 +20,13 @@
 #define RAY_JOB_SIZE (1024*4)
 
 
-uint32_t Tracer::trace(const Array<Ray> &rays_, Array<Intersection> *intersections_)
+uint32_t Tracer::trace(const Slice<Ray> rays_, Slice<Intersection> intersections_)
 {
 	// Get rays
 	rays.init_from(rays_);
 
 	// Get and initialize intersections
-	intersections_->resize(rays.size());
-	intersections.init_from(*intersections_);
+	intersections.init_from(intersections_);
 	std::fill(intersections.begin(), intersections.end(), Intersection());
 
 	// Print number of rays being traced
@@ -94,19 +93,6 @@ size_t Tracer::accumulate_potential_intersections()
 
 
 	// Accumulate potential intersections
-#if 1
-	JobQueue<> jq(thread_count);
-	for (size_t i = 0; i < rays.size(); i += RAY_JOB_SIZE) {
-		// Dole out jobs
-		size_t start = i;
-		size_t end = i + RAY_JOB_SIZE;
-		if (end > rays.size())
-			end = rays.size();
-
-		jq.push(std::bind(job_accumulate_potential_intersections, this, start, end));
-	}
-	jq.finish();
-#else
 	for (size_t i = 0; i < rays.size(); i += RAY_JOB_SIZE) {
 
 		// Dole out jobs
@@ -119,7 +105,6 @@ size_t Tracer::accumulate_potential_intersections()
 		job_accumulate_potential_intersections(this, start, end);
 
 	}
-#endif
 
 
 	// Compact the potential intersections
@@ -187,7 +172,6 @@ void job_trace_potential_intersections(Tracer *tracer, size_t start, size_t end)
 void Tracer::trace_potential_intersections()
 {
 #define BLARGYFACE 10000
-	JobQueue<> jq(thread_count);
 	for (size_t i = 0; i < potential_intersections.size(); i += BLARGYFACE) {
 		// Dole out jobs
 		size_t start = i;
@@ -195,10 +179,8 @@ void Tracer::trace_potential_intersections()
 		if (end > potential_intersections.size())
 			end = potential_intersections.size();
 
-		//jq.push(std::bind(job_trace_potential_intersections, this, Slice<Intersection>start, end));
 		job_trace_potential_intersections(this, start, end);
 	}
-	jq.finish();
 }
 
 

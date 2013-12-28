@@ -39,54 +39,7 @@
 
 namespace BPO = boost::program_options;
 
-/*
- * Previous results:
- *
- * Pre-ray-reordering:
- * 1000 spheres / 0 patches
- * 1280x720 @ 4spp
- * 1 thread
- * ~26 second
- *
- * Naive-ray-reordering:
- * 1000 spheres / 0 patches
- * 1280x720 @ 4spp
- * 1 thread
- * 4 potints
- * ~43 second
- *
- * Naive-ray-reordering:
- * 1000 spheres / 0 patches
- * 1280x720 @ 4spp
- * 1 thread
- * Intermediate image writing disabled
- * 2 potints
- * 36.3 second
- *
- * Threaded ray-reordering:
- * 1000 spheres / 0 patches
- * 1280x720 @ 4spp
- * 4 threads
- * Intermediate image writing disabled
- * 2 potints
- * 24.8 second
- *
- * Threaded ray-reordering w/ counting sort:
- * 1000 spheres / 0 patches
- * 1280x720 @ 4spp
- * 4 threads
- * Intermediate image writing disabled
- * 2 potints
- * 23.5 second
- *
- * Threaded ray-reordering w/ counting sort and new ThreadQueue:
- * 1000 spheres / 0 patches
- * 1280x720 @ 4spp
- * 4 threads
- * Intermediate image writing disabled
- * 2 potints
- * 21.3 second
- */
+
 
 #define THREADS 4
 #define SPP 4

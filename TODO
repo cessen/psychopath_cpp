@@ -7,27 +7,11 @@
 
 - Investigate LRU caches that are lock-free for reading
 
-- Two-stage ray tracing, similar to the Rayes (not Reyes) paper
-	//- Make rays const throughout the tracing pipeline.
-	//- All mutable data about tracing a ray are stored in intersections.
-	- Assign each thread an object id to trace rays for.
-		- Multiple threads can be tracing the same ray against different
-		  objects, so how to update intersections in a thread-safe way
-		  without too much contention between threads or threads waiting
-		  on each other?  Ideally we also want to update intersections
-		  as early as possible, to minimize unnecessary tracing work
-		  when a hit has already been found.  Really need to work out
-		  a solid design here.
-		- Maybe access to the shared intersection data is like a
-		  revolving door, where when a thread is ready to write its
-		  intersections, it gets a lock and writes, but also immediately
-		  does the reading necessary for the next round of ray tests
-		  before releasing the lock.  That way the wait time is strictly
-		  limited to the read/write time of the shared data.  And if
-		  we're able to keep intersection data very small, that
-		  read/write time will also be small.
-	- Refactor data structures and API to pass around/duplicate minimal
-	  data when handling ray reordering and ray tracing.
+- Make multi-threaded rendering scale:
+	- Modify ray tracing pipeline to assign unique sets of rays to unique threads,
+	  eliminating the need for locking in the ray data structures.
+	- Modify grid tracing code to take a list of rays, and only pull geometry from the cache
+	  once per set of rays.
 
 - MicroSurface should calculate normal and point differentials for
   ray intersections.

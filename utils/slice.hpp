@@ -1,6 +1,7 @@
 #ifndef SLICE_HPP
 #define SLICE_HPP
 
+
 #include <cstdlib>
 #include <type_traits>
 
@@ -17,7 +18,7 @@ template <class T>
 class Slice
 {
 	typedef typename std::remove_const<T>::type T_non_const;
-	
+
 public:
 	Slice(): start_ {nullptr}, size_ {0} {};
 
@@ -37,7 +38,7 @@ public:
 
 
 	/**
-	 * @brief Initialized the slice to reference the given Array.
+	 * @brief Initialize the slice to reference the given Array.
 	 */
 	void init_from(Array<T> &array) {
 		size_ = array.size();
@@ -55,6 +56,27 @@ public:
 			start_ = nullptr;
 		else
 			start_ = &(array[0]);
+	}
+
+	/**
+	 * @brief Initialize the slice from another slice.
+	 */
+	void init_from(Slice<T> &slice) {
+		size_ = slice.size();
+
+		if (size_ == 0)
+			start_ = nullptr;
+		else
+			start_ = &(slice[0]);
+	}
+
+	void init_from(const Slice<T_non_const> &slice) {
+		size_ = slice.size();
+
+		if (size_ == 0)
+			start_ = nullptr;
+		else
+			start_ = &(slice[0]);
 	}
 
 	/**

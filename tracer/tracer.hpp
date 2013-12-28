@@ -6,12 +6,10 @@
 #define TRACER_HPP
 
 #include <vector>
-#include <mutex>
 
 #include "numtype.h"
 #include "array.hpp"
 #include "slice.hpp"
-#include "job_queue.hpp"
 
 
 
@@ -47,19 +45,25 @@ class Tracer
 {
 public:
 	Scene *scene;
-	int thread_count;
-
-	std::mutex intersections_mut;
-
 	Slice<const Ray> rays; // Rays to trace
 	Slice<Intersection> intersections; // Resulting intersections
 	std::vector<bool> rays_active;
 	Array<uint8_t> states; // Ray states, for interrupting and resuming traversal
 	std::vector<PotentialInter> potential_intersections; // "Potential intersection" buffer
 
-	Tracer(Scene *scene_, int thread_count_=1) {
-		scene = scene_;
-		thread_count = thread_count_;
+	Tracer(Scene *scene_): scene {scene_} {}
+
+	// Copy constructor
+	Tracer(const Tracer& b): scene {b.scene} {}
+
+	// Move constructor
+	Tracer(const Tracer&& b): scene {b.scene} {}
+
+	// Assignment
+	Tracer& operator=(const Tracer& b) {
+		scene = b.scene;
+
+		return *this;
 	}
 
 
@@ -69,7 +73,7 @@ public:
 	 * @param [in] rays_ The rays to be traced.
 	 * @param [out] intersections_ The resulting intersections.
 	 */
-	uint32_t trace(const Array<Ray> &rays_, Array<Intersection> *intersections_);
+	uint32_t trace(const Slice<Ray> rays_, Slice<Intersection> intersections_);
 
 private:
 	/**
