@@ -17,6 +17,10 @@ public:
 		const float dur = static_cast<float>((end-start).count());
 		return (dur * CLOCK::period::num) / CLOCK::period::den;
 	}
+
+	void reset() {
+		start = CLOCK::now();
+	}
 };
 
 #endif // PSYCHOPATH_TIMER_HPP

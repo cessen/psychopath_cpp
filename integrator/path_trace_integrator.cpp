@@ -41,66 +41,105 @@ struct PTPath {
 	bool done;
 };
 
-
-void create_camera_rays(Camera *camera, Film<Color> *image, Array<Ray> *rays_, Array<float> *samps_, Array<uint32_t> *ids_, size_t samp_dim, size_t first, size_t last)
-{
-	Array<Ray> &rays = *rays_;
-	Array<float> &samps = *samps_;
-	Array<uint32_t> &ids = *ids_;
-
-	for (uint32_t i = first; i < last; i++) {
-		float rx = (samps[i*samp_dim] - 0.5) * (image->max_x - image->min_x);
-		float ry = (0.5 - samps[i*samp_dim + 1]) * (image->max_y - image->min_y);
-		float dx = (image->max_x - image->min_x) / image->width;
-		float dy = (image->max_y - image->min_y) / image->height;
-		rays[i] = camera->generate_ray(rx, ry, dx, dy, samps[i*samp_dim+4], samps[i*samp_dim+2], samps[i*samp_dim+3]);
-		rays[i].finalize();
-		ids[i] = i;
-	}
-}
-
+#define PIXEL_BLOCK_SIZE 32
 
 void PathTraceIntegrator::integrate()
 {
-	const size_t samp_dim = 5 + (path_length * 5);
+	std::vector<std::thread> threads(thread_count);
 
+	for (auto& t: threads) {
+		t = std::thread(&PathTraceIntegrator::render_blocks, this);
+	}
+
+	uint32_t i = 0;
+	uint32_t x = 0;
+	uint32_t y = 0;
+	while (true) {
+		Morton::d2xy(i, &x, &y);
+		const int xp = x * PIXEL_BLOCK_SIZE;
+		const int yp = y * PIXEL_BLOCK_SIZE;
+
+		if (xp < image->width && yp < image->height) {
+			const int w = std::min(image->width - xp, PIXEL_BLOCK_SIZE);
+			const int h = std::min(image->height - yp, PIXEL_BLOCK_SIZE);
+			blocks.push_blocking( {xp,yp,w,h});
+		}
+
+		if (xp >= image->width && yp >= image->height)
+			break;
+
+		++i;
+	}
+
+	blocks.disallow_blocking();
+
+	for (auto& t: threads) {
+		t.join();
+	}
+}
+
+void PathTraceIntegrator::render_blocks()
+{
+	PixelBlock pb {0,0,0,0};
 	RNG rng;
 	ImageSampler image_sampler(spp, image->width, image->height, seed);
+	Tracer tracer(scene);
+
+	const size_t samp_dim = 5 + (path_length * 5);
 
 	// Sample array
 	Array<float> samps;
-	samps.resize(RAYS_AT_A_TIME * samp_dim);
 
 	// Coordinate array
 	Array<uint16_t> coords;
-	coords.resize(RAYS_AT_A_TIME * 2);
 
 	// Light path array
 	Array<PTPath> paths;
-	paths.resize(RAYS_AT_A_TIME);
 
 	// Ray and Intersection arrays
-	Array<Ray> rays(RAYS_AT_A_TIME);
-	Array<Intersection> intersections(RAYS_AT_A_TIME);
+	Array<Ray> rays;
+	Array<Intersection> intersections;
 
 	// ids corresponding to the rays
-	Array<uint32_t> ids(RAYS_AT_A_TIME);
+	Array<uint32_t> ids;
 
-	// Go for it!
-	bool last = false;
-	while (true) {
+	// Keep rendering blocks as long as they exist in the queue
+	while (blocks.pop_blocking(&pb)) {
+		std::cout << "X " << pb.x << " Y " << pb.y << " W " << pb.w << " H " << pb.h << std::endl;
+
+		const size_t sample_count = (pb.h * pb.w) * spp;
+
+		samps.resize(sample_count * samp_dim);
+		coords.resize(sample_count * 2);
+		paths.resize(sample_count);
+		rays.resize(sample_count);
+		intersections.resize(sample_count);
+		ids.resize(sample_count);
+
 		// Generate samples
-		std::cout << "\t--------\n\tGenerating samples" << std::endl;
-		for (int i = 0; i < RAYS_AT_A_TIME; i++) {
-			paths[i].done = false;
-			paths[i].col = Color(0.0);
-			paths[i].fcol = Color(1.0);
+		//std::cout << "\t--------\n\tGenerating samples" << std::endl;
 
-			if (!image_sampler.get_next_sample(samp_dim, &(samps[i*samp_dim]), &(coords[i*2]))) {
-				samps.resize(i*samp_dim);
-				paths.resize(i);
-				last = true;
-				break;
+		{
+			int i = 0;
+			for (int x = pb.x; x < (pb.x + pb.w); ++x) {
+				for (int y = pb.y; y < (pb.y + pb.h); ++y) {
+					for (int s = 0; s < spp; ++s) {
+						paths[i].done = false;
+						paths[i].col = Color(0.0);
+						paths[i].fcol = Color(1.0);
+
+						image_sampler.get_sample(x, y, s, samp_dim, &(samps[i*samp_dim]), &(coords[i*2]));
+
+						/*if (!image_sampler.get_next_sample(samp_dim, &(samps[i*samp_dim]), &(coords[i*2]))) {
+							samps.resize(i*samp_dim);
+							paths.resize(i);
+							last = true;
+							break;
+						}*/
+
+						++i;
+					}
+				}
 			}
 		}
 		uint32_t samp_size = samps.size() / samp_dim;
@@ -114,18 +153,18 @@ void PathTraceIntegrator::integrate()
 			int32_t so = path_n * 5; // Sample offset
 
 			// Create path rays
-			std::cout << "\tGenerating path rays" << std::endl;
+			//std::cout << "\tGenerating path rays" << std::endl;
 			if (path_n == 0) {
-				JobQueue<> jq(thread_count);
-				// First segment of path is camera rays
-				const size_t job_size = rays.size() / thread_count;
-				for (size_t i = 0; i < rays.size(); i += job_size) {
-					size_t end = i + job_size;
-					if (end > rays.size())
-						end = rays.size();
-					jq.push(std::bind(create_camera_rays, scene->camera, image, &rays, &samps, &ids, samp_dim, i, end));
+				// Camera rays
+				for (uint32_t i = 0; i < sample_count; i++) {
+					float rx = (samps[i*samp_dim] - 0.5) * (image->max_x - image->min_x);
+					float ry = (0.5 - samps[i*samp_dim + 1]) * (image->max_y - image->min_y);
+					float dx = (image->max_x - image->min_x) / image->width;
+					float dy = (image->max_y - image->min_y) / image->height;
+					rays[i] = scene->camera->generate_ray(rx, ry, dx, dy, samps[i*samp_dim+4], samps[i*samp_dim+2], samps[i*samp_dim+3]);
+					rays[i].finalize();
+					ids[i] = i;
 				}
-				jq.finish();
 			} else {
 				// Other path segments are bounces
 				uint32_t pri = 0; // Path ray index
@@ -184,23 +223,7 @@ void PathTraceIntegrator::integrate()
 
 			// Trace the rays
 			intersections.resize(rays.size());
-			//tracers[0].trace(Slice<Ray>(rays), Slice<Intersection>(intersections));
-			//tracers[0].trace(Slice<Ray>(rays, 0, rays.size()), Slice<Intersection>(intersections, 0, rays.size()));
-
-			{
-				JobQueue<> jq(thread_count);
-				const size_t job_size = (rays.size() / thread_count);
-				for (int i = 0; i < thread_count; ++i) {
-					size_t start = i * job_size;
-					size_t end = (i+1) * job_size;
-					if (end > rays.size())
-						end = rays.size();
-					//tracers[i].trace(Slice<Ray>(rays, start, end), Slice<Intersection>(intersections, start, end));
-					jq.push(std::bind(&Tracer::trace, &(tracers[i]), Slice<Ray>(rays, start, end), Slice<Intersection>(intersections, start, end)));
-				}
-				jq.finish();
-			}
-
+			tracer.trace(Slice<Ray>(rays), Slice<Intersection>(intersections));
 
 			// Update paths
 			uint32_t rsize = rays.size();
@@ -219,7 +242,7 @@ void PathTraceIntegrator::integrate()
 
 			// Generate a bunch of shadow rays
 			if (scene->finite_lights.size() > 0) {
-				std::cout << "\tGenerating shadow rays" << std::endl;
+				//std::cout << "\tGenerating shadow rays" << std::endl;
 				uint32_t sri = 0; // Shadow ray index
 				for (uint32_t i = 0; i < paths.size(); i++) {
 					if (!paths[i].done) {
@@ -266,21 +289,7 @@ void PathTraceIntegrator::integrate()
 
 				// Trace the shadow rays
 				intersections.resize(rays.size());
-				//tracers[0].trace(Slice<Ray>(rays), Slice<Intersection>(intersections));
-
-				{
-					JobQueue<> jq(thread_count);
-					const size_t job_size = (rays.size() / thread_count);
-					for (int i = 0; i < thread_count; ++i) {
-						size_t start = i * job_size;
-						size_t end = (i+1) * job_size;
-						if (end > rays.size())
-							end = rays.size();
-						//tracers[i].trace(Slice<Ray>(rays, start, end), Slice<Intersection>(intersections, start, end));
-						jq.push(std::bind(&Tracer::trace, &(tracers[i]), Slice<Ray>(rays, start, end), Slice<Intersection>(intersections, start, end)));
-					}
-					jq.finish();
-				}
+				tracer.trace(Slice<Ray>(rays), Slice<Intersection>(intersections));
 
 
 				// Calculate sample colors
@@ -301,25 +310,20 @@ void PathTraceIntegrator::integrate()
 			}
 		}
 
+
 		// Accumulate the samples
-		std::cout << "\tAccumulating samples" << std::endl;
+		//std::cout << "\tAccumulating samples" << std::endl;
+		image_mut.lock();
 		for (uint32_t i = 0; i < samp_size; i++) {
 			image->add_sample(paths[i].col, coords[i*2], coords[i*2+1]);
 		}
 
-		// Print percentage complete
-		float perc = image_sampler.percentage() * 100;
-		uint32_t pr = std::cout.precision();
-		std::cout.precision(4);
-		std::cout << perc << "%" << std::endl;
-		std::cout.precision(pr);
 
 		// Callback
 		if (callback)
 			callback();
 
-		if (last)
-			break;
+		image_mut.unlock();
 	}
 }
 

@@ -30,7 +30,7 @@ uint32_t Tracer::trace(const Slice<Ray> rays_, Slice<Intersection> intersections
 	std::fill(intersections.begin(), intersections.end(), Intersection());
 
 	// Print number of rays being traced
-	std::cout << "\tTracing " << rays.size() << " rays" << std::endl;
+	//std::cout << "\tTracing " << rays.size() << " rays" << std::endl;
 
 	// Allocate and clear out ray states
 	states.resize(rays.size()*RAY_STATE_SIZE);
