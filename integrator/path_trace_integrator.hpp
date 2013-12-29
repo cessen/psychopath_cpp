@@ -34,7 +34,7 @@ class PathTraceIntegrator: Integrator
 {
 	struct PixelBlock {
 		int x, y;
-		int h, w;
+		int w, h;
 	};
 
 public:

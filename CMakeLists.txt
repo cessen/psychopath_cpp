@@ -37,7 +37,7 @@ configure_file ("${PROJECT_SOURCE_DIR}/config.h.in"
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
 
 # Disable "register" deprecation warning (for some Imath includes)
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-register")
+#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-register")
 
 # Fast math
 #set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math")
