@@ -96,7 +96,7 @@ bool Bilinear::intersect_ray(const Ray &ray, Intersection *intersection)
 		redice = true;
 	} else {
 		// Try to get an existing grid
-		micro_surface = MicroSurfaceCache::cache.open(microsurface_key);
+		micro_surface = MicroSurfaceCache::cache.get(microsurface_key);
 
 		// Dice the grid if we don't have one already
 		if (!micro_surface) {
@@ -109,7 +109,7 @@ bool Bilinear::intersect_ray(const Ray &ray, Intersection *intersection)
 	if (redice) {
 		// Redice
 		micro_surface = std::shared_ptr<MicroSurface>(micro_generate(width*0.75f));
-		microsurface_key = MicroSurfaceCache::cache.add_open(micro_surface);
+		microsurface_key = MicroSurfaceCache::cache.put(micro_surface);
 
 		// Record ray width
 		last_ray_width = width*0.75f;
@@ -117,7 +117,6 @@ bool Bilinear::intersect_ray(const Ray &ray, Intersection *intersection)
 
 	// Test the ray against the grid
 	const bool hit = micro_surface->intersect_ray(ray, width, intersection);
-	//MicroSurfaceCache::cache.close(microsurface_key);
 
 	return hit;
 }

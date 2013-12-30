@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <list>
 #include <memory>
+#include <mutex>
 
 #include "spinlock.hpp"
 
@@ -47,7 +48,6 @@ private:
 	 */
 	void erase(LRUKey key) {
 		byte_count -= map[key]->data_ptr->bytes();
-		//delete map[key]->data_ptr;
 		elements.erase(map[key]);
 		map.erase(key);
 	}
@@ -81,11 +81,6 @@ public:
 	}
 
 	~LRUCache() {
-		/*typename std::list<LRUPair<T>>::iterator it;
-
-		for (it = elements.begin(); it != elements.end(); it++) {
-			delete it->data_ptr;
-		}*/
 	}
 
 	/*
@@ -97,16 +92,50 @@ public:
 	}
 
 	/*
-	 * Adds the given item to the cache and opens it.
+	 * Adds the given item to the cache, assigning it a unique key.
+	 *
 	 * Returns the key.
 	 */
-	LRUKey add_open(std::shared_ptr<T> data_ptr) {
+	LRUKey put(std::shared_ptr<T> data_ptr) {
 		std::unique_lock<SpinLock> lock(slock);
 
 		LRUKey key;
 		do {
 			key = next_key++;
-		} while ((bool)(map.count(key)) || key == 0);
+		} while (map.count(key) != 0);
+
+		byte_count += data_ptr->bytes();
+
+		// Remove last element(s) if necessary to make room
+		while (byte_count >= max_bytes) {
+			if (!erase_last())
+				break;
+		}
+
+		// Add the new data
+		auto it = elements.begin();
+		it = elements.insert(it, LRUPair<T> {key, data_ptr});
+
+		// Log it in the map
+		map[key] = it;
+
+		return key;
+	}
+
+	/*
+	 * Adds the given item to the cache using the given key.
+	 * If the key already exists, the existing item will be
+	 * replaced.
+	 *
+	 * Returns the key.
+	 */
+	LRUKey put(std::shared_ptr<T> data_ptr, LRUKey key) {
+		std::unique_lock<SpinLock> lock(slock);
+
+		// Check if the key exists, and erase it if it does
+		const auto exists = static_cast<bool>(map.count(key));
+		if (exists)
+			erase(key);
 
 		byte_count += data_ptr->bytes();
 
@@ -129,22 +158,18 @@ public:
 	/**
 	 * @brief Fetches the data associated with a key.
 	 *
-	 * You must call close() when finished with the data,
-	 * so the LRU knows it can free it.
-	 *
 	 * @param key The key of the data to fetch.
 	 *
-	 * @return Pointer to the data on success, nullptr if the data isn't
+	 * @return shared_ptr to the data on success, nullptr if the data isn't
 	 *         in the cache.
 	 *
 	 * Example usage:
-	 * Data *p = cache.open(12345, &p)
+	 * std::shared_ptr<Data> p = cache.get(12345);
 	 * if (p) {
 	 *     // Do things with the data here
-	 *     cache.close(12345);
 	 * }
 	 */
-	std::shared_ptr<T> open(LRUKey key) {
+	std::shared_ptr<T> get(LRUKey key) {
 		std::unique_lock<SpinLock> lock(slock);
 
 		// Check if the key exists
