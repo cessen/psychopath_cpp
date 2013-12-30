@@ -53,7 +53,10 @@ bool Renderer::render(int thread_count)
 		        1.0, ((static_cast<float>(res_y))/res_x))
 	};
 
+	// Save blank image before rendering
+	write_png_from_film(image.get(), output_path, 0.0f);
 
+	// Image writer callback
 	std::function<void()> image_writer = std::bind(write_png_from_film, image.get(), output_path, 10.0);
 
 	PathTraceIntegrator integrator(scene.get(), image.get(), spp, seed, thread_count, image_writer);

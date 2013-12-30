@@ -209,6 +209,13 @@ public:
 				float g = 0.0;
 				float b = 0.0;
 
+				// Image shows a grey checkerboard pattern where no samples
+				// have been taken.
+				if (((y % 32) < 16) ^ ((x % 32) < 16))
+					r = g = b = 0.5;
+				else
+					r = g = b = 0.35;
+
 //#define VARIANCE
 #ifdef VARIANCE
 				const PIXFMT var_est = variance_estimate(x, y);
