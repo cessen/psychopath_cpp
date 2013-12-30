@@ -41,7 +41,6 @@ struct PTPath {
 	bool done {false};
 };
 
-#define PIXEL_BLOCK_SIZE 32
 
 void PathTraceIntegrator::integrate()
 {
@@ -56,12 +55,12 @@ void PathTraceIntegrator::integrate()
 	uint32_t y = 0;
 	while (true) {
 		Morton::d2xy(i, &x, &y);
-		const int xp = x * PIXEL_BLOCK_SIZE;
-		const int yp = y * PIXEL_BLOCK_SIZE;
+		const int xp = x * Config::bucket_size;
+		const int yp = y * Config::bucket_size;
 
 		if (xp < image->width && yp < image->height) {
-			const int w = std::min(image->width - xp, PIXEL_BLOCK_SIZE);
-			const int h = std::min(image->height - yp, PIXEL_BLOCK_SIZE);
+			const int w = std::min(image->width - xp, Config::bucket_size);
+			const int h = std::min(image->height - yp, Config::bucket_size);
 			blocks.push_blocking( {xp,yp,w,h});
 		}
 
@@ -79,6 +78,7 @@ void PathTraceIntegrator::integrate()
 
 	std::cout << std::endl << std::flush;
 }
+
 
 void PathTraceIntegrator::render_blocks()
 {
