@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <unordered_map>
 #include <list>
+#include <memory>
 
 #include "spinlock.hpp"
 
@@ -17,10 +18,7 @@ template <class T>
 struct LRUPair {
 public:
 	LRUKey key;
-	T* data_ptr;
-	size_t active_readers;
-
-	LRUPair(): active_readers {0} {}
+	std::shared_ptr<T> data_ptr;
 };
 
 
@@ -49,7 +47,7 @@ private:
 	 */
 	void erase(LRUKey key) {
 		byte_count -= map[key]->data_ptr->bytes();
-		delete map[key]->data_ptr;
+		//delete map[key]->data_ptr;
 		elements.erase(map[key]);
 		map.erase(key);
 	}
@@ -59,10 +57,8 @@ private:
 	 */
 	bool erase_last() {
 		for (auto rit = elements.rbegin(); rit != elements.rend(); ++rit) {
-			if (rit->active_readers == 0) {
-				erase(rit->key);
-				return true;
-			}
+			erase(rit->key);
+			return true;
 		}
 		return false;
 	}
@@ -85,11 +81,11 @@ public:
 	}
 
 	~LRUCache() {
-		typename std::list<LRUPair<T>>::iterator it;
+		/*typename std::list<LRUPair<T>>::iterator it;
 
 		for (it = elements.begin(); it != elements.end(); it++) {
 			delete it->data_ptr;
-		}
+		}*/
 	}
 
 	/*
@@ -104,10 +100,8 @@ public:
 	 * Adds the given item to the cache and opens it.
 	 * Returns the key.
 	 */
-	LRUKey add_open(T *data_ptr) {
+	LRUKey add_open(std::shared_ptr<T> data_ptr) {
 		std::unique_lock<SpinLock> lock(slock);
-
-		LRUPair<T> data_pair;
 
 		LRUKey key;
 		do {
@@ -123,11 +117,8 @@ public:
 		}
 
 		// Add the new data
-		data_pair.key = key;
-		data_pair.data_ptr = data_ptr;
-		data_pair.active_readers = 1;
 		auto it = elements.begin();
-		it = elements.insert(it, data_pair);
+		it = elements.insert(it, LRUPair<T> {key, data_ptr});
 
 		// Log it in the map
 		map[key] = it;
@@ -153,7 +144,7 @@ public:
 	 *     cache.close(12345);
 	 * }
 	 */
-	T *open(LRUKey key) {
+	std::shared_ptr<T> open(LRUKey key) {
 		std::unique_lock<SpinLock> lock(slock);
 
 		// Check if the key exists
@@ -161,29 +152,9 @@ public:
 		if (!exists)
 			return nullptr;
 
-		// Increment reader count
-		map[key]->active_readers++;
+		touch(key);
 
 		return map[key]->data_ptr;
-	}
-
-	/**
-	 * @brief Closes the given data key.
-	 */
-	void close(LRUKey key) {
-		std::unique_lock<SpinLock> lock(slock);
-
-		// Assert that the key exists
-		assert(static_cast<bool>(map.count(key)));
-
-		// Assert that there are readers
-		assert(map[key]->active_readers > 0);
-
-		// Decrement reader count
-		map[key]->active_readers--;
-
-		// Move data to front of the cache
-		touch(key);
 	}
 };
 

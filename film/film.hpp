@@ -106,7 +106,7 @@ public:
 		var_f.init(width, height);
 
 		// Zero out pixels and accum
-		std::cout << "Clearing out\n";
+		//std::cout << "Clearing out\n";
 		uint32_t u = 0;
 		uint32_t v = 0;
 		for (uint32_t i = 0; u < width || v < height; i++) {

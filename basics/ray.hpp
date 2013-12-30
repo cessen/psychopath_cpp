@@ -126,7 +126,7 @@ struct Ray {
 	 */
 	void finalize() {
 		// TODO: will normalizing things here mess anything up elsewhere?
-		assert(d.length() > 0.0f);
+		//assert(d.length() > 0.0f);
 		float linv = 1.0f / d.length();
 		d.normalize();
 

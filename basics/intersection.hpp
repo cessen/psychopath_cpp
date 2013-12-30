@@ -15,11 +15,11 @@
  */
 struct Intersection {
 	// Whether there's a hit or not
-	bool hit;
-	bool backfacing;
+	bool hit {false};
+	bool backfacing {false};
 
 	// Information about the intersection point
-	float t; // T-parameter along the ray at the intersection
+	float t {std::numeric_limits<float>::infinity()}; // T-parameter along the ray at the intersection
 	Vec3 p;  // Intersection postion
 
 
@@ -42,9 +42,7 @@ struct Intersection {
 	// Should be added for reflection, subtracted for transmission
 	Vec3 offset;
 
-	Color col;
-
-	Intersection(): hit {false}, t {std::numeric_limits<float>::infinity()} {}
+	Color col {0.0f};
 
 
 	/**

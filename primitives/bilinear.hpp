@@ -3,6 +3,7 @@
 
 #include "numtype.h"
 
+#include <atomic>
 #include <vector>
 #include "vector.hpp"
 #include "grid.hpp"
@@ -41,8 +42,8 @@ class Bilinear: public SurfacePrimitive
 public:
 	TimeBox<Vec3 *> verts;
 	float u_min, v_min, u_max, v_max;
-	MicroSurfaceCacheKey microsurface_key;
-	float last_ray_width;
+	std::atomic<MicroSurfaceCacheKey> microsurface_key;
+	std::atomic<float> last_ray_width;
 
 
 	BBoxT bbox;

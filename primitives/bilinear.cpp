@@ -90,7 +90,7 @@ bool Bilinear::intersect_ray(const Ray &ray, Intersection *intersection)
 	const float width = ray.min_width(tnear, tfar);
 
 	// Figure out if we need to redice or not
-	MicroSurface *micro_surface;
+	std::shared_ptr<MicroSurface> micro_surface;
 	bool redice = false;
 	if (width < last_ray_width && width != 0.0f) {
 		redice = true;
@@ -108,7 +108,7 @@ bool Bilinear::intersect_ray(const Ray &ray, Intersection *intersection)
 
 	if (redice) {
 		// Redice
-		micro_surface = micro_generate(width*0.75f);
+		micro_surface = std::shared_ptr<MicroSurface>(micro_generate(width*0.75f));
 		microsurface_key = MicroSurfaceCache::cache.add_open(micro_surface);
 
 		// Record ray width
@@ -117,7 +117,7 @@ bool Bilinear::intersect_ray(const Ray &ray, Intersection *intersection)
 
 	// Test the ray against the grid
 	const bool hit = micro_surface->intersect_ray(ray, width, intersection);
-	MicroSurfaceCache::cache.close(microsurface_key);
+	//MicroSurfaceCache::cache.close(microsurface_key);
 
 	return hit;
 }

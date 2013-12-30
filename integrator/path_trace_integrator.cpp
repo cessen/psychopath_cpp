@@ -33,12 +33,12 @@ float lambert(Vec3 v1, Vec3 v2)
  * Stores state of a path in progress.
  */
 struct PTPath {
-	Intersection inter;
-	Color col; // Color of the sample collected so far
-	Color fcol; // Accumulated filter color from light path
-	Color lcol; // Temporary storage for incoming light color
+	Intersection inter = Intersection();
+	Color col {0.0f}; // Color of the sample collected so far
+	Color fcol {1.0f}; // Accumulated filter color from light path
+	Color lcol {0.0f}; // Temporary storage for incoming light color
 
-	bool done;
+	bool done {false};
 };
 
 #define PIXEL_BLOCK_SIZE 32
@@ -76,6 +76,8 @@ void PathTraceIntegrator::integrate()
 	for (auto& t: threads) {
 		t.join();
 	}
+
+	std::cout << std::endl << std::flush;
 }
 
 void PathTraceIntegrator::render_blocks()
@@ -105,10 +107,11 @@ void PathTraceIntegrator::render_blocks()
 
 	// Keep rendering blocks as long as they exist in the queue
 	while (blocks.pop_blocking(&pb)) {
-		std::cout << "X " << pb.x << " Y " << pb.y << " W " << pb.w << " H " << pb.h << std::endl;
+		std::cout << "." << std::flush;
 
 		const size_t sample_count = (pb.h * pb.w) * spp;
 
+		// Resize arrays for the apropriate sample count
 		samps.resize(sample_count * samp_dim);
 		coords.resize(sample_count * 2);
 		paths.resize(sample_count);
@@ -116,32 +119,22 @@ void PathTraceIntegrator::render_blocks()
 		intersections.resize(sample_count);
 		ids.resize(sample_count);
 
+		// Clear paths
+		for (auto& path: paths)
+			path = PTPath();
+
 		// Generate samples
-		//std::cout << "\t--------\n\tGenerating samples" << std::endl;
+		int samp_i = 0;
+		for (int x = pb.x; x < (pb.x + pb.w); ++x) {
+			for (int y = pb.y; y < (pb.y + pb.h); ++y) {
+				for (int s = 0; s < spp; ++s) {
+					image_sampler.get_sample(x, y, s, samp_dim, &(samps[samp_i*samp_dim]), &(coords[samp_i*2]));
 
-		{
-			int i = 0;
-			for (int x = pb.x; x < (pb.x + pb.w); ++x) {
-				for (int y = pb.y; y < (pb.y + pb.h); ++y) {
-					for (int s = 0; s < spp; ++s) {
-						paths[i].done = false;
-						paths[i].col = Color(0.0);
-						paths[i].fcol = Color(1.0);
-
-						image_sampler.get_sample(x, y, s, samp_dim, &(samps[i*samp_dim]), &(coords[i*2]));
-
-						/*if (!image_sampler.get_next_sample(samp_dim, &(samps[i*samp_dim]), &(coords[i*2]))) {
-							samps.resize(i*samp_dim);
-							paths.resize(i);
-							last = true;
-							break;
-						}*/
-
-						++i;
-					}
+					++samp_i;
 				}
 			}
 		}
+
 		uint32_t samp_size = samps.size() / samp_dim;
 
 		// Path tracing loop for the samples we have
@@ -226,8 +219,7 @@ void PathTraceIntegrator::render_blocks()
 			tracer.trace(Slice<Ray>(rays), Slice<Intersection>(intersections));
 
 			// Update paths
-			uint32_t rsize = rays.size();
-			for (uint32_t i = 0; i < rsize; i++) {
+			for (uint32_t i = 0; i < rays.size(); i++) {
 				const uint32_t id = ids[i];
 				if (intersections[i].hit) {
 					// Ray hit something!  Store intersection data
@@ -293,8 +285,7 @@ void PathTraceIntegrator::render_blocks()
 
 
 				// Calculate sample colors
-				rsize = rays.size();
-				for (uint32_t i = 0; i < rsize; i++) {
+				for (uint32_t i = 0; i < rays.size(); i++) {
 					const uint32_t id = ids[i];
 					if (!intersections[i].hit) {
 						// Sample was lit
