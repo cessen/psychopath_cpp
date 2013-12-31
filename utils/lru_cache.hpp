@@ -46,19 +46,13 @@ class LRUCache
 	// The number of bytes each item takes up, aside from the size of the item itself.
 	// In other words, the overhead of the LRUCache per-item.
 	// Estimated for now as the size of an LRUPair plus the size of
-	// 4 pointers (for the list and map)
+	// 2 pointers (for the list) plus the size of an LRUKEY and list
+	// iterator (for the map).
 	// TODO: more accurate estimate
-	const size_t per_item_size_cost = sizeof(LRUPair) + (sizeof(void*)*4);
+	const size_t per_item_size_cost = sizeof(LRUPair) + (sizeof(void*)*2) + sizeof(LRUKey) + sizeof(typename std::list<LRUPair>::iterator);
 
 public:
-	LRUCache(size_t max_bytes_=40) {
-		max_bytes = max_bytes_;
-		byte_count = 0;
-		next_key = 0;
-
-		const size_t map_size = max_bytes / (sizeof(T)*4);
-		map.reserve(map_size);
-	}
+	LRUCache(size_t max_bytes_=40): max_bytes {max_bytes_} {}
 
 	~LRUCache() {
 	}
