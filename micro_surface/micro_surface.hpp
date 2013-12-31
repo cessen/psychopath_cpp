@@ -117,4 +117,10 @@ public:
 	}
 };
 
+
+static inline size_t size_in_bytes(const MicroSurface& data)
+{
+	return data.bytes();
+}
+
 #endif // MICRO_SURFACE_HPP

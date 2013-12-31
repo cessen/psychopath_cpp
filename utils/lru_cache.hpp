@@ -9,72 +9,52 @@
 
 #include "spinlock.hpp"
 
-template <class T> class LRUCache;
-template <class T> struct LRUPair;
 
 typedef size_t LRUKey;
 
 
+// Should be overloaded for more complex types
 template <class T>
-struct LRUPair {
-public:
-	LRUKey key;
-	std::shared_ptr<T> data_ptr;
-};
-
+size_t size_in_bytes(const T& data)
+{
+	return sizeof(T);
+}
 
 /*
  * A thread-safe Least-Recently-Used cache.
  */
-
 template <class T>
 class LRUCache
 {
+	struct LRUPair {
+		LRUKey key;
+		std::shared_ptr<T> data_ptr;
+	};
+
 	SpinLock slock;
 
 	size_t max_bytes;
-	size_t byte_count;
-	LRUKey next_key;
+	size_t byte_count {0};
+	LRUKey next_key {0};
 
 	// A map from indices to iterators into the list
-	std::unordered_map<LRUKey, typename std::list<LRUPair<T>>::iterator> map;
+	std::unordered_map<LRUKey, typename std::list<LRUPair>::iterator> map;
 
 	// A list that contains the index and a pointer to the data of each element
-	std::list<LRUPair<T>> elements;
+	std::list<LRUPair> elements;
 
-private:
-	/*
-	 * Erases the given key and associated data from the cache.
-	 */
-	void erase(LRUKey key) {
-		byte_count -= map[key]->data_ptr->bytes();
-		elements.erase(map[key]);
-		map.erase(key);
-	}
-
-	/*
-	 * Erases the last inactive element in the cache.
-	 */
-	bool erase_last() {
-		for (auto rit = elements.rbegin(); rit != elements.rend(); ++rit) {
-			erase(rit->key);
-			return true;
-		}
-		return false;
-	}
-
-	/*
-	 * Moves a given item to the front of the cache.
-	 */
-	void touch(LRUKey key) {
-		elements.splice(elements.begin(), elements, map[key]);
-	}
+	// The number of bytes each item takes up, aside from the size of the item itself.
+	// In other words, the overhead of the LRUCache per-item.
+	// Estimated for now as the size of an LRUPair plus the size of
+	// 4 pointers (for the list and map)
+	// TODO: more accurate estimate
+	const size_t per_item_size_cost = sizeof(LRUPair) + (sizeof(void*)*4);
 
 public:
 	LRUCache(size_t max_bytes_=40) {
 		max_bytes = max_bytes_;
 		byte_count = 0;
-		next_key = 1; // Starts at one so that 0 can mean null
+		next_key = 0;
 
 		const size_t map_size = max_bytes / (sizeof(T)*4);
 		map.reserve(map_size);
@@ -99,25 +79,14 @@ public:
 	LRUKey put(std::shared_ptr<T> data_ptr) {
 		std::unique_lock<SpinLock> lock(slock);
 
+		// Get the next available key
 		LRUKey key;
 		do {
 			key = next_key++;
 		} while (map.count(key) != 0);
 
-		byte_count += data_ptr->bytes();
-
-		// Remove last element(s) if necessary to make room
-		while (byte_count >= max_bytes) {
-			if (!erase_last())
-				break;
-		}
-
-		// Add the new data
-		auto it = elements.begin();
-		it = elements.insert(it, LRUPair<T> {key, data_ptr});
-
-		// Log it in the map
-		map[key] = it;
+		// Add data to the cache using that key
+		add(data_ptr, key);
 
 		return key;
 	}
@@ -137,20 +106,8 @@ public:
 		if (exists)
 			erase(key);
 
-		byte_count += data_ptr->bytes();
-
-		// Remove last element(s) if necessary to make room
-		while (byte_count >= max_bytes) {
-			if (!erase_last())
-				break;
-		}
-
-		// Add the new data
-		auto it = elements.begin();
-		it = elements.insert(it, LRUPair<T> {key, data_ptr});
-
-		// Log it in the map
-		map[key] = it;
+		// Add data to the cache
+		add(data_ptr, key);
 
 		return key;
 	}
@@ -180,6 +137,54 @@ public:
 		touch(key);
 
 		return map[key]->data_ptr;
+	}
+
+private:
+	/*
+	 * Adds an item to the cache with the given key.
+	 */
+	void add(std::shared_ptr<T>& data_ptr, LRUKey key) {
+		byte_count += size_in_bytes(*data_ptr) + per_item_size_cost;
+
+		// Remove last element(s) if necessary to make room
+		while (byte_count >= max_bytes) {
+			if (!erase_last())
+				break;
+		}
+
+		// Add the new data
+		auto it = elements.begin();
+		it = elements.insert(it, LRUPair {key, data_ptr});
+
+		// Log it in the map
+		map[key] = it;
+	}
+
+	/*
+	 * Erases the given key and associated data from the cache.
+	 */
+	void erase(LRUKey key) {
+		byte_count -= size_in_bytes(*(map[key]->data_ptr)) + per_item_size_cost;
+		elements.erase(map[key]);
+		map.erase(key);
+	}
+
+	/*
+	 * Erases the last inactive element in the cache.
+	 */
+	bool erase_last() {
+		for (auto rit = elements.rbegin(); rit != elements.rend(); ++rit) {
+			erase(rit->key);
+			return true;
+		}
+		return false;
+	}
+
+	/*
+	 * Moves a given item to the front of the cache.
+	 */
+	void touch(LRUKey key) {
+		elements.splice(elements.begin(), elements, map[key]);
 	}
 };
 
