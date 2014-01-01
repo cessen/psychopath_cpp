@@ -21,7 +21,6 @@ Bilinear::Bilinear(uint16_t res_time_)
 	u_min = v_min = 0.0f;
 	u_max = v_max = 1.0f;
 
-	microsurface_key = 0;
 	last_ray_width = std::numeric_limits<float>::infinity();
 }
 
@@ -39,7 +38,6 @@ Bilinear::Bilinear(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4)
 	u_min = v_min = 0.0f;
 	u_max = v_max = 1.0f;
 
-	microsurface_key = 0;
 	last_ray_width = std::numeric_limits<float>::infinity();
 }
 
@@ -96,12 +94,11 @@ bool Bilinear::intersect_ray(const Ray &ray, Intersection *intersection)
 		redice = true;
 	} else {
 		// Try to get an existing grid
-		micro_surface = MicroSurfaceCache::cache.get(microsurface_key);
+		micro_surface = MicroSurfaceCache::cache.get(id);
 
 		// Dice the grid if we don't have one already
 		if (!micro_surface) {
-			if (!(microsurface_key == 0))
-				Global::Stats::cache_misses++;
+			Global::Stats::cache_misses++;
 			redice = true;
 		}
 	}
@@ -109,7 +106,7 @@ bool Bilinear::intersect_ray(const Ray &ray, Intersection *intersection)
 	if (redice) {
 		// Redice
 		micro_surface = std::shared_ptr<MicroSurface>(micro_generate(width*0.75f));
-		microsurface_key = MicroSurfaceCache::cache.put(micro_surface);
+		MicroSurfaceCache::cache.put(micro_surface, id);
 
 		// Record ray width
 		last_ray_width = width*0.75f;

@@ -42,7 +42,6 @@ class Bilinear: public SurfacePrimitive
 public:
 	TimeBox<Vec3 *> verts;
 	float u_min, v_min, u_max, v_max;
-	std::atomic<MicroSurfaceCacheKey> microsurface_key;
 	std::atomic<float> last_ray_width;
 
 

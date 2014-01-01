@@ -62,6 +62,8 @@ public:
 class Primitive: public Boundable, public Traceable
 {
 public:
+	size_t id {++Global::next_primitive_id};
+
 	virtual ~Primitive() {}
 
 	/**

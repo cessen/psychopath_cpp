@@ -20,6 +20,7 @@
 
 #include "config.hpp"
 #include "global.hpp"
+#include "micro_surface_cache.hpp"
 
 #define GAMMA 2.2
 
@@ -52,6 +53,9 @@ bool Renderer::render(int thread_count)
 		        -1.0, -((static_cast<float>(res_y))/res_x),
 		        1.0, ((static_cast<float>(res_y))/res_x))
 	};
+
+	// Clear all caches before rendering
+	MicroSurfaceCache::cache.clear();
 
 	// Save blank image before rendering
 	write_png_from_film(image.get(), output_path, 0.0f);

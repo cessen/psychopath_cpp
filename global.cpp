@@ -5,6 +5,8 @@
 
 namespace Global
 {
+std::atomic<size_t> next_primitive_id {0};
+
 namespace Stats
 {
 std::atomic<uint64_t> split_count(0);

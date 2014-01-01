@@ -133,6 +133,17 @@ public:
 		return map[key]->data_ptr;
 	}
 
+	/**
+	 * @brief Erases all items from the cache.get
+	 */
+	void clear() {
+		std::unique_lock<SpinLock> lock(slock);
+
+		map.clear();
+		elements.clear();
+		byte_count = 0;
+	}
+
 private:
 	/*
 	 * Adds an item to the cache with the given key.
