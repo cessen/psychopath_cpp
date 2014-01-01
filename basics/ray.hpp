@@ -95,12 +95,18 @@ struct Ray {
 	}
 
 	std::array<uint32_t, 3> get_d_is_neg() const {
-		return std::array<uint32_t, 3> {{
-				static_cast<uint32_t>(d.x < 0 ? 1 : 0),
-				static_cast<uint32_t>(d.y < 0 ? 1 : 0),
-				static_cast<uint32_t>(d.z < 0 ? 1 : 0)
+		std::array<uint32_t, 3> d_is_neg {{
+				(d.x < 0.0f ? 1u : 0u),
+				(d.y < 0.0f ? 1u : 0u),
+				(d.z < 0.0f ? 1u : 0u)
 			}
 		};
+
+		assert(d_is_neg[0] < 2);
+		assert(d_is_neg[1] < 2);
+		assert(d_is_neg[2] < 2);
+
+		return d_is_neg;
 	}
 
 	/**

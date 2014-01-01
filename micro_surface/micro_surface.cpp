@@ -29,6 +29,10 @@ bool MicroSurface::intersect_ray(const Ray &ray, float ray_width, Intersection *
 	const Vec3 inv_d = ray.get_inverse_d();
 	const std::array<uint32_t, 3> d_is_neg = ray.get_d_is_neg();
 
+	assert(d_is_neg[0] < 2);
+	assert(d_is_neg[1] < 2);
+	assert(d_is_neg[2] < 2);
+
 // Switch between simple traversal vs fast traversal (simple = 1, fast = 0)
 #if 0
 	// Intersect with the MicroSurface
