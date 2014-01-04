@@ -47,65 +47,34 @@ uint32_t Tracer::trace(const Slice<Ray> rays_, Slice<Intersection> intersections
 	while (accumulate_potential_intersections()) {
 		sort_potential_intersections();
 		trace_potential_intersections();
-
-		/*
-		// Print number of active rays
-		size_t active_rays = 0;
-		for (auto r: rays_active) {
-			if (r)
-				active_rays++;
-		}
-		std::cout << "Active rays: " << active_rays << std::endl;
-		*/
 	}
 
 	return rays.size();
 }
 
 
-// Job function for accumulating potential intersections,
-// for use in accumulate_potential_intersections() below.
-void job_accumulate_potential_intersections(Tracer *tracer, size_t start_i, size_t end_i)
-{
-	size_t potint_ids[MAX_POTINT];
-
-	for (size_t i = start_i; i < end_i; i++) {
-		if (tracer->rays_active[i]) {
-			const size_t pc = tracer->scene->world.get_potential_intersections(tracer->rays[i], tracer->intersections[i].t, MAX_POTINT, potint_ids, &(tracer->states[i*tracer->RAY_STATE_SIZE]));
-			tracer->rays_active[i] = (pc > 0);
-
-			for (size_t j = 0; j < pc; j++) {
-				tracer->potential_intersections[(i*MAX_POTINT)+j].valid = true;
-				tracer->potential_intersections[(i*MAX_POTINT)+j].object_id = potint_ids[j];
-				tracer->potential_intersections[(i*MAX_POTINT)+j].ray_index = i;
-			}
-		}
-	}
-}
-
 size_t Tracer::accumulate_potential_intersections()
 {
 	// Clear out potential intersection buffer
 	potential_intersections.resize(rays.size()*MAX_POTINT);
-	const size_t spi = potential_intersections.size();
-	for (size_t i = 0; i < spi; i++)
-		potential_intersections[i].valid = false;
+	for (auto& potint: potential_intersections)
+		potint.valid = false;
 
+	// Trace scene acceleration structure to accumulate
+	// potential intersections
+	size_t potint_ids[MAX_POTINT];
+	for (size_t i = 0; i < rays.size(); i++) {
+		if (rays_active[i]) {
+			const size_t pc = scene->world.get_potential_intersections(rays[i], intersections[i].t, MAX_POTINT, potint_ids, &(states[i*RAY_STATE_SIZE]));
+			rays_active[i] = (pc > 0);
 
-	// Accumulate potential intersections
-	for (size_t i = 0; i < rays.size(); i += RAY_JOB_SIZE) {
-
-		// Dole out jobs
-		size_t start = i;
-		size_t end = i + RAY_JOB_SIZE;
-		if (end > rays.size())
-			end = rays.size();
-
-
-		job_accumulate_potential_intersections(this, start, end);
-
+			for (size_t j = 0; j < pc; j++) {
+				potential_intersections[(i*MAX_POTINT)+j].valid = true;
+				potential_intersections[(i*MAX_POTINT)+j].object_id = potint_ids[j];
+				potential_intersections[(i*MAX_POTINT)+j].ray_index = i;
+			}
+		}
 	}
-
 
 	// Compact the potential intersections
 	size_t pii = 0;
@@ -150,36 +119,22 @@ void Tracer::sort_potential_intersections()
 }
 
 
-void job_trace_potential_intersections(Tracer *tracer, size_t start, size_t end)
+
+void Tracer::trace_potential_intersections()
 {
-	for (size_t i = start; i < end; i++) {
+	for (size_t i = 0; i < potential_intersections.size(); i++) {
 		// Shorthand references
-		PotentialInter &potential_intersection = tracer->potential_intersections[i];
-		const Ray& ray = tracer->rays[potential_intersection.ray_index];
-		Intersection& intersection = tracer->intersections[potential_intersection.ray_index];
-		size_t& id = potential_intersection.object_id;
+		const auto& ray = rays[potential_intersections[i].ray_index];
+		auto& intersection = intersections[potential_intersections[i].ray_index];
+		auto& primitive = scene->world.get_primitive(potential_intersections[i].object_id);
 
 		// Trace
 		if (ray.is_shadow_ray) {
 			if (!intersection.hit)
-				intersection.hit |= tracer->scene->world.get_primitive(id).intersect_ray(ray, nullptr);
+				intersection.hit |= primitive.intersect_ray(ray, nullptr);
 		} else {
-			intersection.hit |= tracer->scene->world.get_primitive(id).intersect_ray(ray, &intersection);
+			intersection.hit |= primitive.intersect_ray(ray, &intersection);
 		}
-	}
-}
-
-void Tracer::trace_potential_intersections()
-{
-#define BLARGYFACE 10000
-	for (size_t i = 0; i < potential_intersections.size(); i += BLARGYFACE) {
-		// Dole out jobs
-		size_t start = i;
-		size_t end = i + BLARGYFACE;
-		if (end > potential_intersections.size())
-			end = potential_intersections.size();
-
-		job_trace_potential_intersections(this, start, end);
 	}
 }
 
