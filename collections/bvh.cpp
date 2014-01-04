@@ -416,7 +416,7 @@ bool BVH::intersect_ray(const Ray &ray, Intersection *intersection)
 	const std::array<uint32_t, 3> d_is_neg = ray.get_d_is_neg();
 
 	while (true) {
-		if (intersect_node(node, ray, inv_d, d_is_neg, &hitt0, &hitt1)) {
+		if (intersect_node(nodes[node], ray, inv_d, d_is_neg, &hitt0, &hitt1)) {
 			if (nodes[node].flags & IS_LEAF) {
 				// Trace!
 				hit |= nodes[node].data->intersect_ray(ray, intersection);
@@ -468,7 +468,7 @@ uint BVH::get_potential_intersections(const Ray &ray, float tmax, uint max_poten
 	uint32_t todo[1000];
 
 	while (true) {
-		if (intersect_node(node, ray, &hitt0, &hitt1)) {
+		if (intersect_node(nodes[node], ray, &hitt0, &hitt1)) {
 			if (nodes[node].flags & IS_LEAF) {
 				if (hits_so_far >= prior_hits) {
 					ids[hits_so_far-prior_hits] = node;
@@ -546,7 +546,7 @@ uint BVH::get_potential_intersections(const Ray &ray, float tmax, uint max_poten
 
 		switch (node_state) {
 			case FROM_PARENT:
-				hit = intersect_node(node, ray, inv_d, d_is_neg, &hitt0, &hitt1) && hitt0 < tmax;
+				hit = intersect_node(nodes[node], ray, inv_d, d_is_neg, &hitt0, &hitt1) && hitt0 < tmax;
 
 				if (!hit) {
 					// If ray misses BBox
@@ -599,7 +599,7 @@ uint BVH::get_potential_intersections(const Ray &ray, float tmax, uint max_poten
 				break;
 
 			case FROM_SIBLING:
-				hit = intersect_node(node, ray, inv_d, d_is_neg, &hitt0, &hitt1) && hitt0 < tmax;
+				hit = intersect_node(nodes[node], ray, inv_d, d_is_neg, &hitt0, &hitt1) && hitt0 < tmax;
 
 				if (!hit) {
 					// If ray misses BBox, go to parent node.
