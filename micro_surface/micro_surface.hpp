@@ -22,13 +22,14 @@
  */
 struct MicroNode {
 	BBox bounds;
-	uint16_t flags;
 
-	uint16_t child_index;
+	uint32_t child_index;
 
 	uint16_t data_index; // Index into geometry data
 	uint8_t data_du; // Deltas for the extent of geometry data that this node covers
 	uint8_t data_dv;
+
+	uint8_t flags;
 };
 
 

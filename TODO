@@ -1,17 +1,15 @@
 - Add NaN and Inf catching to key places in code
-- Track down bug where single rays from each round hit something even
-  when there's nothing to hit.
-
-- Eliminate geometry cache:
-	- All tracing API's should accept collections of rays
-
-- Investigate LRU caches that are lock-free for reading
 
 - Make multi-threaded rendering scale:
 	- Modify ray tracing pipeline to assign unique sets of rays to unique threads,
 	  eliminating the need for locking in the ray data structures.
 	- Modify grid tracing code to take a list of rays, and only pull geometry from the cache
 	  once per set of rays.
+
+- Change MicroSurface to use implicit indexing for its BVH.
+	- Also play with making the nodes cubes, so that the volume can be stored
+	  as four floats instead of six.
+	- QBVH for MicroSurface, also with implicit indexing
 
 - MicroSurface should calculate normal and point differentials for
   ray intersections.

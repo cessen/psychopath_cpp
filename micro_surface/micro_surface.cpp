@@ -8,8 +8,8 @@
 
 #include "utils.hpp"
 
-#define IS_LEAF 256
-#define DEPTH_MASK 255
+#define IS_LEAF    0b10000000
+#define DEPTH_MASK 0b01111111
 
 
 bool MicroSurface::intersect_ray(const Ray &ray, float ray_width, Intersection *inter)
