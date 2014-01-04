@@ -92,15 +92,10 @@ struct BBox {
 	 * encompasses both.
 	 */
 	void merge_with(const BBox& b) {
-#if 0
-		min.m128 = _mm_min_ps(min.m128, b.min.m128);
-		max.m128 = _mm_max_ps(max.m128, b.max.m128);
-#else
 		for (size_t i = 0; i < 3; i++) {
 			min[i] = min[i] < b.min[i] ? min[i] : b.min[i];
 			max[i] = max[i] > b.max[i] ? max[i] : b.max[i];
 		}
-#endif
 	}
 
 	/**
@@ -116,6 +111,7 @@ struct BBox {
 	 * @returns True if the ray hits, false if the ray misses.
 	 */
 	inline bool intersect_ray(const Ray& ray, const Vec3 inv_d, const std::array<uint32_t, 3> d_is_neg, float *hitt0, float *hitt1, float *t=nullptr) const {
+#ifdef DEBUG
 		// Test for nan and inf
 		if (std::isnan(ray.o.x) || std::isnan(ray.o.y) || std::isnan(ray.o.z) ||
 		        std::isnan(ray.d.x) || std::isnan(ray.d.y) || std::isnan(ray.d.z) ||
@@ -133,6 +129,7 @@ struct BBox {
 			std::cout << "Inf found!" << std::endl;
 			Global::Stats::inf_count++;
 		}
+#endif
 
 		const Vec3 *bounds = &min;
 
@@ -234,9 +231,6 @@ struct BBox {
 
 /**
  * @brief Axis-aligned bounding box with multiple time samples.
- *
- * A BBox that can include multiple time samples.  This is the version of
- * BBox that should be used in most places throughout the code.
  */
 struct BBoxT {
 public:
