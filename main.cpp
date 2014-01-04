@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cmath>
 
+#include <thread>
 #include <iostream>
 #include <vector>
 
@@ -40,8 +41,6 @@
 namespace BPO = boost::program_options;
 
 
-
-#define THREADS 4
 #define SPP 4
 //#define XRES 512
 //#define YRES 288
@@ -129,7 +128,7 @@ int main(int argc, char **argv)
 	 **********************************************************************
 	 */
 	int spp = SPP;
-	int threads = THREADS;
+	int threads = std::thread::hardware_concurrency();
 	std::string output_path = "default.png";
 	std::string input_path = "";
 	Resolution resolution(XRES, YRES);
