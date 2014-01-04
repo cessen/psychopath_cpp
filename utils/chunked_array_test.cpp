@@ -108,13 +108,13 @@ BOOST_AUTO_TEST_CASE(resize_4)
 BOOST_AUTO_TEST_CASE(iterator_1)
 {
 	ChunkedArray<int, 10> ar(1234);
-	ChunkedArrayIterator<int, 10> it = ar.get_iterator();
+	ChunkedArray<int, 10>::iterator it = ar.begin();
 
 	for (size_t i = 0; i < ar.size(); i++)
 		it[i] = i;
 
 	bool eq = true;
-	it = ar.get_iterator();
+	it = ar.begin();
 	for (size_t i = 0; i < ar.size(); i++)
 		eq = eq && ((size_t)it[i] == i);
 
@@ -124,13 +124,13 @@ BOOST_AUTO_TEST_CASE(iterator_1)
 BOOST_AUTO_TEST_CASE(iterator_2)
 {
 	ChunkedArray<int, 10> ar(1234);
-	ChunkedArrayIterator<int, 10> it = ar.get_iterator(23);
+	ChunkedArray<int, 10>::iterator it = ar.begin() + 23;
 
 	for (size_t i = 23; i < ar.size(); i++)
 		it[i-23] = i;
 
 	bool eq = true;
-	it = ar.get_iterator(23);
+	it = ar.begin() + 23;
 	for (size_t i = 23; i < ar.size(); i++)
 		eq = eq && ((size_t)it[i-23] == i);
 
@@ -140,7 +140,7 @@ BOOST_AUTO_TEST_CASE(iterator_2)
 BOOST_AUTO_TEST_CASE(iterator_3)
 {
 	ChunkedArray<int, 10> ar(1234);
-	ChunkedArrayIterator<int, 10> it = ar.get_iterator(23);
+	ChunkedArray<int, 10>::iterator it = ar.begin() + 23;
 
 	ar[23] = 54321;
 
@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_CASE(iterator_3)
 BOOST_AUTO_TEST_CASE(iterator_4)
 {
 	ChunkedArray<int, 10> ar(1234);
-	ChunkedArrayIterator<int, 10> it = ar.get_iterator();
+	ChunkedArray<int, 10>::iterator it = ar.begin();
 
 	for (size_t i = 0; i < ar.size(); i++)
 		ar[i] = i;

@@ -15,8 +15,6 @@
 #include "chunked_array.hpp"
 
 
-#define BVH_NODE_CHUNK_SIZE 4096
-
 struct BucketInfo {
 	BucketInfo() {
 		count = 0;
@@ -91,8 +89,8 @@ class BVH: public Collection
 {
 private:
 	BBoxT bbox;
-	ChunkedArray<BVHNode, BVH_NODE_CHUNK_SIZE> nodes;
-	ChunkedArray<BBox, BVH_NODE_CHUNK_SIZE> bboxes;
+	ChunkedArray<BVHNode> nodes;
+	ChunkedArray<BBox> bboxes;
 	size_t next_node, next_bbox;
 	std::vector<BVHPrimitive> bag;  // Temporary holding spot for primitives not yet added to the hierarchy
 
@@ -103,7 +101,7 @@ private:
 		if (nodes[node].ts == 1) {
 			return bboxes[nodes[node].bbox_index].intersect_ray(ray, inv_d, d_is_neg, near_t, far_t);
 		} else {
-			const BBox b = lerp_seq<BBox, ChunkedArrayIterator<BBox, BVH_NODE_CHUNK_SIZE> >(ray.time, bboxes.get_iterator(nodes[node].bbox_index), nodes[node].ts);
+			const BBox b = lerp_seq<BBox, decltype(bboxes)::iterator >(ray.time, bboxes.begin() + nodes[node].bbox_index, nodes[node].ts);
 			return b.intersect_ray(ray, inv_d, d_is_neg, near_t, far_t);
 		}
 	}

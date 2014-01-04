@@ -5,52 +5,7 @@
 #include <iterator>
 
 
-/**
- * @brief A random access iterator for ChunkedArrays.
- */
-template <class T, size_t CHUNK_SIZE>
-class ChunkedArrayIterator: public std::iterator<std::random_access_iterator_tag, T>
-{
-	T **chunks;
-	size_t base;
 
-public:
-	ChunkedArrayIterator() {
-		chunks = nullptr;
-		base = 0;
-	}
-
-	ChunkedArrayIterator(T **chunks_, size_t base_) {
-		chunks = chunks_;
-		base = base_;
-	}
-
-
-
-	T operator*() {
-		return chunks[base/CHUNK_SIZE][base%CHUNK_SIZE];
-	}
-
-	ChunkedArrayIterator &operator++() {
-		base++;
-		return *this;
-	}
-
-	ChunkedArrayIterator &operator--() {
-		base--;
-		return *this;
-	}
-
-	T &operator[](const size_t &i) {
-		const size_t ii = base + i;
-		return chunks[ii/CHUNK_SIZE][ii%CHUNK_SIZE];
-	}
-
-	const T &operator[](const size_t &i) const {
-		const size_t ii = base + i;
-		return chunks[ii/CHUNK_SIZE][ii%CHUNK_SIZE];
-	}
-};
 
 
 /**
@@ -60,9 +15,66 @@ public:
  * so pointers to elements of this array should not be incremented or
  * decremented.
  */
-template <class T, size_t CHUNK_SIZE>
+template <class T, size_t CHUNK_SIZE=1024>
 class ChunkedArray
 {
+public:
+	/**
+	 * @brief A random access iterator for ChunkedArrays.
+	 */
+	class iterator: public std::iterator<std::random_access_iterator_tag, T>
+	{
+		T **chunks;
+		size_t base;
+
+	public:
+		iterator() {
+			chunks = nullptr;
+			base = 0;
+		}
+
+		iterator(T **chunks_, size_t base_) {
+			chunks = chunks_;
+			base = base_;
+		}
+
+
+
+		T operator*() {
+			return chunks[base/CHUNK_SIZE][base%CHUNK_SIZE];
+		}
+
+		iterator &operator++() {
+			base++;
+			return *this;
+		}
+
+		iterator &operator--() {
+			base--;
+			return *this;
+		}
+
+		iterator &operator+(const size_t i) {
+			base += i;
+			return *this;
+		}
+
+		iterator &operator-(const size_t i) {
+			base -= i;
+			return *this;
+		}
+
+		T &operator[](const size_t &i) {
+			const size_t ii = base + i;
+			return chunks[ii/CHUNK_SIZE][ii%CHUNK_SIZE];
+		}
+
+		const T &operator[](const size_t &i) const {
+			const size_t ii = base + i;
+			return chunks[ii/CHUNK_SIZE][ii%CHUNK_SIZE];
+		}
+	};
+
 private:
 	size_t element_count;
 	size_t chunk_count;
@@ -196,12 +208,12 @@ public:
 		return size_;
 	}
 
-	ChunkedArrayIterator<T, CHUNK_SIZE> get_iterator() {
-		return ChunkedArrayIterator<T, CHUNK_SIZE>(chunks, 0);
+	iterator begin() {
+		return iterator(chunks, 0);
 	}
 
-	ChunkedArrayIterator<T, CHUNK_SIZE> get_iterator(size_t base) {
-		return ChunkedArrayIterator<T, CHUNK_SIZE>(chunks, base);
+	iterator get_iterator(size_t base) {
+		return iterator(chunks, base);
 	}
 };
 
