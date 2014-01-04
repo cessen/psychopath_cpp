@@ -3,6 +3,7 @@
 #include <iostream>
 #include <limits>
 #include <assert.h>
+#include <cmath>
 #include "image_sampler.hpp"
 #include "film.hpp"
 #include "intersection.hpp"
@@ -16,7 +17,6 @@
 
 #include "hilbert.hpp"
 
-#define RAYS_AT_A_TIME 1000000
 
 float lambert(Vec3 v1, Vec3 v2)
 {
@@ -44,34 +44,47 @@ struct PTPath {
 
 void PathTraceIntegrator::integrate()
 {
-	std::vector<std::thread> threads(thread_count);
+	// Auto-calculate bucket_size
+	const int min_bucket_size = 1;
+	const int max_bucket_size = std::min(image->width, image->height) / thread_count;
+	int bucket_size = std::sqrt(static_cast<float>(Config::samples_per_bucket) / spp);
+	bucket_size = std::min(max_bucket_size, bucket_size);
+	bucket_size = std::max(min_bucket_size, bucket_size);
 
+	// Start the rendering threads
+	std::vector<std::thread> threads(thread_count);
 	for (auto& t: threads) {
 		t = std::thread(&PathTraceIntegrator::render_blocks, this);
 	}
 
+	// Populate the bucket jobs
 	uint32_t i = 0;
 	uint32_t x = 0;
 	uint32_t y = 0;
+	const size_t hilbert_stop = std::max(image->width, image->height) * 2;
+	const bool greater_width = image->width > image->height;
 	while (true) {
-		Morton::d2xy(i, &x, &y);
-		const int xp = x * Config::bucket_size;
-		const int yp = y * Config::bucket_size;
+		if (greater_width)
+			Hilbert::d2xy(i, &y, &x);
+		else
+			Hilbert::d2xy(i, &x, &y);
+		const int xp = x * bucket_size;
+		const int yp = y * bucket_size;
 
 		if (xp < image->width && yp < image->height) {
-			const int w = std::min(image->width - xp, Config::bucket_size);
-			const int h = std::min(image->height - yp, Config::bucket_size);
+			const int w = std::min(image->width - xp, bucket_size);
+			const int h = std::min(image->height - yp, bucket_size);
 			blocks.push_blocking( {xp,yp,w,h});
 		}
 
-		if (xp >= image->width && yp >= image->height)
+		if (xp >= hilbert_stop && yp >= hilbert_stop)
 			break;
 
 		++i;
 	}
-
 	blocks.disallow_blocking();
 
+	// Wait for render threads to finish
 	for (auto& t: threads) {
 		t.join();
 	}
