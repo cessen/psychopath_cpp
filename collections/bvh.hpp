@@ -2,6 +2,7 @@
 #define BVH_HPP
 
 #include "numtype.h"
+#include "global.hpp"
 
 #include <stdlib.h>
 #include <iostream>
@@ -98,6 +99,9 @@ private:
 	 * @brief Tests whether a ray intersects a node or not.
 	 */
 	inline bool intersect_node(const BVHNode& node, const Ray& ray, const Vec3& inv_d, const std::array<uint32_t, 3>& d_is_neg, float *near_t, float *far_t) {
+#ifdef GLOBAL_STATS_TOP_LEVEL_BVH_NODE_TESTS
+		Global::Stats::bbox_tests++;
+#endif
 		const BBox b = lerp_seq<BBox, decltype(bboxes)::iterator >(ray.time, bboxes.begin() + node.bbox_index, node.ts);
 		return b.intersect_ray(ray, inv_d, d_is_neg, near_t, far_t);
 	}

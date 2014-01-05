@@ -48,6 +48,9 @@ void write_png_from_film(Film<Color> *image, std::string path, float min_time=4.
 
 bool Renderer::render(int thread_count)
 {
+	// Clear rendering statistics
+	Global::Stats::clear();
+
 	RNG rng;
 	std::unique_ptr<Film<Color>> image {new Film<Color>(res_x, res_y,
 		        -1.0, -((static_cast<float>(res_y))/res_x),
@@ -73,6 +76,10 @@ bool Renderer::render(int thread_count)
 	write_png_from_film(image.get(), output_path, 0.0f);
 
 	// Print statistics
+	std::cout << "Rays shot while rendering: " << Global::Stats::rays_shot << std::endl;
+#ifdef GLOBAL_STATS_TOP_LEVEL_BVH_NODE_TESTS
+	std::cout << "Top-level BVH node tests: " << Global::Stats::bbox_tests << std::endl;
+#endif
 	std::cout << "Primitive-ray tests during rendering: " << Global::Stats::primitive_ray_tests << std::endl;
 	std::cout << "Splits during rendering: " << Global::Stats::split_count << std::endl;
 	std::cout << "MicroSurface cache misses during rendering: " << Global::Stats::cache_misses << std::endl;

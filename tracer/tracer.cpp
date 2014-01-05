@@ -7,6 +7,7 @@
 #include <functional>
 #include <assert.h>
 
+#include "global.hpp"
 #include "array.hpp"
 #include "slice.hpp"
 #include "counting_sort.hpp"
@@ -22,6 +23,7 @@
 
 uint32_t Tracer::trace(const Slice<Ray> rays_, Slice<Intersection> intersections_)
 {
+	Global::Stats::rays_shot += rays_.size();
 	// Get rays
 	rays.init_from(rays_);
 
