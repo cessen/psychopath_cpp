@@ -7,11 +7,7 @@
 #include <cmath>
 
 
-#define X_SPLIT 0
-#define Y_SPLIT 1
-#define Z_SPLIT 2
-#define SPLIT_MASK 2
-#define IS_LEAF 4
+#define IS_LEAF 1
 
 BVH::~BVH()
 {
@@ -91,7 +87,7 @@ struct CompareDim {
  *
  * TODO: SAH splitting seems to be very buggy.  Fix.
  */
-uint32_t BVH::split_primitives(size_t first_prim, size_t last_prim, int32_t *axis)
+uint32_t BVH::split_primitives(size_t first_prim, size_t last_prim)
 {
 	// Find the minimum and maximum centroid values on each axis
 	Vec3 min, max;
@@ -110,9 +106,6 @@ uint32_t BVH::split_primitives(size_t first_prim, size_t last_prim, int32_t *axi
 		max_axis = 1;
 	if ((max.z - min.z) > (max.y - min.y))
 		max_axis = 2;
-
-	if (axis)
-		*axis = max_axis;
 
 	// Sort and split the list
 	float pmid = .5f * (min[max_axis] + max[max_axis]);
@@ -133,7 +126,7 @@ uint32_t BVH::split_primitives(size_t first_prim, size_t last_prim, int32_t *axi
 #else
 
 /* SAH-based split */
-uint32_t BVH::split_primitives(size_t first_prim, size_t last_prim, int32_t *axis)
+uint32_t BVH::split_primitives(size_t first_prim, size_t last_prim)
 {
 	uint32_t split;
 
@@ -158,9 +151,6 @@ uint32_t BVH::split_primitives(size_t first_prim, size_t last_prim, int32_t *axi
 			max_axis = 1;
 		if ((max.z - min.z) > (max.y - min.y))
 			max_axis = 2;
-
-		if (axis)
-			*axis = max_axis;
 
 		split = (first_prim + last_prim) / 2;
 
@@ -280,9 +270,6 @@ uint32_t BVH::split_primitives(size_t first_prim, size_t last_prim, int32_t *axi
 			}
 		}
 
-		if (axis)
-			*axis = split_axis;
-
 		float pmid = min[split_axis] + (((max[split_axis] - min[split_axis]) / nBuckets) * (minCostSplit+1));
 		BVHPrimitive *mid_ptr = std::partition(&bag[first_prim],
 		                                       (&bag[last_prim])+1,
@@ -341,26 +328,7 @@ void BVH::recursive_build(size_t parent, size_t me, size_t first_prim, size_t la
 	nodes[me].child_index = child1i;
 
 	// Create child nodes
-	int32_t axis;
-	uint32_t split_index = split_primitives(first_prim, last_prim, &axis);
-	switch (axis) {
-		case 0:
-			nodes[me].flags |= X_SPLIT;
-			break;
-
-		case 1:
-			nodes[me].flags |= Y_SPLIT;
-			break;
-
-		case 2:
-			nodes[me].flags |= Z_SPLIT;
-			break;
-
-		default:
-			nodes[me].flags |= X_SPLIT;
-			break;
-	}
-
+	uint32_t split_index = split_primitives(first_prim, last_prim);
 	recursive_build(me, child1i, first_prim, split_index);
 	recursive_build(me, child2i, split_index+1, last_prim);
 
@@ -430,14 +398,9 @@ bool BVH::intersect_ray(const Ray &ray, Intersection *intersection)
 
 				node = todo[--todo_offset];
 			} else {
-				// Put far BVH node on todo stack, advance to near node
-				if (d_is_neg[nodes[node].flags & SPLIT_MASK]) {
-					todo[todo_offset++] = nodes[node].child_index;
-					node = nodes[node].child_index + 1;
-				} else {
-					todo[todo_offset++] = nodes[node].child_index + 1;
-					node = nodes[node].child_index;
-				}
+				// Put right BVH node on todo stack, advance to left node
+				todo[todo_offset++] = nodes[node].child_index;
+				node = nodes[node].child_index + 1;
 			}
 		} else {
 			if (todo_offset == 0)
@@ -450,227 +413,72 @@ bool BVH::intersect_ray(const Ray &ray, Intersection *intersection)
 	return hit;
 }
 
-#if 0
+
 uint BVH::get_potential_intersections(const Ray &ray, float tmax, uint max_potential, size_t *ids, void *state)
 {
-	uint64_t hits = 0;
-	uint hits_so_far = 0;
-	uint prior_hits = 0;
-	if (state) {
-		if (static_cast<uint64_t*>(state)[1])
-			return 0;
-		prior_hits = static_cast<uint64_t*>(state)[0];
-	}
+	// Algorithm from the paper
+	// "Dynamic Stackless Binary Tree Traversal"
+	// by Barringer et al.
 
-	// Traverse the BVH and check for intersections. Yay!
-	float hitt0, hitt1;
-	uint32_t todo_offset = 0, node = 0;
-	uint32_t todo[1000];
-
-	while (true) {
-		if (intersect_node(nodes[node], ray, &hitt0, &hitt1)) {
-			if (nodes[node].flags & IS_LEAF) {
-				if (hits_so_far >= prior_hits) {
-					ids[hits_so_far-prior_hits] = node;
-					hits++;
-				}
-
-				hits_so_far++;
-
-
-				if (todo_offset == 0 || hits_so_far >= max_potential + prior_hits)
-					break;
-
-				node = todo[--todo_offset];
-			} else {
-				// Put far BVH node on todo stack, advance to near node
-				if (ray.d_is_neg[nodes[node].flags & SPLIT_MASK]) {
-					todo[todo_offset++] = nodes[node].child_index;
-					node = nodes[node].child_index + 1;
-				} else {
-					todo[todo_offset++] = nodes[node].child_index + 1;
-					node = nodes[node].child_index;
-				}
-			}
-		} else {
-			if (todo_offset == 0)
-				break;
-
-			node = todo[--todo_offset];
-		}
-	}
-
-	if (hits_so_far - prior_hits == 0)
-		static_cast<uint64_t*>(state)[1] = 1;
-	static_cast<uint64_t*>(state)[0] = hits_so_far;
-	return hits_so_far - prior_hits;
-}
-
-#else
-#define FROM_PARENT 0
-#define FROM_SIBLING 1
-#define FROM_CHILD 2
-
-// TODO: currently the "ids" returned are node id's, but they should be
-// primitive ids.  Similarly, get_primitve() should be changed to take
-// primitive ids.
-uint BVH::get_potential_intersections(const Ray &ray, float tmax, uint max_potential, size_t *ids, void *state)
-{
-	uint64_t node;
-	uint8_t node_state;
+	// Get state
+	uint64_t& node = static_cast<uint64_t *>(state)[0];
+	uint64_t& level_index = static_cast<uint64_t *>(state)[1];
 
 	// Check if it's an empty BVH
 	if (nodes.size() == 0)
 		return 0;
 
-	// Initialize state
-	if (state == nullptr) {
-		node = 0;
-		node_state = FROM_PARENT;
-	} else {
-		node = ((uint64_t *)state)[0];
-		node_state = ((uint64_t *)state)[1];
-	}
-
 	const Vec3 inv_d = ray.get_inverse_d();
 	const std::array<uint32_t, 3> d_is_neg = ray.get_d_is_neg();
 
 	// Traverse the BVH
-	bool hit;
 	uint32_t hits_so_far = 0;
-	float hitt0, hitt1;
-	bool finished = false;
-	while (hits_so_far < max_potential && !finished) {
-		const BVHNode &current = nodes[node];
-		const BVHNode &parent = nodes[current.parent_index];
+	float hitt0a, hitt1a;
+	float hitt0b, hitt1b;
+	while (hits_so_far < max_potential && node != ~uint64_t(0)) {
+		const BVHNode& n = nodes[node];
 
-		switch (node_state) {
-			case FROM_PARENT:
-				hit = intersect_node(nodes[node], ray, inv_d, d_is_neg, &hitt0, &hitt1) && hitt0 < tmax;
+		if (n.flags & IS_LEAF) {
+			ids[hits_so_far++] = node;
+		} else {
+			bool hit0, hit1;
+			hitt0a = hitt1a = hitt0b = hitt1b = std::numeric_limits<float>::infinity();
+			hit0 = intersect_node(nodes[n.child_index], ray, inv_d, d_is_neg, &hitt0a, &hitt1a) && hitt0a < tmax;
+			hit1 = intersect_node(nodes[n.child_index+1], ray, inv_d, d_is_neg, &hitt0b, &hitt1b) && hitt0b < tmax;
 
-				if (!hit) {
-					// If ray misses BBox
-					if (node == 0) {
-						// If node is root node, finished
-						finished = true;
-						node_state = FROM_CHILD;
-					} else {
-						// Go to sibling node
-						if (d_is_neg[parent.flags & SPLIT_MASK])
-							node--;
-						else
-							node++;
-
-						// State: from_sibling
-						node_state = FROM_SIBLING;
-					}
-				} else if (current.flags & IS_LEAF) {
-					// If ray hits BBox and node is leaf
-					ids[hits_so_far] = node;
-					hits_so_far++;
-
-					// If root node (i.e. only one node in the tree),
-					// then finished
-					if (node == 0) {
-						finished = true;
-						node_state = FROM_CHILD;
-					} else {
-						// Go to sibling node
-						if (d_is_neg[parent.flags & SPLIT_MASK])
-							node--;
-						else
-							node++;
-					}
-
-					// State: from_sibling
-					node_state = FROM_SIBLING;
+			if (hit0 || hit1) {
+				level_index <<= 1;
+				if (hitt0a < hitt0b) {
+					node = n.child_index;
+					if (!hit1)
+						++level_index;
 				} else {
-					// If ray hits BBox and node is not leaf
-					// Go to near child
-					if (d_is_neg[current.flags & SPLIT_MASK])
-						node = current.child_index+1;
-					else
-						node = current.child_index;
-
-					// State: from_parent
-					node_state = FROM_PARENT;
+					node = n.child_index + 1;
+					if (!hit0)
+						++level_index;
 				}
-
-				break;
-
-			case FROM_SIBLING:
-				hit = intersect_node(nodes[node], ray, inv_d, d_is_neg, &hitt0, &hitt1) && hitt0 < tmax;
-
-				if (!hit) {
-					// If ray misses BBox, go to parent node.
-					node = current.parent_index;
-
-					// State: from_child
-					node_state = FROM_CHILD;
-				} else if (current.flags & IS_LEAF) {
-					// If ray hits BBox and node is leaf
-					ids[hits_so_far] = node;
-					hits_so_far++;
-
-					// Go to parent node
-					node = current.parent_index;
-
-					// State: from_child
-					node_state = FROM_CHILD;
-				} else {
-					// If ray hits BBox and node is not leaf
-					// Go to near child
-					if (d_is_neg[current.flags & SPLIT_MASK])
-						node = current.child_index+1;
-					else
-						node = current.child_index;
-
-					// State: from_parent
-					node_state = FROM_PARENT;
-				}
-
-				break;
-
-			case FROM_CHILD:
-				if (node == 0) {
-					// If root node, finished
-					finished = true;
-				} else if (d_is_neg[parent.flags & SPLIT_MASK] && node == (parent.child_index+1)) {
-					// If node is the near child of its parent
-					// Go to sibling
-					node--;
-
-					// State: from_sibling
-					node_state = FROM_SIBLING;
-				} else if (!(d_is_neg[parent.flags & SPLIT_MASK]) && node == (parent.child_index)) {
-					// If node is the near child of its parent
-					// Go to sibling
-					node++;
-
-					// State: from_sibling
-					node_state = FROM_SIBLING;
-				} else {
-					// If node is the far child of its parent
-					// Go to parent
-					node = current.parent_index;
-
-					// State: from_child
-					node_state = FROM_CHILD;
-				}
-
-				break;
+				continue;
+			}
 		}
-	}
 
-	// Store state
-	if (state != nullptr) {
-		((uint64_t *)state)[0] = node;
-		((uint64_t *)state)[1] = node_state;
+		++level_index;
+
+		while ((level_index & 1) == 0 && node != 0) {
+			node = nodes[node].parent_index;
+			level_index >>= 1;
+		}
+
+		if (node == 0) {
+			node = ~uint64_t(0); // Maximum possible node index, treated as magic number for "full traversal complete"
+		} else {
+			// Go to sibling
+			if (node == nodes[nodes[node].parent_index].child_index)
+				node++;
+			else
+				node--;
+		}
 	}
 
 	// Return the number of primitives accumulated
 	return hits_so_far;
 }
-
-#endif
-
