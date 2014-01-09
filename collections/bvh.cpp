@@ -384,7 +384,7 @@ bool BVH::intersect_ray(const Ray &ray, Intersection *intersection)
 	const std::array<uint32_t, 3> d_is_neg = ray.get_d_is_neg();
 
 	while (true) {
-		if (intersect_node(nodes[node], ray, inv_d, d_is_neg, &hitt0, &hitt1)) {
+		if (intersect_node(node, ray, inv_d, d_is_neg, &hitt0, &hitt1)) {
 			if (nodes[node].flags & IS_LEAF) {
 				// Trace!
 				hit |= nodes[node].data->intersect_ray(ray, intersection);
@@ -399,8 +399,8 @@ bool BVH::intersect_ray(const Ray &ray, Intersection *intersection)
 				node = todo[--todo_offset];
 			} else {
 				// Put right BVH node on todo stack, advance to left node
-				todo[todo_offset++] = nodes[node].child_index;
-				node = nodes[node].child_index + 1;
+				todo[todo_offset++] = child1(node);
+				node = child2(node);
 			}
 		} else {
 			if (todo_offset == 0)
@@ -436,24 +436,24 @@ uint BVH::get_potential_intersections(const Ray &ray, float tmax, uint max_poten
 	float hitt0a, hitt1a;
 	float hitt0b, hitt1b;
 	while (hits_so_far < max_potential) {
-		const BVHNode& n = nodes[node];
+		const Node& n = nodes[node];
 
 		if (n.flags & IS_LEAF) {
 			ids[hits_so_far++] = node;
 		} else {
 			bool hit0, hit1;
 			hitt0a = hitt1a = hitt0b = hitt1b = std::numeric_limits<float>::infinity();
-			hit0 = intersect_node(nodes[n.child_index], ray, inv_d, d_is_neg, &hitt0a, &hitt1a) && hitt0a < tmax;
-			hit1 = intersect_node(nodes[n.child_index+1], ray, inv_d, d_is_neg, &hitt0b, &hitt1b) && hitt0b < tmax;
+			hit0 = intersect_node(child1(node), ray, inv_d, d_is_neg, &hitt0a, &hitt1a) && hitt0a < tmax;
+			hit1 = intersect_node(child2(node), ray, inv_d, d_is_neg, &hitt0b, &hitt1b) && hitt0b < tmax;
 
 			if (hit0 || hit1) {
 				bit_stack <<= 1;
 				if (hitt0a < hitt0b) {
-					node = n.child_index;
+					node = child1(node);
 					if (hit1)
 						bit_stack |= 1;
 				} else {
-					node = n.child_index + 1;
+					node = child2(node);
 					if (hit0)
 						bit_stack |= 1;
 				}
@@ -475,10 +475,7 @@ uint BVH::get_potential_intersections(const Ray &ray, float tmax, uint max_poten
 
 		// Go to sibling
 		bit_stack &= ~uint64_t(1);
-		if (node == nodes[nodes[node].parent_index].child_index)
-			node++;
-		else
-			node--;
+		node = sibling(node);
 	}
 
 	// Return the number of primitives accumulated

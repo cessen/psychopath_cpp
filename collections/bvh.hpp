@@ -54,32 +54,7 @@ public:
 
 
 
-/*
- * A node of a bounding volume hierarchy.
- * Contains a bounding box, a flag for whether
- * it's a leaf or not, a pointer to its first
- * child, and it's data if it's a leaf.
- */
-class BVHNode
-{
-public:
-	size_t bbox_index;
-	union {
-		size_t child_index;
-		Primitive *data;
-	};
-	size_t parent_index;
-	uint16_t ts; // Time sample count
-	uint16_t flags;
 
-	BVHNode() {
-		bbox_index = 0;
-		child_index = 0;
-		data = nullptr;
-		ts = 0;
-		flags = 0;
-	}
-};
 
 
 
@@ -88,9 +63,34 @@ public:
  */
 class BVH: public Collection
 {
+	/*
+	 * A node of a bounding volume hierarchy.
+	 * Contains a bounding box, a flag for whether
+	 * it's a leaf or not, a pointer to its first
+	 * child, and it's data if it's a leaf.
+	 */
+	struct Node {
+		size_t bbox_index;
+		union {
+			size_t child_index;
+			Primitive *data;
+		};
+		size_t parent_index;
+		uint16_t ts; // Time sample count
+		uint16_t flags;
+
+		Node() {
+			bbox_index = 0;
+			child_index = 0;
+			data = nullptr;
+			ts = 0;
+			flags = 0;
+		}
+	};
+
 private:
 	BBoxT bbox;
-	ChunkedArray<BVHNode> nodes;
+	ChunkedArray<Node> nodes;
 	ChunkedArray<BBox> bboxes;
 	size_t next_node, next_bbox;
 	std::vector<BVHPrimitive> bag;  // Temporary holding spot for primitives not yet added to the hierarchy
@@ -98,12 +98,40 @@ private:
 	/**
 	 * @brief Tests whether a ray intersects a node or not.
 	 */
-	inline bool intersect_node(const BVHNode& node, const Ray& ray, const Vec3& inv_d, const std::array<uint32_t, 3>& d_is_neg, float *near_t, float *far_t) {
+	inline bool intersect_node(const uint64_t node_i, const Ray& ray, const Vec3& inv_d, const std::array<uint32_t, 3>& d_is_neg, float *near_t, float *far_t) const {
 #ifdef GLOBAL_STATS_TOP_LEVEL_BVH_NODE_TESTS
 		Global::Stats::bbox_tests++;
 #endif
-		const BBox b = lerp_seq<BBox, decltype(bboxes)::iterator >(ray.time, bboxes.begin() + node.bbox_index, node.ts);
+		const Node& node = nodes[node_i];
+		const BBox b = lerp_seq<BBox, decltype(bboxes)::const_iterator >(ray.time, bboxes.cbegin() + node.bbox_index, node.ts);
 		return b.intersect_ray(ray, inv_d, d_is_neg, near_t, far_t);
+	}
+
+	/**
+	 * @brief Returns the index of the first child
+	 * of the node with the given index.
+	 */
+	inline size_t child1(const size_t node_i) const {
+		return nodes[node_i].child_index;
+	}
+
+	/**
+	 * @brief Returns the index of the second child
+	 * of the node with the given index.
+	 */
+	inline size_t child2(const size_t node_i) const {
+		return nodes[node_i].child_index + 1;
+	}
+
+	/**
+	 * @brief Returns the index of the sibling
+	 * of the node with the given index.
+	 */
+	inline size_t sibling(const size_t node_i) const {
+		if (node_i == nodes[nodes[node_i].parent_index].child_index)
+			return node_i + 1;
+		else
+			return node_i - 1;
 	}
 
 public:

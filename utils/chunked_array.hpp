@@ -40,36 +40,86 @@ public:
 
 
 
-		T operator*() {
+		T& operator*() {
 			return chunks[base/CHUNK_SIZE][base%CHUNK_SIZE];
 		}
 
-		iterator &operator++() {
+		const T& operator*() const {
+			return chunks[base/CHUNK_SIZE][base%CHUNK_SIZE];
+		}
+
+		iterator& operator++() {
 			base++;
 			return *this;
 		}
 
-		iterator &operator--() {
+		iterator& operator--() {
 			base--;
 			return *this;
 		}
 
-		iterator &operator+(const size_t i) {
+		iterator& operator+(const size_t i) {
 			base += i;
 			return *this;
 		}
 
-		iterator &operator-(const size_t i) {
+		iterator& operator-(const size_t i) {
 			base -= i;
 			return *this;
 		}
 
-		T &operator[](const size_t &i) {
+		T& operator[](const size_t &i) {
 			const size_t ii = base + i;
 			return chunks[ii/CHUNK_SIZE][ii%CHUNK_SIZE];
 		}
 
-		const T &operator[](const size_t &i) const {
+		const T& operator[](const size_t &i) const {
+			const size_t ii = base + i;
+			return chunks[ii/CHUNK_SIZE][ii%CHUNK_SIZE];
+		}
+	};
+
+	class const_iterator: public std::iterator<std::random_access_iterator_tag, T>
+	{
+		const T * const * const chunks;
+		size_t base;
+
+	public:
+		const_iterator() {
+			chunks = nullptr;
+			base = 0;
+		}
+
+		const_iterator(const T * const * const chunks_, size_t base_): chunks(chunks_) {
+			//chunks = chunks_;
+			base = base_;
+		}
+
+		const T& operator*() const {
+			return chunks[base/CHUNK_SIZE][base%CHUNK_SIZE];
+		}
+
+		const_iterator& operator++() {
+			base++;
+			return *this;
+		}
+
+		const_iterator& operator--() {
+			base--;
+			return *this;
+		}
+
+		const_iterator& operator+(const size_t i) {
+			base += i;
+			return *this;
+		}
+
+		const_iterator& operator-(const size_t i) {
+			base -= i;
+			return *this;
+		}
+
+		const T& operator[](const size_t &i) const {
 			const size_t ii = base + i;
 			return chunks[ii/CHUNK_SIZE][ii%CHUNK_SIZE];
 		}
@@ -210,6 +260,10 @@ public:
 
 	iterator begin() {
 		return iterator(chunks, 0);
+	}
+
+	const_iterator cbegin() const {
+		return const_iterator(chunks, 0);
 	}
 
 	iterator get_iterator(size_t base) {
