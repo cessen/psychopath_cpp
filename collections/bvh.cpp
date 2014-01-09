@@ -416,16 +416,16 @@ bool BVH::intersect_ray(const Ray &ray, Intersection *intersection)
 
 uint BVH::get_potential_intersections(const Ray &ray, float tmax, uint max_potential, size_t *ids, void *state)
 {
-	// Algorithm from the paper
-	// "Dynamic Stackless Binary Tree Traversal"
-	// by Barringer et al.
+	// Algorithm is the BVH2 algorithm from the paper
+	// "Stackless Multi-BVH Traversal for CPU, MIC and GPU Ray Tracing"
+	// by Afra et al.
 
 	// Get state
 	uint64_t& node = static_cast<uint64_t *>(state)[0];
-	uint64_t& level_index = static_cast<uint64_t *>(state)[1];
+	uint64_t& bit_stack = static_cast<uint64_t *>(state)[1];
 
-	// Check if it's an empty BVH
-	if (nodes.size() == 0)
+	// Check if it's an empty BVH or if we have the "finished" magic number
+	if (nodes.size() == 0 || node == ~uint64_t(0))
 		return 0;
 
 	const Vec3 inv_d = ray.get_inverse_d();
@@ -435,7 +435,7 @@ uint BVH::get_potential_intersections(const Ray &ray, float tmax, uint max_poten
 	uint32_t hits_so_far = 0;
 	float hitt0a, hitt1a;
 	float hitt0b, hitt1b;
-	while (hits_so_far < max_potential && node != ~uint64_t(0)) {
+	while (hits_so_far < max_potential) {
 		const BVHNode& n = nodes[node];
 
 		if (n.flags & IS_LEAF) {
@@ -447,36 +447,38 @@ uint BVH::get_potential_intersections(const Ray &ray, float tmax, uint max_poten
 			hit1 = intersect_node(nodes[n.child_index+1], ray, inv_d, d_is_neg, &hitt0b, &hitt1b) && hitt0b < tmax;
 
 			if (hit0 || hit1) {
-				level_index <<= 1;
+				bit_stack <<= 1;
 				if (hitt0a < hitt0b) {
 					node = n.child_index;
-					if (!hit1)
-						++level_index;
+					if (hit1)
+						bit_stack |= 1;
 				} else {
 					node = n.child_index + 1;
-					if (!hit0)
-						++level_index;
+					if (hit0)
+						bit_stack |= 1;
 				}
 				continue;
 			}
 		}
 
-		++level_index;
+		// If we've completed the full traversal
+		if (bit_stack == 0) {
+			node = ~uint64_t(0); // Magic number for "finished"
+			break;
+		}
 
-		while ((level_index & 1) == 0 && node != 0) {
+		// Find the next node to work from
+		while ((bit_stack & 1) == 0) {
 			node = nodes[node].parent_index;
-			level_index >>= 1;
+			bit_stack >>= 1;
 		}
 
-		if (node == 0) {
-			node = ~uint64_t(0); // Maximum possible node index, treated as magic number for "full traversal complete"
-		} else {
-			// Go to sibling
-			if (node == nodes[nodes[node].parent_index].child_index)
-				node++;
-			else
-				node--;
-		}
+		// Go to sibling
+		bit_stack &= ~uint64_t(1);
+		if (node == nodes[nodes[node].parent_index].child_index)
+			node++;
+		else
+			node--;
 	}
 
 	// Return the number of primitives accumulated
