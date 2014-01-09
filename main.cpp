@@ -141,6 +141,7 @@ int main(int argc, char **argv)
 	("spp,s", BPO::value<int>(), "Number of samples to take per pixel")
 	("threads,t", BPO::value<int>(), "Number of threads to render with")
 	("output,o", BPO::value<std::string>(), "The PNG file to render to")
+	("nooutput,n", "Don't save render (for timing tests)")
 	("resolution,r", BPO::value<Resolution>()->multitoken(), "The resolution to render at, e.g. 1280 720")
 	;
 
@@ -154,6 +155,9 @@ int main(int argc, char **argv)
 		std::cout << desc << "\n";
 		return 1;
 	}
+
+	// Suppress image writing
+	Config::no_output = bool(vm.count("nooutput"));
 
 	// Samples per pixel
 	if (vm.count("spp")) {

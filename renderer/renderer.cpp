@@ -28,7 +28,7 @@ void write_png_from_film(Film<Color> *image, std::string path, float min_time=4.
 {
 	static Timer<> timer;
 
-	if (timer.time() > min_time || min_time == 0.0f) {
+	if ((timer.time() > min_time || min_time == 0.0f) && !Config::no_output) {
 		timer.reset();
 
 		// Gamma correction + dithering(256)
