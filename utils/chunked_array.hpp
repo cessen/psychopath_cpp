@@ -38,8 +38,6 @@ public:
 			base = base_;
 		}
 
-
-
 		T& operator*() {
 			return chunks[base/CHUNK_SIZE][base%CHUNK_SIZE];
 		}
@@ -66,6 +64,18 @@ public:
 		iterator& operator-(const size_t i) {
 			base -= i;
 			return *this;
+		}
+
+		iterator& operator==(const iterator& itr) const {
+			return (base == itr.base && chunks == itr.chunks);
+		}
+
+		iterator& operator<(const iterator& itr) const {
+			return (base < itr.base && chunks == itr.chunks);
+		}
+
+		iterator& operator>(const iterator& itr) const {
+			return (base > itr.base && chunks == itr.chunks);
 		}
 
 		T& operator[](const size_t &i) {
@@ -117,6 +127,18 @@ public:
 		const_iterator& operator-(const size_t i) {
 			base -= i;
 			return *this;
+		}
+
+		const_iterator& operator==(const const_iterator& itr) const {
+			return (base == itr.base && chunks == itr.chunks);
+		}
+
+		const_iterator& operator<(const const_iterator& itr) const {
+			return (base < itr.base && chunks == itr.chunks);
+		}
+
+		const_iterator& operator>(const const_iterator& itr) const {
+			return (base > itr.base && chunks == itr.chunks);
 		}
 
 		const T& operator[](const size_t &i) const {
@@ -258,12 +280,26 @@ public:
 		return size_;
 	}
 
+	void push_back(const T& item) {
+		const size_t i = size();
+		resize(i+1);
+		new(&this[i]) T(item);
+	}
+
 	iterator begin() {
 		return iterator(chunks, 0);
 	}
 
+	iterator end() {
+		return iterator(chunks, size());
+	}
+
 	const_iterator cbegin() const {
 		return const_iterator(chunks, 0);
+	}
+
+	const_iterator cend() const {
+		return const_iterator(chunks, size());
 	}
 
 	iterator get_iterator(size_t base) {

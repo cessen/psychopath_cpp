@@ -63,6 +63,7 @@ public:
  */
 class BVH: public Collection
 {
+public:
 	/*
 	 * A node of a bounding volume hierarchy.
 	 * Contains a bounding box, a flag for whether
@@ -70,29 +71,20 @@ class BVH: public Collection
 	 * child, and it's data if it's a leaf.
 	 */
 	struct Node {
-		size_t bbox_index;
+		size_t bbox_index = 0;
 		union {
-			size_t child_index;
-			Primitive *data;
+			size_t child_index = 0;
+			Primitive *data = nullptr;
 		};
-		size_t parent_index;
-		uint16_t ts; // Time sample count
-		uint16_t flags;
-
-		Node() {
-			bbox_index = 0;
-			child_index = 0;
-			data = nullptr;
-			ts = 0;
-			flags = 0;
-		}
+		size_t parent_index = 0;
+		uint16_t ts = 0; // Time sample count
+		uint16_t flags = 0;
 	};
 
 private:
 	BBoxT bbox;
-	ChunkedArray<Node> nodes;
-	ChunkedArray<BBox> bboxes;
-	size_t next_node, next_bbox;
+	std::vector<Node> nodes;
+	std::vector<BBox> bboxes;
 	std::vector<BVHPrimitive> bag;  // Temporary holding spot for primitives not yet added to the hierarchy
 
 	/**
@@ -112,7 +104,7 @@ private:
 	 * of the node with the given index.
 	 */
 	inline size_t child1(const size_t node_i) const {
-		return nodes[node_i].child_index;
+		return node_i + 1;
 	}
 
 	/**
@@ -120,7 +112,7 @@ private:
 	 * of the node with the given index.
 	 */
 	inline size_t child2(const size_t node_i) const {
-		return nodes[node_i].child_index + 1;
+		return nodes[node_i].child_index;
 	}
 
 	/**
@@ -128,17 +120,14 @@ private:
 	 * of the node with the given index.
 	 */
 	inline size_t sibling(const size_t node_i) const {
-		if (node_i == nodes[nodes[node_i].parent_index].child_index)
-			return node_i + 1;
+		const size_t parent_i = nodes[node_i].parent_index;
+		if (node_i == (parent_i + 1))
+			return nodes[parent_i].child_index;
 		else
-			return node_i - 1;
+			return parent_i + 1;
 	}
 
 public:
-	BVH() {
-		next_node = 0;
-		next_bbox = 0;
-	}
 	virtual ~BVH();
 
 	// Inherited
@@ -159,7 +148,7 @@ public:
 	virtual bool intersect_ray(const Ray &ray, Intersection *intersection=nullptr);
 
 	unsigned split_primitives(size_t first_prim, size_t last_prim);
-	void recursive_build(size_t parent, size_t me, size_t first_prim, size_t last_prim);
+	size_t recursive_build(size_t parent, size_t first_prim, size_t last_prim);
 };
 
 

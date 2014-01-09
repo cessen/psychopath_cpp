@@ -115,7 +115,7 @@ int main(int argc, char **argv)
 	std::cout << "\tRay: " << sizeof(Ray) << std::endl;
 	std::cout << "\tIntersection: " << sizeof(Intersection) << std::endl;
 	std::cout << "\tPotentialInter: " << sizeof(PotentialInter) << std::endl;
-	std::cout << "\tBVHNode: " << sizeof(BVHNode) << std::endl;
+	std::cout << "\tBVH::Node: " << sizeof(BVH::Node) << std::endl;
 	std::cout << "\tMicroSurface: " << sizeof(MicroSurface) << std::endl;
 	std::cout << "\tMicroNode: " << sizeof(MicroNode) << std::endl;
 	std::cout << "\tTimeBox<int32_t>: " << sizeof(std::vector<int32_t>) << std::endl;

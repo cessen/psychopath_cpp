@@ -11,9 +11,9 @@
 
 BVH::~BVH()
 {
-	for (size_t i=0; i < next_node; i++) {
-		if (nodes[i].flags & IS_LEAF)
-			delete nodes[i].data;
+	for (auto& node: nodes) {
+		if (node.flags & IS_LEAF)
+			delete node.data;
 	}
 }
 
@@ -32,8 +32,7 @@ bool BVH::finalize()
 {
 	if (bag.size() == 0)
 		return true;
-	next_node = 1;
-	recursive_build(0, 0, 0, bag.size()-1);
+	recursive_build(0, 0, bag.size()-1);
 	bag.resize(0);
 	return true;
 }
@@ -293,76 +292,65 @@ uint32_t BVH::split_primitives(size_t first_prim, size_t last_prim)
  * Recursively builds the BVH starting at the given node with the given
  * first and last primitive indices (in bag).
  */
-void BVH::recursive_build(size_t parent, size_t me, size_t first_prim, size_t last_prim)
+size_t BVH::recursive_build(size_t parent, size_t first_prim, size_t last_prim)
 {
-	// Need to allocate more node space?
-	if (me >= nodes.size())
-		nodes.resize(nodes.size()+256);
+	// Allocate the node
+	const size_t me = nodes.size();
+	nodes.push_back(Node());
+
 
 	nodes[me].flags = 0;
 	nodes[me].parent_index = parent;
 
-	// Leaf node?
 	if (first_prim == last_prim) {
+		// Leaf node
+
 		nodes[me].flags |= IS_LEAF;
 		nodes[me].data = bag[first_prim].data;
 
-		// Get bounding boxes
+		// Copy bounding boxes
+		nodes[me].bbox_index = bboxes.size();
 		nodes[me].ts = bag[first_prim].data->bounds().size();
-		if ((next_bbox + nodes[me].ts) >= bboxes.size()) // Make sure we have enough space
-			bboxes.resize(next_bbox + nodes[me].ts + 256); // Allocate space if not
-		for (size_t i = 0; i < nodes[me].ts; i++) {
-			// Copy bounding boxes
-			bboxes[next_bbox+i] = bag[first_prim].data->bounds()[i];
-		}
-		nodes[me].bbox_index = next_bbox;
-		next_bbox += nodes[me].ts;
+		for (size_t i = 0; i < nodes[me].ts; i++)
+			bboxes.push_back(bag[first_prim].data->bounds()[i]);
+	} else {
+		// Not a leaf node
 
-		return;
-	}
+		// Create child nodes
+		uint32_t split_index = split_primitives(first_prim, last_prim);
+		const size_t child1i = recursive_build(me, first_prim, split_index);
+		const size_t child2i = recursive_build(me, split_index+1, last_prim);
 
-	// Not a leaf
-	uint32_t child1i = next_node;
-	uint32_t child2i = next_node + 1;
-	next_node += 2;
-	nodes[me].child_index = child1i;
+		nodes[me].child_index = child2i;
 
-	// Create child nodes
-	uint32_t split_index = split_primitives(first_prim, last_prim);
-	recursive_build(me, child1i, first_prim, split_index);
-	recursive_build(me, child2i, split_index+1, last_prim);
 
-	// Calculate bounds
-	// If both children have same number of time samples
-	if (nodes[child1i].ts == nodes[child2i].ts) {
-		nodes[me].ts = nodes[child1i].ts;
-		if ((next_bbox + nodes[me].ts) >= bboxes.size()) // Make sure we have enough space
-			bboxes.resize(next_bbox + nodes[me].ts + 256); // Allocate space if not
+		// Calculate bounds
+		nodes[me].bbox_index = bboxes.size();
+		// If both children have same number of time samples
+		if (nodes[child1i].ts == nodes[child2i].ts) {
+			nodes[me].ts = nodes[child1i].ts;
 
-		for (size_t i = 0; i < nodes[me].ts; i++) {
 			// Copy merged bounding boxes
-			bboxes[next_bbox+i] =          bboxes[nodes[child1i].bbox_index+i];
-			bboxes[next_bbox+i].merge_with(bboxes[nodes[child2i].bbox_index+i]);
-		}
+			for (size_t i = 0; i < nodes[me].ts; i++) {
+				bboxes.push_back(bboxes[nodes[child1i].bbox_index+i]);
+				bboxes.back().merge_with(bboxes[nodes[child2i].bbox_index+i]);
+			}
 
-	}
-	// If children have different number of time samples
-	else {
-		nodes[me].ts = 1;
-		if ((next_bbox + nodes[me].ts) >= bboxes.size()) // Make sure we have enough space
-			bboxes.resize(next_bbox + nodes[me].ts + 256); // Allocate space if not
-
-		// Merge children's bboxes to get our bbox
-		bboxes[next_bbox] = bboxes[nodes[child1i].bbox_index];
-		for (size_t i = 1; i < nodes[child1i].ts; i++) {
-			bboxes[next_bbox].merge_with(bboxes[nodes[child1i].bbox_index+i]);
 		}
-		for (size_t i = 0; i < nodes[child2i].ts; i++) {
-			bboxes[next_bbox].merge_with(bboxes[nodes[child2i].bbox_index+i]);
+		// If children have different number of time samples
+		else {
+			nodes[me].ts = 1;
+
+			// Merge children's bboxes to get our bbox
+			bboxes.push_back(bboxes[nodes[child1i].bbox_index]);
+			for (size_t i = 1; i < nodes[child1i].ts; i++)
+				bboxes.back().merge_with(bboxes[nodes[child1i].bbox_index+i]);
+			for (size_t i = 0; i < nodes[child2i].ts; i++)
+				bboxes.back().merge_with(bboxes[nodes[child2i].bbox_index+i]);
 		}
 	}
-	nodes[me].bbox_index = next_bbox;
-	next_bbox += nodes[me].ts;
+
+	return me;
 }
 
 
