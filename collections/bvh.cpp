@@ -50,7 +50,7 @@ struct CompareToMid {
 		mid = m;
 	}
 
-	bool operator()(BVHPrimitive &a) const {
+	bool operator()(BVH::BVHPrimitive &a) const {
 		return a.c[dim] < mid;
 	}
 };
@@ -62,7 +62,7 @@ struct CompareDim {
 		dim = d;
 	}
 
-	bool operator()(BVHPrimitive &a, BVHPrimitive &b) const {
+	bool operator()(BVH::BVHPrimitive &a, BVH::BVHPrimitive &b) const {
 		return a.c[dim] < b.c[dim];
 	}
 };
@@ -78,7 +78,7 @@ struct CompareDim {
  *
  * TODO: SAH splitting seems to be very buggy.  Fix.
  */
-uint32_t BVH::split_primitives(size_t first_prim, size_t last_prim)
+size_t BVH::split_primitives(size_t first_prim, size_t last_prim)
 {
 	// Find the minimum and maximum centroid values on each axis
 	Vec3 min, max;
@@ -100,11 +100,11 @@ uint32_t BVH::split_primitives(size_t first_prim, size_t last_prim)
 
 	// Sort and split the list
 	float pmid = .5f * (min[max_axis] + max[max_axis]);
-	BVHPrimitive *mid_ptr = std::partition(&bag[first_prim],
-	                                       (&bag[last_prim])+1,
-	                                       CompareToMid(max_axis, pmid));
+	auto mid_itr = std::partition(bag.begin()+first_prim,
+	                              bag.begin()+last_prim+1,
+	                              CompareToMid(max_axis, pmid));
 
-	uint32_t split = (mid_ptr - &bag.front());
+	size_t split = std::distance(bag.begin(), mid_itr);
 	if (split > 0)
 		split--;
 

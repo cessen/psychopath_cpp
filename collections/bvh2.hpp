@@ -1,5 +1,5 @@
-#ifndef BVH_HPP
-#define BVH_HPP
+#ifndef BVH2_HPP
+#define BVH2_HPP
 
 #include "numtype.h"
 #include "global.hpp"
@@ -7,7 +7,9 @@
 #include <stdlib.h>
 #include <iostream>
 #include <vector>
+#include <deque>
 #include <memory>
+#include <tuple>
 #include "primitive.hpp"
 #include "collection.hpp"
 #include "ray.hpp"
@@ -19,15 +21,13 @@
 
 
 
-
-
 /*
  * A bounding volume hierarchy.
  */
-class BVH: public Collection
+class BVH2: public Collection
 {
 public:
-	virtual ~BVH() {};
+	virtual ~BVH2() {};
 
 	virtual void add_primitives(std::vector<std::unique_ptr<Primitive>>* primitives);
 	virtual bool finalize();
@@ -38,13 +38,37 @@ public:
 		return 16;
 	}
 
+	struct Node {
+		size_t child_index = 0; // When zero, indicates that this is a leaf node
+		size_t parent_index = 0;
+		size_t sibling_index = 0;
+		size_t time_samples = 0;
+		union {
+			// If the node is a leaf, we don't need the bounds.
+			// If the node is not a leaf, it doesn't have Primitive data.
+			BBox bounds[2] = {BBox(), BBox()};
+			Primitive *data;
+		};
+
+		Node() {}
+
+		Node(const Node& n):
+			child_index {n.child_index},
+		            parent_index {n.parent_index},
+		            sibling_index {n.sibling_index},
+		time_samples {n.time_samples} {
+			bounds[0] = n.bounds[0];
+			bounds[1] = n.bounds[1];
+		}
+	};
+
 	/*
-	 * A node of a bounding volume hierarchy.
+	 * A node for building the bounding volume hierarchy.
 	 * Contains a bounding box, a flag for whether
 	 * it's a leaf or not, a pointer to its first
 	 * child, and it's data if it's a leaf.
 	 */
-	struct Node {
+	struct BuildNode {
 		size_t bbox_index = 0;
 		union {
 			size_t child_index;
@@ -55,30 +79,22 @@ public:
 		uint16_t flags = 0;
 	};
 
-	struct BucketInfo {
-		BucketInfo() {
-			count = 0;
-		}
-		size_t count;
-		BBoxT bb;
-	};
-
 	/*
 	 * Used to store primitives that have yet to be
 	 * inserted into the hierarchy.
 	 * Contains the time 0.5 bounds of the primitive and it's centroid.
 	 */
-	class BVHPrimitive
+	class BuildPrimitive
 	{
 	public:
 		Primitive *data;
 		Vec3 bmin, bmax, c;
 
-		BVHPrimitive() {
+		BuildPrimitive() {
 			data = nullptr;
 		}
 
-		BVHPrimitive(Primitive *prim) {
+		BuildPrimitive(Primitive *prim) {
 			init(prim);
 		}
 
@@ -95,22 +111,44 @@ public:
 		}
 	};
 
+	struct BucketInfo {
+		BucketInfo() {
+			count = 0;
+		}
+		size_t count;
+		BBoxT bb;
+	};
+
 private:
 	BBoxT bbox;
 	std::vector<Node> nodes;
-	std::vector<BBox> bboxes;
-	std::vector<BVHPrimitive> bag;  // Temporary holding spot for primitives not yet added to the hierarchy
+	std::deque<BuildNode> build_nodes;
+	std::deque<BBox> build_bboxes;
+	std::deque<BuildPrimitive> prim_bag;  // Temporary holding spot for primitives not yet added to the hierarchy
 
 	/**
-	 * @brief Tests whether a ray intersects a node or not.
+	 * @brief Tests a ray against a node's children.
 	 */
-	inline bool intersect_node(const uint64_t node_i, const Ray& ray, const Vec3& inv_d, const std::array<uint32_t, 3>& d_is_neg, float *near_t, float *far_t) const {
-#ifdef GLOBAL_STATS_TOP_LEVEL_BVH_NODE_TESTS
-		Global::Stats::bbox_tests++;
-#endif
+	inline std::tuple<bool, bool> intersect_node(const uint64_t node_i, const Ray& ray, float max_t, const Vec3 inv_d, const std::array<uint32_t, 3> d_is_neg, float *ts) const {
 		const Node& node = nodes[node_i];
-		const BBox b = lerp_seq<BBox, decltype(bboxes)::const_iterator >(ray.time, bboxes.cbegin() + node.bbox_index, node.ts);
-		return b.intersect_ray(ray, inv_d, d_is_neg, near_t, far_t);
+		uint32_t ti;
+		float alpha;
+
+		BBox b1;
+		BBox b2;
+		if (calc_time_interp(node.time_samples, ray.time, &ti, &alpha)) {
+			b1 = lerp(alpha, nodes[node_i+ti].bounds[0], nodes[node_i+ti+1].bounds[0]);
+			b2 = lerp(alpha, nodes[node_i+ti].bounds[1], nodes[node_i+ti+1].bounds[1]);
+		} else {
+			b1 = node.bounds[0];
+			b2 = node.bounds[1];
+		}
+
+#ifdef GLOBAL_STATS_TOP_LEVEL_BVH_NODE_TESTS
+		Global::Stats::bbox_tests += 2;
+#endif
+
+		return std::make_tuple(b1.intersect_ray(ray, inv_d, d_is_neg, ts, ts+1, &max_t), b2.intersect_ray(ray, inv_d, d_is_neg, ts+2, ts+3, &max_t));
 	}
 
 	/**
@@ -118,7 +156,7 @@ private:
 	 * of the node with the given index.
 	 */
 	inline size_t child1(const size_t node_i) const {
-		return node_i + 1;
+		return node_i + nodes[node_i].time_samples;
 	}
 
 	/**
@@ -134,18 +172,15 @@ private:
 	 * of the node with the given index.
 	 */
 	inline size_t sibling(const size_t node_i) const {
-		const size_t parent_i = nodes[node_i].parent_index;
-		if (node_i == (parent_i + 1))
-			return nodes[parent_i].child_index;
-		else
-			return parent_i + 1;
+		return nodes[node_i].sibling_index;
 	}
 
 	size_t split_primitives(size_t first_prim, size_t last_prim);
 	size_t recursive_build(size_t parent, size_t first_prim, size_t last_prim);
+	void pack();
 };
 
 
 
 
-#endif
+#endif // BVH2_HPP

@@ -12,6 +12,7 @@
 
 #include "camera.hpp"
 #include "bvh.hpp"
+#include "bvh2.hpp"
 #include "prim_array.hpp"
 #include "primitive.hpp"
 #include "light.hpp"
@@ -31,7 +32,7 @@ struct Scene {
 	std::vector<std::unique_ptr<Primitive>> primitives;
 	std::vector<std::unique_ptr<Light>> finite_lights;
 	//PrimArray world;
-	BVH world;
+	BVH2 world;
 
 	Scene() {}
 

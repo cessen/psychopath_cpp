@@ -1,2 +1,2 @@
 add_library(collections
-    bvh prim_array)
+    bvh bvh2 prim_array)
