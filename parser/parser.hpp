@@ -3,6 +3,7 @@
 
 #include <string>
 #include <fstream>
+#include <memory>
 
 #include "sphere_light.hpp"
 #include "bilinear.hpp"
@@ -25,17 +26,17 @@ class Parser
 	/**
 	 * @brief Parses a camera section.
 	 */
-	Camera *parse_camera();
+	std::unique_ptr<Camera> parse_camera();
 
 	/**
 	 * @brief Parses a bilinear patch section.
 	 */
-	Bilinear *parse_bilinear_patch();
+	std::unique_ptr<Bilinear> parse_bilinear_patch();
 
 	/**
 	 * @brief Parses a sphere light section.
 	 */
-	SphereLight *parse_sphere_light();
+	std::unique_ptr<SphereLight> parse_sphere_light();
 
 public:
 	Parser(std::string filename) {
@@ -46,7 +47,7 @@ public:
 	 * @brief Parses the next frame in the file, and returns the
 	 * resulting scene, ready for rendering.
 	 */
-	Renderer *parse_next_frame();
+	std::unique_ptr<Renderer> parse_next_frame();
 };
 
 #endif // PARSER_HPP

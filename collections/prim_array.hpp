@@ -23,7 +23,7 @@ public:
 	virtual ~PrimArray();
 
 	// Inherited
-	virtual void add_primitives(std::vector<Primitive *> &primitives);
+	virtual void add_primitives(std::vector<std::unique_ptr<Primitive>>* primitives);
 	virtual bool finalize();
 	virtual size_t max_primitive_id() const;
 	virtual uint get_potential_intersections(const Ray &ray, float tmax, uint max_potential, size_t *ids, void *state);

@@ -8,6 +8,7 @@
 #include "numtype.h"
 
 #include <vector>
+#include <memory>
 
 #include "camera.hpp"
 #include "bvh.hpp"
@@ -26,45 +27,29 @@
  * structures, etc.) before being passed off for rendering.
  */
 struct Scene {
-	Camera *camera;
-	std::vector<Primitive *> primitives;
-	std::vector<Light *> finite_lights;
+	std::unique_ptr<Camera> camera;
+	std::vector<std::unique_ptr<Primitive>> primitives;
+	std::vector<std::unique_ptr<Light>> finite_lights;
 	//PrimArray world;
 	BVH world;
 
-	Scene(): camera {nullptr} {}
+	Scene() {}
 
-	~Scene() {
-		uint32_t s;
 
-		// Delete finite lights
-		s = finite_lights.size();
-		for (uint32_t i = 0; i < s; i++) {
-			delete finite_lights[i];
-		}
 
-		// Delete camera
-		if (camera)
-			delete camera;
+
+	void add_primitive(std::unique_ptr<Primitive>&& primitive) {
+		primitives.push_back(std::move(primitive));
 	}
 
-
-	void add_primitive(Primitive *primitive) {
-		primitives.push_back(primitive);
-	}
-
-	void add_finite_light(Light *light) {
-		finite_lights.push_back(light);
+	void add_finite_light(std::unique_ptr<Light>&& light) {
+		finite_lights.push_back(std::move(light));
 	}
 
 	// Finalizes the scene for rendering
 	void finalize() {
-		world.add_primitives(primitives);
+		world.add_primitives(&primitives);
 		world.finalize();
-	}
-
-	bool intersect_ray(Ray &ray, Intersection *intersection=nullptr) {
-		return world.intersect_ray(ray, intersection);
 	}
 };
 

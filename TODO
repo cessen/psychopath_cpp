@@ -1,10 +1,28 @@
 - Add NaN and Inf catching to key places in code
 
 - Make multi-threaded rendering scale:
-	- Modify ray tracing pipeline to assign unique sets of rays to unique threads,
-	  eliminating the need for locking in the ray data structures.
 	- Modify grid tracing code to take a list of rays, and only pull geometry from the cache
 	  once per set of rays.
+
+- More compact and/or faster top-level BVH:
+	- More compact probably actually doesn't matter so much, given
+	  the intended usage of Psychopath.  The top-level BVH is likely
+	  to be relatively sparse anyway compared to most path tracers,
+	  since it uses higher-order surface descriptions.  Focus on speed.
+	- Four basic approaches to speeding up traversal:
+		- Reducing the number of nodes traversed on average
+		- Reducing the cost of testing against each node
+		- Using SIMD to test multiple nodes at once
+		- Improving cache coherency of traversal by better tree layout
+	- Create a custom BBox type that contains two BBoxes each, one for each child.
+	  Make its data layout SIMD friendly both for interpolation and for
+	  intersection testing.  This will be useful for scaling up to a QBVH as well.
+	- Organize BBox array so that the first child directly follows the parent,
+	  for better cache coherency.
+	- Does sticking the BBoxes directly in the node structures make sense?  How
+	  will that impact walking up the tree in terms of cache coherency?
+	- What about putting sibling indexes in the nodes, to avoid round-trip with
+	  the parent to find sibling nodes?
 
 - Change MicroSurface to use implicit indexing for its BVH.
 	- Also play with making the nodes cubes, so that the volume can be stored
@@ -77,41 +95,7 @@
 
 - Refactor TimeBox template to use class methods for interpolation
 
-- Multi-threaded rendering
-
 - OSL integration
-
-- More compact and/or faster top-level BVH:
-	- More compact probably actually doesn't matter so much, given
-	  the intended usage of Psychopath.  The top-level BVH is likely
-	  to be relatively sparse anyway compared to most path tracers,
-	  since it uses higher-order surface descriptions.  Focus on speed.
-	- Four basic approaches to speeding up traversal:
-		- Reducing the number of nodes traversed on average
-		- Reducing the cost of testing against each node
-		- Using SIMD to test multiple nodes at once
-		- Improving cache coherency of traversal by better tree layout
-	- Must be able to pause and resume traversal with minimal data per ray
-	- QBVH is worth investigating, but it's unclear how to do efficient
-	  resumes.
-	- MSBVH is good to look at, especially if some primitives may be
-	  very large and clog up the tree.  Also could just try to keep large
-	  primitives higher in the tree.
-	- Single Slab Hierarchy is very interesting, but it's unclear if
-	  efficient resumes are possible.  Unless we actually keep the
-	  entire BBoxes at each node, and only trace it like a SSH when
-	  possible...?  Maybe generalize to marking specific BBox sides
-	  as important.
-	- Variable-child BVH could be interesting, with SIMD used where applicable.
-	  Similar tricky resume issue as QBVH, though.
-	- "Restart trail" approach for resuming might extend to higher 
-	  branch factors, e.g. QBVH.
-	- What performance impact does a fixed traversal order have?
-	  Does the reduction in branching compensate for less efficient
-	  traversal?  What is the most efficient fixed traversal order?
-	  SAH-based?  Pre-randomized?
-	  A fixed traversal order would make resumes trivial on almost
-	  any tree structure.
 
 //- Faster sorting of potential ray intersections
 	//- Counting sort

@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <algorithm>
+#include <memory>
 #include "ray.hpp"
 #include "bvh.hpp"
 #include <cmath>
@@ -9,23 +10,14 @@
 
 #define IS_LEAF 1
 
-BVH::~BVH()
-{
-	for (auto& node: nodes) {
-		if (node.flags & IS_LEAF)
-			delete node.data;
-	}
-}
-
-void BVH::add_primitives(std::vector<Primitive *> &primitives)
+void BVH::add_primitives(std::vector<std::unique_ptr<Primitive>>* primitives)
 {
 	size_t start = bag.size();
-	size_t added = primitives.size();
-	bag.resize(start + added);
+	size_t added = primitives->size();
+	bag.reserve(start + added);
 
-	for (size_t i=0; i < added; i++) {
-		bag[start + i].init(primitives[i]);
-	}
+	for (auto& p: *primitives)
+		bag.push_back(BVHPrimitive(p.get()));
 }
 
 bool BVH::finalize()
@@ -351,54 +343,6 @@ size_t BVH::recursive_build(size_t parent, size_t first_prim, size_t last_prim)
 	}
 
 	return me;
-}
-
-
-BBoxT &BVH::bounds()
-{
-	return bbox;
-}
-
-bool BVH::intersect_ray(const Ray &ray, Intersection *intersection)
-{
-	bool hit = false;
-
-	// Traverse the BVH and check for intersections. Yay!
-	float hitt0, hitt1;
-	uint32_t todo_offset = 0, node = 0;
-	uint32_t todo[64];
-
-	const Vec3 inv_d = ray.get_inverse_d();
-	const std::array<uint32_t, 3> d_is_neg = ray.get_d_is_neg();
-
-	while (true) {
-		if (intersect_node(node, ray, inv_d, d_is_neg, &hitt0, &hitt1)) {
-			if (nodes[node].flags & IS_LEAF) {
-				// Trace!
-				hit |= nodes[node].data->intersect_ray(ray, intersection);
-
-				// Early out for shadow rays
-				if (hit && ray.is_shadow_ray)
-					break;
-
-				if (todo_offset == 0)
-					break;
-
-				node = todo[--todo_offset];
-			} else {
-				// Put right BVH node on todo stack, advance to left node
-				todo[todo_offset++] = child1(node);
-				node = child2(node);
-			}
-		} else {
-			if (todo_offset == 0)
-				break;
-
-			node = todo[--todo_offset];
-		}
-	}
-
-	return hit;
 }
 
 

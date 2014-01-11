@@ -15,15 +15,14 @@ PrimArray::~PrimArray()
 	}
 }
 
-void PrimArray::add_primitives(std::vector<Primitive *> &primitives)
+void PrimArray::add_primitives(std::vector<std::unique_ptr<Primitive>>* primitives)
 {
-	int32_t start = children.size();
-	int32_t added = primitives.size();
-	children.resize(start + added);
+	size_t start = children.size();
+	size_t added = primitives->size();
+	children.reserve(start + added);
 
-	for (int32_t i=0; i < added; i++) {
-		children[start + i] = primitives[i];
-	}
+	for (auto& p: *primitives)
+		children.push_back(p.get());
 }
 
 bool PrimArray::finalize()

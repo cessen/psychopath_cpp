@@ -252,14 +252,14 @@ void PathTraceIntegrator::render_blocks()
 				for (uint32_t i = 0; i < paths.size(); i++) {
 					if (!paths[i].done) {
 						// Select a light and store the normalization factor for it's output
-						Light *lighty = scene->finite_lights[(uint32_t)(samps[i*samp_dim+5+so+2] * scene->finite_lights.size()) % scene->finite_lights.size()];
+						Light& lighty = *(scene->finite_lights[(uint32_t)(samps[i*samp_dim+5+so+2] * scene->finite_lights.size()) % scene->finite_lights.size()]);
 						//Light *lighty = scene->finite_lights[rng.next_uint() % scene->finite_lights.size()];
 
 						// Sample the light source
 						Vec3 ld;
-						paths[i].lcol = lighty->sample(paths[i].inter.p, samps[i*samp_dim+5+so+3], samps[i*samp_dim+5+so+4], samps[i*samp_dim+4], &ld)
+						paths[i].lcol = lighty.sample(paths[i].inter.p, samps[i*samp_dim+5+so+3], samps[i*samp_dim+5+so+4], samps[i*samp_dim+4], &ld)
 						                * (float)(scene->finite_lights.size());
-						//paths[i].lcol = lighty->sample(paths[i].inter.p, 0.0f, 0.0f, samps[i*samp_dim+4], &ld)
+						//paths[i].lcol = lighty.sample(paths[i].inter.p, 0.0f, 0.0f, samps[i*samp_dim+4], &ld)
 						//                * (float)(scene->finite_lights.size());
 
 						// Create a shadow ray for this path

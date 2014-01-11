@@ -4,6 +4,7 @@
 #include <fstream>
 #include <string>
 #include <tuple>
+#include <memory>
 #include <boost/regex.hpp>
 
 #include "color.hpp"
@@ -51,7 +52,7 @@ static void ungetline(std::ifstream &f)
 
 
 
-Renderer *Parser::parse_next_frame()
+std::unique_ptr<Renderer> Parser::parse_next_frame()
 {
 	std::string line;
 
@@ -119,7 +120,7 @@ Renderer *Parser::parse_next_frame()
 
 	scene->finalize();
 
-	Renderer *renderer = new Renderer(scene.release(), res_x, res_y, spp, seed, output_path);
+	std::unique_ptr<Renderer> renderer(new Renderer(scene.release(), res_x, res_y, spp, seed, output_path));
 
 	return renderer;
 }
@@ -176,7 +177,7 @@ std::tuple<int, int, int, int, std::string> Parser::parse_frame_header()
 }
 
 
-Camera *Parser::parse_camera()
+std::unique_ptr<Camera> Parser::parse_camera()
 {
 	std::vector<Matrix44> mats;
 	float fov = 90.0f;
@@ -247,13 +248,13 @@ Camera *Parser::parse_camera()
 		cam_transforms[i] = mats[i];
 
 	// Construct camera
-	Camera *camera = new Camera(cam_transforms, (3.14159/180.0)*fov, aperture_size, focus_distance);
+	std::unique_ptr<Camera> camera(new Camera(cam_transforms, (3.14159/180.0)*fov, aperture_size, focus_distance));
 
 	return camera;
 }
 
 
-SphereLight *Parser::parse_sphere_light()
+std::unique_ptr<SphereLight> Parser::parse_sphere_light()
 {
 	Vec3 location {0,0,0};
 	Color color {0,0,0};
@@ -300,9 +301,9 @@ SphereLight *Parser::parse_sphere_light()
 
 
 	// Build light
-	SphereLight *sl = new SphereLight(location,
-	                                  radius,
-	                                  color * energy);
+	std::unique_ptr<SphereLight> sl(new SphereLight(location,
+	                                radius,
+	                                color * energy));
 
 	return sl;
 }
@@ -312,7 +313,7 @@ struct BilinearPatchVerts {
 	float v[12];
 };
 
-Bilinear *Parser::parse_bilinear_patch()
+std::unique_ptr<Bilinear> Parser::parse_bilinear_patch()
 {
 	std::vector<BilinearPatchVerts> patch_verts;
 
@@ -338,7 +339,7 @@ Bilinear *Parser::parse_bilinear_patch()
 	}
 
 	// Build the patch
-	Bilinear *patch = new Bilinear(patch_verts.size());
+	std::unique_ptr<Bilinear> patch(new Bilinear(patch_verts.size()));
 	for (uint i = 0; i < patch_verts.size(); ++i) {
 		auto p = patch_verts[i];
 		patch->add_time_sample(i, Vec3(p.v[0], p.v[1], p.v[2]),

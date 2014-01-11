@@ -4,6 +4,7 @@
 #include "numtype.h"
 
 #include <vector>
+#include <memory>
 
 
 /**
@@ -13,7 +14,7 @@
  * be traceable and forward the tracing on to the appropriate child
  * primtives.
  */
-class Collection: public Primitive
+class Collection
 {
 public:
 	virtual ~Collection() {}
@@ -21,10 +22,15 @@ public:
 	/**
 	 * @brief Adds the given primitives to the collection.
 	 *
+	 * Note that the Collection does not own the added primitives (even though
+	 * it takes a pointer to a vector of unique_ptr's) taking a vector of
+	 * unique_ptr's), and will not free them.  Their memory needs to be
+	 * managed elsewhere.
+	 *
 	 * Can be called multiple times to add subsequent primitives.
 	 * Should NOT be called externally after finalization.
 	 */
-	virtual void add_primitives(std::vector<Primitive *> &primitives) = 0;
+	virtual void add_primitives(std::vector<std::unique_ptr<Primitive>>* primitives) = 0;
 
 	/**
 	 * @brief Does any work necessary before the collection can be traced.
@@ -37,15 +43,19 @@ public:
 	virtual bool finalize() = 0;
 
 	/**
-	 * @brief Returns the number of primitives in the collection.
+	 * @brief Returns the largest primitive ID currently
+	 * in the collection.
 	 *
-	 * This should also be the largest possible primitive id, as taken by
-	 * e.g. get_primitive().
+	 * Note: this is different than the field "id" in the Primitive class.
+	 * This is a collection-specific id that each primitive gets.
 	 */
-	virtual size_t size() = 0;
+	virtual size_t max_primitive_id() const = 0;
 
 	/**
 	 * @brief Fetches a primitive based on id.
+	 *
+	 * Note: this is different than the field "id" in the Primitive class.
+	 * This is a collection-specific id that each primitive gets.
 	 */
 	virtual Primitive &get_primitive(size_t id) = 0;
 

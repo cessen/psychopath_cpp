@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <vector>
+#include <memory>
 #include "primitive.hpp"
 #include "collection.hpp"
 #include "ray.hpp"
@@ -39,6 +40,10 @@ public:
 		data = nullptr;
 	}
 
+	BVHPrimitive(Primitive *prim) {
+		init(prim);
+	}
+
 	void init(Primitive *prim) {
 		data = prim;
 
@@ -54,16 +59,23 @@ public:
 
 
 
-
-
-
-
 /*
  * A bounding volume hierarchy.
  */
 class BVH: public Collection
 {
 public:
+	virtual ~BVH() {};
+
+	virtual void add_primitives(std::vector<std::unique_ptr<Primitive>>* primitives);
+	virtual bool finalize();
+	virtual size_t max_primitive_id() const;
+	virtual Primitive &get_primitive(size_t id);
+	virtual uint get_potential_intersections(const Ray &ray, float tmax, uint max_potential, size_t *ids, void *state);
+	virtual size_t ray_state_size() {
+		return 16;
+	}
+
 	/*
 	 * A node of a bounding volume hierarchy.
 	 * Contains a bounding box, a flag for whether
@@ -73,7 +85,7 @@ public:
 	struct Node {
 		size_t bbox_index = 0;
 		union {
-			size_t child_index = 0;
+			size_t child_index;
 			Primitive *data = nullptr;
 		};
 		size_t parent_index = 0;
@@ -126,26 +138,6 @@ private:
 		else
 			return parent_i + 1;
 	}
-
-public:
-	virtual ~BVH();
-
-	// Inherited
-	virtual void add_primitives(std::vector<Primitive *> &primitives);
-	virtual bool finalize();
-	virtual size_t max_primitive_id() const;
-	virtual Primitive &get_primitive(size_t id);
-	virtual uint get_potential_intersections(const Ray &ray, float tmax, uint max_potential, size_t *ids, void *state);
-	virtual size_t size() {
-		// TODO
-		return 0;
-	}
-	virtual size_t ray_state_size() {
-		return 16;
-	}
-
-	virtual BBoxT &bounds();
-	virtual bool intersect_ray(const Ray &ray, Intersection *intersection=nullptr);
 
 	unsigned split_primitives(size_t first_prim, size_t last_prim);
 	size_t recursive_build(size_t parent, size_t first_prim, size_t last_prim);
