@@ -39,25 +39,31 @@ public:
 		return 16;
 	}
 
-	struct alignas(32) Node {
-	    size_t child_index = 0; // When zero, indicates that this is a leaf node
-	    size_t parent_index = 0;
-	    size_t time_samples = 0;
-	    union {
-	        // If the node is a leaf, we don't need the bounds.
-	        // If the node is not a leaf, it doesn't have Primitive data.
-	        BBox2 bounds {BBox(), BBox()};
-	        Primitive *data;
-	    };
+	struct Node {
+		size_t child_index = 0; // When zero, indicates that this is a leaf node
+		size_t parent_index_and_ts = 0;  // Stores both the parent index and the number of time samples.
+		union {
+			// If the node is a leaf, we don't need the bounds.
+			// If the node is not a leaf, it doesn't have Primitive data.
+			BBox2 bounds {BBox(), BBox()};
+			Primitive *data;
+		};
 
-	Node() {}
+		Node() {}
 
-	Node(const Node& n):
-		child_index {n.child_index},
-	parent_index {n.parent_index},
-	time_samples {n.time_samples} {
-		bounds = n.bounds;
-	}
+		Node(const Node& n): child_index {n.child_index}, parent_index_and_ts {n.parent_index_and_ts} {
+			bounds = n.bounds;
+		}
+
+		void set_time_samples(const size_t ts) {
+			parent_index_and_ts &= 0x0000FFFFFFFFFFFF;
+			parent_index_and_ts |= (ts << 48);
+		}
+
+		void set_parent_index(const size_t par_i) {
+			parent_index_and_ts &= 0xFFFF000000000000;
+			parent_index_and_ts |= (par_i & 0x0000FFFFFFFFFFFF);
+		}
 	};
 
 	/*
@@ -129,7 +135,7 @@ private:
 	 * of the node with the given index.
 	 */
 	inline size_t child1(const size_t node_i) const {
-		return node_i + nodes[node_i].time_samples;
+		return node_i + time_samples(node_i);
 	}
 
 	/**
@@ -141,16 +147,34 @@ private:
 	}
 
 	/**
+	 * @brief Returns the index of the parent
+	 * of the node with the given index.
+	 */
+	inline size_t parent(const size_t node_i) const {
+		return nodes[node_i].parent_index_and_ts & 0x0000FFFFFFFFFFFF;
+	}
+
+	/**
+	 * @brief Returns the number of time samples
+	 * of the node with the given index.
+	 */
+	inline uint32_t time_samples(const size_t node_i) const {
+		return (nodes[node_i].parent_index_and_ts >> 48) & 0x000000000000FFFF;
+	}
+
+	/**
 	 * @brief Returns the index of the sibling
 	 * of the node with the given index.
 	 */
 	inline size_t sibling(const size_t node_i) const {
-		const size_t par_i = nodes[node_i].parent_index;
-		if (node_i == nodes[par_i].child_index)
-			return par_i + nodes[par_i].time_samples;
+		const size_t par_i = parent(node_i);
+		if (node_i == child2(par_i))
+			return child1(par_i);
 		else
-			return nodes[par_i].child_index;
+			return child2(par_i);
 	}
+
+
 
 	size_t split_primitives(size_t first_prim, size_t last_prim);
 	size_t recursive_build(size_t parent, size_t first_prim, size_t last_prim);

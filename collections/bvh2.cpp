@@ -201,7 +201,7 @@ void BVH2::pack()
 
 		// Set the values that don't depend on whether this
 		// is a leaf node or not.
-		nodes[ni].parent_index = bn.parent_index;
+		nodes[ni].set_parent_index(bn.parent_index);
 		if (bn.flags & IS_RIGHT)
 			nodes[bn.parent_index].child_index = ni;  // Set parent's child_index field to point to this
 
@@ -225,8 +225,8 @@ void BVH2::pack()
 
 			// If children have same number of time samples, easy
 			if (child1.ts == child2.ts) {
-				nodes[ni].time_samples = child1.ts;
-				for (uint16_t i = 0; i < nodes[ni].time_samples; ++i) {
+				nodes[ni].set_time_samples(child1.ts);
+				for (uint16_t i = 0; i < child1.ts; ++i) {
 					nodes.back().bounds = BBox2(build_bboxes[child1.bbox_index+i], build_bboxes[child2.bbox_index+i]);
 					nodes.push_back(Node());
 				}
@@ -234,7 +234,7 @@ void BVH2::pack()
 			// If child have different number of time samples,
 			// merge time samples into a single sample
 			else {
-				nodes[ni].time_samples = 1;
+				nodes[ni].set_time_samples(1);
 				BBox b1, b2;
 				for (uint16_t i = 0; i < child1.ts; ++i)
 					b1.merge_with(build_bboxes[child1.bbox_index+i]);
@@ -292,7 +292,7 @@ uint BVH2::get_potential_intersections(const Ray &ray, float tmax, uint max_pote
 			uint32_t ti;
 			float alpha;
 			// Get the time-interpolated bounding box
-			const BBox2 b = calc_time_interp(n.time_samples, ray.time, &ti, &alpha) ? lerp(alpha, nodes[node+ti].bounds, nodes[node+ti+1].bounds) : n.bounds;
+			const BBox2 b = calc_time_interp(time_samples(node), ray.time, &ti, &alpha) ? lerp(alpha, nodes[node+ti].bounds, nodes[node+ti+1].bounds) : n.bounds;
 			// Ray test
 			std::tie(hit0, hit1) = b.intersect_ray(ray_o, inv_d, max_t, d_is_neg, &near_hits);
 #ifdef GLOBAL_STATS_TOP_LEVEL_BVH_NODE_TESTS
@@ -324,7 +324,7 @@ uint BVH2::get_potential_intersections(const Ray &ray, float tmax, uint max_pote
 
 		// Find the next node to work from
 		while ((bit_stack & 1) == 0) {
-			node = nodes[node].parent_index;
+			node = parent(node);
 			bit_stack >>= 1;
 		}
 
