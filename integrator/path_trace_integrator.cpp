@@ -61,13 +61,13 @@ void PathTraceIntegrator::integrate()
 	uint32_t i = 0;
 	uint32_t x = 0;
 	uint32_t y = 0;
-	const size_t hilbert_stop = std::max(image->width, image->height) * 2;
+	const size_t morton_stop = std::max(image->width, image->height) * 2;
 	const bool greater_width = image->width > image->height;
 	while (true) {
 		if (greater_width)
-			Hilbert::d2xy(i, &y, &x);
+			Morton::d2xy(i, &y, &x);
 		else
-			Hilbert::d2xy(i, &x, &y);
+			Morton::d2xy(i, &x, &y);
 		const int xp = x * bucket_size;
 		const int yp = y * bucket_size;
 
@@ -77,7 +77,7 @@ void PathTraceIntegrator::integrate()
 			blocks.push_blocking( {xp,yp,w,h});
 		}
 
-		if (xp >= hilbert_stop && yp >= hilbert_stop)
+		if (xp >= morton_stop && yp >= morton_stop)
 			break;
 
 		++i;

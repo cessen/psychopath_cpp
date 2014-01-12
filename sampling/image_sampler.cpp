@@ -1,6 +1,5 @@
 #include "numtype.h"
 
-#include "sobol.hpp"
 #include "halton.hpp"
 #include "rng.hpp"
 #include "image_sampler.hpp"
