@@ -48,6 +48,8 @@ void write_png_from_film(Film<Color> *image, std::string path, float min_time=4.
 
 bool Renderer::render(int thread_count)
 {
+	Timer<> timer; // Start timer
+
 	// Clear rendering statistics
 	Global::Stats::clear();
 
@@ -70,12 +72,20 @@ bool Renderer::render(int thread_count)
 	//PathTraceIntegrator integrator(scene, &tracer, image.get(), spp, seed, thread_count);
 	//DirectLightingIntegrator integrator(scene, &tracer, image.get(), spp, seed, thread_count, image_writer);
 	//VisIntegrator integrator(scene, &tracer, image.get(), spp, thread_count, seed, image_writer);
+	std::cout << "Preparation time (seconds): " << timer.time() << std::endl;
+	timer.reset();
+
+	std::cout << "Rendering" << std::flush;
 	integrator.integrate();
+	std::cout << std::endl;
+
 
 	// Save image
 	write_png_from_film(image.get(), output_path, 0.0f);
 
+#if 0
 	// Print statistics
+
 	std::cout << "Rays shot while rendering: " << Global::Stats::rays_shot << std::endl;
 #ifdef GLOBAL_STATS_TOP_LEVEL_BVH_NODE_TESTS
 	std::cout << "Top-level BVH node tests: " << Global::Stats::bbox_tests << std::endl;
@@ -88,9 +98,11 @@ bool Renderer::render(int thread_count)
 	std::cout << "Average MicroSurface elements per MicroSurface: " <<  Global::Stats::microelement_count / static_cast<float>(Global::Stats::microsurface_count) << std::endl;
 	std::cout << "Minimum MicroSurface elements per MicroSurface: " <<  Global::Stats::microelement_min_count << std::endl;
 	std::cout << "Maximum MicroSurface elements per MicroSurface: " <<  Global::Stats::microelement_max_count << std::endl;
-
 	std::cout << "NaN's encountered: " <<  Global::Stats::nan_count << std::endl;
 	std::cout << "Bad Inf's encountered: " <<  Global::Stats::inf_count << std::endl;
+#endif
+
+	std::cout << "Render time (seconds): " << timer.time() << std::endl;
 
 
 	// Finished

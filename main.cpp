@@ -204,11 +204,13 @@ int main(int argc, char **argv)
 	Parser parser(input_path);
 	Timer<> total_timer;
 	while (true) {
-		Timer<> frame_timer;
+		Timer<> parse_timer;
 		std::unique_ptr<Renderer> r {parser.parse_next_frame()};
 
 		if (r == nullptr)
 			break;
+
+		std::cout << "Parse time (seconds): " << parse_timer.time() << std::endl;
 
 		// Resolution and sampling overrides
 		if (vm.count("resolution"))
@@ -221,13 +223,12 @@ int main(int argc, char **argv)
 		 * Generate image
 		 **********************************************************************
 		 */
-		std::cout << "Starting render:" << std::endl;
 		r->render(threads);
 
-		std::cout << "Frame render time (seconds): " << std::fixed << std::setprecision(3) << frame_timer.time() << std::endl << std::endl;
+		std::cout << std::endl << std::endl;
 	}
 
-	std::cout << "Total render time (seconds): " << std::fixed << std::setprecision(3) << total_timer.time() << std::endl << std::endl;
+	std::cout << "Total time (seconds): " << std::fixed << std::setprecision(3) << total_timer.time() << std::endl << std::endl;
 
 	return 0;
 }

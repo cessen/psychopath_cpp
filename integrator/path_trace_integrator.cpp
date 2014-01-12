@@ -89,7 +89,7 @@ void PathTraceIntegrator::integrate()
 		t.join();
 	}
 
-	std::cout << std::endl << std::flush;
+	std::cout << std::flush;
 }
 
 

@@ -70,7 +70,7 @@ std::unique_ptr<Renderer> Parser::parse_next_frame()
 		if (line.find("Frame") == 0) { // Check if the line starts with "Frame"
 			ungetline(psy_file);
 			std::tie(res_x, res_y, spp, seed, output_path) = parse_frame_header();
-			std::cout << "Frame: \"" << output_path << "\" " << res_x << "x" << res_y << " spp:" << spp << " seed:" << seed << " " << std::endl;
+			std::cout << "Frame:\n  \"" << output_path << "\"\n  " << res_x << "x" << res_y << "\n  spp: " << spp << "\n  seed: " << seed << " " << std::endl;
 			break;
 		}
 	}
