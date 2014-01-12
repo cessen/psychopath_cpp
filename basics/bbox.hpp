@@ -381,51 +381,33 @@ BBox2& merge_with(const BBox2& b) {
  *
  * @param[in] o The origin of the ray, laid out as [[x,x,x,x],[y,y,y,y],[z,z,z,z]].
  * @param[in] inv_d The direction of the ray over 1.0, laid out as [[x,x,x,x],[y,y,y,y],[z,z,z,z]]
- * @param[in] t_max The maximum t value of the ray being tested against.
+ * @param[in] t_max The maximum t value of the ray being tested against, laid out as [t,t,t,t].
  * @param[in] d_is_neg Precomputed values indicating whether the x, y, and z components of the ray are negative or not.
  * @param[out] near_hits Two floats to store the near hits with the bounding boxes.
  *
  * @returns A tuple of two boolean values, indicating whether the ray hit the first and second box respectively.
  */
-inline std::tuple<bool, bool> intersect_ray(const __m128* o, const __m128* inv_d, float t_max, const std::array<uint32_t, 3> d_is_neg, float *near_hits) const {
-	// Calculate the plane intersections
-	__m128 inters[3] = {_mm_mul_ps(_mm_sub_ps(bounds[0], o[0]), inv_d[0]),
-	                    _mm_mul_ps(_mm_sub_ps(bounds[1], o[1]), inv_d[1]),
-	                    _mm_mul_ps(_mm_sub_ps(bounds[2], o[2]), inv_d[2])
-	                   };
+inline std::tuple<bool, bool> intersect_ray(const __m128* o, const __m128* inv_d, const __m128& t_max, const std::array<uint32_t, 3>& d_is_neg, float *near_hits) const {
+	static const __m128 zeros = _mm_set_ps1(0.0f);
 
-	// Swap min/max values depending on ray direction
-	const unsigned int shuf_min_max = (1<<6) | (0<<4) | (3<<2) | 2; // Swaps the upper and lower floats
-	for (int i = 0; i < 3; ++i) {
-		if (d_is_neg[i])
-			inters[i] = _mm_shuffle_ps(inters[i], inters[i], shuf_min_max);
-	}
+	// Calculate the plane intersections
+	const __m128 xs = _mm_mul_ps(_mm_sub_ps(shuffle_swap(bounds[0], d_is_neg[0]), o[0]), inv_d[0]);
+	const __m128 ys = _mm_mul_ps(_mm_sub_ps(shuffle_swap(bounds[1], d_is_neg[1]), o[1]), inv_d[1]);
+	const __m128 zs = _mm_mul_ps(_mm_sub_ps(shuffle_swap(bounds[2], d_is_neg[2]), o[2]), inv_d[2]);
 
 	// Get the minimum and maximum hits, and shuffle the max hits
 	// to be in the same location as the minimum hits
-	const __m128 mins      = _mm_max_ps(_mm_max_ps(inters[0], inters[1]), inters[2]);
-	const __m128 temp_maxs = _mm_min_ps(_mm_min_ps(inters[0], inters[1]), inters[2]);
-	const __m128 maxs =  _mm_shuffle_ps(temp_maxs, temp_maxs, shuf_min_max);
-
-	// Get results
-	//float min_f[4];
-	//float max_f[4];
-	//_mm_store_ps(min_f, mins);
-	//_mm_store_ps(max_f, maxs);
+	const __m128 mins = _mm_max_ps(_mm_max_ps(_mm_max_ps(xs, ys), zs), zeros);
+	const __m128 maxs = shuffle_swap(_mm_min_ps(_mm_min_ps(xs, ys), zs));
 
 	// Check for hits
-	bool hit0 = false;
-	bool hit1 = false;
-	if (maxs[0] > 0.0f && mins[0] < t_max && mins[0] <= maxs[0]) {
-		hit0 = true;
-		near_hits[0] = std::max(mins[0], 0.0f);
-	}
-	if (maxs[1] > 0.0f && mins[1] < t_max && mins[1] <= maxs[1]) {
-		hit1 = true;
-		near_hits[1] = std::max(mins[1], 0.0f);
-	}
+	const __m128 hits = _mm_and_ps(_mm_cmplt_ps(mins, t_max), _mm_cmple_ps(mins, maxs));
 
-	return std::make_tuple(hit0, hit1);
+	// Fill in near hits
+	near_hits[0] = mins[0];
+	near_hits[1] = mins[1];
+
+	return std::make_tuple(static_cast<bool>(hits[0]), static_cast<bool>(hits[1]));
 }
 
 
@@ -433,15 +415,16 @@ inline std::tuple<bool, bool> intersect_ray(const Ray& ray, float *near_hits) co
 	const Vec3 inv_d_f = ray.get_inverse_d();
 	const std::array<uint32_t, 3> d_is_neg = ray.get_d_is_neg();
 
-	// Load ray origin and inverse direction into simd layouts for intersection testing
+	// Load ray origin, inverse direction, and max_t into simd layouts for intersection testing
 	__m128 ray_o[3];
 	__m128 inv_d[3];
+	const __m128 max_t = _mm_load_ps1(&ray.max_t);
 	for (int i = 0; i < 3; ++i) {
 		ray_o[i] = _mm_load_ps1(&(ray.o[i]));
 		inv_d[i] = _mm_load_ps1(&(inv_d_f[i]));
 	}
 
-	return intersect_ray(ray_o, inv_d, ray.max_t, d_is_neg, near_hits);
+	return intersect_ray(ray_o, inv_d, max_t, d_is_neg, near_hits);
 }
 
 };
