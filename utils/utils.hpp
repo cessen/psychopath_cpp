@@ -8,7 +8,6 @@
 #include <iterator>
 #include <cmath>
 #include <assert.h>
-#include <x86intrin.h>
 
 /*
    linear interpolation
@@ -232,23 +231,6 @@ static inline float fasterlog2(float x)
 	y *= 1.1920928955078125e-7f;
 	return y - 126.94269504f;
 }
-
-/**
- * @brief Swaps the left and right pair of floats in a SSE float4 vector.
- *
- * Can be turned into a no-op by setting the "swap" parameter to false.
- */
-static inline __m128 shuffle_swap(const __m128& a, bool swap=true)
-{
-	static const unsigned int shuf_swap = (1<<6) | (0<<4) | (3<<2) | 2; // Shuffle parameter for swapping
-
-	/* shuffle value must be a constant, so we need to branch */
-	if (swap)
-		return _mm_shuffle_ps(a, a, shuf_swap);
-	else
-		return a;
-}
-
 
 static inline std::string to_string(const __m128& v)
 {

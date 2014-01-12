@@ -8,7 +8,7 @@
 #include <cmath>
 #include <stdlib.h>
 #include <tuple>
-#include <x86intrin.h>
+#include "simd.hpp"
 #include "global.hpp"
 #include "timebox.hpp"
 #include "vector.hpp"
@@ -240,192 +240,153 @@ struct BBox {
 };
 
 
-struct alignas(16) BBox2 {
-    union {
-        __m128 bounds[3]; // Layed out as xmin1, xmin2 ,xmax1, xmax2, ymin1, ymin2, etc
-        // Each __m128 contains all the x's, y's, or z's for both bounding boxes
-float bounds_f[12] = {
-	std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity(),
-	-std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity(),
-	std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity(),
-	-std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity(),
-	std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity(),
-	-std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity()
-};
-    };
+struct BBox2 {
+	SIMD::float4 bounds[3];
 
-BBox2() {}
-
-// Construct from two BBox's
-BBox2(const BBox& b1, const BBox& b2) {
-	bounds_f[0]  = b1.min.x;
-	bounds_f[1]  = b2.min.x;
-	bounds_f[2]  = b1.max.x;
-	bounds_f[3]  = b2.max.x;
-	bounds_f[4]  = b1.min.y;
-	bounds_f[5]  = b2.min.y;
-	bounds_f[6]  = b1.max.y;
-	bounds_f[7]  = b2.max.y;
-	bounds_f[8]  = b1.min.z;
-	bounds_f[9]  = b2.min.z;
-	bounds_f[10] = b1.max.z;
-	bounds_f[11] = b2.max.z;
-}
-
-// Basic operators
-BBox2& operator=(const BBox2& b) {
-	for (int i = 0; i < 12; ++i)
-		bounds_f[i] = b.bounds_f[i];
-
-	return *this;
-}
-
-BBox2 operator+(const BBox2& b) const {
-	BBox2 result;
-	for (int i = 0; i < 12; ++i)
-		result.bounds_f[i] = bounds_f[i] + b.bounds_f[i];
-	return result;
-}
-
-BBox2 operator-(const BBox2& b) const {
-	BBox2 result;
-	for (int i = 0; i < 12; ++i)
-		result.bounds_f[i] = bounds_f[i] - b.bounds_f[i];
-	return result;
-}
-
-BBox2 operator*(const BBox2& b) const {
-	BBox2 result;
-	for (int i = 0; i < 12; ++i)
-		result.bounds_f[i] = bounds_f[i] * b.bounds_f[i];
-	return result;
-}
-
-BBox2 operator*(const float f) const {
-	BBox2 result;
-	for (int i = 0; i < 12; ++i)
-		result.bounds_f[i] = bounds_f[i] * f;
-	return result;
-}
-
-BBox2 operator/(const BBox2& b) const {
-	BBox2 result;
-	for (int i = 0; i < 12; ++i)
-		result.bounds_f[i] = bounds_f[i] / b.bounds_f[i];
-	return result;
-}
-
-BBox2 operator/(const float f) const {
-	BBox2 result;
-	for (int i = 0; i < 12; ++i)
-		result.bounds_f[i] = bounds_f[i] / f;
-	return result;
-}
-
-// Union
-BBox2 operator|(const BBox2& b) {
-	BBox2 result;
-	for (int i = 0; i < 3; ++i) {
-		const int i1 = i * 4;
-		const int i2 = (i * 4) + 1;
-		const int i3 = (i * 4) + 2;
-		const int i4 = (i * 4) + 3;
-		result.bounds_f[i1] = std::min(bounds_f[i1], b.bounds_f[i1]);
-		result.bounds_f[i2] = std::min(bounds_f[i2], b.bounds_f[i2]);
-		result.bounds_f[i3] = std::max(bounds_f[i3], b.bounds_f[i3]);
-		result.bounds_f[i4] = std::max(bounds_f[i4], b.bounds_f[i4]);
+	BBox2(): bounds {{std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity()},
+		{std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity()},
+		{std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity()}
 	}
-	return result;
-}
+	{}
 
-// Intersection
-BBox2 operator&(const BBox2& b) {
-	BBox2 result;
-	for (int i = 0; i < 3; ++i) {
-		const int i1 = i * 4;
-		const int i2 = (i * 4) + 1;
-		const int i3 = (i * 4) + 2;
-		const int i4 = (i * 4) + 3;
-		result.bounds_f[i1] = std::max(bounds_f[i1], b.bounds_f[i1]);
-		result.bounds_f[i2] = std::max(bounds_f[i2], b.bounds_f[i2]);
-		result.bounds_f[i3] = std::min(bounds_f[i3], b.bounds_f[i3]);
-		result.bounds_f[i4] = std::min(bounds_f[i4], b.bounds_f[i4]);
+	// Construct from two BBox's
+	BBox2(const BBox& b1, const BBox& b2): bounds {{b1.min.x, b2.min.x, b1.max.x, b2.max.x},
+		{b1.min.y, b2.min.y, b1.max.y, b2.max.y},
+		{b1.min.z, b2.min.z, b1.max.z, b2.max.z}
+	}
+	{}
+
+	BBox2 operator+(const BBox2& b) const {
+		BBox2 result;
+		for (int i = 0; i < 3; ++i)
+			result.bounds[i] = bounds[i] + b.bounds[i];
+		return result;
 	}
 
-	return result;
-}
-
-/**
- * @brief Merge another BBox into this one.
- *
- * Merges another BBox into this one, resulting in a BBox that fully
- * encompasses both.
- */
-BBox2& merge_with(const BBox2& b) {
-	for (int i = 0; i < 3; ++i) {
-		const int i1 = i * 4;
-		const int i2 = (i * 4) + 1;
-		const int i3 = (i * 4) + 2;
-		const int i4 = (i * 4) + 3;
-		bounds_f[i1] = std::min(bounds_f[i1], b.bounds_f[i1]);
-		bounds_f[i2] = std::min(bounds_f[i2], b.bounds_f[i2]);
-		bounds_f[i3] = std::max(bounds_f[i3], b.bounds_f[i3]);
-		bounds_f[i4] = std::max(bounds_f[i4], b.bounds_f[i4]);
+	BBox2 operator-(const BBox2& b) const {
+		BBox2 result;
+		for (int i = 0; i < 3; ++i)
+			result.bounds[i] = bounds[i] - b.bounds[i];
+		return result;
 	}
 
-	return *this;
-}
-
-/**
- * @brief Tests a ray against the BBox2's bounding boxes.
- *
- * @param[in] o The origin of the ray, laid out as [[x,x,x,x],[y,y,y,y],[z,z,z,z]].
- * @param[in] inv_d The direction of the ray over 1.0, laid out as [[x,x,x,x],[y,y,y,y],[z,z,z,z]]
- * @param[in] t_max The maximum t value of the ray being tested against, laid out as [t,t,t,t].
- * @param[in] d_is_neg Precomputed values indicating whether the x, y, and z components of the ray are negative or not.
- * @param[out] near_hits Two floats to store the near hits with the bounding boxes.
- *
- * @returns A tuple of two boolean values, indicating whether the ray hit the first and second box respectively.
- */
-inline std::tuple<bool, bool> intersect_ray(const __m128* o, const __m128* inv_d, const __m128& t_max, const std::array<uint32_t, 3>& d_is_neg, float *near_hits) const {
-	static const __m128 zeros = _mm_set_ps1(0.0f);
-
-	// Calculate the plane intersections
-	const __m128 xs = _mm_mul_ps(_mm_sub_ps(shuffle_swap(bounds[0], d_is_neg[0]), o[0]), inv_d[0]);
-	const __m128 ys = _mm_mul_ps(_mm_sub_ps(shuffle_swap(bounds[1], d_is_neg[1]), o[1]), inv_d[1]);
-	const __m128 zs = _mm_mul_ps(_mm_sub_ps(shuffle_swap(bounds[2], d_is_neg[2]), o[2]), inv_d[2]);
-
-	// Get the minimum and maximum hits, and shuffle the max hits
-	// to be in the same location as the minimum hits
-	const __m128 mins = _mm_max_ps(_mm_max_ps(_mm_max_ps(xs, ys), zs), zeros);
-	const __m128 maxs = shuffle_swap(_mm_min_ps(_mm_min_ps(xs, ys), zs));
-
-	// Check for hits
-	const __m128 hits = _mm_and_ps(_mm_cmplt_ps(mins, t_max), _mm_cmple_ps(mins, maxs));
-
-	// Fill in near hits
-	near_hits[0] = mins[0];
-	near_hits[1] = mins[1];
-
-	return std::make_tuple(static_cast<bool>(hits[0]), static_cast<bool>(hits[1]));
-}
-
-
-inline std::tuple<bool, bool> intersect_ray(const Ray& ray, float *near_hits) const {
-	const Vec3 inv_d_f = ray.get_inverse_d();
-	const std::array<uint32_t, 3> d_is_neg = ray.get_d_is_neg();
-
-	// Load ray origin, inverse direction, and max_t into simd layouts for intersection testing
-	__m128 ray_o[3];
-	__m128 inv_d[3];
-	const __m128 max_t = _mm_load_ps1(&ray.max_t);
-	for (int i = 0; i < 3; ++i) {
-		ray_o[i] = _mm_load_ps1(&(ray.o[i]));
-		inv_d[i] = _mm_load_ps1(&(inv_d_f[i]));
+	BBox2 operator*(const BBox2& b) const {
+		BBox2 result;
+		for (int i = 0; i < 3; ++i)
+			result.bounds[i] = bounds[i] * b.bounds[i];
+		return result;
 	}
 
-	return intersect_ray(ray_o, inv_d, max_t, d_is_neg, near_hits);
-}
+	BBox2 operator*(const float f) const {
+		BBox2 result;
+		for (int i = 0; i < 4; ++i)
+			result.bounds[i] = bounds[i] * f;
+		return result;
+	}
+
+	BBox2 operator/(const BBox2& b) const {
+		BBox2 result;
+		for (int i = 0; i < 3; ++i)
+			result.bounds[i] = bounds[i] / b.bounds[i];
+		return result;
+	}
+
+	BBox2 operator/(const float f) const {
+		BBox2 result;
+		for (int i = 0; i < 4; ++i)
+			result.bounds[i] = bounds[i] / f;
+		return result;
+	}
+
+	// Union
+	BBox2 operator|(const BBox2& b) {
+		BBox2 result;
+		for (int i = 0; i < 3; ++i) {
+			result.bounds[i][0] = std::min(bounds[i][0], b.bounds[i][0]);
+			result.bounds[i][1] = std::min(bounds[i][1], b.bounds[i][1]);
+			result.bounds[i][2] = std::max(bounds[i][2], b.bounds[i][2]);
+			result.bounds[i][3] = std::max(bounds[i][3], b.bounds[i][3]);
+		}
+		return result;
+	}
+
+	// Intersection
+	BBox2 operator&(const BBox2& b) {
+		BBox2 result;
+		for (int i = 0; i < 3; ++i) {
+			result.bounds[i][0] = std::max(bounds[i][0], b.bounds[i][0]);
+			result.bounds[i][1] = std::max(bounds[i][1], b.bounds[i][1]);
+			result.bounds[i][2] = std::min(bounds[i][2], b.bounds[i][2]);
+			result.bounds[i][3] = std::min(bounds[i][3], b.bounds[i][3]);
+		}
+		return result;
+	}
+
+	/**
+	 * @brief Merge another BBox into this one.
+	 *
+	 * Merges another BBox into this one, resulting in a BBox that fully
+	 * encompasses both.
+	 */
+	BBox2& merge_with(const BBox2& b) {
+		for (int i = 0; i < 3; ++i) {
+			bounds[i][0] = std::min(bounds[i][0], b.bounds[i][0]);
+			bounds[i][1] = std::min(bounds[i][1], b.bounds[i][1]);
+			bounds[i][2] = std::max(bounds[i][2], b.bounds[i][2]);
+			bounds[i][3] = std::max(bounds[i][3], b.bounds[i][3]);
+		}
+		return *this;
+	}
+
+	/**
+	 * @brief Tests a ray against the BBox2's bounding boxes.
+	 *
+	 * @param[in] o The origin of the ray, laid out as [[x,x,x,x],[y,y,y,y],[z,z,z,z]].
+	 * @param[in] inv_d The direction of the ray over 1.0, laid out as [[x,x,x,x],[y,y,y,y],[z,z,z,z]]
+	 * @param[in] t_max The maximum t value of the ray being tested against, laid out as [t,t,t,t].
+	 * @param[in] d_is_neg Precomputed values indicating whether the x, y, and z components of the ray are negative or not.
+	 * @param[out] near_hits Two floats to store the near hits with the bounding boxes.
+	 *
+	 * @returns A tuple of two boolean values, indicating whether the ray hit the first and second box respectively.
+	 */
+	inline std::tuple<bool, bool> intersect_ray(const SIMD::float4* o, const SIMD::float4* inv_d, const SIMD::float4& t_max, const std::array<uint32_t, 3>& d_is_neg, SIMD::float4 *hit_ts) const {
+		using namespace SIMD;
+		const float4 zeros; // Default constructor sets all components to zero
+
+		// Calculate the plane intersections
+		const float4 xs = (shuffle_swap(bounds[0], d_is_neg[0]) - o[0]) * inv_d[0];
+		const float4 ys = (shuffle_swap(bounds[1], d_is_neg[1]) - o[1]) * inv_d[1];
+		const float4 zs = (shuffle_swap(bounds[2], d_is_neg[2]) - o[2]) * inv_d[2];
+
+		// Get the minimum and maximum hits, and shuffle the max hits
+		// to be in the same location as the minimum hits
+		const float4 mins = max(max(xs, ys), max(zs, zeros));
+		const float4 maxs = shuffle_swap(min(min(xs, ys), zs));
+
+		// Check for hits
+		const float4 hits = lt(mins, t_max) && lte(mins, maxs);
+
+		// Fill in near hits
+		*hit_ts = mins;
+
+		return std::make_tuple(static_cast<bool>(hits[0]), static_cast<bool>(hits[1]));
+	}
+
+
+	inline std::tuple<bool, bool> intersect_ray(const Ray& ray, SIMD::float4 *hit_ts) const {
+		using namespace SIMD;
+		const Vec3 inv_d_f = ray.get_inverse_d();
+		const std::array<uint32_t, 3> d_is_neg = ray.get_d_is_neg();
+
+		// Load ray origin, inverse direction, and max_t into simd layouts for intersection testing
+		const float4 ray_o[3] = {ray.o[0], ray.o[1], ray.o[2]};
+		const float4 inv_d[3] = {inv_d_f[0], inv_d_f[1], inv_d_f[2]};
+		const float4 max_t {
+			ray.max_t
+		};
+
+		return intersect_ray(ray_o, inv_d, max_t, d_is_neg, hit_ts);
+	}
 
 };
 

@@ -23,10 +23,10 @@ BOOST_AUTO_TEST_CASE(constructor_1)
 	BBox2 bb;
 
 	for (int i = 0; i < 3; ++i) {
-		BOOST_CHECK(bb.bounds_f[i*4] == std::numeric_limits<float>::infinity() &&
-		            bb.bounds_f[i*4+1] == std::numeric_limits<float>::infinity() &&
-		            bb.bounds_f[i*4+2] == -std::numeric_limits<float>::infinity() &&
-		            bb.bounds_f[i*4+3] == -std::numeric_limits<float>::infinity());
+		BOOST_CHECK(bb.bounds[i][0] == std::numeric_limits<float>::infinity() &&
+		            bb.bounds[i][1] == std::numeric_limits<float>::infinity() &&
+		            bb.bounds[i][2] == -std::numeric_limits<float>::infinity() &&
+		            bb.bounds[i][3] == -std::numeric_limits<float>::infinity());
 	}
 }
 
@@ -36,20 +36,20 @@ BOOST_AUTO_TEST_CASE(constructor_2)
 	BBox2 bb(BBox(Vec3(1.0, -2.5, 0.5), Vec3(8.0, 7.25, 2.0)),
 	         BBox(Vec3(2.0, -3.5, 1.5), Vec3(9.0, 8.25, 3.0)));
 
-	BOOST_CHECK(bb.bounds_f[0] == 1.0);
-	BOOST_CHECK(bb.bounds_f[1] == 2.0);
-	BOOST_CHECK(bb.bounds_f[2] == 8.0);
-	BOOST_CHECK(bb.bounds_f[3] == 9.0);
+	BOOST_CHECK(bb.bounds[0][0] == 1.0);
+	BOOST_CHECK(bb.bounds[0][1] == 2.0);
+	BOOST_CHECK(bb.bounds[0][2] == 8.0);
+	BOOST_CHECK(bb.bounds[0][3] == 9.0);
 
-	BOOST_CHECK(bb.bounds_f[4] == -2.5);
-	BOOST_CHECK(bb.bounds_f[5] == -3.5);
-	BOOST_CHECK(bb.bounds_f[6] == 7.25);
-	BOOST_CHECK(bb.bounds_f[7] == 8.25);
+	BOOST_CHECK(bb.bounds[1][0] == -2.5);
+	BOOST_CHECK(bb.bounds[1][1] == -3.5);
+	BOOST_CHECK(bb.bounds[1][2] == 7.25);
+	BOOST_CHECK(bb.bounds[1][3] == 8.25);
 
-	BOOST_CHECK(bb.bounds_f[8] == 0.5);
-	BOOST_CHECK(bb.bounds_f[9] == 1.5);
-	BOOST_CHECK(bb.bounds_f[10] == 2.0);
-	BOOST_CHECK(bb.bounds_f[11] == 3.0);
+	BOOST_CHECK(bb.bounds[2][0] == 0.5);
+	BOOST_CHECK(bb.bounds[2][1] == 1.5);
+	BOOST_CHECK(bb.bounds[2][2] == 2.0);
+	BOOST_CHECK(bb.bounds[2][3] == 3.0);
 }
 
 
@@ -63,20 +63,20 @@ BOOST_AUTO_TEST_CASE(add)
 
 	BBox2 bb = bb1 + bb2;
 
-	BOOST_CHECK(bb.bounds_f[0] == 0.0);
-	BOOST_CHECK(bb.bounds_f[1] == 0.5);
-	BOOST_CHECK(bb.bounds_f[2] == 16.0);
-	BOOST_CHECK(bb.bounds_f[3] == 11.0);
+	BOOST_CHECK(bb.bounds[0][0] == 0.0);
+	BOOST_CHECK(bb.bounds[0][1] == 0.5);
+	BOOST_CHECK(bb.bounds[0][2] == 16.0);
+	BOOST_CHECK(bb.bounds[0][3] == 11.0);
 
-	BOOST_CHECK(bb.bounds_f[4] == -4.0);
-	BOOST_CHECK(bb.bounds_f[5] == -4.0);
-	BOOST_CHECK(bb.bounds_f[6] == 12.0);
-	BOOST_CHECK(bb.bounds_f[7] == 16.0);
+	BOOST_CHECK(bb.bounds[1][0] == -4.0);
+	BOOST_CHECK(bb.bounds[1][1] == -4.0);
+	BOOST_CHECK(bb.bounds[1][2] == 12.0);
+	BOOST_CHECK(bb.bounds[1][3] == 16.0);
 
-	BOOST_CHECK(bb.bounds_f[8] == -1.5);
-	BOOST_CHECK(bb.bounds_f[9] == 2.5);
-	BOOST_CHECK(bb.bounds_f[10] == 1.0);
-	BOOST_CHECK(bb.bounds_f[11] == 8.0);
+	BOOST_CHECK(bb.bounds[2][0] == -1.5);
+	BOOST_CHECK(bb.bounds[2][1] == 2.5);
+	BOOST_CHECK(bb.bounds[2][2] == 1.0);
+	BOOST_CHECK(bb.bounds[2][3] == 8.0);
 }
 
 
@@ -90,20 +90,20 @@ BOOST_AUTO_TEST_CASE(subtract)
 
 	BBox2 bb = bb1 - bb2;
 
-	BOOST_CHECK(bb.bounds_f[0] == 2.0);
-	BOOST_CHECK(bb.bounds_f[1] == 3.5);
-	BOOST_CHECK(bb.bounds_f[2] == 0.0);
-	BOOST_CHECK(bb.bounds_f[3] == 7.0);
+	BOOST_CHECK(bb.bounds[0][0] == 2.0);
+	BOOST_CHECK(bb.bounds[0][1] == 3.5);
+	BOOST_CHECK(bb.bounds[0][2] == 0.0);
+	BOOST_CHECK(bb.bounds[0][3] == 7.0);
 
-	BOOST_CHECK(bb.bounds_f[4] == -1.0);
-	BOOST_CHECK(bb.bounds_f[5] == -3.0);
-	BOOST_CHECK(bb.bounds_f[6] == 2.5);
-	BOOST_CHECK(bb.bounds_f[7] == 0.5);
+	BOOST_CHECK(bb.bounds[1][0] == -1.0);
+	BOOST_CHECK(bb.bounds[1][1] == -3.0);
+	BOOST_CHECK(bb.bounds[1][2] == 2.5);
+	BOOST_CHECK(bb.bounds[1][3] == 0.5);
 
-	BOOST_CHECK(bb.bounds_f[8] == 2.5);
-	BOOST_CHECK(bb.bounds_f[9] == 0.5);
-	BOOST_CHECK(bb.bounds_f[10] == 3.0);
-	BOOST_CHECK(bb.bounds_f[11] == -2.0);
+	BOOST_CHECK(bb.bounds[2][0] == 2.5);
+	BOOST_CHECK(bb.bounds[2][1] == 0.5);
+	BOOST_CHECK(bb.bounds[2][2] == 3.0);
+	BOOST_CHECK(bb.bounds[2][3] == -2.0);
 }
 
 
@@ -115,20 +115,20 @@ BOOST_AUTO_TEST_CASE(multiply)
 
 	BBox2 bb = bb1 * -2.0;
 
-	BOOST_CHECK(bb.bounds_f[0] == -2.0);
-	BOOST_CHECK(bb.bounds_f[1] == -4.0);
-	BOOST_CHECK(bb.bounds_f[2] == -16.0);
-	BOOST_CHECK(bb.bounds_f[3] == -18.0);
+	BOOST_CHECK(bb.bounds[0][0] == -2.0);
+	BOOST_CHECK(bb.bounds[0][1] == -4.0);
+	BOOST_CHECK(bb.bounds[0][2] == -16.0);
+	BOOST_CHECK(bb.bounds[0][3] == -18.0);
 
-	BOOST_CHECK(bb.bounds_f[4] == 5.0);
-	BOOST_CHECK(bb.bounds_f[5] == 7.0);
-	BOOST_CHECK(bb.bounds_f[6] == -14.5);
-	BOOST_CHECK(bb.bounds_f[7] == -16.5);
+	BOOST_CHECK(bb.bounds[1][0] == 5.0);
+	BOOST_CHECK(bb.bounds[1][1] == 7.0);
+	BOOST_CHECK(bb.bounds[1][2] == -14.5);
+	BOOST_CHECK(bb.bounds[1][3] == -16.5);
 
-	BOOST_CHECK(bb.bounds_f[8] == -1.0);
-	BOOST_CHECK(bb.bounds_f[9] == -3.0);
-	BOOST_CHECK(bb.bounds_f[10] == -4.0);
-	BOOST_CHECK(bb.bounds_f[11] == -6.0);
+	BOOST_CHECK(bb.bounds[2][0] == -1.0);
+	BOOST_CHECK(bb.bounds[2][1] == -3.0);
+	BOOST_CHECK(bb.bounds[2][2] == -4.0);
+	BOOST_CHECK(bb.bounds[2][3] == -6.0);
 }
 
 
@@ -140,20 +140,20 @@ BOOST_AUTO_TEST_CASE(divide)
 
 	BBox2 bb = bb1 / -2.0;
 
-	BOOST_CHECK(bb.bounds_f[0] == -0.5);
-	BOOST_CHECK(bb.bounds_f[1] == -1.0);
-	BOOST_CHECK(bb.bounds_f[2] == -4.0);
-	BOOST_CHECK(bb.bounds_f[3] == -4.5);
+	BOOST_CHECK(bb.bounds[0][0] == -0.5);
+	BOOST_CHECK(bb.bounds[0][1] == -1.0);
+	BOOST_CHECK(bb.bounds[0][2] == -4.0);
+	BOOST_CHECK(bb.bounds[0][3] == -4.5);
 
-	BOOST_CHECK(bb.bounds_f[4] == 1.25);
-	BOOST_CHECK(bb.bounds_f[5] == 1.75);
-	BOOST_CHECK(bb.bounds_f[6] == -3.625);
-	BOOST_CHECK(bb.bounds_f[7] == -4.125);
+	BOOST_CHECK(bb.bounds[1][0] == 1.25);
+	BOOST_CHECK(bb.bounds[1][1] == 1.75);
+	BOOST_CHECK(bb.bounds[1][2] == -3.625);
+	BOOST_CHECK(bb.bounds[1][3] == -4.125);
 
-	BOOST_CHECK(bb.bounds_f[8] == -0.25);
-	BOOST_CHECK(bb.bounds_f[9] == -0.75);
-	BOOST_CHECK(bb.bounds_f[10] == -1.0);
-	BOOST_CHECK(bb.bounds_f[11] == -1.5);
+	BOOST_CHECK(bb.bounds[2][0] == -0.25);
+	BOOST_CHECK(bb.bounds[2][1] == -0.75);
+	BOOST_CHECK(bb.bounds[2][2] == -1.0);
+	BOOST_CHECK(bb.bounds[2][3] == -1.5);
 }
 
 
@@ -167,20 +167,21 @@ BOOST_AUTO_TEST_CASE(merge_with)
 
 	bb1.merge_with(bb2);
 
-	BOOST_CHECK(bb1.bounds_f[0] == -1.0);
-	BOOST_CHECK(bb1.bounds_f[1] == -1.5);
-	BOOST_CHECK(bb1.bounds_f[2] == 8.0);
-	BOOST_CHECK(bb1.bounds_f[3] == 9.0);
+	BOOST_CHECK(bb1.bounds[0][0] == -1.0);
+	BOOST_CHECK(bb1.bounds[0][1] == -1.5);
+	BOOST_CHECK(bb1.bounds[0][1] == -1.5);
+	BOOST_CHECK(bb1.bounds[0][2] == 8.0);
+	BOOST_CHECK(bb1.bounds[0][3] == 9.0);
 
-	BOOST_CHECK(bb1.bounds_f[4] == -2.5);
-	BOOST_CHECK(bb1.bounds_f[5] == -3.5);
-	BOOST_CHECK(bb1.bounds_f[6] == 7.25);
-	BOOST_CHECK(bb1.bounds_f[7] == 8.25);
+	BOOST_CHECK(bb1.bounds[1][0] == -2.5);
+	BOOST_CHECK(bb1.bounds[1][1] == -3.5);
+	BOOST_CHECK(bb1.bounds[1][2] == 7.25);
+	BOOST_CHECK(bb1.bounds[1][3] == 8.25);
 
-	BOOST_CHECK(bb1.bounds_f[8] == -2.0);
-	BOOST_CHECK(bb1.bounds_f[9] == 1.0);
-	BOOST_CHECK(bb1.bounds_f[10] == 2.0);
-	BOOST_CHECK(bb1.bounds_f[11] == 5.0);
+	BOOST_CHECK(bb1.bounds[2][0] == -2.0);
+	BOOST_CHECK(bb1.bounds[2][1] == 1.0);
+	BOOST_CHECK(bb1.bounds[2][2] == 2.0);
+	BOOST_CHECK(bb1.bounds[2][3] == 5.0);
 }
 
 
@@ -194,15 +195,15 @@ BOOST_AUTO_TEST_CASE(intersect_ray_1)
 	BBox2 bb(BBox(Vec3(-1.0, -2.5, -0.5), Vec3(8.0, 7.25, 2.0)),
 	         BBox(Vec3(-42.0, -3.5, -1.5), Vec3(9.0, 8.25, 1.0)));
 
-	float near_hits[2] = {std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()};
+	SIMD::float4 hit_ts;
 	bool hit0 = false;
 	bool hit1 = false;
-	std::tie(hit0, hit1) = bb.intersect_ray(r, near_hits);
+	std::tie(hit0, hit1) = bb.intersect_ray(r, &hit_ts);
 
 	BOOST_CHECK(hit0 == true);
-	BOOST_CHECK(near_hits[0] == 5.5);
+	BOOST_CHECK(hit_ts[0] == 5.5);
 	BOOST_CHECK(hit1 == true);
-	BOOST_CHECK(near_hits[1] == 4.5);
+	BOOST_CHECK(hit_ts[1] == 4.5);
 }
 
 // Tests for ::intersect_ray()
@@ -214,15 +215,15 @@ BOOST_AUTO_TEST_CASE(intersect_ray_2)
 	BBox2 bb(BBox(Vec3(-1.0, -2.5, -0.5), Vec3(8.0, 7.25, 2.0)),
 	         BBox(Vec3(-42.0, -3.5, -1.5), Vec3(9.0, 8.25, 1.0)));
 
-	float near_hits[2] = {std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()};
+	SIMD::float4 hit_ts;
 	bool hit0 = false;
 	bool hit1 = false;
-	std::tie(hit0, hit1) = bb.intersect_ray(r, near_hits);
+	std::tie(hit0, hit1) = bb.intersect_ray(r, &hit_ts);
 
 	BOOST_CHECK(hit0 == true);
-	BOOST_CHECK(near_hits[0] == 4.75);
+	BOOST_CHECK(hit_ts[0] == 4.75);
 	BOOST_CHECK(hit1 == true);
-	BOOST_CHECK(near_hits[1] == 3.75);
+	BOOST_CHECK(hit_ts[1] == 3.75);
 }
 
 BOOST_AUTO_TEST_CASE(intersect_ray_3)
@@ -233,15 +234,15 @@ BOOST_AUTO_TEST_CASE(intersect_ray_3)
 	BBox2 bb(BBox(Vec3(-1.0, -2.5, -0.5), Vec3(8.0, 7.25, 2.0)),
 	         BBox(Vec3(-42.0, -3.5, -1.5), Vec3(9.0, 8.25, 1.0)));
 
-	float near_hits[2] = {std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()};
+	SIMD::float4 hit_ts;
 	bool hit0 = false;
 	bool hit1 = false;
-	std::tie(hit0, hit1) = bb.intersect_ray(r, near_hits);
+	std::tie(hit0, hit1) = bb.intersect_ray(r, &hit_ts);
 
 	BOOST_CHECK(hit0 == true);
-	BOOST_CHECK(near_hits[0] == 2.75);
+	BOOST_CHECK(hit_ts[0] == 2.75);
 	BOOST_CHECK(hit1 == true);
-	BOOST_CHECK(near_hits[1] == 2.25);
+	BOOST_CHECK(hit_ts[1] == 2.25);
 }
 
 BOOST_AUTO_TEST_CASE(intersect_ray_4)
@@ -252,14 +253,14 @@ BOOST_AUTO_TEST_CASE(intersect_ray_4)
 	BBox2 bb(BBox(Vec3(-1.0, -2.5, -0.5), Vec3(8.0, 7.25, 2.0)),
 	         BBox(Vec3(-42.0, -3.5, -1.5), Vec3(9.0, 8.25, 1.0)));
 
-	float near_hits[2] = {std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()};
+	SIMD::float4 hit_ts;
 	bool hit0 = false;
 	bool hit1 = false;
-	std::tie(hit0, hit1) = bb.intersect_ray(r, near_hits);
+	std::tie(hit0, hit1) = bb.intersect_ray(r, &hit_ts);
 
 	BOOST_CHECK(hit0 == false);
 	BOOST_CHECK(hit1 == true);
-	BOOST_CHECK(near_hits[1] == 4.5);
+	BOOST_CHECK(hit_ts[1] == 4.5);
 }
 
 BOOST_AUTO_TEST_CASE(intersect_ray_5)
@@ -270,15 +271,15 @@ BOOST_AUTO_TEST_CASE(intersect_ray_5)
 	BBox2 bb(BBox(Vec3(-1.0, -2.5, -0.5), Vec3(8.0, 7.25, 2.0)),
 	         BBox(Vec3(-42.0, -3.5, -1.5), Vec3(9.0, 8.25, 1.0)));
 
-	float near_hits[2] = {std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()};
+	SIMD::float4 hit_ts;
 	bool hit0 = false;
 	bool hit1 = false;
-	std::tie(hit0, hit1) = bb.intersect_ray(r, near_hits);
+	std::tie(hit0, hit1) = bb.intersect_ray(r, &hit_ts);
 
 	BOOST_CHECK(hit0 == true);
-	BOOST_CHECK(near_hits[0] == 0.0);
+	BOOST_CHECK(hit_ts[0] == 0.0);
 	BOOST_CHECK(hit1 == true);
-	BOOST_CHECK(near_hits[1] == 0.0);
+	BOOST_CHECK(hit_ts[1] == 0.0);
 }
 
 BOOST_AUTO_TEST_CASE(intersect_ray_6)
@@ -289,15 +290,15 @@ BOOST_AUTO_TEST_CASE(intersect_ray_6)
 	BBox2 bb(BBox(Vec3(1.0, -1.0, -1.0), Vec3(1.0, 1.0, 1.0)),
 	         BBox(Vec3(2.0, -2.0, -2.0), Vec3(2.0, 2.0, 2.0)));
 
-	float near_hits[2] = {std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()};
+	SIMD::float4 hit_ts;
 	bool hit0 = false;
 	bool hit1 = false;
-	std::tie(hit0, hit1) = bb.intersect_ray(r, near_hits);
+	std::tie(hit0, hit1) = bb.intersect_ray(r, &hit_ts);
 
 	BOOST_CHECK(hit0 == true);
-	BOOST_CHECK(near_hits[0] == 5.0);
+	BOOST_CHECK(hit_ts[0] == 5.0);
 	BOOST_CHECK(hit1 == true);
-	BOOST_CHECK(near_hits[1] == 6.0);
+	BOOST_CHECK(hit_ts[1] == 6.0);
 }
 #if 0
 BOOST_AUTO_TEST_CASE(intersect_ray_7)

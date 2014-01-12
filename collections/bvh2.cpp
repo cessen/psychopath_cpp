@@ -5,7 +5,7 @@
 #include <memory>
 #include <tuple>
 #include <iterator>
-#include <x86intrin.h>
+#include "simd.hpp"
 #include "ray.hpp"
 #include "bvh2.hpp"
 #include <cmath>
@@ -267,17 +267,16 @@ uint BVH2::get_potential_intersections(const Ray &ray, float tmax, uint max_pote
 	if (nodes.size() == 0 || node == ~uint64_t(0))
 		return 0;
 
+	// Get inverse ray direction and whether each ray component is negative
 	const Vec3 inv_d_f = ray.get_inverse_d();
 	const std::array<uint32_t, 3> d_is_neg = ray.get_d_is_neg();
 
 	// Load ray origin, inverse direction, and max_t into simd layouts for intersection testing
-	__m128 ray_o[3];
-	__m128 inv_d[3];
-	const __m128 max_t = _mm_load_ps1(&tmax);
-	for (int i = 0; i < 3; ++i) {
-		ray_o[i] = _mm_load_ps1(&(ray.o[i]));
-		inv_d[i] = _mm_load_ps1(&(inv_d_f[i]));
-	}
+	const SIMD::float4 ray_o[3] = {ray.o[0], ray.o[1], ray.o[2]};
+	const SIMD::float4 inv_d[3] = {inv_d_f[0], inv_d_f[1], inv_d_f[2]};
+	const SIMD::float4 max_t {
+		ray.max_t
+	};
 
 	// Traverse the BVH
 	uint32_t hits_so_far = 0;
@@ -292,13 +291,13 @@ uint BVH2::get_potential_intersections(const Ray &ray, float tmax, uint max_pote
 			// Inner node
 			// Test ray against children's bboxes
 			bool hit0, hit1;
-			float near_hits[2];
+			SIMD::float4 near_hits;
 			uint32_t ti;
 			float alpha;
 			// Get the time-interpolated bounding box
 			const BBox2 b = calc_time_interp(n.time_samples, ray.time, &ti, &alpha) ? lerp(alpha, nodes[node+ti].bounds, nodes[node+ti+1].bounds) : n.bounds;
 			// Ray test
-			std::tie(hit0, hit1) = b.intersect_ray(ray_o, inv_d, max_t, d_is_neg, near_hits);
+			std::tie(hit0, hit1) = b.intersect_ray(ray_o, inv_d, max_t, d_is_neg, &near_hits);
 #ifdef GLOBAL_STATS_TOP_LEVEL_BVH_NODE_TESTS
 			Global::Stats::bbox_tests += 2;
 #endif
