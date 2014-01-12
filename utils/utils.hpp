@@ -8,6 +8,7 @@
 #include <iterator>
 #include <cmath>
 #include <assert.h>
+#include <x86intrin.h>
 
 /*
    linear interpolation
@@ -230,6 +231,24 @@ static inline float fasterlog2(float x)
 	float y = vx.i;
 	y *= 1.1920928955078125e-7f;
 	return y - 126.94269504f;
+}
+
+static inline std::string to_string(const __m128& v)
+{
+	float vs[4];
+	_mm_store_ps(vs, v);
+
+	std::string s;
+	s.append("(");
+	s.append(std::to_string(vs[0]));
+	s.append(", ");
+	s.append(std::to_string(vs[1]));
+	s.append(", ");
+	s.append(std::to_string(vs[2]));
+	s.append(", ");
+	s.append(std::to_string(vs[3]));
+	s.append(")");
+	return s;
 }
 
 

@@ -125,7 +125,6 @@ BOOST_AUTO_TEST_CASE(intersect_ray_1)
 	BOOST_CHECK(hitt1 == 15.25);
 }
 
-#if 0
 
 BOOST_AUTO_TEST_CASE(intersect_ray_2)
 {
@@ -191,7 +190,7 @@ BOOST_AUTO_TEST_CASE(intersect_ray_6)
 
 // TODO: - diagonal rays
 //       - rays with different tmin/tmax values
-#endif
+
 
 BOOST_AUTO_TEST_SUITE_END()
 

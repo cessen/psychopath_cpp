@@ -10,6 +10,7 @@
 #include <deque>
 #include <memory>
 #include <tuple>
+#include <x86intrin.h>
 #include "primitive.hpp"
 #include "collection.hpp"
 #include "ray.hpp"
@@ -38,28 +39,27 @@ public:
 		return 16;
 	}
 
-	struct Node {
-		size_t child_index = 0; // When zero, indicates that this is a leaf node
-		size_t parent_index = 0;
-		size_t sibling_index = 0;
-		size_t time_samples = 0;
-		union {
-			// If the node is a leaf, we don't need the bounds.
-			// If the node is not a leaf, it doesn't have Primitive data.
-			BBox bounds[2] = {BBox(), BBox()};
-			Primitive *data;
-		};
+	struct alignas(32) Node {
+	    size_t child_index = 0; // When zero, indicates that this is a leaf node
+	    size_t parent_index = 0;
+	    size_t sibling_index = 0;
+	    size_t time_samples = 0;
+	    union {
+	        // If the node is a leaf, we don't need the bounds.
+	        // If the node is not a leaf, it doesn't have Primitive data.
+	        BBox2 bounds {BBox(), BBox()};
+	        Primitive *data;
+	    };
 
-		Node() {}
+	Node() {}
 
-		Node(const Node& n):
-			child_index {n.child_index},
-		            parent_index {n.parent_index},
-		            sibling_index {n.sibling_index},
-		time_samples {n.time_samples} {
-			bounds[0] = n.bounds[0];
-			bounds[1] = n.bounds[1];
-		}
+	Node(const Node& n):
+		child_index {n.child_index},
+	parent_index {n.parent_index},
+	sibling_index {n.sibling_index},
+	time_samples {n.time_samples} {
+		bounds = n.bounds;
+	}
 	};
 
 	/*
@@ -125,31 +125,6 @@ private:
 	std::deque<BuildNode> build_nodes;
 	std::deque<BBox> build_bboxes;
 	std::deque<BuildPrimitive> prim_bag;  // Temporary holding spot for primitives not yet added to the hierarchy
-
-	/**
-	 * @brief Tests a ray against a node's children.
-	 */
-	inline std::tuple<bool, bool> intersect_node(const uint64_t node_i, const Ray& ray, float max_t, const Vec3 inv_d, const std::array<uint32_t, 3> d_is_neg, float *ts) const {
-		const Node& node = nodes[node_i];
-		uint32_t ti;
-		float alpha;
-
-		BBox b1;
-		BBox b2;
-		if (calc_time_interp(node.time_samples, ray.time, &ti, &alpha)) {
-			b1 = lerp(alpha, nodes[node_i+ti].bounds[0], nodes[node_i+ti+1].bounds[0]);
-			b2 = lerp(alpha, nodes[node_i+ti].bounds[1], nodes[node_i+ti+1].bounds[1]);
-		} else {
-			b1 = node.bounds[0];
-			b2 = node.bounds[1];
-		}
-
-#ifdef GLOBAL_STATS_TOP_LEVEL_BVH_NODE_TESTS
-		Global::Stats::bbox_tests += 2;
-#endif
-
-		return std::make_tuple(b1.intersect_ray(ray, inv_d, d_is_neg, ts, ts+1, &max_t), b2.intersect_ray(ray, inv_d, d_is_neg, ts+2, ts+3, &max_t));
-	}
 
 	/**
 	 * @brief Returns the index of the first child

@@ -5,6 +5,7 @@
 #include <memory>
 #include <tuple>
 #include <iterator>
+#include <x86intrin.h>
 #include "ray.hpp"
 #include "bvh2.hpp"
 #include <cmath>
@@ -229,8 +230,7 @@ void BVH2::pack()
 			if (child1.ts == child2.ts) {
 				nodes[ni].time_samples = child1.ts;
 				for (uint16_t i = 0; i < nodes[ni].time_samples; ++i) {
-					nodes.back().bounds[0] = build_bboxes[child1.bbox_index+i];
-					nodes.back().bounds[1] = build_bboxes[child2.bbox_index+i];
+					nodes.back().bounds = BBox2(build_bboxes[child1.bbox_index+i], build_bboxes[child2.bbox_index+i]);
 					nodes.push_back(Node());
 				}
 			}
@@ -238,10 +238,13 @@ void BVH2::pack()
 			// merge time samples into a single sample
 			else {
 				nodes[ni].time_samples = 1;
+				BBox b1, b2;
 				for (uint16_t i = 0; i < child1.ts; ++i)
-					nodes[ni].bounds[0].merge_with(build_bboxes[child1.bbox_index+i]);
+					b1.merge_with(build_bboxes[child1.bbox_index+i]);
 				for (uint16_t i = 0; i < child2.ts; ++i)
-					nodes[ni].bounds[1].merge_with(build_bboxes[child2.bbox_index+i]);
+					b2.merge_with(build_bboxes[child2.bbox_index+i]);
+
+				nodes[ni].bounds = BBox2(b1, b2);
 
 				nodes.push_back(Node());
 			}
@@ -264,12 +267,20 @@ uint BVH2::get_potential_intersections(const Ray &ray, float tmax, uint max_pote
 	if (nodes.size() == 0 || node == ~uint64_t(0))
 		return 0;
 
-	const Vec3 inv_d = ray.get_inverse_d();
+	const Vec3 inv_d_f = ray.get_inverse_d();
 	const std::array<uint32_t, 3> d_is_neg = ray.get_d_is_neg();
+
+	// Load ray origin and inverse direction into simd layouts for intersection testing
+	__m128 ray_o[3];
+	__m128 inv_d[3];
+	for (int i = 0; i < 3; ++i) {
+		ray_o[i] = _mm_load_ps1(&(ray.o[i]));
+		inv_d[i] = _mm_load_ps1(&(inv_d_f[i]));
+	}
 
 	// Traverse the BVH
 	uint32_t hits_so_far = 0;
-	float hitts[4];
+
 	while (hits_so_far < max_potential) {
 		const Node& n = nodes[node];
 
@@ -280,12 +291,20 @@ uint BVH2::get_potential_intersections(const Ray &ray, float tmax, uint max_pote
 			// Inner node
 			// Test ray against children's bboxes
 			bool hit0, hit1;
-			hitts[0] = hitts[1] = hitts[2] = hitts[3] = std::numeric_limits<float>::infinity();
-			std::tie(hit0, hit1) = intersect_node(node, ray, tmax, inv_d, d_is_neg, hitts);
+			float near_hits[2] = {std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()};
+			uint32_t ti;
+			float alpha;
+			// Get the time-interpolated bounding box
+			const BBox2 b = calc_time_interp(n.time_samples, ray.time, &ti, &alpha) ? lerp(alpha, nodes[node+ti].bounds, nodes[node+ti+1].bounds) : n.bounds;
+			// Ray test
+			std::tie(hit0, hit1) = b.intersect_ray(ray_o, inv_d, tmax, d_is_neg, near_hits);
+#ifdef GLOBAL_STATS_TOP_LEVEL_BVH_NODE_TESTS
+			Global::Stats::bbox_tests += 2;
+#endif
 
 			if (hit0 || hit1) {
 				bit_stack <<= 1;
-				if (hitts[0] < hitts[2]) {
+				if (near_hits[0] < near_hits[1]) {
 					node = child1(node);
 					if (hit1)
 						bit_stack |= 1;

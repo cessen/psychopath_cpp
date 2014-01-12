@@ -31,7 +31,6 @@ struct Scene {
 	std::unique_ptr<Camera> camera;
 	std::vector<std::unique_ptr<Primitive>> primitives;
 	std::vector<std::unique_ptr<Light>> finite_lights;
-	//PrimArray world;
 	BVH2 world;
 
 	Scene() {}
