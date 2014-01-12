@@ -202,11 +202,8 @@ void BVH2::pack()
 		// Set the values that don't depend on whether this
 		// is a leaf node or not.
 		nodes[ni].parent_index = bn.parent_index;
-		if (bn.flags & IS_RIGHT) {
+		if (bn.flags & IS_RIGHT)
 			nodes[bn.parent_index].child_index = ni;  // Set parent's child_index field to point to this
-			nodes[ni].sibling_index = nodes[ni].parent_index + nodes[bn.parent_index].time_samples;  // Set this nodes sibling_index
-			nodes[nodes[ni].sibling_index].sibling_index = ni; // Set the sibling's sibling_index
-		}
 
 		// Set the values that _do_ depend on whether this is
 		// a leaf node or not.

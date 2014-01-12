@@ -42,7 +42,6 @@ public:
 	struct alignas(32) Node {
 	    size_t child_index = 0; // When zero, indicates that this is a leaf node
 	    size_t parent_index = 0;
-	    size_t sibling_index = 0;
 	    size_t time_samples = 0;
 	    union {
 	        // If the node is a leaf, we don't need the bounds.
@@ -56,7 +55,6 @@ public:
 	Node(const Node& n):
 		child_index {n.child_index},
 	parent_index {n.parent_index},
-	sibling_index {n.sibling_index},
 	time_samples {n.time_samples} {
 		bounds = n.bounds;
 	}
@@ -147,7 +145,11 @@ private:
 	 * of the node with the given index.
 	 */
 	inline size_t sibling(const size_t node_i) const {
-		return nodes[node_i].sibling_index;
+		const size_t par_i = nodes[node_i].parent_index;
+		if (node_i == nodes[par_i].child_index)
+			return par_i + nodes[par_i].time_samples;
+		else
+			return nodes[par_i].child_index;
 	}
 
 	size_t split_primitives(size_t first_prim, size_t last_prim);
