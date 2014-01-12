@@ -345,13 +345,14 @@ struct BBox2 {
 	 * @param[in] inv_d The direction of the ray over 1.0, laid out as [[x,x,x,x],[y,y,y,y],[z,z,z,z]]
 	 * @param[in] t_max The maximum t value of the ray being tested against, laid out as [t,t,t,t].
 	 * @param[in] d_is_neg Precomputed values indicating whether the x, y, and z components of the ray are negative or not.
-	 * @param[out] near_hits Two floats to store the near hits with the bounding boxes.
+	 * @param[out] hit_ts Pointer to a SIMD::float4 where the t parameter of each hit (if any) will be recorded.
+	 *             The hit t's are stored in index [0] and [1] for the first and second box, respectively.
 	 *
-	 * @returns A tuple of two boolean values, indicating whether the ray hit the first and second box respectively.
+	 * @returns A tuple of two boolean values, indicating whether the ray hit the first and second box, respectively.
 	 */
 	inline std::tuple<bool, bool> intersect_ray(const SIMD::float4* o, const SIMD::float4* inv_d, const SIMD::float4& t_max, const std::array<uint32_t, 3>& d_is_neg, SIMD::float4 *hit_ts) const {
 		using namespace SIMD;
-		const float4 zeros; // Default constructor sets all components to zero
+		const float4 zeros(0.0f);
 
 		// Calculate the plane intersections
 		const float4 xs = (shuffle_swap(bounds[0], d_is_neg[0]) - o[0]) * inv_d[0];

@@ -316,6 +316,6 @@ BOOST_AUTO_TEST_CASE(intersect_ray_7)
 #endif
 
 // TODO: - diagonal rays
-//       - rays with different tmin/tmax values
+//       - rays with different tmax values
 
 BOOST_AUTO_TEST_SUITE_END()
