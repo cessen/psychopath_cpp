@@ -13,6 +13,7 @@
 #include "camera.hpp"
 #include "bvh.hpp"
 #include "bvh2.hpp"
+#include "bvh4.hpp"
 #include "prim_array.hpp"
 #include "primitive.hpp"
 #include "light.hpp"

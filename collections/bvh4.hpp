@@ -1,5 +1,5 @@
-#ifndef BVH2_HPP
-#define BVH2_HPP
+#ifndef BVH4_HPP
+#define BVH4_HPP
 
 #include "numtype.h"
 #include "global.hpp"
@@ -25,10 +25,10 @@
 /*
  * A bounding volume hierarchy.
  */
-class BVH2: public Collection
+class BVH4: public Collection
 {
 public:
-	virtual ~BVH2() {};
+	virtual ~BVH4() {};
 
 	virtual void add_primitives(std::vector<std::unique_ptr<Primitive>>* primitives);
 	virtual bool finalize();
@@ -41,26 +41,31 @@ public:
 
 	struct Node {
 		uint64_t parent_index_and_ts = 0;  // Stores both the parent index and the number of time samples.
-		size_t child_index = 0; // When zero, indicates that this is a leaf node
+		size_t child_indices[3] = {0,0,0}; // When first element is 0, indicates that this is a leaf node,
+		// because a non-leaf node needs at least two children.  When the
+		// second and/or third elements are zero, indicates there is no
+		// third or fourth child, respectively.
 		union {
 			// If the node is a leaf, we don't need the bounds.
 			// If the node is not a leaf, it doesn't have Primitive data.
-			BBox2 bounds {BBox(), BBox()};
+			BBox4 bounds {BBox(), BBox(), BBox(), BBox()};
 			Primitive *data;
 		};
 
 		Node() {}
 
-		Node(const Node& n): parent_index_and_ts {n.parent_index_and_ts}, child_index {n.child_index} {
+		Node(const Node& n): parent_index_and_ts {n.parent_index_and_ts} {
+			for (int i = 0; i < 3; ++i)
+				child_indices[i] = n.child_indices[i];
 			bounds = n.bounds;
 		}
 
-		void set_time_samples(const size_t ts) {
+		void set_time_samples(const uint64_t ts) {
 			parent_index_and_ts &= 0x0000FFFFFFFFFFFF;
 			parent_index_and_ts |= (ts << 48);
 		}
 
-		void set_parent_index(const size_t par_i) {
+		void set_parent_index(const uint64_t par_i) {
 			parent_index_and_ts &= 0xFFFF000000000000;
 			parent_index_and_ts |= (par_i & 0x0000FFFFFFFFFFFF);
 		}
@@ -131,19 +136,14 @@ private:
 	std::deque<BuildPrimitive> prim_bag;  // Temporary holding spot for primitives not yet added to the hierarchy
 
 	/**
-	 * @brief Returns the index of the first child
+	 * @brief Returns the index of the nth (0-3) child
 	 * of the node with the given index.
 	 */
-	inline size_t child1(const size_t node_i) const {
-		return node_i + time_samples(node_i);
-	}
-
-	/**
-	 * @brief Returns the index of the second child
-	 * of the node with the given index.
-	 */
-	inline size_t child2(const size_t node_i) const {
-		return nodes[node_i].child_index;
+	inline size_t child(const size_t node_i, const int n) const {
+		if (n == 0)
+			return node_i + time_samples(node_i);
+		else
+			return nodes[node_i].child_indices[n-1];
 	}
 
 	/**
@@ -163,15 +163,22 @@ private:
 	}
 
 	/**
-	 * @brief Returns the index of the sibling
-	 * of the node with the given index.
+	 * @brief Returns the index of the nth (0-3) sibling
+	 * of the node with the given index.  "n" is absolute,
+	 * not relative.  So passing n=0 will return the index
+	 * of the first child of the parent, regardless of the
+	 * node index passed in.
 	 */
-	inline size_t sibling(const size_t node_i) const {
-		const size_t par_i = parent(node_i);
-		if (node_i == child2(par_i))
-			return child1(par_i);
-		else
-			return child2(par_i);
+	inline size_t sibling(const size_t node_i, const int n) const {
+		return child(parent(node_i), n);
+	}
+
+	/**
+	 * @brief Returns whether the node with the given index is a
+	 * leaf node or not.
+	 */
+	inline bool is_leaf(const size_t node_i) const {
+		return (nodes[node_i].child_indices[0] == 0);
 	}
 
 
@@ -184,4 +191,4 @@ private:
 
 
 
-#endif // BVH2_HPP
+#endif // BVH4_HPP

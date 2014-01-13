@@ -279,7 +279,7 @@ struct BBox2 {
 
 	BBox2 operator*(const float f) const {
 		BBox2 result;
-		for (int i = 0; i < 4; ++i)
+		for (int i = 0; i < 3; ++i)
 			result.bounds[i] = bounds[i] * f;
 		return result;
 	}
@@ -293,7 +293,7 @@ struct BBox2 {
 
 	BBox2 operator/(const float f) const {
 		BBox2 result;
-		for (int i = 0; i < 4; ++i)
+		for (int i = 0; i < 3; ++i)
 			result.bounds[i] = bounds[i] / f;
 		return result;
 	}
@@ -375,6 +375,167 @@ struct BBox2 {
 
 
 	inline std::tuple<bool, bool> intersect_ray(const Ray& ray, SIMD::float4 *hit_ts) const {
+		using namespace SIMD;
+		const Vec3 inv_d_f = ray.get_inverse_d();
+		const std::array<uint32_t, 3> d_is_neg = ray.get_d_is_neg();
+
+		// Load ray origin, inverse direction, and max_t into simd layouts for intersection testing
+		const float4 ray_o[3] = {ray.o[0], ray.o[1], ray.o[2]};
+		const float4 inv_d[3] = {inv_d_f[0], inv_d_f[1], inv_d_f[2]};
+		const float4 max_t {
+			ray.max_t
+		};
+
+		return intersect_ray(ray_o, inv_d, max_t, d_is_neg, hit_ts);
+	}
+
+};
+
+
+struct BBox4 {
+	SIMD::float4 bounds[6];
+
+	BBox4(): bounds {
+		{std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()},
+		{-std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity()},
+		{std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()},
+		{-std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity()},
+		{std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()},
+		{-std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity()}
+	}
+	{}
+
+	// Construct from two BBox's
+	BBox4(const BBox& b1, const BBox& b2, const BBox& b3, const BBox& b4): bounds {
+		{b1.min.x, b2.min.x, b3.min.x, b4.min.x},
+		{b1.max.x, b2.max.x, b3.max.x, b4.max.x},
+		{b1.min.y, b2.min.y, b3.min.y, b4.min.y},
+		{b1.max.y, b2.max.y, b3.max.y, b4.max.y},
+		{b1.min.z, b2.min.z, b3.min.z, b4.min.z},
+		{b1.max.z, b2.max.z, b3.max.z, b4.max.z}
+	}
+	{}
+
+	BBox4 operator+(const BBox4& b) const {
+		BBox4 result;
+		for (int i = 0; i < 6; ++i)
+			result.bounds[i] = bounds[i] + b.bounds[i];
+		return result;
+	}
+
+	BBox4 operator-(const BBox4& b) const {
+		BBox4 result;
+		for (int i = 0; i < 6; ++i)
+			result.bounds[i] = bounds[i] - b.bounds[i];
+		return result;
+	}
+
+	BBox4 operator*(const BBox4& b) const {
+		BBox4 result;
+		for (int i = 0; i < 6; ++i)
+			result.bounds[i] = bounds[i] * b.bounds[i];
+		return result;
+	}
+
+	BBox4 operator*(const float f) const {
+		BBox4 result;
+		for (int i = 0; i < 6; ++i)
+			result.bounds[i] = bounds[i] * f;
+		return result;
+	}
+
+	BBox4 operator/(const BBox4& b) const {
+		BBox4 result;
+		for (int i = 0; i < 6; ++i)
+			result.bounds[i] = bounds[i] / b.bounds[i];
+		return result;
+	}
+
+	BBox4 operator/(const float f) const {
+		BBox4 result;
+		for (int i = 0; i < 6; ++i)
+			result.bounds[i] = bounds[i] / f;
+		return result;
+	}
+
+	// Union
+	BBox4 operator|(const BBox4& b) {
+		BBox4 result;
+		for (int i = 0; i < 3; ++i) {
+			const int i1 = i * 2;
+			const int i2 = i1 + 1;
+			result.bounds[i1] = SIMD::min(bounds[i1], b.bounds[i1]);
+			result.bounds[i2] = SIMD::max(bounds[i1], b.bounds[i1]);
+		}
+		return result;
+	}
+
+	// Intersection
+	BBox4 operator&(const BBox4& b) {
+		BBox4 result;
+		for (int i = 0; i < 3; ++i) {
+			const int i1 = i * 2;
+			const int i2 = i1 + 1;
+			result.bounds[i1] = SIMD::max(bounds[i1], b.bounds[i1]);
+			result.bounds[i2] = SIMD::min(bounds[i1], b.bounds[i1]);
+		}
+		return result;
+	}
+
+	/**
+	 * @brief Merge another BBox4 into this one.
+	 *
+	 * Merges another BBox4 into this one, resulting in a BBox4 that fully
+	 * encompasses both.
+	 */
+	BBox4& merge_with(const BBox4& b) {
+		for (int i = 0; i < 3; ++i) {
+			const int i1 = i * 2;
+			const int i2 = i1 + 1;
+			bounds[i1] = SIMD::min(bounds[i1], b.bounds[i1]);
+			bounds[i2] = SIMD::max(bounds[i1], b.bounds[i1]);
+		}
+		return *this;
+	}
+
+	/**
+	 * @brief Tests a ray against the BBox4's bounding boxes.
+	 *
+	 * @param[in] o The origin of the ray, laid out as [[x,x,x,x],[y,y,y,y],[z,z,z,z]].
+	 * @param[in] inv_d The direction of the ray over 1.0, laid out as [[x,x,x,x],[y,y,y,y],[z,z,z,z]]
+	 * @param[in] t_max The maximum t value of the ray being tested against, laid out as [t,t,t,t].
+	 * @param[in] d_is_neg Precomputed values indicating whether the x, y, and z components of the ray are negative or not.
+	 * @param[out] hit_ts Pointer to a SIMD::float4 where the t parameter of each hit (if any) will be recorded..
+	 *
+	 * @returns A tuple of four boolean values, indicating whether the ray hit the first and second box, respectively.
+	 */
+	inline std::tuple<bool, bool, bool, bool> intersect_ray(const SIMD::float4* o, const SIMD::float4* inv_d, const SIMD::float4& t_max, const std::array<uint32_t, 3>& d_is_neg, SIMD::float4 *hit_ts) const {
+		using namespace SIMD;
+		const float4 zeros(0.0f);
+
+		// Calculate the plane intersections
+		const float4 xlos = (bounds[0+d_is_neg[0]] - o[0]) * inv_d[0];
+		const float4 xhis = (bounds[1-d_is_neg[0]] - o[0]) * inv_d[0];
+		const float4 ylos = (bounds[2+d_is_neg[1]] - o[1]) * inv_d[1];
+		const float4 yhis = (bounds[3-d_is_neg[1]] - o[1]) * inv_d[1];
+		const float4 zlos = (bounds[4+d_is_neg[2]] - o[2]) * inv_d[2];
+		const float4 zhis = (bounds[5-d_is_neg[2]] - o[2]) * inv_d[2];
+
+		// Get the minimum and maximum hits
+		const float4 mins = max(max(xlos, ylos), max(zlos, zeros));
+		const float4 maxs = min(min(xhis, yhis), zhis);
+
+		// Check for hits
+		const float4 hits = lt(mins, t_max) && lte(mins, maxs);
+
+		// Fill in near hits
+		*hit_ts = mins;
+
+		return std::make_tuple(static_cast<bool>(hits[0]), static_cast<bool>(hits[1]), static_cast<bool>(hits[2]), static_cast<bool>(hits[3]));
+	}
+
+
+	inline std::tuple<bool, bool, bool, bool> intersect_ray(const Ray& ray, SIMD::float4 *hit_ts) const {
 		using namespace SIMD;
 		const Vec3 inv_d_f = ray.get_inverse_d();
 		const std::array<uint32_t, 3> d_is_neg = ray.get_d_is_neg();
