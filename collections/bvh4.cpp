@@ -367,21 +367,28 @@ uint BVH4::get_potential_intersections(const Ray &ray, float tmax, uint max_pote
 				bit_stack <<= 3;
 
 				// Set the bitstack and the next node to process
-				if (hit3) {
-					bit_stack |= 1 << 2;
-					node = child(nn, 3);
-				}
-				if (hit2) {
-					bit_stack |= 1 << 1;
-					node = child(nn, 2);
-				}
-				if (hit1) {
-					bit_stack |= 1;
-					node = child(nn, 1);
-				}
 				if (hit0) {
 					node = child(nn, 0);
+					if (hit1)
+						bit_stack |= 1 << 0;
+					if (hit2)
+						bit_stack |= 1 << 1;
+					if (hit3)
+						bit_stack |= 1 << 2;
+				} else if (hit1) {
+					node = child(nn, 1);
+					if (hit2)
+						bit_stack |= 1 << 1;
+					if (hit3)
+						bit_stack |= 1 << 2;
+				} else if (hit2) {
+					node = child(nn, 2);
+					if (hit3)
+						bit_stack |= 1 << 2;
+				} else if (hit3) {
+					node = child(nn, 3);
 				}
+
 
 				continue;
 			}
