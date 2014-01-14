@@ -286,8 +286,8 @@ void BVH4::pack()
 				nodes[ni].set_time_samples(1);
 				BBox bb[4];
 				for (int ci = 0; ci < child_count; ++ci) {
-					for (uint16_t i = 0; i < children[i]->ts; ++i)
-						bb[i].merge_with(build_bboxes[children[i]->bbox_index+i]);
+					for (uint16_t i = 0; i < children[ci]->ts; ++i)
+						bb[ci].merge_with(build_bboxes[children[ci]->bbox_index+i]);
 				}
 
 				switch (child_count) {
@@ -306,6 +306,8 @@ void BVH4::pack()
 			}
 		}
 	}
+	nodes.pop_back();
+	nodes.shrink_to_fit();
 }
 
 
