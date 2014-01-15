@@ -17,7 +17,7 @@
 #include "scene.hpp"
 
 #define RAY_STATE_SIZE scene->world.ray_state_size()
-#define MAX_POTINT 2
+#define MAX_POTINT 1
 #define RAY_JOB_SIZE (1024*4)
 
 
@@ -134,6 +134,7 @@ void Tracer::trace_potential_intersections()
 		if (ray.is_shadow_ray) {
 			if (!intersection.hit)
 				intersection.hit |= primitive.intersect_ray(ray, nullptr);
+			rays_active[potential_intersections[i].ray_index] = !intersection.hit; // Early out for shadow rays
 		} else {
 			intersection.hit |= primitive.intersect_ray(ray, &intersection);
 		}
