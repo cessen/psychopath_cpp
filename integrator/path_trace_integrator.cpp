@@ -315,19 +315,19 @@ void PathTraceIntegrator::render_blocks()
 		}
 
 
-		// Accumulate the samples
-		//std::cout << "\tAccumulating samples" << std::endl;
-		image_mut.lock();
-		for (uint32_t i = 0; i < samp_size; i++) {
-			image->add_sample(paths[i].col, coords[i*2], coords[i*2+1]);
+		if (!Config::no_output) {
+			// Accumulate the samples
+			image_mut.lock();
+			for (uint32_t i = 0; i < samp_size; i++) {
+				image->add_sample(paths[i].col, coords[i*2], coords[i*2+1]);
+			}
+
+			// Callback
+			if (callback)
+				callback();
+
+			image_mut.unlock();
 		}
-
-
-		// Callback
-		if (callback)
-			callback();
-
-		image_mut.unlock();
 	}
 }
 

@@ -83,7 +83,7 @@ bool Renderer::render(int thread_count)
 	// Save image
 	write_png_from_film(image.get(), output_path, 0.0f);
 
-#if 1
+#if 0
 	// Print statistics
 
 	std::cout << "Rays shot while rendering: " << Global::Stats::rays_shot << std::endl;

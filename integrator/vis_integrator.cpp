@@ -97,13 +97,6 @@ void VisIntegrator::integrate()
 		}
 
 
-		// Accumulate the samples
-		std::cout << "\tAccumulating samples" << std::endl;
-		std::cout.flush();
-		for (size_t i = 0; i < ssize; i++) {
-			image->add_sample(paths[i].col, coords[i*2], coords[i*2+1]);
-		}
-
 		// Print percentage complete
 		static int32_t last_perc = -1;
 		int32_t perc = image_sampler.percentage() * 100;
@@ -112,8 +105,17 @@ void VisIntegrator::integrate()
 			last_perc = perc;
 		}
 
-		if (callback)
-			callback();
+		if (!Config::no_output) {
+			// Accumulate the samples
+			std::cout << "\tAccumulating samples" << std::endl;
+			std::cout.flush();
+			for (size_t i = 0; i < ssize; i++) {
+				image->add_sample(paths[i].col, coords[i*2], coords[i*2+1]);
+			}
+
+			if (callback)
+				callback();
+		}
 
 		if (last)
 			break;
