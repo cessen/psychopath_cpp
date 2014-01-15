@@ -340,58 +340,56 @@ uint BVH4::get_potential_intersections(const Ray &ray, float tmax, uint max_pote
 	uint32_t hits_so_far = 0;
 
 	while (hits_so_far < max_potential) {
-		const Node& n = nodes[node];
-
-		if (is_leaf(node)) {
-			// Leaf node
-			ids[hits_so_far++] = node;
-		} else {
+		while (!is_leaf(node)) {
 			// Inner node
+#ifdef GLOBAL_STATS_TOP_LEVEL_BVH_NODE_TESTS
+			Global::Stats::top_level_bvh_node_tests += 4;
+#endif
 			// Test ray against children's bboxes
 			bool hit0, hit1, hit2, hit3;
 			SIMD::float4 near_hits;
 			uint32_t ti;
 			float alpha;
+
 			// Get the time-interpolated bounding box
-			const BBox4 b = calc_time_interp(time_samples(node), ray.time, &ti, &alpha) ? lerp(alpha, nodes[node+ti].bounds, nodes[node+ti+1].bounds) : n.bounds;
+			const BBox4 b = calc_time_interp(time_samples(node), ray.time, &ti, &alpha) ? lerp(alpha, nodes[node+ti].bounds, nodes[node+ti+1].bounds) : nodes[node].bounds;
+
 			// Ray test
 			std::tie(hit0, hit1, hit2, hit3) = b.intersect_ray(ray_o, inv_d, max_t, d_is_neg, &near_hits);
-#ifdef GLOBAL_STATS_TOP_LEVEL_BVH_NODE_TESTS
-			Global::Stats::bbox_tests += 4;
-#endif
 
-			if (hit0 || hit1 || hit2 || hit3) {
-				const uint64_t nn = node;
-
-				// Shift bitstack
+			// Set the bitstack and the next node to process
+			if (hit0) {
 				bit_stack <<= 3;
-
-				// Set the bitstack and the next node to process
-				if (hit0) {
-					node = child(nn, 0);
-					if (hit1)
-						bit_stack |= 1 << 0;
-					if (hit2)
-						bit_stack |= 1 << 1;
-					if (hit3)
-						bit_stack |= 1 << 2;
-				} else if (hit1) {
-					node = child(nn, 1);
-					if (hit2)
-						bit_stack |= 1 << 1;
-					if (hit3)
-						bit_stack |= 1 << 2;
-				} else if (hit2) {
-					node = child(nn, 2);
-					if (hit3)
-						bit_stack |= 1 << 2;
-				} else if (hit3) {
-					node = child(nn, 3);
-				}
-
-
-				continue;
+				node = child(node, 0);
+				if (hit1)
+					bit_stack |= 1 << 0;
+				if (hit2)
+					bit_stack |= 1 << 1;
+				if (hit3)
+					bit_stack |= 1 << 2;
+			} else if (hit1) {
+				bit_stack <<= 3;
+				node = child(node, 1);
+				if (hit2)
+					bit_stack |= 1 << 1;
+				if (hit3)
+					bit_stack |= 1 << 2;
+			} else if (hit2) {
+				bit_stack <<= 3;
+				node = child(node, 2);
+				if (hit3)
+					bit_stack |= 1 << 2;
+			} else if (hit3) {
+				bit_stack <<= 3;
+				node = child(node, 3);
+			} else {
+				break;
 			}
+		}
+
+		if (is_leaf(node)) {
+			// Leaf node
+			ids[hits_so_far++] = node;
 		}
 
 		// If we've completed the full traversal

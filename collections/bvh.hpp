@@ -106,7 +106,7 @@ private:
 	 */
 	inline bool intersect_node(const uint64_t node_i, const Ray& ray, const Vec3& inv_d, const std::array<uint32_t, 3>& d_is_neg, float *near_t, float *far_t) const {
 #ifdef GLOBAL_STATS_TOP_LEVEL_BVH_NODE_TESTS
-		Global::Stats::bbox_tests++;
+		Global::Stats::top_level_bvh_node_tests++;
 #endif
 		const Node& node = nodes[node_i];
 		const BBox b = lerp_seq<BBox, decltype(bboxes)::const_iterator >(ray.time, bboxes.cbegin() + node.bbox_index, node.ts);

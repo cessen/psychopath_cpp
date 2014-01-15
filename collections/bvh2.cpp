@@ -296,7 +296,7 @@ uint BVH2::get_potential_intersections(const Ray &ray, float tmax, uint max_pote
 			// Ray test
 			std::tie(hit0, hit1) = b.intersect_ray(ray_o, inv_d, max_t, d_is_neg, &near_hits);
 #ifdef GLOBAL_STATS_TOP_LEVEL_BVH_NODE_TESTS
-			Global::Stats::bbox_tests += 2;
+			Global::Stats::top_level_bvh_node_tests += 2;
 #endif
 
 			if (hit0 || hit1) {

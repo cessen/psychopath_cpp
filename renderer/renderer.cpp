@@ -83,12 +83,12 @@ bool Renderer::render(int thread_count)
 	// Save image
 	write_png_from_film(image.get(), output_path, 0.0f);
 
-#if 0
+#if 1
 	// Print statistics
 
 	std::cout << "Rays shot while rendering: " << Global::Stats::rays_shot << std::endl;
 #ifdef GLOBAL_STATS_TOP_LEVEL_BVH_NODE_TESTS
-	std::cout << "Top-level BVH node tests: " << Global::Stats::bbox_tests << std::endl;
+	std::cout << "Top-level BVH node tests: " << Global::Stats::top_level_bvh_node_tests << std::endl;
 #endif
 	std::cout << "Primitive-ray tests during rendering: " << Global::Stats::primitive_ray_tests << std::endl;
 	std::cout << "Splits during rendering: " << Global::Stats::split_count << std::endl;

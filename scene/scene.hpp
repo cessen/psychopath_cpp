@@ -32,7 +32,7 @@ struct Scene {
 	std::unique_ptr<Camera> camera;
 	std::vector<std::unique_ptr<Primitive>> primitives;
 	std::vector<std::unique_ptr<Light>> finite_lights;
-	BVH2 world;
+	BVH4 world;
 
 	Scene() {}
 
