@@ -46,7 +46,7 @@ void PathTraceIntegrator::integrate()
 {
 	// Auto-calculate bucket_size
 	const int min_bucket_size = 1;
-	const int max_bucket_size = std::min(image->width, image->height) / thread_count;
+	const int max_bucket_size = std::sqrt((image->width * image->height) / (thread_count * 4.0f));  // Roughly four buckets per thread
 	int bucket_size = std::sqrt(static_cast<float>(Config::samples_per_bucket) / spp);
 	bucket_size = std::min(max_bucket_size, bucket_size);
 	bucket_size = std::max(min_bucket_size, bucket_size);
