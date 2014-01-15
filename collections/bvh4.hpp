@@ -40,7 +40,7 @@ public:
 	}
 
 	struct Node {
-		uint64_t parent_index_and_ts = 0;  // Stores both the parent index and the number of time samples.
+		uint64_t parent_index_and_misc = 0;  // Stores the parent index, and also the time sample count and which sibling the node is
 		size_t child_indices[3] = {0,0,0}; // When first element is 0, indicates that this is a leaf node,
 		// because a non-leaf node needs at least two children.  When the
 		// second and/or third elements are zero, indicates there is no
@@ -54,20 +54,26 @@ public:
 
 		Node() {}
 
-		Node(const Node& n): parent_index_and_ts {n.parent_index_and_ts} {
+		Node(const Node& n): parent_index_and_misc {n.parent_index_and_misc} {
 			for (int i = 0; i < 3; ++i)
 				child_indices[i] = n.child_indices[i];
 			bounds = n.bounds;
 		}
 
 		void set_time_samples(const uint64_t ts) {
-			parent_index_and_ts &= 0x0000FFFFFFFFFFFF;
-			parent_index_and_ts |= (ts << 48);
+			parent_index_and_misc &= 0xF000FFFFFFFFFFFF;
+			parent_index_and_misc |= (ts << 48) & 0x0FFF000000000000;
 		}
 
 		void set_parent_index(const uint64_t par_i) {
-			parent_index_and_ts &= 0xFFFF000000000000;
-			parent_index_and_ts |= (par_i & 0x0000FFFFFFFFFFFF);
+			parent_index_and_misc &= 0xFFFF000000000000;
+			parent_index_and_misc |= par_i & 0x0000FFFFFFFFFFFF;
+		}
+
+		// Record whether this node is the first, second, third, or fourth sibling (as 0-3).
+		void set_which_sibling(const uint64_t sibling_id) {
+			parent_index_and_misc &= 0x0FFFFFFFFFFFFFFF;
+			parent_index_and_misc |= (sibling_id << 60) & 0xF000000000000000;
 		}
 	};
 
@@ -151,7 +157,7 @@ private:
 	 * of the node with the given index.
 	 */
 	inline size_t parent(const size_t node_i) const {
-		return nodes[node_i].parent_index_and_ts & 0x0000FFFFFFFFFFFF;
+		return nodes[node_i].parent_index_and_misc & 0x0000FFFFFFFFFFFF;
 	}
 
 	/**
@@ -159,8 +165,16 @@ private:
 	 * of the node with the given index.
 	 */
 	inline uint32_t time_samples(const size_t node_i) const {
-		return (nodes[node_i].parent_index_and_ts >> 48) & 0x000000000000FFFF;
+		return (nodes[node_i].parent_index_and_misc >> 48) & 0x0000000000000FFF;
 	}
+
+	/**
+	 * @brief Returns which sibling the node with the given index is.
+	 */
+	inline uint32_t which_sibling(const size_t node_i) const {
+		return (nodes[node_i].parent_index_and_misc >> 60) & 0x000000000000000F;
+	}
+
 
 	/**
 	 * @brief Returns the index of the nth (0-3) sibling
@@ -173,12 +187,25 @@ private:
 		return child(parent(node_i), n);
 	}
 
+	inline size_t next_sibling(const size_t node_i, const int offset) const {
+		return sibling(node_i, (which_sibling(node_i) + offset) % 4);
+	}
+
 	/**
 	 * @brief Returns whether the node with the given index is a
 	 * leaf node or not.
 	 */
 	inline bool is_leaf(const size_t node_i) const {
 		return (nodes[node_i].child_indices[0] == 0);
+	}
+
+	inline uint64_t skip_code(uint64_t mask, int pos) const {
+		return ((mask >> (pos+1)) | (mask << (3-pos))) & 7;
+	}
+
+	static constexpr int code_table[8] = {0, 1, 2, 1, 3, 1, 2, 1};
+	inline uint64_t skip_code_next(uint64_t code) const {
+		return (code & 7) >> (code_table[code]);
 	}
 
 

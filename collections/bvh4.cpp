@@ -210,12 +210,18 @@ void BVH4::pack()
 		// Set the values that don't depend on whether this
 		// is a leaf node or not.
 		nodes[ni].set_parent_index(bn.parent_index);
-		if (bn.flags & IS_2ND)
+		if (bn.flags & IS_2ND) {
 			nodes[bn.parent_index].child_indices[0] = ni;
-		else if (bn.flags & IS_3RD)
+			nodes[ni].set_which_sibling(1);
+		} else if (bn.flags & IS_3RD) {
 			nodes[bn.parent_index].child_indices[1] = ni;
-		else if (bn.flags & IS_4TH)
+			nodes[ni].set_which_sibling(2);
+		} else if (bn.flags & IS_4TH) {
 			nodes[bn.parent_index].child_indices[2] = ni;
+			nodes[ni].set_which_sibling(3);
+		} else {
+			nodes[ni].set_which_sibling(0);
+		}
 
 		// Set the values that _do_ depend on whether this is
 		// a leaf node or not.
@@ -346,7 +352,7 @@ uint BVH4::get_potential_intersections(const Ray &ray, float tmax, uint max_pote
 			Global::Stats::top_level_bvh_node_tests += 4;
 #endif
 			// Test ray against children's bboxes
-			bool hit0, hit1, hit2, hit3;
+			bool hits[4];
 			SIMD::float4 near_hits;
 			uint32_t ti;
 			float alpha;
@@ -355,36 +361,47 @@ uint BVH4::get_potential_intersections(const Ray &ray, float tmax, uint max_pote
 			const BBox4 b = calc_time_interp(time_samples(node), ray.time, &ti, &alpha) ? lerp(alpha, nodes[node+ti].bounds, nodes[node+ti+1].bounds) : nodes[node].bounds;
 
 			// Ray test
-			std::tie(hit0, hit1, hit2, hit3) = b.intersect_ray(ray_o, inv_d, max_t, d_is_neg, &near_hits);
+			std::tie(hits[0], hits[1], hits[2], hits[3]) = b.intersect_ray(ray_o, inv_d, max_t, d_is_neg, &near_hits);
 
-			// Set the bitstack and the next node to process
-			if (hit0) {
-				bit_stack <<= 3;
-				node = child(node, 0);
-				if (hit1)
-					bit_stack |= 1 << 0;
-				if (hit2)
-					bit_stack |= 1 << 1;
-				if (hit3)
-					bit_stack |= 1 << 2;
-			} else if (hit1) {
-				bit_stack <<= 3;
-				node = child(node, 1);
-				if (hit2)
-					bit_stack |= 1 << 1;
-				if (hit3)
-					bit_stack |= 1 << 2;
-			} else if (hit2) {
-				bit_stack <<= 3;
-				node = child(node, 2);
-				if (hit3)
-					bit_stack |= 1 << 2;
-			} else if (hit3) {
-				bit_stack <<= 3;
-				node = child(node, 3);
-			} else {
+			// Build hit mask
+			uint64_t hit_mask = (hits[0] << 0) | (hits[1] << 1) | (hits[2] << 2) | (hits[3] << 3);
+
+			// If we didn't hit anything, exit loop
+			if (hit_mask == 0)
 				break;
+
+			bit_stack <<= 3;
+
+			// Single hit
+			switch (hit_mask) {
+				case 1 << 0:
+					node = child(node, 0);
+					continue;
+				case 1 << 1:
+					node = child(node, 1);
+					continue;
+				case 1 << 2:
+					node = child(node, 2);
+					continue;
+				case 1 << 3:
+					node = child(node, 3);
+					continue;
 			}
+
+			// Multiple hits
+			// Find the index of the nearst hit
+			int nearest_hit_i = 0;
+			float nearest_hit = near_hits[0];
+			for (int i = 1; i < 4; ++i) {
+				if (hits[i] && (near_hits[i] <= nearest_hit)) {
+					nearest_hit = near_hits[i];
+					nearest_hit_i = i;
+				}
+			}
+
+			// Add skip code to the bit stack and set the next node
+			bit_stack |= skip_code(hit_mask, nearest_hit_i);
+			node = child(node, nearest_hit_i);
 		}
 
 		if (is_leaf(node)) {
@@ -405,26 +422,11 @@ uint BVH4::get_potential_intersections(const Ray &ray, float tmax, uint max_pote
 		}
 
 		// Traverse to the next available sibling node
-		switch (bit_stack & 7) {
-			case 1: // 001
-			case 3: // 011
-			case 5: // 101
-			case 7: // 111
-				bit_stack &= ~uint64_t(1);
-				node = sibling(node, 1);
-				break;
-			case 2: // 010
-			case 6: // 110
-				bit_stack &= ~uint64_t(1<<1);
-				node = sibling(node, 2);
-				break;
-			case 4: // 100
-				bit_stack &= ~uint64_t(1<<2);
-				node = sibling(node, 3);
-				break;
-			default:
-				break;
-		}
+		static const int code_table[8] = {0, 1, 2, 1, 3, 1, 2, 1};
+		const uint64_t code = bit_stack & 7;
+		const uint64_t skip_code_next = code >> code_table[code];
+		node = next_sibling(node, code_table[code]);
+		bit_stack = (bit_stack & ~7) | skip_code_next;
 	}
 
 	// Return the number of primitives accumulated
