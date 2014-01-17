@@ -348,9 +348,9 @@ struct BBox2 {
 	 * @param[out] hit_ts Pointer to a SIMD::float4 where the t parameter of each hit (if any) will be recorded.
 	 *             The hit t's are stored in index [0] and [1] for the first and second box, respectively.
 	 *
-	 * @returns A tuple of two boolean values, indicating whether the ray hit the first and second box, respectively.
+	 * @returns A bitmask indicating which (if any) of the two boxes were hit.
 	 */
-	inline std::tuple<bool, bool> intersect_ray(const SIMD::float4* o, const SIMD::float4* inv_d, const SIMD::float4& t_max, const std::array<uint32_t, 3>& d_is_neg, SIMD::float4 *hit_ts) const {
+	inline unsigned int intersect_ray(const SIMD::float4* o, const SIMD::float4* inv_d, const SIMD::float4& t_max, const std::array<uint32_t, 3>& d_is_neg, SIMD::float4 *hit_ts) const {
 		using namespace SIMD;
 		const float4 zeros(0.0f);
 
@@ -370,11 +370,11 @@ struct BBox2 {
 		// Fill in near hits
 		*hit_ts = mins;
 
-		return std::make_tuple(static_cast<bool>(hits[0]), static_cast<bool>(hits[1]));
+		return to_bitmask(hits) & 3;
 	}
 
 
-	inline std::tuple<bool, bool> intersect_ray(const Ray& ray, SIMD::float4 *hit_ts) const {
+	inline unsigned int intersect_ray(const Ray& ray, SIMD::float4 *hit_ts) const {
 		using namespace SIMD;
 		const Vec3 inv_d_f = ray.get_inverse_d();
 		const std::array<uint32_t, 3> d_is_neg = ray.get_d_is_neg();
@@ -507,9 +507,9 @@ struct BBox4 {
 	 * @param[in] d_is_neg Precomputed values indicating whether the x, y, and z components of the ray are negative or not.
 	 * @param[out] hit_ts Pointer to a SIMD::float4 where the t parameter of each hit (if any) will be recorded..
 	 *
-	 * @returns A tuple of four boolean values, indicating whether the ray hit the first and second box, respectively.
+	 * @returns A bitmask indicating which (if any) of the four boxes were hit.
 	 */
-	inline std::tuple<bool, bool, bool, bool> intersect_ray(const SIMD::float4* o, const SIMD::float4* inv_d, const SIMD::float4& t_max, const std::array<uint32_t, 3>& d_is_neg, SIMD::float4 *hit_ts) const {
+	inline unsigned int intersect_ray(const SIMD::float4* o, const SIMD::float4* inv_d, const SIMD::float4& t_max, const std::array<uint32_t, 3>& d_is_neg, SIMD::float4 *hit_ts) const {
 		using namespace SIMD;
 		const float4 zeros(0.0f);
 
@@ -531,11 +531,11 @@ struct BBox4 {
 		// Fill in near hits
 		*hit_ts = mins;
 
-		return std::make_tuple(static_cast<bool>(hits[0]), static_cast<bool>(hits[1]), static_cast<bool>(hits[2]), static_cast<bool>(hits[3]));
+		return to_bitmask(hits);
 	}
 
 
-	inline std::tuple<bool, bool, bool, bool> intersect_ray(const Ray& ray, SIMD::float4 *hit_ts) const {
+	inline unsigned int intersect_ray(const Ray& ray, SIMD::float4 *hit_ts) const {
 		using namespace SIMD;
 		const Vec3 inv_d_f = ray.get_inverse_d();
 		const std::array<uint32_t, 3> d_is_neg = ray.get_d_is_neg();

@@ -279,41 +279,45 @@ uint BVH2::get_potential_intersections(const Ray &ray, float tmax, uint max_pote
 	uint32_t hits_so_far = 0;
 
 	while (hits_so_far < max_potential) {
-		const Node& n = nodes[node];
-
-		if (!n.child_index) {
-			// Leaf node
-			ids[hits_so_far++] = node;
-		} else {
+		while (nodes[node].child_index) {
 			// Inner node
 			// Test ray against children's bboxes
-			bool hit0, hit1;
+			uint64_t hit_mask;
 			SIMD::float4 near_hits;
 			uint32_t ti;
 			float alpha;
 			// Get the time-interpolated bounding box
-			const BBox2 b = calc_time_interp(time_samples(node), ray.time, &ti, &alpha) ? lerp(alpha, nodes[node+ti].bounds, nodes[node+ti+1].bounds) : n.bounds;
+			const BBox2 b = calc_time_interp(time_samples(node), ray.time, &ti, &alpha) ? lerp(alpha, nodes[node+ti].bounds, nodes[node+ti+1].bounds) : nodes[node].bounds;
 			// Ray test
-			std::tie(hit0, hit1) = b.intersect_ray(ray_o, inv_d, max_t, d_is_neg, &near_hits);
+			hit_mask = b.intersect_ray(ray_o, inv_d, max_t, d_is_neg, &near_hits);
 #ifdef GLOBAL_STATS_TOP_LEVEL_BVH_NODE_TESTS
 			Global::Stats::top_level_bvh_node_tests += 2;
 #endif
+			if (hit_mask == 0)
+				break;
 
-			if (hit0 || hit1) {
-				bit_stack <<= 1;
-				if (hit0 && hit1) {
+			bit_stack <<= 1;
+
+			switch (hit_mask) {
+				case 1:
+					node = child1(node);
+					break;
+				case 2:
+					node = child2(node);
+					break;
+				case 3:
 					if (near_hits[0] < near_hits[1])
 						node = child1(node);
 					else
 						node = child2(node);
 					bit_stack |= 1;
-				} else if (hit0) {
-					node = child1(node);
-				} else {
-					node = child2(node);
-				}
-				continue;
+					break;
 			}
+		}
+
+		// Leaf node
+		if (!nodes[node].child_index) {
+			ids[hits_so_far++] = node;
 		}
 
 		// If we've completed the full traversal

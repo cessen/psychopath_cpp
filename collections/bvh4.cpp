@@ -352,7 +352,6 @@ uint BVH4::get_potential_intersections(const Ray &ray, float tmax, uint max_pote
 			Global::Stats::top_level_bvh_node_tests += 4;
 #endif
 			// Test ray against children's bboxes
-			bool hits[4];
 			SIMD::float4 near_hits;
 			uint32_t ti;
 			float alpha;
@@ -361,10 +360,7 @@ uint BVH4::get_potential_intersections(const Ray &ray, float tmax, uint max_pote
 			const BBox4 b = calc_time_interp(time_samples(node), ray.time, &ti, &alpha) ? lerp(alpha, nodes[node+ti].bounds, nodes[node+ti+1].bounds) : nodes[node].bounds;
 
 			// Ray test
-			std::tie(hits[0], hits[1], hits[2], hits[3]) = b.intersect_ray(ray_o, inv_d, max_t, d_is_neg, &near_hits);
-
-			// Build hit mask
-			uint64_t hit_mask = (hits[0] << 0) | (hits[1] << 1) | (hits[2] << 2) | (hits[3] << 3);
+			uint64_t hit_mask = b.intersect_ray(ray_o, inv_d, max_t, d_is_neg, &near_hits);
 
 			// If we didn't hit anything, exit loop
 			if (hit_mask == 0)
@@ -391,9 +387,9 @@ uint BVH4::get_potential_intersections(const Ray &ray, float tmax, uint max_pote
 			// Multiple hits
 			// Find the index of the nearst hit
 			int nearest_hit_i = 0;
-			float nearest_hit = near_hits[0];
-			for (int i = 1; i < 4; ++i) {
-				if (hits[i] && (near_hits[i] <= nearest_hit)) {
+			float nearest_hit = std::numeric_limits<float>::infinity();
+			for (int i = 0; i < 4; ++i) {
+				if ((hit_mask & (1<<i)) && (near_hits[i] <= nearest_hit)) {
 					nearest_hit = near_hits[i];
 					nearest_hit_i = i;
 				}

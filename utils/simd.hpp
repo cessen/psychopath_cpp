@@ -111,6 +111,11 @@ inline float4 shuffle_swap(const float4& a, bool swap=true)
 		return a;
 }
 
+inline unsigned int to_bitmask(const float4& a)
+{
+	return _mm_movemask_ps(a.data);
+}
+
 }
 
 #endif // SIMD_HPP

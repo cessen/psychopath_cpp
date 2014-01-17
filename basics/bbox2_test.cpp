@@ -196,15 +196,13 @@ BOOST_AUTO_TEST_CASE(intersect_ray_1)
 	         BBox(Vec3(-42.0, -3.5, -1.5), Vec3(9.0, 8.25, 1.0)));
 
 	SIMD::float4 hit_ts;
-	bool hit0 = false;
-	bool hit1 = false;
-	std::tie(hit0, hit1) = bb.intersect_ray(r, &hit_ts);
+	unsigned int hit_mask = bb.intersect_ray(r, &hit_ts);
 
-	BOOST_CHECK(hit0 == true);
+	BOOST_CHECK(hit_mask == 3);
 	BOOST_CHECK(hit_ts[0] == 5.5);
-	BOOST_CHECK(hit1 == true);
 	BOOST_CHECK(hit_ts[1] == 4.5);
 }
+
 
 // Tests for ::intersect_ray()
 BOOST_AUTO_TEST_CASE(intersect_ray_2)
@@ -216,15 +214,13 @@ BOOST_AUTO_TEST_CASE(intersect_ray_2)
 	         BBox(Vec3(-42.0, -3.5, -1.5), Vec3(9.0, 8.25, 1.0)));
 
 	SIMD::float4 hit_ts;
-	bool hit0 = false;
-	bool hit1 = false;
-	std::tie(hit0, hit1) = bb.intersect_ray(r, &hit_ts);
+	unsigned int hit_mask = bb.intersect_ray(r, &hit_ts);
 
-	BOOST_CHECK(hit0 == true);
+	BOOST_CHECK(hit_mask == 3);
 	BOOST_CHECK(hit_ts[0] == 4.75);
-	BOOST_CHECK(hit1 == true);
 	BOOST_CHECK(hit_ts[1] == 3.75);
 }
+
 
 BOOST_AUTO_TEST_CASE(intersect_ray_3)
 {
@@ -235,13 +231,10 @@ BOOST_AUTO_TEST_CASE(intersect_ray_3)
 	         BBox(Vec3(-42.0, -3.5, -1.5), Vec3(9.0, 8.25, 1.0)));
 
 	SIMD::float4 hit_ts;
-	bool hit0 = false;
-	bool hit1 = false;
-	std::tie(hit0, hit1) = bb.intersect_ray(r, &hit_ts);
+	unsigned int hit_mask = bb.intersect_ray(r, &hit_ts);
 
-	BOOST_CHECK(hit0 == true);
+	BOOST_CHECK(hit_mask == 3);
 	BOOST_CHECK(hit_ts[0] == 2.75);
-	BOOST_CHECK(hit1 == true);
 	BOOST_CHECK(hit_ts[1] == 2.25);
 }
 
@@ -254,12 +247,9 @@ BOOST_AUTO_TEST_CASE(intersect_ray_4)
 	         BBox(Vec3(-42.0, -3.5, -1.5), Vec3(9.0, 8.25, 1.0)));
 
 	SIMD::float4 hit_ts;
-	bool hit0 = false;
-	bool hit1 = false;
-	std::tie(hit0, hit1) = bb.intersect_ray(r, &hit_ts);
+	unsigned int hit_mask = bb.intersect_ray(r, &hit_ts);
 
-	BOOST_CHECK(hit0 == false);
-	BOOST_CHECK(hit1 == true);
+	BOOST_CHECK(hit_mask == 2);
 	BOOST_CHECK(hit_ts[1] == 4.5);
 }
 
@@ -272,13 +262,10 @@ BOOST_AUTO_TEST_CASE(intersect_ray_5)
 	         BBox(Vec3(-42.0, -3.5, -1.5), Vec3(9.0, 8.25, 1.0)));
 
 	SIMD::float4 hit_ts;
-	bool hit0 = false;
-	bool hit1 = false;
-	std::tie(hit0, hit1) = bb.intersect_ray(r, &hit_ts);
+	unsigned int hit_mask = bb.intersect_ray(r, &hit_ts);
 
-	BOOST_CHECK(hit0 == true);
+	BOOST_CHECK(hit_mask == 3);
 	BOOST_CHECK(hit_ts[0] == 0.0);
-	BOOST_CHECK(hit1 == true);
 	BOOST_CHECK(hit_ts[1] == 0.0);
 }
 
@@ -291,13 +278,10 @@ BOOST_AUTO_TEST_CASE(intersect_ray_6)
 	         BBox(Vec3(2.0, -2.0, -2.0), Vec3(2.0, 2.0, 2.0)));
 
 	SIMD::float4 hit_ts;
-	bool hit0 = false;
-	bool hit1 = false;
-	std::tie(hit0, hit1) = bb.intersect_ray(r, &hit_ts);
+	unsigned int hit_mask = bb.intersect_ray(r, &hit_ts);
 
-	BOOST_CHECK(hit0 == true);
+	BOOST_CHECK(hit_mask == 3);
 	BOOST_CHECK(hit_ts[0] == 5.0);
-	BOOST_CHECK(hit1 == true);
 	BOOST_CHECK(hit_ts[1] == 6.0);
 }
 #if 0
