@@ -11,6 +11,7 @@
 #include "array.hpp"
 #include "slice.hpp"
 #include "counting_sort.hpp"
+#include "low_level.hpp"
 
 #include "ray.hpp"
 #include "intersection.hpp"
@@ -125,6 +126,11 @@ void Tracer::sort_potential_intersections()
 void Tracer::trace_potential_intersections()
 {
 	for (size_t i = 0; i < potential_intersections.size(); i++) {
+		// Prefetch memory for next iteration, to hide memory latency
+		prefetch_L3(&(potential_intersections[i+2]));
+		prefetch_L3(&(rays[potential_intersections[i+1].ray_index]));
+		prefetch_L3(&(intersections[potential_intersections[i+1].ray_index]));
+		
 		// Shorthand references
 		const auto& ray = rays[potential_intersections[i].ray_index];
 		auto& intersection = intersections[potential_intersections[i].ray_index];
