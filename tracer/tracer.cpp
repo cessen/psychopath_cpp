@@ -13,12 +13,15 @@
 #include "counting_sort.hpp"
 #include "low_level.hpp"
 
+#include "micro_surface.hpp"
+#include "micro_surface_cache.hpp"
+
 #include "ray.hpp"
 #include "intersection.hpp"
 #include "scene.hpp"
 
 #define RAY_STATE_SIZE scene->world.ray_state_size()
-#define MAX_POTINT 1
+#define MAX_POTINT 1u
 #define RAY_JOB_SIZE (1024*4)
 
 
@@ -122,28 +125,78 @@ void Tracer::sort_potential_intersections()
 }
 
 
+size_t Tracer::trace_diceable_surface(size_t potint_start)
+{
+	const size_t prim_id = potential_intersections[potint_start].object_id;
+	DiceableSurfacePrimitive* primitive = dynamic_cast<DiceableSurfacePrimitive*>(&(scene->world.get_primitive(prim_id)));
+	auto& bounds = primitive->bounds();
+	std::shared_ptr<MicroSurface> micro_surface = MicroSurfaceCache::cache.get(primitive->uid);
+	size_t current_subdivs;
+
+	if (micro_surface)
+		current_subdivs = micro_surface->subdivisions();
+
+	size_t i = potint_start;
+	for (; i < potential_intersections.size() && potential_intersections[i].object_id == prim_id; ++i) {
+		const auto& ray = rays[potential_intersections[i].ray_index];
+		auto& intersection = intersections[potential_intersections[i].ray_index];
+
+		Global::Stats::primitive_ray_tests++;
+
+		// Get bounding box intersection
+		float tnear, tfar;
+		if (!bounds.intersect_ray(ray, &tnear, &tfar))
+			continue;
+
+		// Calculate the subdivision rate this ray needs for this primitive
+		const float width = ray.min_width(tnear, tfar);
+		const size_t subdivs = primitive->subdiv_estimate(width);
+
+		// Figure out if we need to redice or not
+		bool redice = false;
+		if (micro_surface) {
+			if (current_subdivs < subdivs)
+				redice = true;
+		} else {
+			redice = true;
+		}
+
+		// Redice if necessary
+		if (redice) {
+			micro_surface = std::shared_ptr<MicroSurface>(primitive->dice(subdivs));
+			current_subdivs = subdivs;
+			Global::Stats::cache_misses++;
+		}
+
+		// Trace the ray against the MicroSurface
+		if (ray.is_shadow_ray) {
+			if (!intersection.hit)
+				intersection.hit |= micro_surface->intersect_ray(ray, width, nullptr);
+			rays_active[potential_intersections[i].ray_index] = !intersection.hit; // Early out for shadow rays
+		} else {
+			intersection.hit |= micro_surface->intersect_ray(ray, width, &intersection);
+		}
+	}
+
+	MicroSurfaceCache::cache.put(micro_surface, primitive->uid);
+
+	return i;
+}
+
+
 
 void Tracer::trace_potential_intersections()
 {
 	for (size_t i = 0; i < potential_intersections.size(); i++) {
 		// Prefetch memory for next iteration, to hide memory latency
-		prefetch_L3(&(potential_intersections[i+2]));
-		prefetch_L3(&(rays[potential_intersections[i+1].ray_index]));
-		prefetch_L3(&(intersections[potential_intersections[i+1].ray_index]));
-		
+		//prefetch_L3(&(potential_intersections[i+2]));
+		//prefetch_L3(&(rays[potential_intersections[i+1].ray_index]));
+		//prefetch_L3(&(intersections[potential_intersections[i+1].ray_index]));
+
 		// Shorthand references
-		const auto& ray = rays[potential_intersections[i].ray_index];
-		auto& intersection = intersections[potential_intersections[i].ray_index];
 		auto& primitive = scene->world.get_primitive(potential_intersections[i].object_id);
 
-		// Trace
-		if (ray.is_shadow_ray) {
-			if (!intersection.hit)
-				intersection.hit |= primitive.intersect_ray(ray, nullptr);
-			rays_active[potential_intersections[i].ray_index] = !intersection.hit; // Early out for shadow rays
-		} else {
-			intersection.hit |= primitive.intersect_ray(ray, &intersection);
-		}
+		i = trace_diceable_surface(i) - 1;
 	}
 }
 

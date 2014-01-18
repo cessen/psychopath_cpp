@@ -9,7 +9,6 @@
 #include "grid.hpp"
 #include "primitive.hpp"
 #include "timebox.hpp"
-#include "micro_surface_cache.hpp"
 
 /*
  * A bilinear patch.
@@ -20,9 +19,9 @@
  * | v4----v3
  * \/
  */
-class Bilinear: public SurfacePrimitive
+class Bilinear: public DiceableSurfacePrimitive
 {
-	void uv_dice_rate(size_t *u_rate, size_t *v_rate, float width) {
+	void uv_dice_rate(size_t *u_rate, size_t *v_rate, float width) const {
 		// longest u-side  and v-side of the patch
 		const float ul = (verts[0][0] - verts[0][1]).length() > (verts[0][2] - verts[0][3]).length() ? (verts[0][0] - verts[0][1]).length() : (verts[0][2] - verts[0][3]).length();
 		const float vl = (verts[0][0] - verts[0][3]).length() > (verts[0][1] - verts[0][2]).length() ? (verts[0][0] - verts[0][3]).length() : (verts[0][1] - verts[0][2]).length();
@@ -42,7 +41,6 @@ class Bilinear: public SurfacePrimitive
 public:
 	TimeBox<Vec3 *> verts;
 	float u_min, v_min, u_max, v_max;
-	std::atomic<float> last_ray_width;
 
 
 	BBoxT bbox;
@@ -52,17 +50,14 @@ public:
 	Bilinear(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4);
 	virtual ~Bilinear();
 
-	virtual bool intersect_ray(const Ray &ray, Intersection *intersection=nullptr);
+	void add_time_sample(int samp, Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4);
+	Grid *grid_dice(const int ru, const int rv);
+
 	virtual BBoxT &bounds();
 
-	bool is_traceable();
-	virtual void split(std::vector<Primitive *> &primitives);
-
-	virtual size_t micro_estimate(float width);
-	virtual MicroSurface *micro_generate(float width);
-
-	void add_time_sample(int samp, Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4);
-	Grid *dice(const int ru, const int rv);
+	virtual void split(std::vector<DiceableSurfacePrimitive *> &primitives);
+	virtual size_t subdiv_estimate(float width) const;
+	virtual std::shared_ptr<MicroSurface> dice(size_t subdivisions);
 };
 
 #endif

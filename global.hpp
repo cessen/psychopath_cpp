@@ -8,7 +8,7 @@
 
 namespace Global
 {
-extern std::atomic<size_t> next_primitive_id;
+extern std::atomic<size_t> next_primitive_uid;
 
 namespace Stats
 {

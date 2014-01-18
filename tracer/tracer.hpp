@@ -99,6 +99,8 @@ private:
 	 * intersections.
 	 */
 	void trace_potential_intersections();
+
+	size_t trace_diceable_surface(size_t potint_start);
 };
 
 #endif // TRACER_HPP

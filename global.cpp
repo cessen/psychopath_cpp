@@ -5,7 +5,7 @@
 
 namespace Global
 {
-std::atomic<size_t> next_primitive_id {0};
+std::atomic<size_t> next_primitive_uid {0};
 
 namespace Stats
 {

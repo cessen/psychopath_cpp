@@ -20,8 +20,6 @@ Bilinear::Bilinear(uint16_t res_time_)
 
 	u_min = v_min = 0.0f;
 	u_max = v_max = 1.0f;
-
-	last_ray_width = std::numeric_limits<float>::infinity();
 }
 
 Bilinear::Bilinear(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4)
@@ -37,8 +35,6 @@ Bilinear::Bilinear(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4)
 
 	u_min = v_min = 0.0f;
 	u_max = v_max = 1.0f;
-
-	last_ray_width = std::numeric_limits<float>::infinity();
 }
 
 Bilinear::~Bilinear()
@@ -60,7 +56,7 @@ void Bilinear::add_time_sample(int samp, Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4)
 
 //////////////////////////////////////////////////////////////
 
-size_t Bilinear::micro_estimate(float width)
+size_t Bilinear::subdiv_estimate(float width) const
 {
 	if (width <= Config::min_upoly_size) {
 		return 1;
@@ -69,53 +65,8 @@ size_t Bilinear::micro_estimate(float width)
 		size_t v_rate = 0;
 		uv_dice_rate(&u_rate, &v_rate, width);
 
-		return u_rate * v_rate;
+		return std::max(intlog2(u_rate+1), intlog2(v_rate+1));
 	}
-}
-
-
-bool Bilinear::intersect_ray(const Ray &ray, Intersection *intersection)
-{
-
-	Global::Stats::primitive_ray_tests++;
-
-	// Get bounding box intersection
-	float tnear, tfar;
-	if (!bounds().intersect_ray(ray, &tnear, &tfar))
-		return false;
-
-	// Calculate minimum ray footprint inside the bounding box
-	const float width = ray.min_width(tnear, tfar);
-
-	// Figure out if we need to redice or not
-	std::shared_ptr<MicroSurface> micro_surface;
-	bool redice = false;
-	if (width < last_ray_width && width != 0.0f) {
-		redice = true;
-	} else {
-		// Try to get an existing grid
-		micro_surface = MicroSurfaceCache::cache.get(id);
-
-		// Dice the grid if we don't have one already
-		if (!micro_surface) {
-			Global::Stats::cache_misses++;
-			redice = true;
-		}
-	}
-
-	if (redice) {
-		// Redice
-		micro_surface = std::shared_ptr<MicroSurface>(micro_generate(width*0.75f));
-		MicroSurfaceCache::cache.put(micro_surface, id);
-
-		// Record ray width
-		last_ray_width = width*0.75f;
-	}
-
-	// Test the ray against the grid
-	const bool hit = micro_surface->intersect_ray(ray, width, intersection);
-
-	return hit;
 }
 
 
@@ -158,13 +109,7 @@ BBoxT &Bilinear::bounds()
 }
 
 
-bool Bilinear::is_traceable()
-{
-	return true;
-}
-
-
-void Bilinear::split(std::vector<Primitive *> &primitives)
+void Bilinear::split(std::vector<DiceableSurfacePrimitive *> &primitives)
 {
 	primitives.resize(2);
 	primitives[0] = new Bilinear(verts.state_count);
@@ -235,12 +180,11 @@ void Bilinear::split(std::vector<Primitive *> &primitives)
 }
 
 
-MicroSurface *Bilinear::micro_generate(float width)
+std::shared_ptr<MicroSurface> Bilinear::dice(size_t subdivisions)
 {
 	// Get dicing rate
-	size_t u_rate = 32;
-	size_t v_rate = 32;
-	uv_dice_rate(&u_rate, &v_rate, width);
+	size_t u_rate = 1 << subdivisions;
+	size_t v_rate = 1 << subdivisions;
 
 	// TODO: this is temporary, while splitting is not yet implemented
 	if (u_rate > Config::max_grid_size)
@@ -249,8 +193,8 @@ MicroSurface *Bilinear::micro_generate(float width)
 		v_rate = Config::max_grid_size;
 
 	// Dice away!
-	Grid *grid = dice(u_rate+1, v_rate+1);
-	MicroSurface *micro = new MicroSurface(grid);
+	Grid *grid = grid_dice(u_rate+1, v_rate+1);
+	std::shared_ptr<MicroSurface> micro = std::make_shared<MicroSurface>(grid);
 
 	delete grid;
 
@@ -263,7 +207,7 @@ MicroSurface *Bilinear::micro_generate(float width)
  * ru and rv are the resolution of the grid in vertices
  * in the u and v directions.
  */
-Grid *Bilinear::dice(const int ru, const int rv)
+Grid *Bilinear::grid_dice(const int ru, const int rv)
 {
 	// Initialize grid and fill in the basics
 	Grid *grid = new Grid(ru, rv, verts.state_count);

@@ -190,6 +190,31 @@ static inline Vec3 zup_to_vec(Vec3 from, Vec3 toz)
 
 
 /**
+ * @brief Returns the log base 2 of the given integer.
+ */
+static inline uint32_t intlog2(uint32_t v)
+{
+	uint32_t r;
+	uint32_t shift;
+
+	r = (v > 0xFFFF) << 4;
+	v >>= r;
+	shift = (v > 0xFF) << 3;
+	v >>= shift;
+	r |= shift;
+	shift = (v > 0xF) << 2;
+	v >>= shift;
+	r |= shift;
+	shift = (v > 0x3) << 1;
+	v >>= shift;
+	r |= shift;
+	r |= (v >> 1);
+
+	return r;
+}
+
+
+/**
  * @brief Fast approximation of log2.
  *
  * Taken from http://fastapprox.googlecode.com/

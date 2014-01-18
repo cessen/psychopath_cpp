@@ -51,28 +51,6 @@ BBoxT &PrimArray::bounds()
 	return bbox;
 }
 
-bool PrimArray::intersect_ray(const Ray &ray, Intersection *intersection)
-{
-	std::vector<Primitive *> temp_prim;
-	float tnear, tfar;
-	bool hit = false;
-	int32_t size = children.size();
-
-	for (int32_t i=0; i < size; i++) {
-		if (children[i]->bounds().intersect_ray(ray, &tnear, &tfar)) {
-			// Trace!
-			hit |= children[i]->intersect_ray(ray, intersection);
-
-			// Early out for shadow rays
-			if (hit && ray.is_shadow_ray)
-				break;
-		}
-	}
-
-	return hit;
-}
-
-
 uint PrimArray::get_potential_intersections(const Ray &ray, float tmax, uint max_potential, size_t *ids, void *state)
 {
 	const uint32_t size = children.size();

@@ -91,6 +91,13 @@ public:
 	 */
 	void init_from_grid(Grid *grid);
 
+	/**
+	 * @brief Returns the number of subdivisions used to create
+	 * this MicroSurface.
+	 */
+	size_t subdivisions() const {
+		return intlog2(res_u);
+	}
 
 	/**
 	 * @brief Intersects a ray with the MicroSurface.
