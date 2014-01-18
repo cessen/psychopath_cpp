@@ -60,9 +60,8 @@ bool Grid::calc_normals(Vec3 *normals)
 					if (n_avail[i])
 						normals[upoly_i*time_count+time] = normals[upoly_i*time_count+time] + n[i];
 				}
-				normals[upoly_i*time_count+time] = normals[upoly_i*time_count+time] / static_cast<float>(n_count);
 
-				// Normalize the normal
+				// Approximately normalize the normal
 				normals[upoly_i*time_count+time].normalize();
 			}
 		}

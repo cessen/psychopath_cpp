@@ -58,15 +58,24 @@ void Bilinear::add_time_sample(int samp, Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4)
 
 size_t Bilinear::subdiv_estimate(float width) const
 {
-	if (width <= Config::min_upoly_size) {
-		return 1;
-	} else {
-		size_t u_rate = 0;
-		size_t v_rate = 0;
-		uv_dice_rate(&u_rate, &v_rate, width);
+	if (width < Config::min_upoly_size)
+		width = Config::min_upoly_size;
+	
+	// longest u-side  and v-side of the patch
+	const float ul = (verts[0][0] - verts[0][1]).length() > (verts[0][2] - verts[0][3]).length() ? (verts[0][0] - verts[0][1]).length() : (verts[0][2] - verts[0][3]).length();
+	const float vl = (verts[0][0] - verts[0][3]).length() > (verts[0][1] - verts[0][2]).length() ? (verts[0][0] - verts[0][3]).length() : (verts[0][1] - verts[0][2]).length();
 
-		return std::max(intlog2(u_rate+1), intlog2(v_rate+1));
-	}
+	// Power-of-two dicing rates for u and v
+	const size_t u_rate = (ul / (width * Config::dice_rate)) + 1;
+	const size_t v_rate = (vl / (width * Config::dice_rate)) + 1;
+	
+	size_t rate = upper_power_of_two(std::max(u_rate, v_rate));
+	
+	// TODO: this is temporary, while splitting is not yet implemented
+	if (rate > Config::max_grid_size)
+		rate = Config::max_grid_size;
+
+	return intlog2(rate);
 }
 
 
@@ -185,12 +194,6 @@ std::shared_ptr<MicroSurface> Bilinear::dice(size_t subdivisions)
 	// Get dicing rate
 	size_t u_rate = 1 << subdivisions;
 	size_t v_rate = 1 << subdivisions;
-
-	// TODO: this is temporary, while splitting is not yet implemented
-	if (u_rate > Config::max_grid_size)
-		u_rate = Config::max_grid_size;
-	if (v_rate > Config::max_grid_size)
-		v_rate = Config::max_grid_size;
 
 	// Dice away!
 	Grid *grid = grid_dice(u_rate+1, v_rate+1);

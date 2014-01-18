@@ -213,6 +213,22 @@ static inline uint32_t intlog2(uint32_t v)
 	return r;
 }
 
+/**
+ * @brief Rounds an integer up to the next power of two.
+ */
+static inline uint32_t upper_power_of_two(uint32_t v)
+{
+    v--;
+    v |= v >> 1;
+    v |= v >> 2;
+    v |= v >> 4;
+    v |= v >> 8;
+    v |= v >> 16;
+    v++;
+    return v;
+
+}
+
 
 /**
  * @brief Fast approximation of log2.
@@ -255,6 +271,22 @@ static inline float fasterlog2(float x)
 	float y = vx.i;
 	y *= 1.1920928955078125e-7f;
 	return y - 126.94269504f;
+}
+
+
+static inline float fastrsqrt(float n)
+{
+	union {
+		int32_t i;
+		float y;
+	};
+	float x;
+	
+	x = n * 0.5F;
+	y = n;
+	i = 0x5f3759df - ( i >> 1 );
+
+	return y;
 }
 
 static inline std::string to_string(const __m128& v)
