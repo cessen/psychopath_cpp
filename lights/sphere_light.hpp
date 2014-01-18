@@ -24,23 +24,40 @@ public:
 		col = col_;
 	}
 
-	virtual Color sample(const Vec3 &arr, float u, float v, float time,
-	                     Vec3 *shadow_vec) const {
-		Vec3 n = uniform_sample_sphere(u, v);
-		Vec3 p = (n * radius) + pos;
+	virtual Color sample(const Vec3 &arr, float u, float v, float time, Vec3 *shadow_vec) const {
+		// Create a coordinate system from the vector between the
+		// point and the center of the light
+		Vec3 x, y, z;
+		z = pos - arr;
+		const float d2 = z.length2();
+		const float d = std::sqrt(d2);
+		coordinate_system_from_vec3(z, &x, &y);
+		x.normalize();
+		y.normalize();
+		z.normalize();
 
-		*shadow_vec = p - arr;
-		Vec3 out = *shadow_vec * -1.f;
-		out.normalize();
-		float d2 = shadow_vec->length2();
+		// If we're outside the sphere, sample the surface based on
+		// the angle it subtends from the point being lit.
+		if (d > radius) {
+			// Sample the surface of the sphere
+			Vec3 sample = uniform_sample_sphere_from_distance(radius, d, u, v);
 
-		// Convert to solid angle
-		float ndot = std::abs(dot(n, out)) * 2.f;
+			// Map the sample to world coordinates
+			*shadow_vec = (x * sample[0]) + (y * sample[1]) + (z * sample[2]);
 
-		if (d2 > 0)
-			return col * ndot / d2;
-		else
-			return col * ndot; // Fudge for divide by zero.
+			const float sd2 = shadow_vec->length2();
+
+			if (sd2 > 0)
+				return col / sd2;
+			else
+				return col; // Fudge for divide by zero.
+
+		} else {
+			// If we're inside the sphere, there's no light.
+			*shadow_vec = uniform_sample_sphere(u, v);
+			return Color(0.0f);
+		}
+
 	}
 
 	virtual Color outgoing(const Vec3 &dir, float u, float v, float time) const {

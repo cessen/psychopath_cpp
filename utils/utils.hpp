@@ -146,6 +146,34 @@ static inline Vec3 uniform_sample_sphere(float u, float v)
 	return Vec3(x, y, z);
 }
 
+static inline Vec3 uniform_sample_cone(float u, float v, float cos_theta_max)
+{
+	const float cos_theta = (1.0f - u) + (u * cos_theta_max);
+	const float sin_theta = std::sqrt(1.0f - (cos_theta * cos_theta));
+	const float phi = v * 2.0f * M_PI;
+	return Vec3(std::cos(phi) * sin_theta, std::sin(phi) * sin_theta, cos_theta);
+}
+
+static inline Vec3 uniform_sample_sphere_from_distance(float radius, float distance, float u, float v)
+{
+	const float d2 = distance * distance;
+	const float r2 = radius * radius;
+	const float sin_theta_max2 = r2 / d2;
+	const float cos_theta_max = std::sqrt(std::max(0.0f, 1.0f - sin_theta_max2));
+
+	// Sample the cone
+	const float cos_theta = (1.0f - u) + (u * cos_theta_max);
+	const float sin_theta = std::sqrt(1.0f - (cos_theta * cos_theta));
+	const float phi = v * 2.0f * M_PI;
+
+	// Find the length of the vector to the surface of the sphere
+	const float dcos = distance * cos_theta;
+	const float l = dcos - std::sqrt(std::max(0.0f, r2 - d2 * (sin_theta * sin_theta)));
+
+	return Vec3(std::cos(phi) * sin_theta, std::sin(phi) * sin_theta, cos_theta) * l;
+}
+
+
 
 /**
  * @brief Creates a coordinate system from a single vector.
