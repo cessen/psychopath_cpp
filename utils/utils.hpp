@@ -218,14 +218,14 @@ static inline uint32_t intlog2(uint32_t v)
  */
 static inline uint32_t upper_power_of_two(uint32_t v)
 {
-    v--;
-    v |= v >> 1;
-    v |= v >> 2;
-    v |= v >> 4;
-    v |= v >> 8;
-    v |= v >> 16;
-    v++;
-    return v;
+	v--;
+	v |= v >> 1;
+	v |= v >> 2;
+	v |= v >> 4;
+	v |= v >> 8;
+	v |= v >> 16;
+	v++;
+	return v;
 
 }
 
@@ -281,10 +281,10 @@ static inline float fastrsqrt(float n)
 		float y;
 	};
 	float x;
-	
+
 	x = n * 0.5F;
 	y = n;
-	i = 0x5f3759df - ( i >> 1 );
+	i = 0x5f3759df - (i >> 1);
 
 	return y;
 }
