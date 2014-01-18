@@ -141,8 +141,6 @@ size_t Tracer::trace_diceable_surface(size_t potint_start)
 		const auto& ray = rays[potential_intersections[i].ray_index];
 		auto& intersection = intersections[potential_intersections[i].ray_index];
 
-		Global::Stats::primitive_ray_tests++;
-
 		// Get bounding box intersection
 		float tnear, tfar;
 		if (!bounds.intersect_ray(ray, &tnear, &tfar))
@@ -198,6 +196,8 @@ void Tracer::trace_potential_intersections()
 
 		i = trace_diceable_surface(i) - 1;
 	}
+
+	Global::Stats::primitive_ray_tests += potential_intersections.size();
 }
 
 
