@@ -132,6 +132,7 @@ size_t Tracer::trace_diceable_surface(size_t potint_start)
 	auto& bounds = primitive->bounds();
 	std::shared_ptr<MicroSurface> micro_surface = MicroSurfaceCache::cache.get(primitive->uid);
 	size_t current_subdivs;
+	bool rediced = false; // Keeps track of whether we ever redice the surface
 
 	if (micro_surface)
 		current_subdivs = micro_surface->subdivisions();
@@ -158,6 +159,7 @@ size_t Tracer::trace_diceable_surface(size_t potint_start)
 		} else {
 			redice = true;
 		}
+		rediced = redice || rediced;
 
 		// Redice if necessary
 		if (redice) {
@@ -176,7 +178,9 @@ size_t Tracer::trace_diceable_surface(size_t potint_start)
 		}
 	}
 
-	MicroSurfaceCache::cache.put(micro_surface, primitive->uid);
+	// If we created a new microsurface, store it in the cache
+	if (rediced)
+		MicroSurfaceCache::cache.put(micro_surface, primitive->uid);
 
 	return i;
 }
@@ -192,7 +196,7 @@ void Tracer::trace_potential_intersections()
 		//prefetch_L3(&(intersections[potential_intersections[i+1].ray_index]));
 
 		// Shorthand references
-		auto& primitive = scene->world.get_primitive(potential_intersections[i].object_id);
+		//auto& primitive = scene->world.get_primitive(potential_intersections[i].object_id);
 
 		i = trace_diceable_surface(i) - 1;
 	}
