@@ -114,11 +114,10 @@ BBoxT &Bilinear::bounds()
 }
 
 
-void Bilinear::split(std::vector<DiceableSurfacePrimitive *> &primitives)
+void Bilinear::split(std::unique_ptr<DiceableSurfacePrimitive> primitives[])
 {
-	primitives.resize(2);
-	primitives[0] = new Bilinear(verts.state_count);
-	primitives[1] = new Bilinear(verts.state_count);
+	auto patch1 = new Bilinear(verts.state_count);
+	auto patch2 = new Bilinear(verts.state_count);
 
 	float lu;
 	float lv;
@@ -130,58 +129,61 @@ void Bilinear::split(std::vector<DiceableSurfacePrimitive *> &primitives)
 	if (lu > lv) {
 		// Split on U
 		for (int i=0; i < verts.state_count; i++) {
-			((Bilinear *)(primitives[0]))->add_time_sample(i,
-			        verts[i][0],
-			        (verts[i][0] + verts[i][1])*0.5,
-			        (verts[i][2] + verts[i][3])*0.5,
-			        verts[i][3]
-			                                              );
-			((Bilinear *)(primitives[1]))->add_time_sample(i,
-			        (verts[i][0] + verts[i][1])*0.5,
-			        verts[i][1],
-			        verts[i][2],
-			        (verts[i][2] + verts[i][3])*0.5
-			                                              );
+			patch1->add_time_sample(i,
+			                        verts[i][0],
+			                        (verts[i][0] + verts[i][1])*0.5,
+			                        (verts[i][2] + verts[i][3])*0.5,
+			                        verts[i][3]
+			                       );
+			patch2->add_time_sample(i,
+			                        (verts[i][0] + verts[i][1])*0.5,
+			                        verts[i][1],
+			                        verts[i][2],
+			                        (verts[i][2] + verts[i][3])*0.5
+			                       );
 		}
 
 		// Fill in uv's
-		((Bilinear *)(primitives[0]))->u_min = u_min;
-		((Bilinear *)(primitives[0]))->u_max = (u_min + u_max) / 2;
-		((Bilinear *)(primitives[0]))->v_min = v_min;
-		((Bilinear *)(primitives[0]))->v_max = v_max;
+		patch1->u_min = u_min;
+		patch1->u_max = (u_min + u_max) / 2;
+		patch1->v_min = v_min;
+		patch1->v_max = v_max;
 
-		((Bilinear *)(primitives[1]))->u_min = (u_min + u_max) / 2;
-		((Bilinear *)(primitives[1]))->u_max = u_max;
-		((Bilinear *)(primitives[1]))->v_min = v_min;
-		((Bilinear *)(primitives[1]))->v_max = v_max;
+		patch2->u_min = (u_min + u_max) / 2;
+		patch2->u_max = u_max;
+		patch2->v_min = v_min;
+		patch2->v_max = v_max;
 	} else {
 		// Split on V
 		for (int i=0; i < verts.state_count; i++) {
-			((Bilinear *)(primitives[0]))->add_time_sample(i,
-			        verts[i][0],
-			        verts[i][1],
-			        (verts[i][1] + verts[i][2])*0.5,
-			        (verts[i][3] + verts[i][0])*0.5
-			                                              );
-			((Bilinear *)(primitives[1]))->add_time_sample(i,
-			        (verts[i][3] + verts[i][0])*0.5,
-			        (verts[i][1] + verts[i][2])*0.5,
-			        verts[i][2],
-			        verts[i][3]
-			                                              );
+			patch1->add_time_sample(i,
+			                        verts[i][0],
+			                        verts[i][1],
+			                        (verts[i][1] + verts[i][2])*0.5,
+			                        (verts[i][3] + verts[i][0])*0.5
+			                       );
+			patch2->add_time_sample(i,
+			                        (verts[i][3] + verts[i][0])*0.5,
+			                        (verts[i][1] + verts[i][2])*0.5,
+			                        verts[i][2],
+			                        verts[i][3]
+			                       );
 		}
 
 		// Fill in uv's
-		((Bilinear *)(primitives[0]))->u_min = u_min;
-		((Bilinear *)(primitives[0]))->u_max = u_max;
-		((Bilinear *)(primitives[0]))->v_min = v_min;
-		((Bilinear *)(primitives[0]))->v_max = (v_min + v_max) / 2;
+		patch1->u_min = u_min;
+		patch1->u_max = u_max;
+		patch1->v_min = v_min;
+		patch1->v_max = (v_min + v_max) / 2;
 
-		((Bilinear *)(primitives[1]))->u_min = u_min;
-		((Bilinear *)(primitives[1]))->u_max = u_max;
-		((Bilinear *)(primitives[1]))->v_min = (v_min + v_max) / 2;
-		((Bilinear *)(primitives[1]))->v_max = v_max;
+		patch2->u_min = u_min;
+		patch2->u_max = u_max;
+		patch2->v_min = (v_min + v_max) / 2;
+		patch2->v_max = v_max;
 	}
+
+	primitives[0] = std::unique_ptr<DiceableSurfacePrimitive>(patch1);
+	primitives[1] = std::unique_ptr<DiceableSurfacePrimitive>(patch2);
 }
 
 

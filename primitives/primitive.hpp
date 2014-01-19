@@ -91,9 +91,9 @@ public:
 	 * deterministic: given the same primitive, splitting should result in the
 	 * same output primitives in the same order.
 	 *
-	 * Places pointers to the primitives in the given primitives vector.
+	 * Places pointers to the primitives in the given primitives pointer array.
 	 */
-	virtual void split(std::vector<DiceableSurfacePrimitive *> &primitives) {
+	virtual void split(std::unique_ptr<DiceableSurfacePrimitive> primitives[]) {
 		std::cout << "Error: DiceableSurfacePrimitive::split() not implemented for this primitive." << std::endl;
 		exit(1);
 	}

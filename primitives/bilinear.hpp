@@ -38,7 +38,7 @@ public:
 
 	virtual BBoxT &bounds();
 
-	virtual void split(std::vector<DiceableSurfacePrimitive *> &primitives);
+	virtual void split(std::unique_ptr<DiceableSurfacePrimitive> primitives[]);
 	virtual size_t subdiv_estimate(float width) const;
 	virtual std::shared_ptr<MicroSurface> dice(size_t subdivisions);
 };
