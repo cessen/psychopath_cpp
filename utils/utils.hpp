@@ -166,11 +166,10 @@ static inline Vec3 uniform_sample_sphere_from_distance(float radius, float dista
 	const float sin_theta = std::sqrt(1.0f - (cos_theta * cos_theta));
 	const float phi = v * 2.0f * M_PI;
 
-	// Find the length of the vector to the surface of the sphere
-	const float dcos = distance * cos_theta;
-	const float l = dcos - std::sqrt(std::max(0.0f, r2 - d2 * (sin_theta * sin_theta)));
+	// TODO: Find the length of the vector to the surface of the sphere
 
-	return Vec3(std::cos(phi) * sin_theta, std::sin(phi) * sin_theta, cos_theta) * l;
+	// TODO: Use calculated length to set the length of the vector
+	return Vec3(std::cos(phi) * sin_theta, std::sin(phi) * sin_theta, cos_theta).normalized() * distance;
 }
 
 
