@@ -131,66 +131,90 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 {
 	const size_t max_subdivs = intlog2(Config::max_grid_size);
 	const size_t prim_id = start->object_id;
-	DiceableSurfacePrimitive* primitive = dynamic_cast<DiceableSurfacePrimitive*>(&(scene->world.get_primitive(prim_id)));
-	auto& bounds = primitive->bounds();
-	std::shared_ptr<MicroSurface> micro_surface = MicroSurfaceCache::cache.get(primitive->uid);
-	size_t current_subdivs;
-	bool rediced = false; // Keeps track of whether we ever redice the surface
 
-	if (micro_surface)
-		current_subdivs = micro_surface->subdivisions();
+	std::unique_ptr<DiceableSurfacePrimitive> primitive_stack[32];
+	primitive_stack[0] = std::unique_ptr<DiceableSurfacePrimitive>(dynamic_cast<DiceableSurfacePrimitive*>(&(scene->world.get_primitive(prim_id))));
+	int stack_i = 0;
 
-	// Count the number of potints with the same object id
+	// UID's
+	const size_t uid1 = primitive_stack[0]->uid; // Main UID
+	size_t uid2 = 0; // Sub-UID
+
+	// Find out how many potints we're dealing with
 	int potint_count = 0;
 	for (auto itr = start; itr != end && itr->object_id == prim_id; ++itr)
 		++potint_count;
 
+	// A vector of ints for keeping track of which rays are active in the traversal
+	std::vector<uint8_t> potint_stack;
+	potint_stack.resize(potint_count);
+	std::fill(potint_stack.begin(), potint_stack.end(), 0);
+
+	// A place to keep our microsurfaces during traversal
+	std::shared_ptr<MicroSurface> micro_surface;
+
 	// A nicer named alias for "start"
 	auto& potints = start;
 
-	for (int i = 0; i < potint_count; ++i) {
-		const auto& ray = rays[potints[i].ray_index];
-		auto& intersection = intersections[potints[i].ray_index];
+	// Traversal
+	while (true) {
+		auto& bounds = primitive_stack[stack_i]->bounds();
+		size_t current_subdivs;
+		bool rediced = false; // Keeps track of whether we ever redice the surface
 
-		// Get bounding box intersection
-		float tnear, tfar;
-		if (!bounds.intersect_ray(ray, &tnear, &tfar))
-			continue;
+		micro_surface = MicroSurfaceCache::cache.get(uid1);
+		if (micro_surface)
+			current_subdivs = micro_surface->subdivisions();
 
-		// Calculate the subdivision rate this ray needs for this primitive
-		const float width = ray.min_width(tnear, tfar);
-		size_t subdivs = std::min(primitive->subdiv_estimate(width), max_subdivs); // TODO: explicit clamping should be replaced with splitting
+		for (int i = 0; i < potint_count; ++i) {
+			const auto& ray = rays[potints[i].ray_index];
+			auto& intersection = intersections[potints[i].ray_index];
 
-		// Figure out if we need to redice or not
-		bool redice = false;
-		if (micro_surface) {
-			if (current_subdivs < subdivs)
+			// Get bounding box intersection
+			float tnear, tfar;
+			if (!bounds.intersect_ray(ray, &tnear, &tfar))
+				continue;
+
+			// Calculate the subdivision rate this ray needs for this primitive
+			const float width = ray.min_width(tnear, tfar);
+			size_t subdivs = std::min(primitive_stack[stack_i]->subdiv_estimate(width), max_subdivs); // TODO: explicit clamping should be replaced with splitting
+
+			// Figure out if we need to redice or not
+			bool redice = false;
+			if (micro_surface) {
+				if (current_subdivs < subdivs)
+					redice = true;
+			} else {
 				redice = true;
-		} else {
-			redice = true;
-		}
-		rediced = redice || rediced;
+			}
+			rediced = redice || rediced;
 
-		// Redice if necessary
-		if (redice) {
-			micro_surface = std::shared_ptr<MicroSurface>(primitive->dice(subdivs));
-			current_subdivs = subdivs;
-			Global::Stats::cache_misses++;
+			// Redice if necessary
+			if (redice) {
+				micro_surface = std::shared_ptr<MicroSurface>(primitive_stack[stack_i]->dice(subdivs));
+				current_subdivs = subdivs;
+				Global::Stats::cache_misses++;
+			}
+
+			// Trace the ray against the MicroSurface
+			if (ray.is_shadow_ray) {
+				if (!intersection.hit)
+					intersection.hit |= micro_surface->intersect_ray(ray, width, nullptr);
+				rays_active[potints[i].ray_index] = !intersection.hit; // Early out for shadow rays
+			} else {
+				intersection.hit |= micro_surface->intersect_ray(ray, width, &intersection);
+			}
 		}
 
-		// Trace the ray against the MicroSurface
-		if (ray.is_shadow_ray) {
-			if (!intersection.hit)
-				intersection.hit |= micro_surface->intersect_ray(ray, width, nullptr);
-			rays_active[potints[i].ray_index] = !intersection.hit; // Early out for shadow rays
-		} else {
-			intersection.hit |= micro_surface->intersect_ray(ray, width, &intersection);
-		}
+		// If we created a new microsurface, store it in the cache
+		if (rediced)
+			MicroSurfaceCache::cache.put(micro_surface, uid1);
+
+		break;
 	}
 
-	// If we created a new microsurface, store it in the cache
-	if (rediced)
-		MicroSurfaceCache::cache.put(micro_surface, primitive->uid);
+	// Don't free the original primitive
+	primitive_stack[stack_i].release();
 
 	return start + potint_count;
 }
