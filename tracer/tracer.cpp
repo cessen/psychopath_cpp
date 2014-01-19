@@ -1,6 +1,7 @@
 #include "tracer.hpp"
 
 #include <limits>
+#include <cmath>
 #include <vector>
 #include <iostream>
 #include <algorithm>
@@ -11,6 +12,7 @@
 #include "array.hpp"
 #include "slice.hpp"
 #include "counting_sort.hpp"
+#include "utils.hpp"
 #include "low_level.hpp"
 
 #include "micro_surface.hpp"
@@ -127,6 +129,7 @@ void Tracer::sort_potential_intersections()
 
 size_t Tracer::trace_diceable_surface(size_t potint_start)
 {
+	const size_t max_subdivs = intlog2(Config::max_grid_size);
 	const size_t prim_id = potential_intersections[potint_start].object_id;
 	DiceableSurfacePrimitive* primitive = dynamic_cast<DiceableSurfacePrimitive*>(&(scene->world.get_primitive(prim_id)));
 	auto& bounds = primitive->bounds();
@@ -149,7 +152,7 @@ size_t Tracer::trace_diceable_surface(size_t potint_start)
 
 		// Calculate the subdivision rate this ray needs for this primitive
 		const float width = ray.min_width(tnear, tfar);
-		const size_t subdivs = primitive->subdiv_estimate(width);
+		size_t subdivs = std::min(primitive->subdiv_estimate(width), max_subdivs); // TODO: explicit clamping should be replaced with splitting
 
 		// Figure out if we need to redice or not
 		bool redice = false;

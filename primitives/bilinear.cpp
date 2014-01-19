@@ -71,10 +71,6 @@ size_t Bilinear::subdiv_estimate(float width) const
 
 	size_t rate = upper_power_of_two(std::max(u_rate, v_rate));
 
-	// TODO: this is temporary, while splitting is not yet implemented
-	if (rate > Config::max_grid_size)
-		rate = Config::max_grid_size;
-
 	return intlog2(rate);
 }
 
