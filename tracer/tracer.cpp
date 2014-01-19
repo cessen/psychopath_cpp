@@ -24,7 +24,6 @@
 
 #define RAY_STATE_SIZE scene->world.ray_state_size()
 #define MAX_POTINT 1u
-#define MAX_POTINT_FOR_SPLIT_TRAVERSAL 100000
 #define RAY_JOB_SIZE (1024*4)
 
 
@@ -149,7 +148,7 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 
 	// Find out how many potints we're dealing with
 	int potint_count = 0;
-	for (auto itr = start; (itr != end) && (itr->object_id == prim_id) && (potint_count < MAX_POTINT_FOR_SPLIT_TRAVERSAL); ++itr)
+	for (auto itr = start; (itr != end) && (itr->object_id == prim_id); ++itr)
 		++potint_count;
 
 	// Stacks of start/end iterators for partitioning the potints as we
