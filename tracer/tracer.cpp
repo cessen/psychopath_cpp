@@ -127,10 +127,10 @@ void Tracer::sort_potential_intersections()
 }
 
 
-size_t Tracer::trace_diceable_surface(size_t potint_start)
+std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector<PotentialInter>::iterator start, std::vector<PotentialInter>::iterator end)
 {
 	const size_t max_subdivs = intlog2(Config::max_grid_size);
-	const size_t prim_id = potential_intersections[potint_start].object_id;
+	const size_t prim_id = start->object_id;
 	DiceableSurfacePrimitive* primitive = dynamic_cast<DiceableSurfacePrimitive*>(&(scene->world.get_primitive(prim_id)));
 	auto& bounds = primitive->bounds();
 	std::shared_ptr<MicroSurface> micro_surface = MicroSurfaceCache::cache.get(primitive->uid);
@@ -140,10 +140,10 @@ size_t Tracer::trace_diceable_surface(size_t potint_start)
 	if (micro_surface)
 		current_subdivs = micro_surface->subdivisions();
 
-	size_t i = potint_start;
-	for (; i < potential_intersections.size() && potential_intersections[i].object_id == prim_id; ++i) {
-		const auto& ray = rays[potential_intersections[i].ray_index];
-		auto& intersection = intersections[potential_intersections[i].ray_index];
+	auto itr = start;
+	for (; itr != end && itr->object_id == prim_id; ++itr) {
+		const auto& ray = rays[itr->ray_index];
+		auto& intersection = intersections[itr->ray_index];
 
 		// Get bounding box intersection
 		float tnear, tfar;
@@ -175,7 +175,7 @@ size_t Tracer::trace_diceable_surface(size_t potint_start)
 		if (ray.is_shadow_ray) {
 			if (!intersection.hit)
 				intersection.hit |= micro_surface->intersect_ray(ray, width, nullptr);
-			rays_active[potential_intersections[i].ray_index] = !intersection.hit; // Early out for shadow rays
+			rays_active[itr->ray_index] = !intersection.hit; // Early out for shadow rays
 		} else {
 			intersection.hit |= micro_surface->intersect_ray(ray, width, &intersection);
 		}
@@ -185,14 +185,14 @@ size_t Tracer::trace_diceable_surface(size_t potint_start)
 	if (rediced)
 		MicroSurfaceCache::cache.put(micro_surface, primitive->uid);
 
-	return i;
+	return itr;
 }
 
 
 
 void Tracer::trace_potential_intersections()
 {
-	for (size_t i = 0; i < potential_intersections.size(); i++) {
+	for (auto itr = potential_intersections.begin(); itr != potential_intersections.end(); ++itr) {
 		// Prefetch memory for next iteration, to hide memory latency
 		//prefetch_L3(&(potential_intersections[i+2]));
 		//prefetch_L3(&(rays[potential_intersections[i+1].ray_index]));
@@ -201,7 +201,7 @@ void Tracer::trace_potential_intersections()
 		// Shorthand references
 		//auto& primitive = scene->world.get_primitive(potential_intersections[i].object_id);
 
-		i = trace_diceable_surface(i) - 1;
+		itr = trace_diceable_surface(itr, potential_intersections.end()) - 1;
 	}
 
 	Global::Stats::primitive_ray_tests += potential_intersections.size();

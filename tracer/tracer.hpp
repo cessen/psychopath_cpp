@@ -100,7 +100,7 @@ private:
 	 */
 	void trace_potential_intersections();
 
-	size_t trace_diceable_surface(size_t potint_start);
+	std::vector<PotentialInter>::iterator trace_diceable_surface(std::vector<PotentialInter>::iterator potints, std::vector<PotentialInter>::iterator end);
 };
 
 #endif // TRACER_HPP
