@@ -7,10 +7,11 @@
  * @brief Records information about a potential intersection with an object.
  */
 struct PotentialInter {
-	bool valid; // The potential intersection data is filled and valid
 	size_t object_id;
 	size_t ray_index;
 	float nearest_hit_t; // The nearest possible hit distance along the ray
+	bool valid; // The potential intersection data is filled and valid
+	uint8_t tag; // Used for misc purposes
 
 	bool operator<(const PotentialInter &b) const {
 		return object_id < b.object_id;

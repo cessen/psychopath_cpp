@@ -47,7 +47,7 @@ public:
 	Scene *scene;
 	Slice<const Ray> rays; // Rays to trace
 	Slice<Intersection> intersections; // Resulting intersections
-	std::vector<bool> rays_active;
+	std::vector<uint8_t> rays_active;
 	Array<uint8_t> states; // Ray states, for interrupting and resuming traversal
 	std::vector<PotentialInter> potential_intersections; // "Potential intersection" buffer
 

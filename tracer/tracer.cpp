@@ -152,16 +152,15 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 	for (auto itr = start; (itr != end) && (itr->object_id == prim_id) && (potint_count < MAX_POTINT_FOR_SPLIT_TRAVERSAL); ++itr)
 		++potint_count;
 
-	// A vector of ints for keeping track of which rays are active in the traversal
-	std::vector<uint8_t> potint_stack;
-	potint_stack.resize(potint_count);
-	std::fill(potint_stack.begin(), potint_stack.end(), 0);
+	// Stacks of start/end iterators for partitioning the potints as we
+	// dive deeper into the traversal
+	std::vector<PotentialInter>::iterator potint_starts[STACK_SIZE];
+	std::vector<PotentialInter>::iterator potint_ends[STACK_SIZE];
+	potint_starts[0] = start;
+	potint_ends[0] = start + potint_count;
 
 	// A place to keep our microsurfaces during traversal
 	std::shared_ptr<MicroSurface> micro_surface;
-
-	// A nicer named alias for "start"
-	auto& potints = start;
 
 	// Traversal
 	while (stack_i >= 0) {
@@ -176,13 +175,15 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 			current_subdivs = micro_surface->subdivisions();
 
 		// Trace the rays against the current stack primitive
-		for (int i = 0; i < potint_count; ++i) {
-			// Skip rays that aren't at this level of the stack
-			if (potint_stack[i] < stack_i)
-				continue;
+		for (auto pitr = potint_starts[stack_i]; pitr != potint_ends[stack_i]; ++pitr) {
+			prefetch_L3(&(pitr[2]));
+			prefetch_L3(&(rays[pitr[1].ray_index]));
+			prefetch_L3(&(intersections[pitr[1].ray_index]));
+			prefetch_L3(&(rays_active[pitr->ray_index]));
 
-			const auto& ray = rays[potints[i].ray_index];
-			auto& intersection = intersections[potints[i].ray_index];
+			const auto& ray = rays[pitr->ray_index];
+			auto& intersection = intersections[pitr->ray_index];
+			pitr->tag = 0;
 
 			// Get bounding box intersection
 			float tnear, tfar;
@@ -195,7 +196,7 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 
 			// If we need more resolution for this ray, mark for further downward traversal
 			if (subdivs > max_subdivs) {
-				potint_stack[i]++;
+				pitr->tag = 1;
 				split = true;
 				continue; // Continue to next ray
 			}
@@ -221,7 +222,7 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 			if (ray.is_shadow_ray) {
 				if (!intersection.hit)
 					intersection.hit |= micro_surface->intersect_ray(ray, width, nullptr);
-				rays_active[potints[i].ray_index] = !intersection.hit; // Early out for shadow rays
+				rays_active[pitr->ray_index] = !intersection.hit; // Early out for shadow rays
 			} else {
 				intersection.hit |= micro_surface->intersect_ray(ray, width, &intersection);
 			}
@@ -238,12 +239,13 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 			const unsigned int new_count = primitive_stack[stack_i]->split(&(primitive_stack[stack_i]));
 			const int new_stack_i = stack_i + new_count - 1;
 
-			// Update potint stack
-			for (auto &si: potint_stack) {
-				if (si > stack_i)
-					si = new_stack_i;
-				else if (si == stack_i)
-					si--;
+			// Update potint iterator stacks
+			potint_starts[stack_i] = std::partition(potint_starts[stack_i], potint_ends[stack_i], [](const PotentialInter& p) {
+				return p.tag == 0;
+			});
+			for (int i = 1; i < new_count; ++i) {
+				potint_starts[stack_i + i] = potint_starts[stack_i];
+				potint_ends[stack_i + i] = potint_ends[stack_i];
 			}
 
 			// Update uid stack
