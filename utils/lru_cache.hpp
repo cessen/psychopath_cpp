@@ -10,9 +10,6 @@
 #include "spinlock.hpp"
 
 
-typedef size_t LRUKey;
-
-
 // Should be overloaded for more complex types
 template <class T>
 size_t size_in_bytes(const T& data)
@@ -23,11 +20,11 @@ size_t size_in_bytes(const T& data)
 /*
  * A thread-safe Least-Recently-Used cache.
  */
-template <class T>
+template <class K, class T>
 class LRUCache
 {
 	struct LRUPair {
-		LRUKey key;
+		K key;
 		std::shared_ptr<T> data_ptr;
 	};
 
@@ -35,10 +32,9 @@ class LRUCache
 
 	size_t max_bytes;
 	size_t byte_count {0};
-	LRUKey next_key {0};
 
 	// A map from indices to iterators into the list
-	std::unordered_map<LRUKey, typename std::list<LRUPair>::iterator> map;
+	std::unordered_map<K, typename std::list<LRUPair>::iterator> map;
 
 	// A list that contains the index and a pointer to the data of each element
 	std::list<LRUPair> elements;
@@ -49,7 +45,7 @@ class LRUCache
 	// 2 pointers (for the list) plus the size of an LRUKEY and list
 	// iterator (for the map).
 	// TODO: more accurate estimate
-	const size_t per_item_size_cost = sizeof(LRUPair) + (sizeof(void*)*2) + sizeof(LRUKey) + sizeof(typename std::list<LRUPair>::iterator);
+	const size_t per_item_size_cost = sizeof(LRUPair) + (sizeof(void*)*2) + sizeof(K) + sizeof(typename std::list<LRUPair>::iterator);
 
 public:
 	LRUCache(size_t max_bytes_=40): max_bytes {max_bytes_} {}
@@ -66,33 +62,13 @@ public:
 	}
 
 	/*
-	 * Adds the given item to the cache, assigning it a unique key.
-	 *
-	 * Returns the key.
-	 */
-	LRUKey put(std::shared_ptr<T> data_ptr) {
-		std::unique_lock<SpinLock> lock(slock);
-
-		// Get the next available key
-		LRUKey key;
-		do {
-			key = next_key++;
-		} while (map.count(key) != 0);
-
-		// Add data to the cache using that key
-		add(data_ptr, key);
-
-		return key;
-	}
-
-	/*
 	 * Adds the given item to the cache using the given key.
 	 * If the key already exists, the existing item will be
 	 * replaced.
 	 *
 	 * Returns the key.
 	 */
-	LRUKey put(std::shared_ptr<T> data_ptr, LRUKey key) {
+	K put(std::shared_ptr<T> data_ptr, K key) {
 		std::unique_lock<SpinLock> lock(slock);
 
 		// Check if the key exists, and erase it if it does
@@ -120,7 +96,7 @@ public:
 	 *     // Do things with the data here
 	 * }
 	 */
-	std::shared_ptr<T> get(LRUKey key) {
+	std::shared_ptr<T> get(K key) {
 		std::unique_lock<SpinLock> lock(slock);
 
 		// Check if the key exists
@@ -148,7 +124,7 @@ private:
 	/*
 	 * Adds an item to the cache with the given key.
 	 */
-	void add(std::shared_ptr<T>& data_ptr, LRUKey key) {
+	void add(std::shared_ptr<T>& data_ptr, K key) {
 		byte_count += size_in_bytes(*data_ptr) + per_item_size_cost;
 
 		// Remove last element(s) if necessary to make room
@@ -168,7 +144,7 @@ private:
 	/*
 	 * Erases the given key and associated data from the cache.
 	 */
-	void erase(LRUKey key) {
+	void erase(K key) {
 		byte_count -= size_in_bytes(*(map[key]->data_ptr)) + per_item_size_cost;
 		elements.erase(map[key]);
 		map.erase(key);
@@ -188,7 +164,7 @@ private:
 	/*
 	 * Moves a given item to the front of the cache.
 	 */
-	void touch(LRUKey key) {
+	void touch(K key) {
 		elements.splice(elements.begin(), elements, map[key]);
 	}
 };

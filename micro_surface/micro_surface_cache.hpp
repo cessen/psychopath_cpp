@@ -6,11 +6,11 @@
 #include "micro_surface.hpp"
 #include "lru_cache.hpp"
 
-typedef LRUKey MicroSurfaceCacheKey;
+typedef size_t MicroSurfaceCacheKey;
 
 namespace MicroSurfaceCache
 {
-extern LRUCache<MicroSurface> cache;
+extern LRUCache<size_t, MicroSurface> cache;
 }
 
 #endif

@@ -5,5 +5,5 @@
 
 namespace MicroSurfaceCache
 {
-LRUCache<MicroSurface> cache(Config::grid_cache_size * (1000*1000));
+LRUCache<size_t, MicroSurface> cache(Config::grid_cache_size * (1000*1000));
 }
