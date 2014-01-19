@@ -563,8 +563,8 @@ public:
 	BBoxT(const int32_t &res_time=1);
 	BBoxT(const Vec3 &bmin_, const Vec3 &bmax_);
 
-	bool init(const uint8_t &state_count_) {
-		return bbox.init(state_count_);
+	void init(const uint8_t &state_count_) {
+		bbox.init(state_count_);
 	}
 
 	void add_time_sample(const int32_t &samp, const Vec3 &bmin_, const Vec3 &bmax_) {
@@ -619,8 +619,8 @@ public:
 	void merge_with(const BBoxT &b) {
 		// BBoxes have the same state count, so we
 		// can just merge each corresponding state.
-		if (bbox.state_count == b.bbox.state_count) {
-			for (int i=0; i < bbox.state_count; i++) {
+		if (bbox.size() == b.bbox.size()) {
+			for (int i=0; i < bbox.size(); i++) {
 				bbox[i].merge_with(b.bbox[i]);
 			}
 		}
@@ -629,9 +629,9 @@ public:
 		// TODO: something more sophisticated.
 		else {
 			BBox bb = bbox[0];
-			for (int i=1; i < bbox.state_count; i++)
+			for (int i=1; i < bbox.size(); i++)
 				bb.merge_with(bbox[i]);
-			for (int i=0; i < b.bbox.state_count; i++)
+			for (int i=0; i < b.bbox.size(); i++)
 				bb.merge_with(b.bbox[i]);
 			init(1);
 			bbox[0] = bb;

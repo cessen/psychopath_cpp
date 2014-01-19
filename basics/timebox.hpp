@@ -5,38 +5,40 @@
 
 #include <iostream>
 #include <stdlib.h>
+#include <vector>
 
 template <class T>
 class TimeBox
 {
 public:
-	T *states;
-	uint8_t state_count;
+	std::vector<T> states;
 
-
-	TimeBox();
-	~TimeBox();
+	TimeBox() {};
+	TimeBox(uint8_t state_count): states(state_count) {}
+	~TimeBox() {};
 
 	// Initializes the timebox with the given number of states
-	bool init(const uint8_t &state_count_);
+	void init(uint8_t state_count) {
+		states.resize(state_count);
+	}
 
 	// Given a time in range [0.0, 1.0], fills in the state indices on
 	// either side along with an alpha to blend between them.
 	// Returns true on success, false on failure.  Failure typically
 	// means that there is only one state in the TimeBox.
 	bool query_time(const float &time, int32_t *ia, int32_t *ib, float *alpha) const {
-		if (state_count < 2)
+		if (states.size() < 2)
 			return false;
 
 		if (time < 1.0) {
-			const float temp = time * (state_count - 1);
+			const float temp = time * (states.size() - 1);
 			const int32_t index = temp;
 			*ia = index;
 			*ib = index + 1;
 			*alpha = temp - (float)(index);
 		} else {
-			*ia = state_count - 2;
-			*ib = state_count - 1;
+			*ia = states.size() - 2;
+			*ib = states.size() - 1;
 			*alpha = 1.0;
 		}
 
@@ -52,40 +54,15 @@ public:
 		return states[i];
 	}
 
+	TimeBox &operator=(const TimeBox& tb) {
+		states = tb.states;
+		return *this;
+	}
+
 	size_t size() const {
-		return state_count;
+		return states.size();
 	}
 };
-
-
-template <class T>
-TimeBox<T>::TimeBox()
-{
-	states = nullptr;
-	state_count = 0;
-}
-
-template <class T>
-TimeBox<T>::~TimeBox()
-{
-	if (states)
-		delete [] states;
-}
-
-
-template <class T>
-bool TimeBox<T>::init(const uint8_t &state_count_)
-{
-	if (state_count == state_count_) {
-		return true;
-	} else if (states) {
-		delete [] states;
-	}
-
-	states = new T[state_count_];
-	state_count = state_count_;
-	return true;
-}
 
 
 

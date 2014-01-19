@@ -39,7 +39,7 @@ Bilinear::Bilinear(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4)
 
 Bilinear::~Bilinear()
 {
-	for (int i=0; i < verts.state_count; i++) {
+	for (int i=0; i < verts.size(); i++) {
 		delete [] verts[i];
 	}
 }
@@ -78,9 +78,9 @@ size_t Bilinear::subdiv_estimate(float width) const
 BBoxT &Bilinear::bounds()
 {
 	if (!has_bounds) {
-		bbox.init(verts.state_count);
+		bbox.init(verts.size());
 
-		for (int time = 0; time < verts.state_count; time++) {
+		for (int time = 0; time < verts.size(); time++) {
 			bbox[time].min.x = verts[time][0].x;
 			bbox[time].max.x = verts[time][0].x;
 			bbox[time].min.y = verts[time][0].y;
@@ -116,8 +116,8 @@ BBoxT &Bilinear::bounds()
 
 int Bilinear::split(std::unique_ptr<DiceableSurfacePrimitive> primitives[])
 {
-	auto patch1 = new Bilinear(verts.state_count);
-	auto patch2 = new Bilinear(verts.state_count);
+	auto patch1 = new Bilinear(verts.size());
+	auto patch2 = new Bilinear(verts.size());
 
 	float lu;
 	float lv;
@@ -128,7 +128,7 @@ int Bilinear::split(std::unique_ptr<DiceableSurfacePrimitive> primitives[])
 	// Split
 	if (lu > lv) {
 		// Split on U
-		for (int i=0; i < verts.state_count; i++) {
+		for (int i=0; i < verts.size(); i++) {
 			patch1->add_time_sample(i,
 			                        verts[i][0],
 			                        (verts[i][0] + verts[i][1])*0.5,
@@ -155,7 +155,7 @@ int Bilinear::split(std::unique_ptr<DiceableSurfacePrimitive> primitives[])
 		patch2->v_max = v_max;
 	} else {
 		// Split on V
-		for (int i=0; i < verts.state_count; i++) {
+		for (int i=0; i < verts.size(); i++) {
 			patch1->add_time_sample(i,
 			                        verts[i][0],
 			                        verts[i][1],
@@ -190,10 +190,10 @@ int Bilinear::split(std::unique_ptr<DiceableSurfacePrimitive> primitives[])
 
 std::unique_ptr<DiceableSurfacePrimitive> Bilinear::copy()
 {
-	auto patch = new Bilinear(verts.state_count);
+	auto patch = new Bilinear(verts.size());
 
 	// Copy verts
-	for (int i=0; i < verts.state_count; i++) {
+	for (int i=0; i < verts.size(); i++) {
 		patch->add_time_sample(i, verts[i][0],
 		                       verts[i][1],
 		                       verts[i][2],
@@ -235,7 +235,7 @@ std::shared_ptr<MicroSurface> Bilinear::dice(size_t subdivisions)
 Grid *Bilinear::grid_dice(const int ru, const int rv)
 {
 	// Initialize grid and fill in the basics
-	Grid *grid = new Grid(ru, rv, verts.state_count);
+	Grid *grid = new Grid(ru, rv, verts.size());
 
 	// Fill in face and uvs
 	grid->face_id = 0;
@@ -256,7 +256,7 @@ Grid *Bilinear::grid_dice(const int ru, const int rv)
 	int x, y;
 	int i, time;
 	// Dice for each time sample
-	for (time = 0; time < verts.state_count; time++) {
+	for (time = 0; time < verts.size(); time++) {
 		// Deltas
 		du1.x = (verts[time][1].x - verts[time][0].x) / (ru-1);
 		du1.y = (verts[time][1].y - verts[time][0].y) / (ru-1);

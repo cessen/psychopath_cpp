@@ -70,7 +70,7 @@ public:
 		uint32_t ia;
 		float alpha;
 
-		if (calc_time_interp(transforms.state_count, time, &ia, &alpha)) {
+		if (calc_time_interp(transforms.size(), time, &ia, &alpha)) {
 			Transform trans;
 			trans = lerp(alpha, transforms[ia], transforms[ia+1]);
 

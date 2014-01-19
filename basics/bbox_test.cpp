@@ -210,7 +210,7 @@ BOOST_AUTO_TEST_CASE(constructor_1)
 {
 	BBoxT bb(4);
 
-	BOOST_CHECK(bb.bbox.state_count == 4);
+	BOOST_CHECK(bb.bbox.size() == 4);
 }
 
 
@@ -232,7 +232,7 @@ BOOST_AUTO_TEST_CASE(init)
 
 	bb.init(8);
 
-	BOOST_CHECK(bb.bbox.state_count == 8);
+	BOOST_CHECK(bb.bbox.size() == 8);
 }
 
 
@@ -313,7 +313,7 @@ BOOST_AUTO_TEST_CASE(copy_1)
 	BOOST_CHECK(bb1[0].max == bb2[0].max);
 	BOOST_CHECK(bb1[1].min == bb2[1].min);
 	BOOST_CHECK(bb1[1].max == bb2[1].max);
-	BOOST_CHECK(bb1.bbox.state_count == 2);
+	BOOST_CHECK(bb1.bbox.size() == 2);
 }
 
 BOOST_AUTO_TEST_CASE(copy_2)
@@ -327,7 +327,7 @@ BOOST_AUTO_TEST_CASE(copy_2)
 
 	BOOST_CHECK(bb1[0].min == bb2[0].min);
 	BOOST_CHECK(bb1[0].max == bb2[0].max);
-	BOOST_CHECK(bb1.bbox.state_count == 1);
+	BOOST_CHECK(bb1.bbox.size() == 1);
 }
 
 
@@ -348,7 +348,7 @@ BOOST_AUTO_TEST_CASE(merge_with_1)
 	BOOST_CHECK(bb1[0].max == Vec3(9,8,9));
 	BOOST_CHECK(bb1[1].min == Vec3(-1,-6,-3));
 	BOOST_CHECK(bb1[1].max == Vec3(5,3,12));
-	BOOST_CHECK(bb1.bbox.state_count == 2);
+	BOOST_CHECK(bb1.bbox.size() == 2);
 }
 
 BOOST_AUTO_TEST_CASE(merge_with_2)
@@ -364,7 +364,7 @@ BOOST_AUTO_TEST_CASE(merge_with_2)
 
 	BOOST_CHECK(bb1[0].min == Vec3(-4,-5,-5));
 	BOOST_CHECK(bb1[0].max == Vec3(9,8,12));
-	BOOST_CHECK(bb1.bbox.state_count == 1);
+	BOOST_CHECK(bb1.bbox.size() == 1);
 }
 
 BOOST_AUTO_TEST_CASE(merge_with_3)
@@ -380,7 +380,7 @@ BOOST_AUTO_TEST_CASE(merge_with_3)
 
 	BOOST_CHECK(bb1[0].min == Vec3(-4,-6,-5));
 	BOOST_CHECK(bb1[0].max == Vec3(9,8,9));
-	BOOST_CHECK(bb1.bbox.state_count == 1);
+	BOOST_CHECK(bb1.bbox.size() == 1);
 }
 
 

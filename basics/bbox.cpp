@@ -19,10 +19,10 @@ BBoxT::BBoxT(const Vec3 &bmin_, const Vec3 &bmax_)
 
 void BBoxT::copy(const BBoxT &b)
 {
-	if (bbox.state_count != b.bbox.state_count)
-		bbox.init(b.bbox.state_count);
+	if (bbox.size() != b.bbox.size())
+		bbox.init(b.bbox.size());
 
-	for (int time=0; time < bbox.state_count; time++) {
+	for (int time=0; time < bbox.size(); time++) {
 		bbox[time] = b.bbox[time];
 	}
 }

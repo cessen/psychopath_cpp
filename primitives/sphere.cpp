@@ -165,9 +165,9 @@ bool Sphere::intersect_ray(const Ray &ray, Intersection *intersection)
 BBoxT &Sphere::bounds()
 {
 	if (!has_bounds) {
-		bbox.init(center.state_count);
+		bbox.init(center.size());
 
-		for (int time = 0; time < center.state_count; time++) {
+		for (int time = 0; time < center.size(); time++) {
 			bbox[time].min.x = center[time].x - radius[time];
 			bbox[time].max.x = center[time].x + radius[time];
 			bbox[time].min.y = center[time].y - radius[time];
