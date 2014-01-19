@@ -140,10 +140,17 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 	if (micro_surface)
 		current_subdivs = micro_surface->subdivisions();
 
-	auto itr = start;
-	for (; itr != end && itr->object_id == prim_id; ++itr) {
-		const auto& ray = rays[itr->ray_index];
-		auto& intersection = intersections[itr->ray_index];
+	// Count the number of potints with the same object id
+	int potint_count = 0;
+	for (auto itr = start; itr != end && itr->object_id == prim_id; ++itr)
+		++potint_count;
+
+	// A nicer named alias for "start"
+	auto& potints = start;
+
+	for (int i = 0; i < potint_count; ++i) {
+		const auto& ray = rays[potints[i].ray_index];
+		auto& intersection = intersections[potints[i].ray_index];
 
 		// Get bounding box intersection
 		float tnear, tfar;
@@ -175,7 +182,7 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 		if (ray.is_shadow_ray) {
 			if (!intersection.hit)
 				intersection.hit |= micro_surface->intersect_ray(ray, width, nullptr);
-			rays_active[itr->ray_index] = !intersection.hit; // Early out for shadow rays
+			rays_active[potints[i].ray_index] = !intersection.hit; // Early out for shadow rays
 		} else {
 			intersection.hit |= micro_surface->intersect_ray(ray, width, &intersection);
 		}
@@ -185,7 +192,7 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 	if (rediced)
 		MicroSurfaceCache::cache.put(micro_surface, primitive->uid);
 
-	return itr;
+	return start + potint_count;
 }
 
 
