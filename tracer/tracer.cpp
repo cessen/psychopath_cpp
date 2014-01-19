@@ -24,7 +24,7 @@
 
 #define RAY_STATE_SIZE scene->world.ray_state_size()
 #define MAX_POTINT 1u
-#define MAX_POTINT_FOR_SPLIT_TRAVERSAL 1024u
+#define MAX_POTINT_FOR_SPLIT_TRAVERSAL 100000
 #define RAY_JOB_SIZE (1024*4)
 
 
@@ -131,6 +131,7 @@ void Tracer::sort_potential_intersections()
 std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector<PotentialInter>::iterator start, std::vector<PotentialInter>::iterator end)
 {
 	using namespace MicroSurfaceCache;
+	int split_count = 0;
 
 	const size_t max_subdivs = intlog2(Config::max_grid_size);
 	const size_t prim_id = start->object_id;
@@ -138,7 +139,7 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 	// Stack
 #define STACK_SIZE 32
 	std::unique_ptr<DiceableSurfacePrimitive> primitive_stack[STACK_SIZE];
-	primitive_stack[0] = std::unique_ptr<DiceableSurfacePrimitive>(dynamic_cast<DiceableSurfacePrimitive*>(&(scene->world.get_primitive(prim_id))));
+	primitive_stack[0] = (dynamic_cast<DiceableSurfacePrimitive*>(&(scene->world.get_primitive(prim_id)))->copy());
 	int stack_i = 0;
 
 	// UID's
@@ -163,16 +164,16 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 	auto& potints = start;
 
 	// Traversal
-	while (true) {
+	while (stack_i >= 0) {
 		auto& bounds = primitive_stack[stack_i]->bounds();
 		size_t current_subdivs;
-		bool rediced = false; // Keeps track of whether we ever redice the surface
+		bool rediced = false; // Keeps track of whether we end up redicing the surface
+		bool split = false; // Keeps track of whether we need to split and traverse further
 
+		// Fetch a cached microsurface if there is one
 		micro_surface = cache.get(Key(uid1, uid2_stack[stack_i]));
 		if (micro_surface)
 			current_subdivs = micro_surface->subdivisions();
-
-		bool split = false;
 
 		// Trace the rays against the current stack primitive
 		for (int i = 0; i < potint_count; ++i) {
@@ -186,7 +187,7 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 			// Get bounding box intersection
 			float tnear, tfar;
 			if (!bounds.intersect_ray(ray, &tnear, &tfar))
-				continue;
+				continue; // Continue to next ray if we didn't hit
 
 			// Calculate the subdivision rate this ray needs for this primitive
 			const float width = ray.min_width(tnear, tfar);
@@ -194,10 +195,9 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 
 			// If we need more resolution for this ray, mark for further downward traversal
 			if (subdivs > max_subdivs) {
-				subdivs = max_subdivs;
-				//potint_stack[i]++;
-				//split = true;
-				//continue;
+				potint_stack[i]++;
+				split = true;
+				continue; // Continue to next ray
 			}
 
 			// Figure out if we need to redice or not
@@ -227,15 +227,39 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 			}
 		}
 
-		// If we created a new microsurface, store it in the cache
+		// If we created a new microsurface while testing against the rays, store it in the cache
 		if (rediced)
 			cache.put(micro_surface, Key(uid1, uid2_stack[stack_i]));
 
-		break;
+		// Split and traverse further down if needed
+		if (split) {
+			++split_count;
+			// Split primitive
+			const unsigned int new_count = primitive_stack[stack_i]->split(&(primitive_stack[stack_i]));
+			const int new_stack_i = stack_i + new_count - 1;
+
+			// Update potint stack
+			for (auto &si: potint_stack) {
+				if (si > stack_i)
+					si = new_stack_i;
+				else if (si == stack_i)
+					si--;
+			}
+
+			// Update uid stack
+			auto parent_uid2 = uid2_stack[stack_i];
+			for (unsigned int i = 0; i < new_count; ++i)
+				uid2_stack[stack_i + i] = (parent_uid2 << 3) | (i + 1);
+
+			stack_i = new_stack_i;
+			continue;
+		}
+
+		// Traverse back up
+		stack_i--;
 	}
 
-	// Don't free the original primitive
-	primitive_stack[stack_i].release();
+	Global::Stats::split_count += split_count;
 
 	return start + potint_count;
 }

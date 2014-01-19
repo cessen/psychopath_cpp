@@ -81,10 +81,12 @@ public:
 	 * @brief Returns the number of subdivisions necessary to achieve the
 	 * given target width of microgeometry.
 	 */
-	virtual size_t subdiv_estimate(float width) const {
-		std::cout << "Error: DiceableSurfacePrimitive::query_subdivision_rate() not implemented for this primitive." << std::endl;
-		exit(1);
-	}
+	virtual size_t subdiv_estimate(float width) const = 0;
+
+	/**
+	 * @brief Returns a pointer to a heap-allocated duplicate of the primitive.
+	 */
+	virtual std::unique_ptr<DiceableSurfacePrimitive> copy() = 0;
 
 	/**
 	 * @brief Splits a primitive into two or more sub-primitives.  Splitting MUST be
@@ -92,11 +94,15 @@ public:
 	 * same output primitives in the same order.
 	 *
 	 * Places pointers to the primitives in the given primitives pointer array.
+	 *
+	 * @warning To implementors: the implementation of this method must allow
+	 * the primitive itself to be replaced by one of the new primitives.  So make
+	 * sure not to assign to the array until you don't need the primitive's data
+	 * anymore.
+	 *
+	 * @return The number of new primitives generated from the split
 	 */
-	virtual void split(std::unique_ptr<DiceableSurfacePrimitive> primitives[]) {
-		std::cout << "Error: DiceableSurfacePrimitive::split() not implemented for this primitive." << std::endl;
-		exit(1);
-	}
+	virtual int split(std::unique_ptr<DiceableSurfacePrimitive> primitives[]) = 0;
 
 	/**
 	 * @brief Dices the surface into a MicroSurface.
@@ -105,10 +111,7 @@ public:
 	 *        subdivision schemes, the amount of geometry quadruples every
 	 *        subdivision iteration.
 	 */
-	virtual std::shared_ptr<MicroSurface> dice(size_t subdivisions) {
-		std::cout << "Error: DiceableSurfacePrimitive::dice() not implemented for this primitive." << std::endl;
-		exit(1);
-	}
+	virtual std::shared_ptr<MicroSurface> dice(size_t subdivisions) = 0;
 };
 
 #endif

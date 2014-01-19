@@ -114,7 +114,7 @@ BBoxT &Bilinear::bounds()
 }
 
 
-void Bilinear::split(std::unique_ptr<DiceableSurfacePrimitive> primitives[])
+int Bilinear::split(std::unique_ptr<DiceableSurfacePrimitive> primitives[])
 {
 	auto patch1 = new Bilinear(verts.state_count);
 	auto patch2 = new Bilinear(verts.state_count);
@@ -184,6 +184,30 @@ void Bilinear::split(std::unique_ptr<DiceableSurfacePrimitive> primitives[])
 
 	primitives[0] = std::unique_ptr<DiceableSurfacePrimitive>(patch1);
 	primitives[1] = std::unique_ptr<DiceableSurfacePrimitive>(patch2);
+
+	return 2;
+}
+
+std::unique_ptr<DiceableSurfacePrimitive> Bilinear::copy()
+{
+	auto patch = new Bilinear(verts.state_count);
+
+	// Copy verts
+	for (int i=0; i < verts.state_count; i++) {
+		patch->add_time_sample(i, verts[i][0],
+		                       verts[i][1],
+		                       verts[i][2],
+		                       verts[i][3]
+		                      );
+	}
+
+	// Copy uv's
+	patch->u_min = u_min;
+	patch->u_max = u_max;
+	patch->v_min = v_min;
+	patch->v_max = v_max;
+
+	return std::unique_ptr<DiceableSurfacePrimitive>(patch);
 }
 
 
