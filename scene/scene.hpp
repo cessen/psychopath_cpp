@@ -10,6 +10,7 @@
 #include <vector>
 #include <memory>
 
+#include "global.hpp"
 #include "camera.hpp"
 #include "bvh.hpp"
 #include "bvh2.hpp"
@@ -41,6 +42,7 @@ struct Scene {
 
 	void add_primitive(std::unique_ptr<Primitive>&& primitive) {
 		primitives.push_back(std::move(primitive));
+		primitives.back()->uid = ++Global::next_primitive_uid;
 	}
 
 	void add_finite_light(std::unique_ptr<Light>&& light) {

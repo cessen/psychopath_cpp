@@ -129,22 +129,22 @@ void Tracer::sort_potential_intersections()
 
 std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector<PotentialInter>::iterator start, std::vector<PotentialInter>::iterator end)
 {
+#define STACK_SIZE 32
 	using namespace MicroSurfaceCache;
 	int split_count = 0;
 
 	const size_t max_subdivs = intlog2(Config::max_grid_size);
 	const size_t prim_id = start->object_id;
 
+	// UID's
+	const size_t uid1 = scene->world.get_primitive(prim_id).uid; // Main UID
+	size_t uid2_stack[STACK_SIZE]; // Sub-UID
+	uid2_stack[0] = 1;
+
 	// Stack
-#define STACK_SIZE 32
 	std::unique_ptr<DiceableSurfacePrimitive> primitive_stack[STACK_SIZE];
 	primitive_stack[0] = (dynamic_cast<DiceableSurfacePrimitive*>(&(scene->world.get_primitive(prim_id)))->copy());
 	int stack_i = 0;
-
-	// UID's
-	const size_t uid1 = primitive_stack[0]->uid; // Main UID
-	size_t uid2_stack[STACK_SIZE]; // Sub-UID
-	uid2_stack[0] = 1;
 
 	// Find out how many potints we're dealing with
 	int potint_count = 0;
@@ -195,7 +195,6 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 
 			// If we need more resolution for this ray, mark for further downward traversal
 			if (subdivs > max_subdivs) {
-				//subdivs = max_subdivs;
 				pitr->tag = 1;
 				split = true;
 				continue; // Continue to next ray
