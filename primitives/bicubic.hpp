@@ -5,6 +5,7 @@
 
 #include <atomic>
 #include <vector>
+#include <array>
 #include "vector.hpp"
 #include "grid.hpp"
 #include "primitive.hpp"
@@ -24,7 +25,7 @@
 class Bicubic: public DiceableSurfacePrimitive
 {
 public:
-	std::vector<Vec3> verts;
+	std::vector<std::array<Vec3, 16>> verts;
 	int time_samples {0};
 	float u_min, v_min, u_max, v_max;
 	float longest_u = 0.0f;

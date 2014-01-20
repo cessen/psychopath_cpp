@@ -14,6 +14,7 @@
 
 #include "sphere_light.hpp"
 #include "bilinear.hpp"
+#include "bicubic.hpp"
 
 #include "renderer.hpp"
 #include "scene.hpp"
@@ -107,6 +108,11 @@ std::unique_ptr<Renderer> Parser::parse_next_frame()
 			//std::cout << "Found BilinearPatch" << std::endl;
 			ungetline(psy_file);
 			scene->add_primitive(parse_bilinear_patch());
+		} else if (line.find("BicubicPatch") == 0) {
+			// Parse a bicubic patch
+			//std::cout << "Found BicubicPatch" << std::endl;
+			ungetline(psy_file);
+			scene->add_primitive(parse_bicubic_patch());
 		} else if (line.find("SphereLight") == 0) {
 			// Parse a spherical light
 			//std::cout << "Found SphereLight" << std::endl;
@@ -347,6 +353,65 @@ std::unique_ptr<Bilinear> Parser::parse_bilinear_patch()
 		                       Vec3(p.v[6], p.v[7], p.v[8]),
 		                       Vec3(p.v[9], p.v[10], p.v[11]));
 	}
+
+	return patch;
+}
+
+
+struct BicubicPatchVerts {
+	float v[48];
+};
+
+std::unique_ptr<Bicubic> Parser::parse_bicubic_patch()
+{
+	std::vector<BicubicPatchVerts> patch_verts;
+
+	std::string line;
+	getline(psy_file, line);
+	if (line.find("BicubicPatch") == 0) { // Verify this is a "Frame" section
+		// Get the vertices of the patch; multiple vert lines means motion blur
+		while (getline(psy_file, line)) {
+			if (line.find("Vertices:") == 0) {
+				BicubicPatchVerts verts;
+				boost::sregex_iterator matches(line.begin(), line.end(), re_float);
+				for (int i = 0; matches != boost::sregex_iterator() && i < 48; ++matches) {
+					verts.v[i] = std::stof(matches->str());
+					++i;
+				}
+				patch_verts.push_back(verts);
+			} else {
+				// No more verts
+				ungetline(psy_file);
+				break;
+			}
+		}
+	}
+
+	// Build the patch
+	std::unique_ptr<Bicubic> patch(new Bicubic());
+	for (auto& p: patch_verts) {
+		patch->add_time_sample(Vec3(p.v[0], p.v[1], p.v[2]),
+		                       Vec3(p.v[3], p.v[4], p.v[5]),
+		                       Vec3(p.v[6], p.v[7], p.v[8]),
+		                       Vec3(p.v[9], p.v[10], p.v[11]),
+
+		                       Vec3(p.v[12], p.v[13], p.v[14]),
+		                       Vec3(p.v[15], p.v[16], p.v[17]),
+		                       Vec3(p.v[18], p.v[19], p.v[20]),
+		                       Vec3(p.v[21], p.v[22], p.v[23]),
+
+		                       Vec3(p.v[24], p.v[25], p.v[26]),
+		                       Vec3(p.v[27], p.v[28], p.v[29]),
+		                       Vec3(p.v[30], p.v[31], p.v[32]),
+		                       Vec3(p.v[33], p.v[34], p.v[35]),
+
+		                       Vec3(p.v[36], p.v[37], p.v[38]),
+		                       Vec3(p.v[39], p.v[40], p.v[41]),
+		                       Vec3(p.v[42], p.v[43], p.v[44]),
+		                       Vec3(p.v[45], p.v[46], p.v[47]));
+	}
+
+	patch->finalize();
 
 	return patch;
 }

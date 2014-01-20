@@ -218,10 +218,8 @@ std::shared_ptr<MicroSurface> Bilinear::dice(size_t subdivisions)
 	size_t v_rate = 1 << subdivisions;
 
 	// Dice away!
-	Grid *grid = grid_dice(u_rate+1, v_rate+1);
-	std::shared_ptr<MicroSurface> micro = std::make_shared<MicroSurface>(grid);
-
-	delete grid;
+	std::unique_ptr<Grid> grid = std::unique_ptr<Grid>(grid_dice(u_rate+1, v_rate+1));
+	std::shared_ptr<MicroSurface> micro = std::make_shared<MicroSurface>(grid.get());
 
 	return micro;
 }

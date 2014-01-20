@@ -195,6 +195,7 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 
 			// If we need more resolution for this ray, mark for further downward traversal
 			if (subdivs > max_subdivs) {
+				//subdivs = max_subdivs;
 				pitr->tag = 1;
 				split = true;
 				continue; // Continue to next ray
