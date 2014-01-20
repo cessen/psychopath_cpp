@@ -158,9 +158,6 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 	potint_starts[0] = start;
 	potint_ends[0] = start + potint_count;
 
-	// A place to keep our microsurfaces during traversal
-	std::shared_ptr<MicroSurface> micro_surface;
-
 	// Traversal
 	while (stack_i >= 0) {
 		auto& bounds = primitive_stack[stack_i]->bounds();
@@ -169,6 +166,7 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 		bool split = false; // Keeps track of whether we need to split and traverse further
 
 		// Fetch a cached microsurface if there is one
+		std::shared_ptr<MicroSurface> micro_surface = nullptr;
 		micro_surface = cache.get(Key(uid1, uid2_stack[stack_i]));
 		if (micro_surface)
 			current_subdivs = micro_surface->subdivisions();
