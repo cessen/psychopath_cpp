@@ -43,7 +43,8 @@ public:
 class Primitive: public Boundable
 {
 public:
-	size_t uid {++Global::next_primitive_uid};
+	size_t uid; // Unique ID, used by Scene and Tracer for various purposes
+	// Sub-classes don't need to worry about it.
 
 	virtual ~Primitive() {}
 

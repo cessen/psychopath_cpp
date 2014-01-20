@@ -345,14 +345,16 @@ std::unique_ptr<Bilinear> Parser::parse_bilinear_patch()
 	}
 
 	// Build the patch
-	std::unique_ptr<Bilinear> patch(new Bilinear(patch_verts.size()));
+	std::unique_ptr<Bilinear> patch(new Bilinear());
 	for (uint i = 0; i < patch_verts.size(); ++i) {
 		auto p = patch_verts[i];
-		patch->add_time_sample(i, Vec3(p.v[0], p.v[1], p.v[2]),
+		patch->add_time_sample(Vec3(p.v[0], p.v[1], p.v[2]),
 		                       Vec3(p.v[3], p.v[4], p.v[5]),
 		                       Vec3(p.v[6], p.v[7], p.v[8]),
 		                       Vec3(p.v[9], p.v[10], p.v[11]));
 	}
+
+	patch->finalize();
 
 	return patch;
 }

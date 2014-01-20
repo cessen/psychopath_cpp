@@ -26,7 +26,6 @@ class Bicubic: public DiceableSurfacePrimitive
 {
 public:
 	std::vector<std::array<Vec3, 16>> verts;
-	int time_samples {0};
 	float u_min, v_min, u_max, v_max;
 	float longest_u = 0.0f;
 	float longest_v = 0.0f;

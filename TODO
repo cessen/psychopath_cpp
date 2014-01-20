@@ -1,7 +1,7 @@
 - Add NaN and Inf catching to key places in code
 
 - More geometry types:
-	- Bicubic bezier patches
+	//- Bicubic bezier patches
 	- Catmull-clark subdivision surfaces
 
 - Investigate ways to make splitting and splitting-traversal faster.

@@ -15,7 +15,6 @@ Bicubic::Bicubic(Vec3 v1,  Vec3 v2,  Vec3 v3,  Vec3 v4,
                  Vec3 v13, Vec3 v14, Vec3 v15, Vec3 v16)
 {
 	verts.resize(1);
-	time_samples = 1;
 
 	verts[0][0]  = v1;
 	verts[0][1]  = v2;
@@ -48,7 +47,6 @@ void Bicubic::add_time_sample(Vec3 v1,  Vec3 v2,  Vec3 v3,  Vec3 v4,
 {
 	const auto i = verts.size();
 	verts.resize(verts.size()+1);
-	++time_samples;
 
 	verts[i][0]  = v1;
 	verts[i][1]  = v2;
@@ -92,8 +90,8 @@ void Bicubic::finalize()
 	}
 
 	// Calculate bounds
-	bbox.init(time_samples);
-	for (int time = 0; time < time_samples; time++) {
+	bbox.init(verts.size());
+	for (int time = 0; time < verts.size(); time++) {
 		for (int i = 0; i < 16; i++) {
 			bbox[time].min = min(bbox[time].min, verts[time][i]);
 			bbox[time].max = max(bbox[time].max, verts[time][i]);
@@ -137,7 +135,7 @@ int Bicubic::split(std::unique_ptr<DiceableSurfacePrimitive> primitives[])
 	// Split
 	if (longest_u > longest_v) {
 		// Split on U
-		for (int time=0; time < time_samples; time++) {
+		for (int time=0; time < verts.size(); time++) {
 			// Calculate split geometry
 			Vec3 verts1[4][4];
 			Vec3 verts2[4][4];
@@ -212,7 +210,7 @@ int Bicubic::split(std::unique_ptr<DiceableSurfacePrimitive> primitives[])
 		patch2->v_max = v_max;
 	} else {
 		// Split on V
-		for (int time=0; time < time_samples; time++) {
+		for (int time=0; time < verts.size(); time++) {
 			// Calculate split geometry
 			Vec3 verts1[4][4];
 			Vec3 verts2[4][4];
@@ -302,9 +300,6 @@ std::unique_ptr<DiceableSurfacePrimitive> Bicubic::copy()
 	// Copy verts
 	patch->verts = verts;
 
-	// Copy time sample count
-	patch->time_samples = time_samples;
-
 	// Copy uv's
 	patch->u_min = u_min;
 	patch->u_max = u_max;
@@ -389,7 +384,7 @@ inline void eval_cubic_bezier_curve(int vert_count, int stride, Vec3 output[], V
 Grid *Bicubic::grid_dice(const int ru, const int rv)
 {
 	// Initialize grid and fill in the basics
-	Grid *grid = new Grid(ru, rv, time_samples);
+	Grid *grid = new Grid(ru, rv, verts.size());
 
 	// Fill in face and uvs
 	grid->face_id = 0;
@@ -405,7 +400,7 @@ Grid *Bicubic::grid_dice(const int ru, const int rv)
 	std::vector<Vec3> vs(rv*4); // Hold v-dicing before doing u-dicing
 
 	// Dice for each time sample
-	for (int time = 0; time < time_samples; time++) {
+	for (int time = 0; time < verts.size(); time++) {
 		// Dice along v-columns
 		eval_cubic_bezier_curve(rv, 4, vs.data()+0, verts[time][0], verts[time][4], verts[time][8], verts[time][12]);
 		eval_cubic_bezier_curve(rv, 4, vs.data()+1, verts[time][1], verts[time][5], verts[time][9], verts[time][13]);

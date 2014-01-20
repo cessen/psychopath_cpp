@@ -22,18 +22,19 @@
 class Bilinear: public DiceableSurfacePrimitive
 {
 public:
-	TimeBox<Vec3 *> verts;
+	std::vector<std::array<Vec3, 4>> verts;
 	float u_min, v_min, u_max, v_max;
-
+	float longest_u, longest_v;
 
 	BBoxT bbox;
-	bool has_bounds;
 
-	Bilinear(uint16_t res_time_);
+	Bilinear() {}
 	Bilinear(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4);
-	virtual ~Bilinear();
+	virtual ~Bilinear() {}
 
-	void add_time_sample(int samp, Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4);
+	void finalize();
+
+	void add_time_sample(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4);
 	Grid *grid_dice(const int ru, const int rv);
 
 	virtual BBoxT &bounds();
