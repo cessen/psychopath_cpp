@@ -33,14 +33,11 @@ extern LRUCache<Key, MicroSurface> cache;
 namespace std
 {
 template<>
-struct std::hash<MicroSurfaceCache::Key> {
-	typedef MicroSurfaceCache::Key argument_type;
-	typedef std::size_t value_type;
-
-	value_type operator()(argument_type const& k) const {
-		value_type const h1(std::hash<uint64_t>()(k.uid1));
-		value_type const h2(std::hash<uint64_t>()(k.uid2));
-		return h1 ^ (h2 << 16) | (h2 >> 16);
+struct hash<MicroSurfaceCache::Key> {
+	size_t operator()(MicroSurfaceCache::Key const& k) const {
+		size_t const h1(std::hash<uint64_t>()(k.uid1));
+		size_t const h2(std::hash<uint64_t>()(k.uid2));
+		return h1 ^ ((h2 << 16) | (h2 >> 16));
 	}
 };
 }
