@@ -360,8 +360,8 @@ uint BVH::get_potential_intersections(const Ray &ray, float tmax, uint max_poten
 	if (nodes.size() == 0 || node == ~uint64_t(0))
 		return 0;
 
-	const Vec3 inv_d = ray.get_inverse_d();
-	const std::array<uint32_t, 3> d_is_neg = ray.get_d_is_neg();
+	const Vec3 d_inv = ray.get_d_inverse();
+	const auto d_sign = ray.get_d_sign();
 
 	// Traverse the BVH
 	uint32_t hits_so_far = 0;
@@ -375,8 +375,8 @@ uint BVH::get_potential_intersections(const Ray &ray, float tmax, uint max_poten
 		} else {
 			bool hit0, hit1;
 			hitt0a = hitt1a = hitt0b = hitt1b = std::numeric_limits<float>::infinity();
-			hit0 = intersect_node(child1(node), ray, inv_d, d_is_neg, &hitt0a, &hitt1a) && hitt0a < tmax;
-			hit1 = intersect_node(child2(node), ray, inv_d, d_is_neg, &hitt0b, &hitt1b) && hitt0b < tmax;
+			hit0 = intersect_node(child1(node), ray, d_inv, d_sign, &hitt0a, &hitt1a) && hitt0a < tmax;
+			hit1 = intersect_node(child2(node), ray, d_inv, d_sign, &hitt0b, &hitt1b) && hitt0b < tmax;
 
 			if (hit0 || hit1) {
 				bit_stack <<= 1;

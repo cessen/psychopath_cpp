@@ -173,10 +173,8 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 
 		// Trace the rays against the current stack primitive
 		for (auto pitr = potint_starts[stack_i]; pitr != potint_ends[stack_i]; ++pitr) {
-			prefetch_L3(&(pitr[2]));
-			prefetch_L3(&(rays[pitr[1].ray_index]));
-			prefetch_L3(&(intersections[pitr[1].ray_index]));
-			prefetch_L3(&(rays_active[pitr->ray_index]));
+			// Memory-prefetch the ray after next after next (trying to keep ahead of memory latency)
+			LowLevel::prefetch_L1(&(rays[pitr[3].ray_index]));
 
 			const auto& ray = rays[pitr->ray_index];
 			auto& intersection = intersections[pitr->ray_index];
@@ -237,8 +235,8 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 			const int new_stack_i = stack_i + new_count - 1;
 
 			// Update potint iterator stacks
-			potint_starts[stack_i] = std::partition(potint_starts[stack_i], potint_ends[stack_i], [](const PotentialInter& p) {
-				return p.tag == 0;
+			potint_starts[stack_i] = std::partition(potint_starts[stack_i], potint_ends[stack_i], [this](const PotentialInter& p) {
+				return p.tag == 0 || this->rays_active[p.ray_index] == false;
 			});
 			for (int i = 1; i < new_count; ++i) {
 				potint_starts[stack_i + i] = potint_starts[stack_i];

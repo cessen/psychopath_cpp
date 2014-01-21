@@ -332,12 +332,12 @@ uint BVH4::get_potential_intersections(const Ray &ray, float tmax, uint max_pote
 		return 0;
 
 	// Get inverse ray direction and whether each ray component is negative
-	const Vec3 inv_d_f = ray.get_inverse_d();
-	const std::array<uint32_t, 3> d_is_neg = ray.get_d_is_neg();
+	const Vec3 d_inv_f = ray.get_d_inverse();
+	const auto d_sign = ray.get_d_sign();
 
 	// Load ray origin, inverse direction, and max_t into simd layouts for intersection testing
 	const SIMD::float4 ray_o[3] = {ray.o[0], ray.o[1], ray.o[2]};
-	const SIMD::float4 inv_d[3] = {inv_d_f[0], inv_d_f[1], inv_d_f[2]};
+	const SIMD::float4 d_inv[3] = {d_inv_f[0], d_inv_f[1], d_inv_f[2]};
 	const SIMD::float4 max_t {
 		ray.max_t
 	};
@@ -360,7 +360,7 @@ uint BVH4::get_potential_intersections(const Ray &ray, float tmax, uint max_pote
 			const BBox4 b = calc_time_interp(time_samples(node), ray.time, &ti, &alpha) ? lerp(alpha, nodes[node+ti].bounds, nodes[node+ti+1].bounds) : nodes[node].bounds;
 
 			// Ray test
-			uint64_t hit_mask = b.intersect_ray(ray_o, inv_d, max_t, d_is_neg, &near_hits);
+			uint64_t hit_mask = b.intersect_ray(ray_o, d_inv, max_t, d_sign, &near_hits);
 
 			// If we didn't hit anything, exit loop
 			if (hit_mask == 0)

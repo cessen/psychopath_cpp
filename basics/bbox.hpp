@@ -121,12 +121,12 @@ struct BBox {
 	 *
 	 * @returns True if the ray hits, false if the ray misses.
 	 */
-	inline bool intersect_ray(const Ray& ray, const Vec3 inv_d, const std::array<uint32_t, 3> d_is_neg, float *hitt0, float *hitt1, float *t=nullptr) const {
+	inline bool intersect_ray(const Ray& ray, const Vec3 d_inv, const std::array<uint32_t, 3> d_sign, float *hitt0, float *hitt1, float *t=nullptr) const {
 #ifdef DEBUG
 		// Test for nan and inf
 		if (std::isnan(ray.o.x) || std::isnan(ray.o.y) || std::isnan(ray.o.z) ||
 		        std::isnan(ray.d.x) || std::isnan(ray.d.y) || std::isnan(ray.d.z) ||
-		        std::isnan(inv_d.x) || std::isnan(inv_d.y) || std::isnan(inv_d.z) ||
+		        std::isnan(d_inv.x) || std::isnan(d_inv.y) || std::isnan(d_inv.z) ||
 		        std::isnan(min.x) || std::isnan(min.y) || std::isnan(min.z) ||
 		        std::isnan(max.x) || std::isnan(max.y) || std::isnan(max.z)) {
 			std::cout << "NaN found!" << std::endl;
@@ -144,12 +144,12 @@ struct BBox {
 
 		const Vec3 *bounds = &min;
 
-		float tmin = (bounds[d_is_neg[0]].x - ray.o.x) * inv_d.x;
-		float tmax = (bounds[1-d_is_neg[0]].x - ray.o.x) * inv_d.x;
-		const float tymin = (bounds[d_is_neg[1]].y - ray.o.y) * inv_d.y;
-		const float tymax = (bounds[1-d_is_neg[1]].y - ray.o.y) * inv_d.y;
-		const float tzmin = (bounds[d_is_neg[2]].z - ray.o.z) * inv_d.z;
-		const float tzmax = (bounds[1-d_is_neg[2]].z - ray.o.z) * inv_d.z;
+		float tmin = (bounds[d_sign[0]].x - ray.o.x) * d_inv.x;
+		float tmax = (bounds[1-d_sign[0]].x - ray.o.x) * d_inv.x;
+		const float tymin = (bounds[d_sign[1]].y - ray.o.y) * d_inv.y;
+		const float tymax = (bounds[1-d_sign[1]].y - ray.o.y) * d_inv.y;
+		const float tzmin = (bounds[d_sign[2]].z - ray.o.z) * d_inv.z;
+		const float tzmax = (bounds[1-d_sign[2]].z - ray.o.z) * d_inv.z;
 
 		if (tymin > tmin)
 			tmin = tymin;
@@ -171,10 +171,10 @@ struct BBox {
 	}
 
 	inline bool intersect_ray(const Ray& ray, float *hitt0, float *hitt1, float *t=nullptr) const {
-		const Vec3 inv_d = ray.get_inverse_d();
-		const std::array<uint32_t, 3> d_is_neg = ray.get_d_is_neg();
+		const Vec3 d_inv = ray.get_d_inverse();
+		const std::array<uint32_t, 3> d_sign = ray.get_d_sign();
 
-		return intersect_ray(ray, inv_d, d_is_neg, hitt0, hitt1, t);
+		return intersect_ray(ray, d_inv, d_sign, hitt0, hitt1, t);
 	}
 
 
@@ -185,9 +185,9 @@ struct BBox {
 	 *
 	 * @returns True if the ray hits, false if the ray misses.
 	 */
-	inline bool intersect_ray(const Ray& ray, const Vec3 inv_d, const std::array<uint32_t, 3> d_is_neg) const {
+	inline bool intersect_ray(const Ray& ray, const Vec3 d_inv, const std::array<uint32_t, 3> d_sign) const {
 		float hitt0, hitt1;
-		return intersect_ray(ray, inv_d, d_is_neg, &hitt0, &hitt1);
+		return intersect_ray(ray, d_inv, d_sign, &hitt0, &hitt1);
 	}
 
 	inline bool intersect_ray(const Ray& ray) const {
@@ -342,22 +342,22 @@ struct BBox2 {
 	 * @brief Tests a ray against the BBox2's bounding boxes.
 	 *
 	 * @param[in] o The origin of the ray, laid out as [[x,x,x,x],[y,y,y,y],[z,z,z,z]].
-	 * @param[in] inv_d The direction of the ray over 1.0, laid out as [[x,x,x,x],[y,y,y,y],[z,z,z,z]]
+	 * @param[in] d_inv The direction of the ray over 1.0, laid out as [[x,x,x,x],[y,y,y,y],[z,z,z,z]]
 	 * @param[in] t_max The maximum t value of the ray being tested against, laid out as [t,t,t,t].
-	 * @param[in] d_is_neg Precomputed values indicating whether the x, y, and z components of the ray are negative or not.
+	 * @param[in] d_sign Precomputed values indicating whether the x, y, and z components of the ray are negative or not.
 	 * @param[out] hit_ts Pointer to a SIMD::float4 where the t parameter of each hit (if any) will be recorded.
 	 *             The hit t's are stored in index [0] and [1] for the first and second box, respectively.
 	 *
 	 * @returns A bitmask indicating which (if any) of the two boxes were hit.
 	 */
-	inline unsigned int intersect_ray(const SIMD::float4* o, const SIMD::float4* inv_d, const SIMD::float4& t_max, const std::array<uint32_t, 3>& d_is_neg, SIMD::float4 *hit_ts) const {
+	inline unsigned int intersect_ray(const SIMD::float4* o, const SIMD::float4* d_inv, const SIMD::float4& t_max, const std::array<uint32_t, 3>& d_sign, SIMD::float4 *hit_ts) const {
 		using namespace SIMD;
 		const float4 zeros(0.0f);
 
 		// Calculate the plane intersections
-		const float4 xs = (shuffle_swap(bounds[0], d_is_neg[0]) - o[0]) * inv_d[0];
-		const float4 ys = (shuffle_swap(bounds[1], d_is_neg[1]) - o[1]) * inv_d[1];
-		const float4 zs = (shuffle_swap(bounds[2], d_is_neg[2]) - o[2]) * inv_d[2];
+		const float4 xs = (shuffle_swap(bounds[0], d_sign[0]) - o[0]) * d_inv[0];
+		const float4 ys = (shuffle_swap(bounds[1], d_sign[1]) - o[1]) * d_inv[1];
+		const float4 zs = (shuffle_swap(bounds[2], d_sign[2]) - o[2]) * d_inv[2];
 
 		// Get the minimum and maximum hits, and shuffle the max hits
 		// to be in the same location as the minimum hits
@@ -376,17 +376,17 @@ struct BBox2 {
 
 	inline unsigned int intersect_ray(const Ray& ray, SIMD::float4 *hit_ts) const {
 		using namespace SIMD;
-		const Vec3 inv_d_f = ray.get_inverse_d();
-		const std::array<uint32_t, 3> d_is_neg = ray.get_d_is_neg();
+		const Vec3 d_inv_f = ray.get_d_inverse();
+		const std::array<uint32_t, 3> d_sign = ray.get_d_sign();
 
 		// Load ray origin, inverse direction, and max_t into simd layouts for intersection testing
 		const float4 ray_o[3] = {ray.o[0], ray.o[1], ray.o[2]};
-		const float4 inv_d[3] = {inv_d_f[0], inv_d_f[1], inv_d_f[2]};
+		const float4 d_inv[3] = {d_inv_f[0], d_inv_f[1], d_inv_f[2]};
 		const float4 max_t {
 			ray.max_t
 		};
 
-		return intersect_ray(ray_o, inv_d, max_t, d_is_neg, hit_ts);
+		return intersect_ray(ray_o, d_inv, max_t, d_sign, hit_ts);
 	}
 
 };
@@ -502,24 +502,24 @@ struct BBox4 {
 	 * @brief Tests a ray against the BBox4's bounding boxes.
 	 *
 	 * @param[in] o The origin of the ray, laid out as [[x,x,x,x],[y,y,y,y],[z,z,z,z]].
-	 * @param[in] inv_d The direction of the ray over 1.0, laid out as [[x,x,x,x],[y,y,y,y],[z,z,z,z]]
+	 * @param[in] d_inv The direction of the ray over 1.0, laid out as [[x,x,x,x],[y,y,y,y],[z,z,z,z]]
 	 * @param[in] t_max The maximum t value of the ray being tested against, laid out as [t,t,t,t].
-	 * @param[in] d_is_neg Precomputed values indicating whether the x, y, and z components of the ray are negative or not.
+	 * @param[in] d_sign Precomputed values indicating whether the x, y, and z components of the ray are negative or not.
 	 * @param[out] hit_ts Pointer to a SIMD::float4 where the t parameter of each hit (if any) will be recorded..
 	 *
 	 * @returns A bitmask indicating which (if any) of the four boxes were hit.
 	 */
-	inline unsigned int intersect_ray(const SIMD::float4* o, const SIMD::float4* inv_d, const SIMD::float4& t_max, const std::array<uint32_t, 3>& d_is_neg, SIMD::float4 *hit_ts) const {
+	inline unsigned int intersect_ray(const SIMD::float4* o, const SIMD::float4* d_inv, const SIMD::float4& t_max, const std::array<uint32_t, 3>& d_sign, SIMD::float4 *hit_ts) const {
 		using namespace SIMD;
 		const float4 zeros(0.0f);
 
 		// Calculate the plane intersections
-		const float4 xlos = (bounds[0+d_is_neg[0]] - o[0]) * inv_d[0];
-		const float4 xhis = (bounds[1-d_is_neg[0]] - o[0]) * inv_d[0];
-		const float4 ylos = (bounds[2+d_is_neg[1]] - o[1]) * inv_d[1];
-		const float4 yhis = (bounds[3-d_is_neg[1]] - o[1]) * inv_d[1];
-		const float4 zlos = (bounds[4+d_is_neg[2]] - o[2]) * inv_d[2];
-		const float4 zhis = (bounds[5-d_is_neg[2]] - o[2]) * inv_d[2];
+		const float4 xlos = (bounds[0+d_sign[0]] - o[0]) * d_inv[0];
+		const float4 xhis = (bounds[1-d_sign[0]] - o[0]) * d_inv[0];
+		const float4 ylos = (bounds[2+d_sign[1]] - o[1]) * d_inv[1];
+		const float4 yhis = (bounds[3-d_sign[1]] - o[1]) * d_inv[1];
+		const float4 zlos = (bounds[4+d_sign[2]] - o[2]) * d_inv[2];
+		const float4 zhis = (bounds[5-d_sign[2]] - o[2]) * d_inv[2];
 
 		// Get the minimum and maximum hits
 		const float4 mins = max(max(xlos, ylos), max(zlos, zeros));
@@ -537,17 +537,17 @@ struct BBox4 {
 
 	inline unsigned int intersect_ray(const Ray& ray, SIMD::float4 *hit_ts) const {
 		using namespace SIMD;
-		const Vec3 inv_d_f = ray.get_inverse_d();
-		const std::array<uint32_t, 3> d_is_neg = ray.get_d_is_neg();
+		const Vec3 d_inv_f = ray.get_d_inverse();
+		const std::array<uint32_t, 3> d_sign = ray.get_d_sign();
 
 		// Load ray origin, inverse direction, and max_t into simd layouts for intersection testing
 		const float4 ray_o[3] = {ray.o[0], ray.o[1], ray.o[2]};
-		const float4 inv_d[3] = {inv_d_f[0], inv_d_f[1], inv_d_f[2]};
+		const float4 d_inv[3] = {d_inv_f[0], d_inv_f[1], d_inv_f[2]};
 		const float4 max_t {
 			ray.max_t
 		};
 
-		return intersect_ray(ray_o, inv_d, max_t, d_is_neg, hit_ts);
+		return intersect_ray(ray_o, d_inv, max_t, d_sign, hit_ts);
 	}
 
 };

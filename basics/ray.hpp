@@ -47,13 +47,16 @@ struct Ray {
 	// Coordinates
 	Vec3 o, d; // Ray origin and direction
 	float time; // Time coordinate
-
-	// Minimum and maximum extent along the ray
+	float max_t; // Maximum extent along the ray
 	// No min_t, it is implicitly 0.0f for all rays
-	float max_t;
+
+	Vec3 d_inv; // 1.0 / d
+	std::array<uint32_t, 3> d_sign; // Sign of the components of d
 
 	float ow; // Origin width
 	float dw; // Width delta
+
+	bool is_shadow_ray; // Shadow ray or not
 
 	/*
 	// Ray differentials for origin and direction
@@ -68,9 +71,6 @@ struct Ray {
 
 	// Whether the ray has differentials or not
 	bool has_differentials;*/
-
-	// Shadow ray or not
-	bool is_shadow_ray;
 
 
 	/*
@@ -90,23 +90,12 @@ struct Ray {
 	  is_shadow_ray {false}
 	{}
 
-	Vec3 get_inverse_d() const {
-		return Vec3(1.0f, 1.0f, 1.0f) / d;
+	Vec3 get_d_inverse() const {
+		return d_inv;
 	}
 
-	std::array<uint32_t, 3> get_d_is_neg() const {
-		std::array<uint32_t, 3> d_is_neg {{
-				(d.x < 0.0f ? 1u : 0u),
-				(d.y < 0.0f ? 1u : 0u),
-				(d.z < 0.0f ? 1u : 0u)
-			}
-		};
-
-		assert(d_is_neg[0] < 2);
-		assert(d_is_neg[1] < 2);
-		assert(d_is_neg[2] < 2);
-
-		return d_is_neg;
+	std::array<uint32_t, 3> get_d_sign() const {
+		return d_sign;
 	}
 
 	/**
@@ -135,6 +124,14 @@ struct Ray {
 		//assert(d.length() > 0.0f);
 		float linv = 1.0f / d.length();
 		d.normalize();
+
+		// Inverse direction
+		d_inv = Vec3(1.0f, 1.0f, 1.0f) / d;
+
+		// Sign of the direction components
+		d_sign[0] = (d.x < 0.0f ? 1u : 0u);
+		d_sign[1] = (d.y < 0.0f ? 1u : 0u);
+		d_sign[2] = (d.z < 0.0f ? 1u : 0u);
 
 		// Adjust the ray differentials for the normalized ray
 		dw *= linv;
