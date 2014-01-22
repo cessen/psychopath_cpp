@@ -25,6 +25,7 @@ public:
 	std::vector<std::array<Vec3, 4>> verts;
 	float u_min, v_min, u_max, v_max;
 	float longest_u, longest_v;
+	float log_widest = 0.0f;  // Log base 2 of the widest part of the patch, for fast subdivision rate estimates
 
 	BBoxT bbox;
 

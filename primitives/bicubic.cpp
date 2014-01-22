@@ -4,6 +4,7 @@
 #include <iostream>
 #include <limits>
 #include <stdlib.h>
+#include <cmath>
 #include "bicubic.hpp"
 #include "grid.hpp"
 #include "config.hpp"
@@ -77,7 +78,7 @@ void Bicubic::finalize()
 		for (int c = 1; c < 4; ++c) {
 			l += (verts[0][(r*4)+c] - verts[0][(r*4)+c-1]).length();
 		}
-		longest_u = l > longest_u ? l : longest_u;
+		longest_u = std::max(l, longest_u);
 	}
 
 	// Calculate longest v-side of the patch
@@ -86,8 +87,11 @@ void Bicubic::finalize()
 		for (int r = 1; r < 4; ++r) {
 			l += (verts[0][(r*4)+c] - verts[0][((r-1)*4)+c]).length();
 		}
-		longest_v = l > longest_v ? l : longest_v;
+		longest_v = std::max(l, longest_v);
 	}
+
+	// Calculate log-base-2 of the widest part of the patch
+	log_widest = fastlog2(std::max(longest_u, longest_v));
 
 	// Calculate bounds
 	bbox.init(verts.size());
@@ -110,14 +114,12 @@ void Bicubic::finalize()
 
 size_t Bicubic::subdiv_estimate(float width) const
 {
-	if (width < Config::min_upoly_size)
-		width = Config::min_upoly_size;
-
-	// Power-of-two dicing rate
-	size_t rate = (std::max(longest_u, longest_v) / (width * Config::dice_rate)) + 1;
-	rate = intlog2(upper_power_of_two(rate));
-
-	return rate;
+	// Since we want to end up with the log-base-2 of
+	// the division anyway, we just do the log first and
+	// subtract.  Using a very approximate log2, but in
+	// practice it works very well.
+	const float rate = log_widest - fasterlog2(width * Config::dice_rate) + 1.0f;
+	return std::max(rate, 0.0f);
 }
 
 

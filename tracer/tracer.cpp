@@ -186,7 +186,7 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 				continue; // Continue to next ray if we didn't hit
 
 			// Calculate the subdivision rate this ray needs for this primitive
-			const float width = ray.min_width(tnear, tfar);
+			const float width = std::max(ray.min_width(tnear, tfar), Config::min_upoly_size);
 			size_t subdivs = primitive_stack[stack_i]->subdiv_estimate(width);
 
 			// If we need more resolution for this ray, mark for further downward traversal

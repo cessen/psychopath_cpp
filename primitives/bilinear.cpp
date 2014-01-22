@@ -4,6 +4,7 @@
 #include <iostream>
 #include <limits>
 #include <stdlib.h>
+#include <cmath>
 #include "bilinear.hpp"
 #include "grid.hpp"
 #include "config.hpp"
@@ -21,8 +22,9 @@ Bilinear::Bilinear(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4)
 void Bilinear::finalize()
 {
 	// Calculate longest sides of the patch
-	longest_u = (verts[0][0] - verts[0][1]).length() > (verts[0][2] - verts[0][3]).length() ? (verts[0][0] - verts[0][1]).length() : (verts[0][2] - verts[0][3]).length();
-	longest_v = (verts[0][0] - verts[0][3]).length() > (verts[0][1] - verts[0][2]).length() ? (verts[0][0] - verts[0][3]).length() : (verts[0][1] - verts[0][2]).length();
+	longest_u = std::max((verts[0][0] - verts[0][1]).length(), (verts[0][2] - verts[0][3]).length());
+	longest_v = std::max((verts[0][0] - verts[0][3]).length(), (verts[0][1] - verts[0][2]).length());
+	log_widest = fastlog2(std::max(longest_u, longest_v));
 
 	// Calculate bounds
 	bbox.init(verts.size());
@@ -66,14 +68,12 @@ void Bilinear::add_time_sample(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4)
 
 size_t Bilinear::subdiv_estimate(float width) const
 {
-	if (width < Config::min_upoly_size)
-		width = Config::min_upoly_size;
-
-	// Power-of-two dicing rate
-	size_t rate = (std::max(longest_u, longest_v) / (width * Config::dice_rate)) + 1;
-	rate = intlog2(upper_power_of_two(rate));
-
-	return rate;
+	// Since we want to end up with the log-base-2 of
+	// the division anyway, we just do the log first and
+	// subtract.  Using a very approximate log2, but in
+	// practice it works fine.
+	const float rate = log_widest - fasterlog2(width * Config::dice_rate) + 1.0f;
+	return std::max(rate, 0.0f);
 }
 
 
@@ -93,24 +93,24 @@ int Bilinear::split(std::unique_ptr<DiceableSurfacePrimitive> primitives[])
 		// Split on U
 		for (int i=0; i < verts.size(); i++) {
 			patch1->add_time_sample(verts[i][0],
-			                        (verts[i][0] + verts[i][1])*0.5,
-			                        (verts[i][2] + verts[i][3])*0.5,
+			                        (verts[i][0] + verts[i][1]) * 0.5,
+			                        (verts[i][2] + verts[i][3]) * 0.5,
 			                        verts[i][3]
 			                       );
-			patch2->add_time_sample((verts[i][0] + verts[i][1])*0.5,
+			patch2->add_time_sample((verts[i][0] + verts[i][1]) * 0.5,
 			                        verts[i][1],
 			                        verts[i][2],
-			                        (verts[i][2] + verts[i][3])*0.5
+			                        (verts[i][2] + verts[i][3]) * 0.5
 			                       );
 		}
 
 		// Fill in uv's
 		patch1->u_min = u_min;
-		patch1->u_max = (u_min + u_max) / 2;
+		patch1->u_max = (u_min + u_max) * 0.5;
 		patch1->v_min = v_min;
 		patch1->v_max = v_max;
 
-		patch2->u_min = (u_min + u_max) / 2;
+		patch2->u_min = (u_min + u_max) * 0.5;
 		patch2->u_max = u_max;
 		patch2->v_min = v_min;
 		patch2->v_max = v_max;
@@ -119,11 +119,11 @@ int Bilinear::split(std::unique_ptr<DiceableSurfacePrimitive> primitives[])
 		for (int i=0; i < verts.size(); i++) {
 			patch1->add_time_sample(verts[i][0],
 			                        verts[i][1],
-			                        (verts[i][1] + verts[i][2])*0.5,
-			                        (verts[i][3] + verts[i][0])*0.5
+			                        (verts[i][1] + verts[i][2]) * 0.5,
+			                        (verts[i][3] + verts[i][0]) * 0.5
 			                       );
-			patch2->add_time_sample((verts[i][3] + verts[i][0])*0.5,
-			                        (verts[i][1] + verts[i][2])*0.5,
+			patch2->add_time_sample((verts[i][3] + verts[i][0]) * 0.5,
+			                        (verts[i][1] + verts[i][2]) * 0.5,
 			                        verts[i][2],
 			                        verts[i][3]
 			                       );

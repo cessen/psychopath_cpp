@@ -256,6 +256,10 @@ static inline uint32_t upper_power_of_two(uint32_t v)
 
 }
 
+static inline float log2(float x)
+{
+	return std::log(x) * 1.4426950408889634f;
+}
 
 /**
  * @brief Fast approximation of log2.
