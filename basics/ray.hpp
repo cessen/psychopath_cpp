@@ -102,6 +102,13 @@ struct Ray {
 	 * Computes the acceleration data for speedy bbox intersection testing.
 	 */
 	void update_accel() {
+		// Inverse direction
+		d_inv = Vec3(1.0f, 1.0f, 1.0f) / d;
+
+		// Sign of the direction components
+		d_sign[0] = (d.x < 0.0f ? 1u : 0u);
+		d_sign[1] = (d.y < 0.0f ? 1u : 0u);
+		d_sign[2] = (d.z < 0.0f ? 1u : 0u);
 	}
 
 	/**
@@ -124,14 +131,6 @@ struct Ray {
 		//assert(d.length() > 0.0f);
 		float linv = 1.0f / d.length();
 		d.normalize();
-
-		// Inverse direction
-		d_inv = Vec3(1.0f, 1.0f, 1.0f) / d;
-
-		// Sign of the direction components
-		d_sign[0] = (d.x < 0.0f ? 1u : 0u);
-		d_sign[1] = (d.y < 0.0f ? 1u : 0u);
-		d_sign[2] = (d.z < 0.0f ? 1u : 0u);
 
 		// Adjust the ray differentials for the normalized ray
 		dw *= linv;

@@ -226,6 +226,7 @@ BOOST_AUTO_TEST_CASE(intersect_ray_3)
 {
 	// Simple intersection with unnormalized ray
 	Ray r(Vec3(0.125, -8.0, 0.25), Vec3(0.0, 2.0, 0.0));
+	r.update_accel();
 	//r.finalize(); // Commented to avoid normalization of the ray
 	BBox2 bb(BBox(Vec3(-1.0, -2.5, -0.5), Vec3(8.0, 7.25, 2.0)),
 	         BBox(Vec3(-42.0, -3.5, -1.5), Vec3(9.0, 8.25, 1.0)));

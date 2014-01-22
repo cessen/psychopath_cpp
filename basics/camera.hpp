@@ -79,6 +79,8 @@ public:
 			ray.apply_transform(transforms[0]);
 		}
 
+		ray.finalize();
+
 		return ray;
 	}
 };
