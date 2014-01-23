@@ -26,7 +26,7 @@ set (Psychopath_VERSION_PATCH 0)
 #set (CMAKE_CXX_COMPILER /usr/share/clang/scan-build/c++-analyzer)
 
 # Build type (Release, Debug)
-set (CMAKE_BUILD_TYPE Debug)
+set (CMAKE_BUILD_TYPE Release)
 
 # configure a header file to pass some of the CMake settings
 # to the source code

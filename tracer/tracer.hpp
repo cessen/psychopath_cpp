@@ -86,13 +86,6 @@ private:
 	size_t accumulate_potential_intersections();
 
 	/**
-	 * Sorts the accumulated potential intersections by primitive
-	 * id, and creates a table of the starting index and number of
-	 * potential intersections for each primitive.
-	 */
-	void sort_potential_intersections();
-
-	/**
 	 * Traces all of the potential intersections in the potential_inters buffer.
 	 * This method assumes the the buffer is properly sorted by object id,
 	 * and that it is sized properly so that there are no empty potential
