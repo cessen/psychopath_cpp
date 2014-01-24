@@ -136,6 +136,7 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 
 		// Fetch the current primitive's microgeo cache if it exists
 		std::shared_ptr<MicroSurface> micro_surface = cache.get(Key(uid1, uid2_stack[stack_i]));
+		bool rediced = false;
 
 		// Get the number of subdivisions of the cached microsurface if it exists
 		size_t current_subdivs = 0;
@@ -167,6 +168,7 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 					if (micro_surface == nullptr || subdivs > current_subdivs) {
 						micro_surface = primitive.dice(subdivs);
 						current_subdivs = subdivs;
+						rediced = true;
 					}
 
 					// Test against the ray
@@ -183,6 +185,9 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 					pitr->tag = 1;
 				}
 			}
+			// If we re-diced the microsurface, store it in the cache
+			if (rediced)
+				cache.put(micro_surface, Key(uid1, uid2_stack[stack_i]));
 		}
 
 		// Filter potints based on whether they need deeper traversal
@@ -192,7 +197,9 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 
 		// If any potints left, traverse down the stack via splitting
 		if (potint_starts[stack_i] != potint_ends[stack_i]) {
+			++split_count;
 			std::unique_ptr<DiceableSurfacePrimitive> new_prims[4];
+
 			// Split the primitive
 			const int new_count = primitive.split(new_prims);
 
