@@ -73,6 +73,7 @@ void Bicubic::add_time_sample(Vec3 v1,  Vec3 v2,  Vec3 v3,  Vec3 v4,
 void Bicubic::finalize()
 {
 	// Calculate longest u-side of the patch
+	longest_u = 0.0f;
 	for (int r = 0; r < 4; ++r) {
 		float l = 0.0f;
 		for (int c = 1; c < 4; ++c) {
@@ -82,6 +83,7 @@ void Bicubic::finalize()
 	}
 
 	// Calculate longest v-side of the patch
+	longest_v = 0.0f;
 	for (int c = 0; c < 4; ++c) {
 		float l = 0.0f;
 		for (int r = 1; r < 4; ++r) {
