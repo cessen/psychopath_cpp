@@ -102,13 +102,13 @@ public:
 	}
 
 	/**
-	 * @brief Returns an iterator at the last element in the array.
+	 * @brief Returns an iterator just off the end array.
 	 */
 	T *end() const {
 		if (size_ == 0)
 			return nullptr;
 		else
-			return &(data[size_-1]);
+			return &(data[size_-1]) + 1;
 	}
 
 	/**
