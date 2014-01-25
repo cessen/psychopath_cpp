@@ -22,7 +22,7 @@ void BBoxT::copy(const BBoxT &b)
 	if (bbox.size() != b.bbox.size())
 		bbox.init(b.bbox.size());
 
-	for (int time=0; time < bbox.size(); time++) {
+	for (size_t time=0; time < bbox.size(); time++) {
 		bbox[time] = b.bbox[time];
 	}
 }

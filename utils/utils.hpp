@@ -304,16 +304,36 @@ static inline float fasterlog2(float x)
 	return y - 126.94269504f;
 }
 
-
+/**
+ * @brief Approximate 1/sqrt(n)
+ */
 static inline float fastrsqrt(float n)
 {
 	union {
 		int32_t i;
 		float y;
 	};
-	float x;
 
-	x = n * 0.5F;
+	y = n;
+	i = 0x5f3759df - (i >> 1);
+
+	// One iteration of newton's method
+	const float x = n * 0.5f;
+	y = y * (1.5f - (x * y * y));
+
+	return y;
+}
+
+/**
+ * @brief Even more approximate (but faster) 1/sqrt(n)
+ */
+static inline float fasterrsqrt(float n)
+{
+	union {
+		int32_t i;
+		float y;
+	};
+
 	y = n;
 	i = 0x5f3759df - (i >> 1);
 

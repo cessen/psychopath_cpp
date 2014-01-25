@@ -167,7 +167,7 @@ BBoxT &Sphere::bounds()
 	if (!has_bounds) {
 		bbox.init(center.size());
 
-		for (int time = 0; time < center.size(); time++) {
+		for (size_t time = 0; time < center.size(); time++) {
 			bbox[time].min.x = center[time].x - radius[time];
 			bbox[time].max.x = center[time].x + radius[time];
 			bbox[time].min.y = center[time].y - radius[time];

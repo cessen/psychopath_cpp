@@ -117,11 +117,11 @@ struct BBox {
 	 *     distance to the closest intersection.
 	 * @param[out] hitt1 If there is a hit, this gets modified to the
 	 *     distance to the furthest intersection.
-	 * @param[in] an optional alternative ray max_t to use.
+	 * @param[in] t an optional alternative ray max_t to use.
 	 *
 	 * @returns True if the ray hits, false if the ray misses.
 	 */
-	inline bool intersect_ray(const Ray& ray, const Vec3 d_inv, const std::array<uint32_t, 3> d_sign, float *hitt0, float *hitt1, float *t=nullptr) const {
+	inline bool intersect_ray(const Ray& ray, const Vec3 d_inv, const std::array<uint32_t, 3> d_sign, float *hitt0, float *hitt1, float t=std::numeric_limits<float>::infinity()) const {
 #ifdef DEBUG
 		// Test for nan and inf
 		if (std::isnan(ray.o.x) || std::isnan(ray.o.y) || std::isnan(ray.o.z) ||
@@ -144,33 +144,28 @@ struct BBox {
 
 		const Vec3 *bounds = &min;
 
-		float tmin = (bounds[d_sign[0]].x - ray.o.x) * d_inv.x;
-		float tmax = (bounds[1-d_sign[0]].x - ray.o.x) * d_inv.x;
+		const float txmin = (bounds[d_sign[0]].x - ray.o.x) * d_inv.x;
+		const float txmax = (bounds[1-d_sign[0]].x - ray.o.x) * d_inv.x;
 		const float tymin = (bounds[d_sign[1]].y - ray.o.y) * d_inv.y;
 		const float tymax = (bounds[1-d_sign[1]].y - ray.o.y) * d_inv.y;
 		const float tzmin = (bounds[d_sign[2]].z - ray.o.z) * d_inv.z;
 		const float tzmax = (bounds[1-d_sign[2]].z - ray.o.z) * d_inv.z;
 
-		if (tymin > tmin)
-			tmin = tymin;
-		if (tzmin > tmin)
-			tmin = tzmin;
-		if (tymax < tmax)
-			tmax = tymax;
-		if (tzmax < tmax)
-			tmax = tzmax;
+		const float tt = std::min(t, ray.max_t);
 
-		const float tt = (t != nullptr) ? *t : ray.max_t;
-		if ((tmin <= tmax) && (tmin < tt) && (tmax > 0.0f)) {
-			*hitt0 = tmin > 0.0f ? tmin : 0.0f;
-			*hitt1 = tmax < tt ? tmax : tt;
+		const float tmin = std::max(std::max(txmin, tymin), std::max(tzmin, 0.0f));
+		const float tmax = std::min(std::min(txmax, tymax), std::min(tzmax, tt));
+
+		if ((tmin <= tmax) && (tmax > 0.0f)) {
+			*hitt0 = tmin;
+			*hitt1 = tmax;
 			return true;
 		} else {
 			return false;
 		}
 	}
 
-	inline bool intersect_ray(const Ray& ray, float *hitt0, float *hitt1, float *t=nullptr) const {
+	inline bool intersect_ray(const Ray& ray, float *hitt0, float *hitt1, float t=std::numeric_limits<float>::infinity()) const {
 		const Vec3 d_inv = ray.get_d_inverse();
 		const std::array<uint32_t, 3> d_sign = ray.get_d_sign();
 
@@ -620,7 +615,7 @@ public:
 		// BBoxes have the same state count, so we
 		// can just merge each corresponding state.
 		if (bbox.size() == b.bbox.size()) {
-			for (int i=0; i < bbox.size(); i++) {
+			for (size_t i=0; i < bbox.size(); i++) {
 				bbox[i].merge_with(b.bbox[i]);
 			}
 		}
@@ -629,9 +624,9 @@ public:
 		// TODO: something more sophisticated.
 		else {
 			BBox bb = bbox[0];
-			for (int i=1; i < bbox.size(); i++)
+			for (size_t i=1; i < bbox.size(); i++)
 				bb.merge_with(bbox[i]);
-			for (int i=0; i < b.bbox.size(); i++)
+			for (size_t i=0; i < b.bbox.size(); i++)
 				bb.merge_with(b.bbox[i]);
 			init(1);
 			bbox[0] = bb;
@@ -652,8 +647,8 @@ public:
 	 * @param[out] hitt0 Near hit is placed here if there is a hit.
 	 * @param[out] hitt1 Far hit is placed here if there is a hit.
 	 */
-	inline bool intersect_ray(const Ray &ray, float *hitt0, float *hitt1) {
-		return at_time(ray.time).intersect_ray(ray, hitt0, hitt1);
+	inline bool intersect_ray(const Ray &ray, float *hitt0, float *hitt1, float t=std::numeric_limits<float>::infinity()) {
+		return at_time(ray.time).intersect_ray(ray, hitt0, hitt1, t);
 	}
 
 	/**

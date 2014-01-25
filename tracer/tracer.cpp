@@ -79,6 +79,7 @@ size_t Tracer::accumulate_potential_intersections()
 				potential_intersections[(i*MAX_POTINT)+j].valid = true;
 				potential_intersections[(i*MAX_POTINT)+j].object_id = potint_ids[j];
 				potential_intersections[(i*MAX_POTINT)+j].ray_index = i;
+				potential_intersections[(i*MAX_POTINT)+j].nearest_hit_t = intersections[i].t;
 			}
 		}
 	}
@@ -146,6 +147,10 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 		// Test potints against primitive, marking for deeper traversal
 		// if they can't be directly tested
 		for (auto pitr = potint_starts[stack_i]; pitr != potint_ends[stack_i]; ++pitr) {
+			// Prefetch three rays ahead to keep ahead of memory latency
+			if ((pitr+3) < potint_ends[stack_i])
+				LowLevel::prefetch_L1(&(rays[(pitr+3)->ray_index]));
+
 			// Setup
 			pitr->tag = 0; // No traversing deeper by default
 			const Ray& ray = rays[pitr->ray_index];  // Shorthand reference to potint's ray
@@ -153,7 +158,7 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 
 			// If the potint intersects with the primitive's bbox
 			float tnear, tfar;
-			if (primitive.bounds().intersect_ray(ray, &tnear, &tfar)) {
+			if (primitive.bounds().intersect_ray(ray, &tnear, &tfar, pitr->nearest_hit_t)) {
 				// Calculate the width of the ray within the bounding box
 				const float width = ray.min_width(tnear, tfar);
 
@@ -185,10 +190,11 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 					pitr->tag = 1;
 				}
 			}
-			// If we re-diced the microsurface, store it in the cache
-			if (rediced)
-				cache.put(micro_surface, Key(uid1, uid2_stack[stack_i]));
-		}
+		} // End test potints
+
+		// If we re-diced the microsurface, store it in the cache
+		if (rediced)
+			cache.put(micro_surface, Key(uid1, uid2_stack[stack_i]));
 
 		// Filter potints based on whether they need deeper traversal
 		potint_starts[stack_i] = std::partition(potint_starts[stack_i], potint_ends[stack_i], [this](const PotentialInter& p) {

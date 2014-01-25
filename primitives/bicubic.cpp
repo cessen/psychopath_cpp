@@ -97,7 +97,7 @@ void Bicubic::finalize()
 
 	// Calculate bounds
 	bbox.init(verts.size());
-	for (int time = 0; time < verts.size(); time++) {
+	for (size_t time = 0; time < verts.size(); time++) {
 		for (int i = 0; i < 16; i++) {
 			bbox[time].min = min(bbox[time].min, verts[time][i]);
 			bbox[time].max = max(bbox[time].max, verts[time][i]);
@@ -139,7 +139,7 @@ int Bicubic::split(std::unique_ptr<DiceableSurfacePrimitive> primitives[])
 	// Split
 	if (longest_u > longest_v) {
 		// Split on U
-		for (int time=0; time < verts.size(); time++) {
+		for (size_t time=0; time < verts.size(); time++) {
 			// Calculate split geometry
 			Vec3 verts1[4][4];
 			Vec3 verts2[4][4];
@@ -214,7 +214,7 @@ int Bicubic::split(std::unique_ptr<DiceableSurfacePrimitive> primitives[])
 		patch2->v_max = v_max;
 	} else {
 		// Split on V
-		for (int time=0; time < verts.size(); time++) {
+		for (size_t time=0; time < verts.size(); time++) {
 			// Calculate split geometry
 			Vec3 verts1[4][4];
 			Vec3 verts2[4][4];
@@ -404,7 +404,7 @@ Grid *Bicubic::grid_dice(const int ru, const int rv)
 	std::vector<Vec3> vs(rv*4); // Hold v-dicing before doing u-dicing
 
 	// Dice for each time sample
-	for (int time = 0; time < verts.size(); time++) {
+	for (size_t time = 0; time < verts.size(); time++) {
 		// Dice along v-columns
 		eval_cubic_bezier_curve(rv, 4, vs.data()+0, verts[time][0], verts[time][4], verts[time][8], verts[time][12]);
 		eval_cubic_bezier_curve(rv, 4, vs.data()+1, verts[time][1], verts[time][5], verts[time][9], verts[time][13]);

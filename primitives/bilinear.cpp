@@ -28,7 +28,7 @@ void Bilinear::finalize()
 
 	// Calculate bounds
 	bbox.init(verts.size());
-	for (int time = 0; time < verts.size(); time++) {
+	for (size_t time = 0; time < verts.size(); time++) {
 		bbox[time].min.x = verts[time][0].x;
 		bbox[time].max.x = verts[time][0].x;
 		bbox[time].min.y = verts[time][0].y;
@@ -91,7 +91,7 @@ int Bilinear::split(std::unique_ptr<DiceableSurfacePrimitive> primitives[])
 	// Split
 	if (longest_u > longest_v) {
 		// Split on U
-		for (int i=0; i < verts.size(); i++) {
+		for (size_t i=0; i < verts.size(); i++) {
 			patch1->add_time_sample(verts[i][0],
 			                        (verts[i][0] + verts[i][1]) * 0.5,
 			                        (verts[i][2] + verts[i][3]) * 0.5,
@@ -116,7 +116,7 @@ int Bilinear::split(std::unique_ptr<DiceableSurfacePrimitive> primitives[])
 		patch2->v_max = v_max;
 	} else {
 		// Split on V
-		for (int i=0; i < verts.size(); i++) {
+		for (size_t i=0; i < verts.size(); i++) {
 			patch1->add_time_sample(verts[i][0],
 			                        verts[i][1],
 			                        (verts[i][1] + verts[i][2]) * 0.5,
@@ -213,7 +213,7 @@ Grid *Bilinear::grid_dice(const int ru, const int rv)
 	Vec3 dv;
 	Vec3 p1, p2, p3;
 	int x, y;
-	int i, time;
+	size_t i, time;
 	// Dice for each time sample
 	for (time = 0; time < verts.size(); time++) {
 		// Deltas

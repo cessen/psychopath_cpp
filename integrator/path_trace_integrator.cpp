@@ -61,7 +61,7 @@ void PathTraceIntegrator::integrate()
 	uint32_t i = 0;
 	uint32_t x = 0;
 	uint32_t y = 0;
-	const size_t morton_stop = std::max(image->width, image->height) * 2;
+	const int morton_stop = std::max(image->width, image->height) * 2;
 	const bool greater_width = image->width > image->height;
 	while (true) {
 		if (greater_width)

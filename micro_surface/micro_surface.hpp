@@ -63,7 +63,7 @@ class MicroSurface
 	 * @brief Calculates ray-bbox intersection with a node in the
 	 * MicroSurface tree.
 	 */
-	bool intersect_node(size_t node, const Ray &ray, const Vec3 d_inv, const std::array<uint32_t, 3> d_sign, float *tnear, float *tfar, float *t) {
+	bool intersect_node(size_t node, const Ray &ray, const Vec3 d_inv, const std::array<uint32_t, 3> d_sign, float *tnear, float *tfar, float t) {
 		uint32_t ti = 0;
 		float alpha = 0.0f;
 		if (calc_time_interp(time_count, ray.time, &ti, &alpha)) {
