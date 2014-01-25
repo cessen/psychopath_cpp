@@ -6,12 +6,14 @@
 
 - Investigate ways to make splitting and splitting-traversal faster.
 
+- Splitting code should have protection against stack overflow.
+
 - Change MicroSurface to use implicit indexing for its BVH.
 	- Also play with making the nodes cubes, so that the volume can be stored
 	  as four floats instead of six.
 	- QBVH for MicroSurface, also with implicit indexing
 
-- MicroSurface should calculate normal and point differentials for
+- MicroSurface should calculate normal/point differentials for
   ray intersections.
 	- What is the minimum amount of data we need to store to calculate
 	  this efficiently?
