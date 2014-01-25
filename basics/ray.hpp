@@ -127,21 +127,10 @@ struct Ray {
 	 * Should only be called once, prior to tracing with the ray.
 	 */
 	void finalize() {
-		// TODO: will normalizing things here mess anything up elsewhere?
-		//assert(d.length() > 0.0f);
-		float linv = 1.0f / d.length();
-		d.normalize();
-
-		// Adjust the ray differentials for the normalized ray
-		dw *= linv;
-		/*if (has_differentials) {
-			odx *= linv;
-			ody *= linv;
-			ddx *= linv;
-			ddy *= linv;
-		}*/
+		assert(d.length() > 0.0f);
 
 		update_accel();
+
 		//update_differentials();
 	}
 
@@ -223,7 +212,7 @@ struct Ray {
 	 * needs to be for this ray at that distance.  And that is its primary
 	 * purpose as well: determining dicing rates.
 	 */
-	float width(const float &t) const {
+	float width(const float t) const {
 		/*if (!has_differentials)
 			return 0.0f;
 
@@ -252,7 +241,7 @@ struct Ray {
 	 * Returns an estimate of the minimum ray width over a distance
 	 * range along the ray.
 	 */
-	float min_width(const float &tnear, const float &tfar) const {
+	float min_width(const float tnear, const float tfar) const {
 		/*if (!has_differentials) {
 			return 0.0f;
 			std::cout << "YAR\n";
