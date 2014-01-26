@@ -314,6 +314,7 @@ std::unique_ptr<DiceableSurfacePrimitive> Bicubic::copy()
 	patch->bbox = bbox;
 	patch->longest_u = longest_u;
 	patch->longest_v = longest_v;
+	patch->log_widest = log_widest;
 
 	return std::unique_ptr<DiceableSurfacePrimitive>(patch);
 }

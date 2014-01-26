@@ -14,9 +14,6 @@
 Bilinear::Bilinear(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4)
 {
 	verts.push_back( {{v1,v2,v3,v4}});
-
-	u_min = v_min = 0.0f;
-	u_max = v_max = 1.0f;
 }
 
 void Bilinear::finalize()
@@ -133,11 +130,11 @@ int Bilinear::split(std::unique_ptr<DiceableSurfacePrimitive> primitives[])
 		patch1->u_min = u_min;
 		patch1->u_max = u_max;
 		patch1->v_min = v_min;
-		patch1->v_max = (v_min + v_max) / 2;
+		patch1->v_max = (v_min + v_max) * 0.5;
 
 		patch2->u_min = u_min;
 		patch2->u_max = u_max;
-		patch2->v_min = (v_min + v_max) / 2;
+		patch2->v_min = (v_min + v_max) * 0.5;
 		patch2->v_max = v_max;
 	}
 
@@ -167,6 +164,7 @@ std::unique_ptr<DiceableSurfacePrimitive> Bilinear::copy()
 	patch->bbox = bbox;
 	patch->longest_u = longest_u;
 	patch->longest_v = longest_v;
+	patch->log_widest = log_widest;
 
 	return std::unique_ptr<DiceableSurfacePrimitive>(patch);
 }
@@ -175,11 +173,10 @@ std::unique_ptr<DiceableSurfacePrimitive> Bilinear::copy()
 std::shared_ptr<MicroSurface> Bilinear::dice(size_t subdivisions)
 {
 	// Get dicing rate
-	size_t u_rate = 1 << subdivisions;
-	size_t v_rate = 1 << subdivisions;
+	const size_t rate = (1 << subdivisions) + 1;
 
 	// Dice away!
-	std::unique_ptr<Grid> grid = std::unique_ptr<Grid>(grid_dice(u_rate+1, v_rate+1));
+	std::unique_ptr<Grid> grid = std::unique_ptr<Grid>(grid_dice(rate, rate));
 	std::shared_ptr<MicroSurface> micro = std::make_shared<MicroSurface>(grid.get());
 
 	return micro;
