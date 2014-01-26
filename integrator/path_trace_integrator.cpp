@@ -237,6 +237,7 @@ void PathTraceIntegrator::render_blocks()
 				if (intersections[i].hit) {
 					// Ray hit something!  Store intersection data
 					paths[id].inter = intersections[i];
+					//paths[id].fcol *= intersections[i].col;
 				} else {
 					// Ray didn't hit anything, done and black background
 					paths[id].done = true;

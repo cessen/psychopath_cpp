@@ -20,27 +20,27 @@ struct Intersection {
 
 	// Information about the intersection point
 	float t {std::numeric_limits<float>::infinity()}; // T-parameter along the ray at the intersection
-	Vec3 p;  // Intersection postion
+	Vec3 p {0.0f, 0.0f, 0.0f};  // Intersection postion
 
 
 	// Information about the ray that caused the intersection
-	Vec3 in; // The incoming ray direction
-	float ow, dw;
+	Vec3 in {0.0f, 0.0f, 0.0f}; // The incoming ray direction
+	float ow {0.0f}, dw {0.0f};
 	//Vec3 odx, ody; // Origin differentials
 	//Vec3 ddx, ddy; // Direction differentials
 
 	// Information about the surface normal at the point
-	Vec3 n;
+	Vec3 n {0.0f, 0.0f, 0.0f};
 	//Vec3 ndx, ndy;
 
 	// Information about the UVs at the point
-	float u, v;
+	float u {0.0f}, v {0.0f};
 	//float udx, vdx;
 	//float udy, vdy;
 
 	// Offset for subsequent spawned rays to avoid self-intersection
 	// Should be added for reflection, subtracted for transmission
-	Vec3 offset;
+	Vec3 offset {0.0f, 0.0f, 0.0f};
 
 	Color col {0.0f};
 

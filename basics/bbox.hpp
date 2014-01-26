@@ -29,8 +29,7 @@ struct BBox {
 	 */
 	BBox() {}
 
-	BBox(const BBox& b): min {b.min}, max {b.max}
-	{}
+	BBox(const BBox& b): min {b.min}, max {b.max} {}
 
 	BBox& operator=(const BBox& b) {
 		min = b.min;

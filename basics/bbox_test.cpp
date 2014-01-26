@@ -185,7 +185,33 @@ BOOST_AUTO_TEST_CASE(intersect_ray_6)
 	r.finalize();
 	BBox bb(Vec3(1.0, -1.0, -1.0), Vec3(1.0, 1.0, 1.0));
 
-	BOOST_CHECK(bb.intersect_ray(r) == true);
+	float hitt0=0.0, hitt1=0.0;
+	bool hit=false;
+
+	hit = bb.intersect_ray(r, &hitt0, &hitt1);
+
+	BOOST_CHECK(hit == true);
+	BOOST_CHECK(hitt0 == 5.0);
+	BOOST_CHECK(hitt1 == 5.0);
+
+}
+
+BOOST_AUTO_TEST_CASE(intersect_ray_7)
+{
+	// Intersection with collapsed BBox with ray at an angle, should be true
+	Ray r(Vec3(-4.0, 0.0, 0.0), Vec3(0.5, 0.5, 0.5));
+	r.finalize();
+	BBox bb(Vec3(1.0, -20.0, -20.0), Vec3(1.0, 20.0, 20.0));
+
+	float hitt0=0.0, hitt1=0.0;
+	bool hit=false;
+
+	hit = bb.intersect_ray(r, &hitt0, &hitt1);
+
+	BOOST_CHECK(hit == true);
+	BOOST_CHECK(hitt0 == 10.0);
+	BOOST_CHECK(hitt1 == 10.0);
+
 }
 
 // TODO: - diagonal rays

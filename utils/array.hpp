@@ -26,6 +26,8 @@ class Array
 	std::unique_ptr<T[]> data {nullptr};
 
 public:
+	typedef T* iterator;
+
 	Array() {}
 	Array(size_t size): size_ {size}, capacity_ {size}, data {new T[size]} {}
 
@@ -94,7 +96,7 @@ public:
 	/**
 	 * @brief Returns an iterator at the first element in the array.
 	 */
-	T *begin() const {
+	iterator begin() const {
 		if (size_ == 0)
 			return nullptr;
 		else
@@ -104,7 +106,7 @@ public:
 	/**
 	 * @brief Returns an iterator just off the end array.
 	 */
-	T *end() const {
+	iterator end() const {
 		if (size_ == 0)
 			return nullptr;
 		else

@@ -11,7 +11,7 @@
 #include "ray.hpp"
 #include "intersection.hpp"
 #include "utils.hpp"
-#include "rng.hpp"
+//#include "rng.hpp"
 
 
 /**
@@ -57,7 +57,7 @@ class MicroSurface
 	float root_width;
 
 	// Random number generator
-	RNG rng;
+	//RNG rng;
 
 	/**
 	 * @brief Calculates ray-bbox intersection with a node in the
