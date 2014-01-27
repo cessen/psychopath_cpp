@@ -140,9 +140,9 @@ struct BBox {
 			Global::Stats::inf_count++;
 		}
 #endif
-
 		const Vec3 *bounds = &min;
 
+		// Find slab intersections
 		const float txmin = (bounds[d_sign[0]].x - ray.o.x) * d_inv.x;
 		const float txmax = (bounds[1-d_sign[0]].x - ray.o.x) * d_inv.x;
 		const float tymin = (bounds[d_sign[1]].y - ray.o.y) * d_inv.y;
@@ -150,11 +150,20 @@ struct BBox {
 		const float tzmin = (bounds[d_sign[2]].z - ray.o.z) * d_inv.z;
 		const float tzmax = (bounds[1-d_sign[2]].z - ray.o.z) * d_inv.z;
 
-		const float tt = std::min(t, ray.max_t);
+		// Furthest t value for valid intersections
+		const float tt = t < ray.max_t ? t : ray.max_t;
 
-		const float tmin = std::max(std::max(txmin, tymin), std::max(tzmin, 0.0f));
-		const float tmax = std::min(std::min(txmax, tymax), std::min(tzmax, tt));
+		// Calculate tmin
+		const float tmin1 = txmin > tymin ? txmin : tymin;
+		const float tmin2 = tzmin > 0.0f ? tzmin : 0.0f;
+		const float tmin = tmin1 > tmin2 ? tmin1 : tmin2;
 
+		// Calculate tmax
+		const float tmax1 = txmax < tymax ? txmax : tymax;
+		const float tmax2 = tzmax < tt ? tzmax : tt;
+		const float tmax = (tmax1 < tmax2 ? tmax1 : tmax2) * 1.00000024f;
+
+		// Did we hit?
 		if ((tmin <= tmax) && (tmax > 0.0f)) {
 			*hitt0 = tmin;
 			*hitt1 = tmax;
@@ -347,6 +356,7 @@ struct BBox2 {
 	inline unsigned int intersect_ray(const SIMD::float4* o, const SIMD::float4* d_inv, const SIMD::float4& t_max, const std::array<uint32_t, 3>& d_sign, SIMD::float4 *hit_ts) const {
 		using namespace SIMD;
 		const float4 zeros(0.0f);
+		const float4 ninf(-std::numeric_limits<float>::infinity());
 
 		// Calculate the plane intersections
 		const float4 xs = (shuffle_swap(bounds[0], d_sign[0]) - o[0]) * d_inv[0];
@@ -356,7 +366,7 @@ struct BBox2 {
 		// Get the minimum and maximum hits, and shuffle the max hits
 		// to be in the same location as the minimum hits
 		const float4 mins = max(max(xs, ys), max(zs, zeros));
-		const float4 maxs = shuffle_swap(min(min(xs, ys), zs));
+		const float4 maxs = shuffle_swap(max(min(min(xs, ys), zs), ninf)) * float4(1.00000024f);
 
 		// Check for hits
 		const float4 hits = lt(mins, t_max) && lte(mins, maxs);
@@ -506,6 +516,7 @@ struct BBox4 {
 	inline unsigned int intersect_ray(const SIMD::float4* o, const SIMD::float4* d_inv, const SIMD::float4& t_max, const std::array<uint32_t, 3>& d_sign, SIMD::float4 *hit_ts) const {
 		using namespace SIMD;
 		const float4 zeros(0.0f);
+		const float4 ninf(-std::numeric_limits<float>::infinity());
 
 		// Calculate the plane intersections
 		const float4 xlos = (bounds[0+d_sign[0]] - o[0]) * d_inv[0];
@@ -517,7 +528,7 @@ struct BBox4 {
 
 		// Get the minimum and maximum hits
 		const float4 mins = max(max(xlos, ylos), max(zlos, zeros));
-		const float4 maxs = min(min(xhis, yhis), zhis);
+		const float4 maxs = max(min(min(xhis, yhis), zhis), ninf) * float4(1.00000024f);
 
 		// Check for hits
 		const float4 hits = lt(mins, t_max) && lte(mins, maxs);
