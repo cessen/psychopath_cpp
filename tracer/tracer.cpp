@@ -193,8 +193,8 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 		} // End test potints
 
 		// If we re-diced the microsurface, store it in the cache
-		//if (rediced)
-		//	cache.put(micro_surface, Key(uid1, uid2_stack[stack_i]));
+		if (rediced)
+			cache.put(micro_surface, Key(uid1, uid2_stack[stack_i]));
 
 		// Filter potints based on whether they need deeper traversal
 		potint_starts[stack_i] = std::partition(potint_starts[stack_i], potint_ends[stack_i], [this](const PotentialInter& p) {

@@ -1,3 +1,5 @@
+- Update BBox unit tests to match the new more-robust code
+
 - Add NaN and Inf catching to key places in code
 
 - More geometry types:
