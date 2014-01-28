@@ -156,10 +156,10 @@ bool MicroSurface::intersect_ray(const Ray &ray, float ray_width, Intersection *
 		calc_time_interp(time_count, ray.time, &t_i, &t_alpha);
 
 		// Calculate data indices
-		// TODO: something better than "727 % #".  We want to get a distributed
+		// TODO: something better than dividing by two.  We want to get a distributed
 		// sampling over the uv space of the node.
-		const uint d_iu = 727 % nodes[hit_node].data_du;
-		const uint d_iv = 727 % nodes[hit_node].data_dv;
+		const uint d_iu = nodes[hit_node].data_du / 2;
+		const uint d_iv = nodes[hit_node].data_dv / 2;
 		const size_t d_index = nodes[hit_node].data_index; // Standard
 		const size_t rd_index = d_index + (d_iv * res_u) + d_iu; // Random within range
 
