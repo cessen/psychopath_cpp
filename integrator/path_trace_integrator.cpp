@@ -51,6 +51,8 @@ void PathTraceIntegrator::integrate()
 	bucket_size = std::min(max_bucket_size, bucket_size);
 	bucket_size = std::max(min_bucket_size, bucket_size);
 
+	total_items = std::ceil(float(image->width) / bucket_size) * std::ceil(float(image->height) / bucket_size);
+
 	// Start the rendering threads
 	std::vector<std::thread> threads(thread_count);
 	for (auto& t: threads) {
@@ -120,8 +122,6 @@ void PathTraceIntegrator::render_blocks()
 
 	// Keep rendering blocks as long as they exist in the queue
 	while (blocks.pop_blocking(&pb)) {
-		std::cout << "." << std::flush;
-
 		const size_t sample_count = (pb.h * pb.w) * spp;
 
 		// Resize arrays for the apropriate sample count
@@ -329,6 +329,12 @@ void PathTraceIntegrator::render_blocks()
 
 			image_mut.unlock();
 		}
+
+		// Update render progress
+		progress_lock.lock();
+		++completed_items;
+		print_progress();
+		progress_lock.unlock();
 	}
 }
 

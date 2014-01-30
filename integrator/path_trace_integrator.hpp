@@ -5,10 +5,15 @@
 #ifndef PATH_TRACE_INTEGRATOR_HPP
 #define PATH_TRACE_INTEGRATOR_HPP
 
+#include <iostream>
+#include <iomanip>
+
 #include <functional>
 #include <mutex>
 
 #include "numtype.h"
+
+#include "spinlock.hpp"
 
 #include "integrator.hpp"
 #include "film.hpp"
@@ -36,6 +41,13 @@ class PathTraceIntegrator: Integrator
 		int x, y;
 		int w, h;
 	};
+
+	size_t total_items = 0;
+	size_t completed_items = 0;
+	SpinLock progress_lock;
+	void print_progress() {
+		std::cout << "\rRendering: " << std::fixed << std::setprecision(2) << (float(completed_items) / total_items) * 100 << "%" << std::flush;
+	}
 
 public:
 	Scene *scene;
