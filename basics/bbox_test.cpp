@@ -122,7 +122,8 @@ BOOST_AUTO_TEST_CASE(intersect_ray_1)
 
 	BOOST_CHECK(hit == true);
 	BOOST_CHECK(hitt0 == 5.5);
-	BOOST_CHECK(hitt1 == 15.25);
+	BOOST_CHECK(hitt1 >= 15.25);
+	BOOST_CHECK(hitt1 <= 15.25001);
 }
 
 
@@ -139,7 +140,8 @@ BOOST_AUTO_TEST_CASE(intersect_ray_2)
 
 	BOOST_CHECK(hit == true);
 	BOOST_CHECK(hitt0 == 2.75);
-	BOOST_CHECK(hitt1 == 7.625);
+	BOOST_CHECK(hitt1 >= 7.625);
+	BOOST_CHECK(hitt1 <= (7.62501));
 }
 
 BOOST_AUTO_TEST_CASE(intersect_ray_3)
@@ -165,13 +167,14 @@ BOOST_AUTO_TEST_CASE(intersect_ray_4)
 
 	BOOST_CHECK(hit == true);
 	BOOST_CHECK(hitt0 == 0.0);
-	BOOST_CHECK(hitt1 == 7.25);
+	BOOST_CHECK(hitt1 >= 7.25);
+	BOOST_CHECK(hitt1 <= 7.25001);
 }
 
 BOOST_AUTO_TEST_CASE(intersect_ray_5)
 {
 	// Intersection from ray that grazes the side of the bbox
-	Ray r(Vec3(-1.0, -8.0, 0.25), Vec3(0, 1.0, 0));
+	Ray r(Vec3(-1.0001, -8.0, 0.25), Vec3(0, 1.0, 0));
 	r.finalize();
 	BBox bb(Vec3(-1.0, -2.5, -0.5), Vec3(8.0, 7.25, 2.0));
 
@@ -192,7 +195,8 @@ BOOST_AUTO_TEST_CASE(intersect_ray_6)
 
 	BOOST_CHECK(hit == true);
 	BOOST_CHECK(hitt0 == 5.0);
-	BOOST_CHECK(hitt1 == 5.0);
+	BOOST_CHECK(hitt1 >= 5.0);
+	BOOST_CHECK(hitt1 <= 5.00001);
 
 }
 
@@ -210,7 +214,8 @@ BOOST_AUTO_TEST_CASE(intersect_ray_7)
 
 	BOOST_CHECK(hit == true);
 	BOOST_CHECK(hitt0 == 10.0);
-	BOOST_CHECK(hitt1 == 10.0);
+	BOOST_CHECK(hitt1 >= 10.0);
+	BOOST_CHECK(hitt1 <= 10.00001);
 
 }
 

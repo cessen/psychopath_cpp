@@ -15,6 +15,7 @@
 #include "ray.hpp"
 #include "utils.hpp"
 
+#define BBOX_MAXT_ADJUST 1.00000024f
 
 /**
  * @brief An axis-aligned bounding box.
@@ -161,7 +162,7 @@ struct BBox {
 		// Calculate tmax
 		const float tmax1 = txmax < tymax ? txmax : tymax;
 		const float tmax2 = tzmax < tt ? tzmax : tt;
-		const float tmax = (tmax1 < tmax2 ? tmax1 : tmax2) * 1.00000024f;
+		const float tmax = (tmax1 < tmax2 ? tmax1 : tmax2) * BBOX_MAXT_ADJUST;
 
 		// Did we hit?
 		if ((tmin <= tmax) && (tmax > 0.0f)) {
@@ -366,7 +367,7 @@ struct BBox2 {
 		// Get the minimum and maximum hits, and shuffle the max hits
 		// to be in the same location as the minimum hits
 		const float4 mins = max(max(xs, ys), max(zs, zeros));
-		const float4 maxs = shuffle_swap(max(min(min(xs, ys), zs), ninf)) * float4(1.00000024f);
+		const float4 maxs = shuffle_swap(max(min(min(xs, ys), zs), ninf)) * float4(BBOX_MAXT_ADJUST);
 
 		// Check for hits
 		const float4 hits = lt(mins, t_max) && lte(mins, maxs);
@@ -528,7 +529,7 @@ struct BBox4 {
 
 		// Get the minimum and maximum hits
 		const float4 mins = max(max(xlos, ylos), max(zlos, zeros));
-		const float4 maxs = max(min(min(xhis, yhis), zhis), ninf) * float4(1.00000024f);
+		const float4 maxs = max(min(min(xhis, yhis), zhis), ninf) * float4(BBOX_MAXT_ADJUST);
 
 		// Check for hits
 		const float4 hits = lt(mins, t_max) && lte(mins, maxs);
