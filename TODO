@@ -1,13 +1,8 @@
 - Implement transforms and instancing:
-	- Lots of investigation to do here.  How to accommodate instancing
-	  in the context of ray reordering?
-	- How to handle transforming rays...?  The same ray can create a potential
-	  intersection with more than once instance of the same object at the
-	  same time, so transforming the ray in-place seems like a bad idea.  Maybe
-	  the transformed ray should be stored in the potential intersection structure
-	  itself.  Or maybe the world-to-local transform matrix should be stored instead.
-	  Or maybe both should be stored.  That would make for a heavy potint
-	  structure, though.
+	- This will be easiest in the context of breadth-first ray tracing.  So
+	  change top-level traversal to use ray stream tracing of some kind.  This
+	  will also have the side benefit of accessing the top-level BVH in a coherent
+	  way as well.
 
 - Implement a shading system
 	- Use OSL
