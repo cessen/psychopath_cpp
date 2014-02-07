@@ -104,7 +104,7 @@ private:
 	/**
 	 * @brief Tests whether a ray intersects a node or not.
 	 */
-	inline bool intersect_node(const uint64_t node_i, const Ray& ray, const Vec3& d_inv, const std::array<uint32_t, 3>& d_sign, float *near_t, float *far_t) const {
+	inline bool intersect_node(const uint64_t node_i, const Ray& ray, const Vec3& d_inv, const Ray::Signs& d_sign, float *near_t, float *far_t) const {
 #ifdef GLOBAL_STATS_TOP_LEVEL_BVH_NODE_TESTS
 		Global::Stats::top_level_bvh_node_tests++;
 #endif

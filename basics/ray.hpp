@@ -39,42 +39,56 @@
 
 
 
-/*
- * A ray in 3d space.
- * Includes information about ray differentials.
+
+
+/**
+ * @brief A ray in 3d space.
  */
 struct Ray {
-	// Coordinates
-	Vec3 o, d; // Ray origin and direction
-	float time; // Time coordinate
-	float max_t; // Maximum extent along the ray
-	// No min_t, it is implicitly 0.0f for all rays
+	/**
+	 * @brief Type to store ray direction signs in.
+	 *
+	 * It's typedef'd for convenience.  And it's four-wide instead of
+	 * three-wide for alignment.
+	 */
+	typedef std::array<uint8_t, 4> Signs;  // Four slots instead of three for alignment
 
+	/**
+	 * @brief An enum that describes the type of a ray.
+	 *
+	 * The possible values are all powers of two, so that bitmasks
+	 * can be easily created when tracking e.g. the types of rays
+	 * in a path.
+	 */
+	enum Type {
+	    NONE       = 0,
+	    CAMERA     = 1 << 0,
+	    R_DIFFUSE  = 1 << 1, // Diffuse reflection
+	    R_SPECULAR = 1 << 2, // Specular reflection
+	    T_DIFFUSE  = 1 << 3, // Diffuse transmission
+	    T_SPECULAR = 1 << 4, // Specular transmission
+	    OCCLUSION  = 1 << 5
+	};
+
+
+	// Local-space values
+	Vec3 o, d; // Origin and direction
 	Vec3 d_inv; // 1.0 / d
-	std::array<uint32_t, 3> d_sign; // Sign of the components of d
-
+	Signs d_sign; // Sign of the components of d
 	float ow; // Origin width
 	float dw; // Width delta
 
-	bool is_shadow_ray; // Shadow ray or not
-
-	/*
-	// Ray differentials for origin and direction
-	Vec3 odx, ody; // Ray origin
-	Vec3 ddx, ddy; // Ray direction
-
-	// Rates of ray differentials' change, as a function of distance
-	// along the ray.  This is useful for determining if
-	// the range of micropolygon sizes across a surface
-	// is going to be too broad for dicing.
-	float diff_rate_x, diff_rate_y;
-
-	// Whether the ray has differentials or not
-	bool has_differentials;*/
+	// Space-independant values
+	float time; // Time coordinate
+	float max_t; // Maximum extent along the ray
+	Type type;
+	uint32_t id;
 
 
-	/*
-	 * Constructor.
+
+	/**
+	 * @brief Constructor.
+	 *
 	 * Ray differentials need to be filled in manually after this.
 	 *
 	 * By default, origin (o) and direction (d) are initialized with NaN's.
@@ -86,15 +100,15 @@ struct Ray {
 	  d {d_},
 	  time {time_},
 	  max_t {std::numeric_limits<float>::infinity()},
-	  //has_differentials {false},
-	  is_shadow_ray {false}
+	  type {NONE},
+	  id {0}
 	{}
 
 	Vec3 get_d_inverse() const {
 		return d_inv;
 	}
 
-	std::array<uint32_t, 3> get_d_sign() const {
+	Signs get_d_sign() const {
 		return d_sign;
 	}
 
@@ -111,16 +125,6 @@ struct Ray {
 		d_sign[2] = (d.z < 0.0f ? 1u : 0u);
 	}
 
-	/**
-	 * Pre-computes some useful data about the ray differentials.
-	 */
-	/*void update_differentials() {
-		if (has_differentials) {
-			diff_rate_x = ddx.length();
-			diff_rate_y = ddy.length();
-		}
-	}*/
-
 
 	/*
 	 * Finalizes the ray after first initialization.
@@ -130,52 +134,40 @@ struct Ray {
 		assert(d.length() > 0.0f);
 
 		update_accel();
-
-		//update_differentials();
 	}
 
-	/**
-	 * Applies a Transform.
+	/*
+	 * Returns the "ray width" at the given distance along the ray.
+	 * The values returned corresponds to roughly the width that a micropolygon
+	 * needs to be for this ray at that distance.  And that is its primary
+	 * purpose as well: determining dicing rates.
 	 */
-	void apply_transform(const Transform &t) {
-		// Origin and direction
-		o = t.pos_to(o);
-		d = t.dir_to(d);
-
-		// Differentials
-		// These can be transformed as directional vectors...?
-		/*if (has_differentials) {
-			odx = t.dir_to(odx);
-			ody = t.dir_to(ody);
-			ddx = t.dir_to(ddx);
-			ddy = t.dir_to(ddy);
-		}*/
-
-		update_accel();
-		//update_differentials();
+	float width(const float t) const {
+		return ow + (dw * t);
 	}
 
-	/**
-	 * Applies a Transform's inverse.
+	/*
+	 * Returns an estimate of the minimum ray width over a distance
+	 * range along the ray.
 	 */
-	void reverse_transform(const Transform &t) {
-		// Origin and direction
-		o = t.pos_from(o);
-		d = t.dir_from(d);
-
-		// Differentials
-		// These can be transformed as directional vectors...?
-		/*if (has_differentials) {
-			odx = t.dir_from(odx);
-			ody = t.dir_from(ody);
-			ddx = t.dir_from(ddx);
-			ddy = t.dir_from(ddy);
-		}*/
-
-		update_accel();
-		//update_differentials();
+	float min_width(const float tnear, const float tfar) const {
+		return ow + (dw * tnear);
 	}
 
+};
+
+
+
+/**
+ * @brief A strictly world-space ray.
+ */
+struct WorldRay {
+	Vec3 o, d; // Origin and direction
+	Vec3 odx, ody; // Origin differentials
+	Vec3 ddx, ddy; // Direction differentials
+
+	float time;
+	Ray::Type type;
 
 	/*
 	 * Transfers all ray origin differentials to the surface
@@ -205,81 +197,38 @@ struct Ray {
 		return true;
 	}*/
 
-
-	/*
-	 * Returns the "ray width" at the given distance along the ray.
-	 * The values returned corresponds to roughly the width that a micropolygon
-	 * needs to be for this ray at that distance.  And that is its primary
-	 * purpose as well: determining dicing rates.
+	/**
+	 * Creates a Ray from a given transform.
 	 */
-	float width(const float t) const {
-		/*if (!has_differentials)
-			return 0.0f;
+	Ray to_ray(const Transform& t) {
+		Ray r;
 
-		// Calculate the width of each differential at t.
-		const Vec3 rev_d = d * -1.0f;
-		const float d_n = dot(d, rev_d);
-		float wx, wy;
+		// Origin, direction, and time
+		r.o = t.pos_to(o);
+		r.d = t.dir_to(d);
+		r.time = time;
 
-		// x
-		const Vec3 tempx = odx + (ddx * t);
-		const float tdx = dot(tempx, rev_d) / d_n;
-		wx = (tempx + (d * tdx)).length();
+		// Ray type
+		r.type = type;
 
-		// y
-		const Vec3 tempy = ody + (ddy * t);
-		const float tdy = dot(tempy, rev_d) / d_n;
-		wy = (tempy + (d * tdy)).length();
+		// Transformed ray differentials
+		Vec3 todx = t.dir_to(odx);
+		Vec3 tody = t.dir_to(ody);
+		Vec3 tddx = t.dir_to(ddx);
+		Vec3 tddy = t.dir_to(ddy);
 
-		// Smaller of x and y
-		return std::min(wx, wy) * 0.5f;*/
+		// Translate differentials into ray width approximation
+		// TODO: do this correctly for arbitrary ray differentials,
+		// not just camera ray differentials.
+		r.ow = std::min(todx.length(), tody.length());
+		r.dw = std::min(tddx.length(), tddy.length());
 
-		return ow + (dw * t);
+		// Finalize ray
+		r.finalize();
+
+		return r;
 	}
-
-	/*
-	 * Returns an estimate of the minimum ray width over a distance
-	 * range along the ray.
-	 */
-	float min_width(const float tnear, const float tfar) const {
-		/*if (!has_differentials) {
-			return 0.0f;
-			std::cout << "YAR\n";
-		}
-
-		// Calculate the min width of each differential at the average distance.
-		const float t = (tnear + tfar) / 2.0f;
-		const Vec3 rev_d = d * -1.0f;
-		const float d_n = dot(d, rev_d);
-		float wx, wy;
-
-		// x
-		const Vec3 tempx = odx + (ddx * t);
-		const float tdx = dot(tempx, rev_d) / d_n;
-		wx = (tempx + (d * tdx)).length() - (diff_rate_x * 0.5);
-		if (wx < 0.0f)
-			wx = 0.0f;
-
-		// y
-		const Vec3 tempy = ody + (ddy * t);
-		const float tdy = dot(tempy, rev_d) / d_n;
-		wy = (tempy + (d * tdy)).length() - (diff_rate_y * 0.5);
-		if (wy < 0.0f)
-			wy = 0.0f;
-
-		// Minimum of x and y
-		const float result = std::min(wx, wy) * 0.5f;
-
-		return result;*/
-
-		return ow + (dw * tnear);
-	}
-
 };
-
-
-
-
 
 
 

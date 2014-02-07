@@ -121,7 +121,7 @@ struct BBox {
 	 *
 	 * @returns True if the ray hits, false if the ray misses.
 	 */
-	inline bool intersect_ray(const Ray& ray, const Vec3 d_inv, const std::array<uint32_t, 3> d_sign, float *hitt0, float *hitt1, float t=std::numeric_limits<float>::infinity()) const {
+	inline bool intersect_ray(const Ray& ray, const Vec3 d_inv, const Ray::Signs d_sign, float *hitt0, float *hitt1, float t=std::numeric_limits<float>::infinity()) const {
 #ifdef DEBUG
 		// Test for nan and inf
 		if (std::isnan(ray.o.x) || std::isnan(ray.o.y) || std::isnan(ray.o.z) ||
@@ -176,7 +176,7 @@ struct BBox {
 
 	inline bool intersect_ray(const Ray& ray, float *hitt0, float *hitt1, float t=std::numeric_limits<float>::infinity()) const {
 		const Vec3 d_inv = ray.get_d_inverse();
-		const std::array<uint32_t, 3> d_sign = ray.get_d_sign();
+		const Ray::Signs d_sign = ray.get_d_sign();
 
 		return intersect_ray(ray, d_inv, d_sign, hitt0, hitt1, t);
 	}
@@ -189,7 +189,7 @@ struct BBox {
 	 *
 	 * @returns True if the ray hits, false if the ray misses.
 	 */
-	inline bool intersect_ray(const Ray& ray, const Vec3 d_inv, const std::array<uint32_t, 3> d_sign) const {
+	inline bool intersect_ray(const Ray& ray, const Vec3 d_inv, const Ray::Signs d_sign) const {
 		float hitt0, hitt1;
 		return intersect_ray(ray, d_inv, d_sign, &hitt0, &hitt1);
 	}
@@ -354,7 +354,7 @@ struct BBox2 {
 	 *
 	 * @returns A bitmask indicating which (if any) of the two boxes were hit.
 	 */
-	inline unsigned int intersect_ray(const SIMD::float4* o, const SIMD::float4* d_inv, const SIMD::float4& t_max, const std::array<uint32_t, 3>& d_sign, SIMD::float4 *hit_ts) const {
+	inline unsigned int intersect_ray(const SIMD::float4* o, const SIMD::float4* d_inv, const SIMD::float4& t_max, const Ray::Signs& d_sign, SIMD::float4 *hit_ts) const {
 		using namespace SIMD;
 		const float4 zeros(0.0f);
 		const float4 ninf(-std::numeric_limits<float>::infinity());
@@ -382,7 +382,7 @@ struct BBox2 {
 	inline unsigned int intersect_ray(const Ray& ray, SIMD::float4 *hit_ts) const {
 		using namespace SIMD;
 		const Vec3 d_inv_f = ray.get_d_inverse();
-		const std::array<uint32_t, 3> d_sign = ray.get_d_sign();
+		const Ray::Signs d_sign = ray.get_d_sign();
 
 		// Load ray origin, inverse direction, and max_t into simd layouts for intersection testing
 		const float4 ray_o[3] = {ray.o[0], ray.o[1], ray.o[2]};
@@ -514,7 +514,7 @@ struct BBox4 {
 	 *
 	 * @returns A bitmask indicating which (if any) of the four boxes were hit.
 	 */
-	inline unsigned int intersect_ray(const SIMD::float4* o, const SIMD::float4* d_inv, const SIMD::float4& t_max, const std::array<uint32_t, 3>& d_sign, SIMD::float4 *hit_ts) const {
+	inline unsigned int intersect_ray(const SIMD::float4* o, const SIMD::float4* d_inv, const SIMD::float4& t_max, const Ray::Signs& d_sign, SIMD::float4 *hit_ts) const {
 		using namespace SIMD;
 		const float4 zeros(0.0f);
 		const float4 ninf(-std::numeric_limits<float>::infinity());
@@ -544,7 +544,7 @@ struct BBox4 {
 	inline unsigned int intersect_ray(const Ray& ray, SIMD::float4 *hit_ts) const {
 		using namespace SIMD;
 		const Vec3 d_inv_f = ray.get_d_inverse();
-		const std::array<uint32_t, 3> d_sign = ray.get_d_sign();
+		const Ray::Signs d_sign = ray.get_d_sign();
 
 		// Load ray origin, inverse direction, and max_t into simd layouts for intersection testing
 		const float4 ray_o[3] = {ray.o[0], ray.o[1], ray.o[2]};

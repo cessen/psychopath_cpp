@@ -177,7 +177,7 @@ std::vector<PotentialInter>::iterator Tracer::trace_diceable_surface(std::vector
 					}
 
 					// Test against the ray
-					if (ray.is_shadow_ray) {
+					if (ray.type == Ray::OCCLUSION) {
 						inter.hit |= micro_surface->intersect_ray(ray, width, nullptr);
 						rays_active[pitr->ray_index] = !inter.hit; // Early out for shadow rays
 					} else {

@@ -40,46 +40,41 @@ public:
 	 * Generates a camera ray based on the given information.
 	 */
 	Ray generate_ray(float x, float y, float dx, float dy, float time, float u, float v) const {
-		Ray ray;
+		WorldRay wray;
 
-		ray.time = time;
+		wray.type = Ray::CAMERA;
+		wray.time = time;
 
 		// Ray origin
-		ray.o.x = lens_diameter * ((u * 2) - 1) * 0.5;
-		ray.o.y = lens_diameter * ((v * 2) - 1) * 0.5;
-		ray.o.z = 0.0;
-		square_to_circle(&ray.o.x, &ray.o.y);
+		wray.o.x = lens_diameter * ((u * 2) - 1) * 0.5;
+		wray.o.y = lens_diameter * ((v * 2) - 1) * 0.5;
+		wray.o.z = 0.0;
+		square_to_circle(&wray.o.x, &wray.o.y);
 
 		// Ray direction
-		ray.d.x = (x * tfov) - (ray.o.x / focus_distance);
-		ray.d.y = (y * tfov) - (ray.o.y / focus_distance);
-		ray.d.z = 1.0;
-		ray.d.normalize();
+		wray.d.x = (x * tfov) - (wray.o.x / focus_distance);
+		wray.d.y = (y * tfov) - (wray.o.y / focus_distance);
+		wray.d.z = 1.0;
+		wray.d.normalize();
 
 		// Ray image plane differentials
-		ray.ow = 0.0f;
-		ray.dw = std::min(dx*tfov, dy*tfov);
-		//ray.odx = Vec3(0.0f, 0.0f, 0.0f);
-		//ray.ody = Vec3(0.0f, 0.0f, 0.0f);
-		//ray.ddx = Vec3(dx, 0.0f, 0.0f);
-		//ray.ddy = Vec3(0.0f, dy, 0.0f);
-
-		//ray.has_differentials = true;
+		wray.odx = Vec3(0.0f, 0.0f, 0.0f);
+		wray.ody = Vec3(0.0f, 0.0f, 0.0f);
+		wray.ddx = Vec3(dx*tfov, 0.0f, 0.0f);
+		wray.ddy = Vec3(0.0f, dy*tfov, 0.0f);
 
 		// Get transform matrix
 		uint32_t ia;
 		float alpha;
-
+		Ray ray;
 		if (calc_time_interp(transforms.size(), time, &ia, &alpha)) {
 			Transform trans;
 			trans = lerp(alpha, transforms[ia], transforms[ia+1]);
 
-			ray.apply_transform(trans);
+			ray = wray.to_ray(trans);
 		} else {
-			ray.apply_transform(transforms[0]);
+			ray = wray.to_ray(transforms[0]);
 		}
-
-		ray.finalize();
 
 		return ray;
 	}

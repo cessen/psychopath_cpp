@@ -205,7 +205,7 @@ void PathTraceIntegrator::render_blocks()
 							rays[pri].o = paths[i].inter.p + (paths[i].inter.offset * -1.0f);
 						rays[pri].d = dir;
 						rays[pri].time = samps[i*samp_dim+4];
-						rays[pri].is_shadow_ray = false;
+						rays[pri].type = Ray::R_DIFFUSE;
 						rays[pri].max_t = std::numeric_limits<float>::infinity();
 						//rays[pri].has_differentials = true;
 
@@ -272,7 +272,7 @@ void PathTraceIntegrator::render_blocks()
 							rays[sri].o = paths[i].inter.p + (paths[i].inter.offset * -1.0f);
 						rays[sri].d = ld;
 						rays[sri].time = samps[i*samp_dim+4];
-						rays[sri].is_shadow_ray = true;
+						rays[sri].type = Ray::OCCLUSION;
 						rays[sri].max_t = d;
 						//rays[sri].has_differentials = true;
 

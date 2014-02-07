@@ -53,7 +53,7 @@ bool MicroSurface::intersect_ray(const Ray &ray, float ray_width, Intersection *
 				//hit_far = tfar;
 
 				// Early out for shadow rays
-				if (ray.is_shadow_ray)
+				if (ray.type == Ray::OCCLUSION)
 					break;
 
 				if (todo_offset == 0)
@@ -106,7 +106,7 @@ bool MicroSurface::intersect_ray(const Ray &ray, float ray_width, Intersection *
 				hit_near = near;
 
 				// Early out for shadow rays
-				if (ray.is_shadow_ray)
+				if (ray.type == Ray::OCCLUSION)
 					break;
 			} else { // Not a leaf
 				float hit_near1 = 0.0f; // Hit near 1
@@ -146,7 +146,7 @@ bool MicroSurface::intersect_ray(const Ray &ray, float ray_width, Intersection *
 #endif
 
 	// Calculate intersection data
-	if (hit && !ray.is_shadow_ray) {
+	if (hit && !(ray.type == Ray::OCCLUSION)) {
 		if (t >= inter->t)
 			return false;
 
