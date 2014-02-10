@@ -8,9 +8,7 @@
 #include <cmath>
 
 
-#define IS_LEAF 1
-
-void BVH::add_primitives(std::vector<std::unique_ptr<Primitive>>* primitives)
+void BVH::build(std::vector<std::unique_ptr<Primitive>>* primitives)
 {
 	size_t start = bag.size();
 	size_t added = primitives->size();
@@ -18,6 +16,8 @@ void BVH::add_primitives(std::vector<std::unique_ptr<Primitive>>* primitives)
 
 	for (auto& p: *primitives)
 		bag.push_back(BVHPrimitive(p.get()));
+
+	finalize();
 }
 
 bool BVH::finalize()
@@ -28,18 +28,6 @@ bool BVH::finalize()
 	bag.resize(0);
 	return true;
 }
-
-size_t BVH::max_primitive_id() const
-{
-	return nodes.size();
-}
-
-// TODO: should be changed to fetch based on primitive id, not node id.
-Primitive &BVH::get_primitive(size_t id)
-{
-	return *(nodes[id].data);
-}
-
 
 struct CompareToMid {
 	int32_t dim;
@@ -346,70 +334,47 @@ size_t BVH::recursive_build(size_t parent, size_t first_prim, size_t last_prim)
 }
 
 
-uint BVH::get_potential_intersections(const Ray &ray, float tmax, uint max_potential, size_t *ids, void *state)
+std::tuple<Ray*, Ray*, Primitive*> BVHStreamTraverser::next_primitive()
 {
-	// Algorithm is the BVH2 algorithm from the paper
-	// "Stackless Multi-BVH Traversal for CPU, MIC and GPU Ray Tracing"
-	// by Afra et al.
+	float near_t, far_t;
 
-	// Get state
-	uint64_t& node = static_cast<uint64_t *>(state)[0];
-	uint64_t& bit_stack = static_cast<uint64_t *>(state)[1];
+	while (stack_ptr >= 0) {
+		// Test rays against current node
+		for (auto itr = ray_stack[stack_ptr].first; itr < ray_stack[stack_ptr].second; ++itr) {
+			const bool hit = bvh->intersect_node(node_stack[stack_ptr], *itr, &near_t, &far_t);
 
-	// Check if it's an empty BVH or if we have the "finished" magic number
-	if (nodes.size() == 0 || node == ~uint64_t(0))
-		return 0;
-
-	const Vec3 d_inv = ray.get_d_inverse();
-	const auto d_sign = ray.get_d_sign();
-
-	// Traverse the BVH
-	uint32_t hits_so_far = 0;
-	float hitt0a, hitt1a;
-	float hitt0b, hitt1b;
-	while (hits_so_far < max_potential) {
-		const Node& n = nodes[node];
-
-		if (n.flags & IS_LEAF) {
-			ids[hits_so_far++] = node;
-		} else {
-			bool hit0, hit1;
-			hitt0a = hitt1a = hitt0b = hitt1b = std::numeric_limits<float>::infinity();
-			hit0 = intersect_node(child1(node), ray, d_inv, d_sign, &hitt0a, &hitt1a) && hitt0a < tmax;
-			hit1 = intersect_node(child2(node), ray, d_inv, d_sign, &hitt0b, &hitt1b) && hitt0b < tmax;
-
-			if (hit0 || hit1) {
-				bit_stack <<= 1;
-				if (hitt0a < hitt0b) {
-					node = child1(node);
-					if (hit1)
-						bit_stack |= 1;
-				} else {
-					node = child2(node);
-					if (hit0)
-						bit_stack |= 1;
-				}
-				continue;
-			}
+			if (hit)
+				itr->flags |= HIT;
+			else
+				itr->flags &= ~HIT;
 		}
 
-		// If we've completed the full traversal
-		if (bit_stack == 0) {
-			node = ~uint64_t(0); // Magic number for "finished"
-			break;
-		}
+		// Partition rays into rays that hit and didn't hit
+		ray_stack[stack_ptr].first = std::partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [this](const Ray& r) {
+			return (r.flags & HIT) == 0;
+		});
 
-		// Find the next node to work from
-		while ((bit_stack & 1) == 0) {
-			node = nodes[node].parent_index;
-			bit_stack >>= 1;
+		// If none of the rays hit
+		if (ray_stack[stack_ptr].first == ray_stack[stack_ptr].second) {
+			--stack_ptr;
 		}
+		// If it's a leaf
+		else if (bvh->is_leaf(node_stack[stack_ptr])) {
+			auto rv = std::make_tuple(&(*ray_stack[stack_ptr].first), &(*ray_stack[stack_ptr].second), bvh->nodes[node_stack[stack_ptr]].data);
+			--stack_ptr;
+			return rv;
+		}
+		// Traverse deeper
+		else {
+			ray_stack[stack_ptr+1] = ray_stack[stack_ptr];
 
-		// Go to sibling
-		bit_stack &= ~uint64_t(1);
-		node = sibling(node);
+			node_stack[stack_ptr+1] = bvh->child1(node_stack[stack_ptr]);
+			node_stack[stack_ptr] = bvh->child2(node_stack[stack_ptr]);
+
+			stack_ptr++;
+		}
 	}
 
-	// Return the number of primitives accumulated
-	return hits_so_far;
+	// Finished traversal
+	return std::make_tuple(&(*rays.end()), &(*rays.end()), nullptr);
 }

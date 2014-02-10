@@ -1,13 +1,39 @@
+- Ray stream tracing:
+	- Break acceleration structures (e.g. BVH) into two separate pieces:
+		- The builder -- builds and holds the acceleration structures
+		- The traverser -- traverses the acceleration structures
+	- This will allow multiple different traversal methods to be implemented
+	  for each acceleration structure, with consistent interfaces depending
+	  on the method.
+
 - Implement transforms and instancing:
 	- This will be easiest in the context of breadth-first ray tracing.  So
 	  change top-level traversal to use ray stream tracing of some kind.  This
 	  will also have the side benefit of accessing the top-level BVH in a coherent
 	  way as well.
+	- How to pass existing hierarchy to the acceleration structure?  E.g.
+	  hierarchical transforms and instancing?  We need some way to represent that.
+	- Maybe transformed geo = instance?  That seems a bit limiting, though.
+	- Maybe the input to the acceleration structure is a scene hierarchy rather
+	  than primitives added one-at-a-time.  That scene hierarchy can make a
+	  distinction between instances and transform hierarchies.  And there can
+	  be separate code completely outside of the accel builder that optimizes
+	  the scene hierarchy (e.g. applying static transforms, collapsing meaningless
+	  motion transforms, de-instancing instances that only appear once, etc.).  Then
+	  the responsibility of the accel builder is purely to take that straight-forward
+	  description and make an accel structure for it.
+	- Scene file(s)
+	   |PARSER|
+	  Scene hierarchy
+	   |OPTIMIZER(S)|
+	  Optimized scene hierarchy
+	   |ACCEL BUILDER|
+	  Acceleration structure
 
 - Implement a shading system
 	- Use OSL
 	- Proper ray differentials
-	
+
 - More geometry types:
 	//- Bicubic bezier patches
 	- Catmull-clark subdivision surfaces
@@ -18,7 +44,7 @@
 	- Change MicroSurface to use a BVH4
 	- Investigate ways to make splitting and splitting-traversal faster:
 		- Can we do BVH4 style traversal?
-	
+
 - Adaptive sampling scheme
 	- "Population Monte Carlo"
 

@@ -103,7 +103,7 @@ include_directories (${OSL_INCLUDE})
 #--------------------------------------
 include_directories ("${PROJECT_BINARY_DIR}",
                      "${PROJECT_SOURCE_DIR}",
-                     "${PROJECT_SOURCE_DIR}/collections",
+                     "${PROJECT_SOURCE_DIR}/accel",
                      "${PROJECT_SOURCE_DIR}/basics",
                      "${PROJECT_SOURCE_DIR}/micro_surface",
                      "${PROJECT_SOURCE_DIR}/integrator",
@@ -124,7 +124,7 @@ include_directories ("${PROJECT_BINARY_DIR}",
 #--------------------------------------
 # Build
 #--------------------------------------
-add_subdirectory(collections)
+add_subdirectory(accel)
 add_subdirectory(basics)
 add_subdirectory(micro_surface)
 add_subdirectory(integrator)
@@ -150,7 +150,7 @@ set (PSYCHO_LIB
 	primitives
 	basics
 	micro_surface
-	collections
+	accel
 	config
 	global)
 

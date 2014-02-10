@@ -39,7 +39,7 @@ public:
 	/*
 	 * Generates a camera ray based on the given information.
 	 */
-	Ray generate_ray(float x, float y, float dx, float dy, float time, float u, float v) const {
+	WorldRay generate_ray(float x, float y, float dx, float dy, float time, float u, float v) const {
 		WorldRay wray;
 
 		wray.type = Ray::CAMERA;
@@ -66,17 +66,14 @@ public:
 		// Get transform matrix
 		uint32_t ia;
 		float alpha;
-		Ray ray;
 		if (calc_time_interp(transforms.size(), time, &ia, &alpha)) {
 			Transform trans;
 			trans = lerp(alpha, transforms[ia], transforms[ia+1]);
 
-			ray = wray.to_ray(trans);
+			return wray.transformed(trans);
 		} else {
-			ray = wray.to_ray(transforms[0]);
+			return wray.transformed(transforms[0]);
 		}
-
-		return ray;
 	}
 };
 

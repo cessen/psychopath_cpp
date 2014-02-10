@@ -13,9 +13,6 @@
 #include "global.hpp"
 #include "camera.hpp"
 #include "bvh.hpp"
-#include "bvh2.hpp"
-#include "bvh4.hpp"
-#include "prim_array.hpp"
 #include "primitive.hpp"
 #include "light.hpp"
 
@@ -33,7 +30,7 @@ struct Scene {
 	std::unique_ptr<Camera> camera;
 	std::vector<std::unique_ptr<Primitive>> primitives;
 	std::vector<std::unique_ptr<Light>> finite_lights;
-	BVH4 world;
+	BVH world;
 
 	Scene() {}
 
@@ -51,8 +48,7 @@ struct Scene {
 
 	// Finalizes the scene for rendering
 	void finalize() {
-		world.add_primitives(&primitives);
-		world.finalize();
+		world.build(&primitives);
 	}
 };
 

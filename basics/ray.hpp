@@ -70,7 +70,6 @@ struct Ray {
 	    OCCLUSION  = 1 << 5
 	};
 
-
 	// Local-space values
 	Vec3 o, d; // Origin and direction
 	Vec3 d_inv; // 1.0 / d
@@ -83,6 +82,7 @@ struct Ray {
 	float max_t; // Maximum extent along the ray
 	Type type;
 	uint32_t id;
+	uint8_t flags; // Misc bit flags, can be used for whatever
 
 
 
@@ -169,6 +169,23 @@ struct WorldRay {
 	float time;
 	Ray::Type type;
 
+	/**
+	 * Returns a transformed version of the WorldRay.
+	 */
+	WorldRay transformed(const Transform& t) {
+		WorldRay r = *this;
+
+		r.o = t.pos_to(o);
+		r.d = t.dir_to(d);
+
+		r.odx = t.dir_to(odx);
+		r.ody = t.dir_to(ody);
+		r.ddx = t.dir_to(ddx);
+		r.ddy = t.dir_to(ddy);
+
+		return r;
+	}
+
 	/*
 	 * Transfers all ray origin differentials to the surface
 	 * intersection.
@@ -198,9 +215,32 @@ struct WorldRay {
 	}*/
 
 	/**
-	 * Creates a Ray from a given transform.
+	 * Creates a Ray from the WorldRay.
 	 */
-	Ray to_ray(const Transform& t) {
+	Ray to_ray() const {
+		Ray r;
+
+		// Origin, direction, and time
+		r.o = o;
+		r.d = d;
+		r.time = time;
+
+		// Ray type
+		r.type = type;
+
+		// Translate differentials into ray width approximation
+		// TODO: do this correctly for arbitrary ray differentials,
+		// not just camera ray differentials.
+		r.ow = std::min(odx.length(), ody.length());
+		r.dw = std::min(ddx.length(), ddy.length());
+
+		// Finalize ray
+		r.finalize();
+
+		return r;
+	}
+
+	Ray to_ray(const Transform& t) const {
 		Ray r;
 
 		// Origin, direction, and time

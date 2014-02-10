@@ -45,25 +45,12 @@ class Tracer
 {
 public:
 	Scene *scene;
-	Slice<const Ray> rays; // Rays to trace
+	BVHStreamTraverser traverser;
+	Slice<const WorldRay> w_rays; // Rays to trace
 	Slice<Intersection> intersections; // Resulting intersections
-	std::vector<uint8_t> rays_active;
-	std::vector<uint8_t> states; // Ray states, for interrupting and resuming traversal
-	std::vector<PotentialInter> potential_intersections; // "Potential intersection" buffer
 
-	Tracer(Scene *scene_): scene {scene_} {}
-
-	// Copy constructor
-	Tracer(const Tracer& b): scene {b.scene} {}
-
-	// Move constructor
-	Tracer(const Tracer&& b): scene {b.scene} {}
-
-	// Assignment
-	Tracer& operator=(const Tracer& b) {
-		scene = b.scene;
-
-		return *this;
+	Tracer(Scene *scene_): scene {scene_} {
+		traverser.init_accel(scene->world);
 	}
 
 
@@ -73,27 +60,10 @@ public:
 	 * @param [in] rays_ The rays to be traced.
 	 * @param [out] intersections_ The resulting intersections.
 	 */
-	uint32_t trace(const Slice<Ray> rays_, Slice<Intersection> intersections_);
+	uint32_t trace(const Slice<WorldRay> w_rays_, Slice<Intersection> intersections_);
 
-private:
-	/**
-	 * Accumulates potential intersections into the potential_inters buffer.
-	 * The buffer is sized appropriately and sorted by the time this method
-	 * finished.
-	 *
-	 * @returns The total number of potential intersections accumulated.
-	 */
-	size_t accumulate_potential_intersections();
 
-	/**
-	 * Traces all of the potential intersections in the potential_inters buffer.
-	 * This method assumes the the buffer is properly sorted by object id,
-	 * and that it is sized properly so that there are no empty potential
-	 * intersections.
-	 */
-	void trace_potential_intersections();
-
-	std::vector<PotentialInter>::iterator trace_diceable_surface(std::vector<PotentialInter>::iterator potints, std::vector<PotentialInter>::iterator end);
+	void trace_diceable_surface(DiceableSurfacePrimitive* prim, Ray* rays, Ray* end);
 };
 
 #endif // TRACER_HPP

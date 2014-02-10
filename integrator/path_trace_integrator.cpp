@@ -114,7 +114,7 @@ void PathTraceIntegrator::render_blocks()
 	Array<PTPath> paths;
 
 	// Ray and Intersection arrays
-	Array<Ray> rays;
+	Array<WorldRay> rays;
 	Array<Intersection> intersections;
 
 	// ids corresponding to the rays
@@ -168,7 +168,6 @@ void PathTraceIntegrator::render_blocks()
 					float dx = (image->max_x - image->min_x) / image->width;
 					float dy = (image->max_y - image->min_y) / image->height;
 					rays[i] = scene->camera->generate_ray(rx, ry, dx, dy, samps[i*samp_dim+4], samps[i*samp_dim+2], samps[i*samp_dim+3]);
-					rays[i].finalize();
 					ids[i] = i;
 				}
 			} else {
@@ -206,18 +205,17 @@ void PathTraceIntegrator::render_blocks()
 						rays[pri].d = dir;
 						rays[pri].time = samps[i*samp_dim+4];
 						rays[pri].type = Ray::R_DIFFUSE;
-						rays[pri].max_t = std::numeric_limits<float>::infinity();
-						//rays[pri].has_differentials = true;
 
 						// Ray differentials
-						rays[pri].ow = paths[i].inter.owp();
-						rays[pri].dw = 0.15;
+						// TODO: do this correctly
+						rays[pri].odx = Vec3(1,0,0) * paths[i].inter.owp();
+						rays[pri].ody = Vec3(0,1,0) * paths[i].inter.owp();
+						rays[pri].ddx = Vec3(1,0,0) * 0.15;
+						rays[pri].ddy = Vec3(0,1,0) * 0.15;
 						//rays[pri].odx = paths[i].inter.pdx();
 						//rays[pri].ddx = rays[pri].odx.normalized() * paths[i].inter.ddx.length();
 						//rays[pri].ody = paths[i].inter.pdy();
 						//rays[pri].ddy = rays[pri].ody.normalized() * paths[i].inter.ddy.length();
-
-						rays[pri].finalize();
 
 						// Increment path ray index
 						pri++;
@@ -229,7 +227,7 @@ void PathTraceIntegrator::render_blocks()
 
 			// Trace the rays
 			intersections.resize(rays.size());
-			tracer.trace(Slice<Ray>(rays), Slice<Intersection>(intersections));
+			tracer.trace(Slice<WorldRay>(rays), Slice<Intersection>(intersections));
 
 			// Update paths
 			for (uint32_t i = 0; i < rays.size(); i++) {
@@ -265,7 +263,6 @@ void PathTraceIntegrator::render_blocks()
 
 						// Create a shadow ray for this path
 						float d = ld.length();
-						ld.normalize();
 						if (dot(paths[i].inter.n.normalized(), ld) >= 0.0f)
 							rays[sri].o = paths[i].inter.p + paths[i].inter.offset;
 						else
@@ -273,18 +270,18 @@ void PathTraceIntegrator::render_blocks()
 						rays[sri].d = ld;
 						rays[sri].time = samps[i*samp_dim+4];
 						rays[sri].type = Ray::OCCLUSION;
-						rays[sri].max_t = d;
 						//rays[sri].has_differentials = true;
 
 						// Ray differentials
-						rays[sri].ow = paths[i].inter.owp();
-						rays[sri].dw = paths[i].inter.dw;
+						rays[sri].odx = Vec3(1,0,0) * paths[i].inter.owp();
+						rays[sri].ody = Vec3(0,1,0) * paths[i].inter.owp();
+						rays[sri].ddx = Vec3(1,0,0) * paths[i].inter.dw / d;
+						rays[sri].ddy = Vec3(0,1,0) * paths[i].inter.dw / d;
 						//rays[sri].odx = paths[i].inter.pdx();
 						//rays[sri].ddx = rays[sri].odx.normalized() * paths[i].inter.ddx.length();
 						//rays[sri].ody = paths[i].inter.pdy();
 						//rays[sri].ddy = rays[sri].ody.normalized() * paths[i].inter.ddy.length();
 
-						rays[sri].finalize();
 						ids[sri] = i;
 
 						sri++;
@@ -295,7 +292,7 @@ void PathTraceIntegrator::render_blocks()
 
 				// Trace the shadow rays
 				intersections.resize(rays.size());
-				tracer.trace(Slice<Ray>(rays), Slice<Intersection>(intersections));
+				tracer.trace(Slice<WorldRay>(rays), Slice<Intersection>(intersections));
 
 
 				// Calculate sample colors

@@ -9,7 +9,7 @@
 #include <vector>
 #include <memory>
 #include "primitive.hpp"
-#include "collection.hpp"
+#include "accel.hpp"
 #include "ray.hpp"
 #include "bbox.hpp"
 #include "utils.hpp"
@@ -24,19 +24,19 @@
 /*
  * A bounding volume hierarchy.
  */
-class BVH: public Collection
+class BVH: public Accel
 {
 public:
 	virtual ~BVH() {};
+	virtual void build(std::vector<std::unique_ptr<Primitive>>* primitives);
 
-	virtual void add_primitives(std::vector<std::unique_ptr<Primitive>>* primitives);
-	virtual bool finalize();
-	virtual size_t max_primitive_id() const;
-	virtual Primitive &get_primitive(size_t id);
-	virtual uint get_potential_intersections(const Ray &ray, float tmax, uint max_potential, size_t *ids, void *state);
-	virtual size_t ray_state_size() {
-		return 16;
-	}
+	// Traversers need access to private data
+	friend class BVHStreamTraverser;
+
+
+	enum {
+	    IS_LEAF = 1 << 0
+	};
 
 	/*
 	 * A node of a bounding volume hierarchy.
@@ -68,9 +68,7 @@ public:
 	 * inserted into the hierarchy.
 	 * Contains the time 0.5 bounds of the primitive and it's centroid.
 	 */
-	class BVHPrimitive
-	{
-	public:
+	struct BVHPrimitive {
 		Primitive *data;
 		Vec3 bmin, bmax, c;
 
@@ -101,16 +99,18 @@ private:
 	std::vector<BBox> bboxes;
 	std::vector<BVHPrimitive> bag;  // Temporary holding spot for primitives not yet added to the hierarchy
 
+	bool finalize();
+
 	/**
 	 * @brief Tests whether a ray intersects a node or not.
 	 */
-	inline bool intersect_node(const uint64_t node_i, const Ray& ray, const Vec3& d_inv, const Ray::Signs& d_sign, float *near_t, float *far_t) const {
+	inline bool intersect_node(const uint64_t node_i, const Ray& ray, float *near_t, float *far_t) const {
 #ifdef GLOBAL_STATS_TOP_LEVEL_BVH_NODE_TESTS
 		Global::Stats::top_level_bvh_node_tests++;
 #endif
 		const Node& node = nodes[node_i];
 		const BBox b = lerp_seq<BBox, decltype(bboxes)::const_iterator >(ray.time, bboxes.cbegin() + node.bbox_index, node.ts);
-		return b.intersect_ray(ray, d_inv, d_sign, near_t, far_t);
+		return b.intersect_ray(ray, ray.d_inv, ray.d_sign, near_t, far_t);
 	}
 
 	/**
@@ -141,11 +141,66 @@ private:
 			return parent_i + 1;
 	}
 
+	inline bool is_leaf(const size_t node_i) const {
+		return nodes[node_i].flags | IS_LEAF;
+	}
+
 	size_t split_primitives(size_t first_prim, size_t last_prim);
 	size_t recursive_build(size_t parent, size_t first_prim, size_t last_prim);
 };
 
 
 
+/**
+ * @brief A breadth-first traverser for BVH.
+ */
+class BVHStreamTraverser: public AccelStreamTraverser<BVH>
+{
+public:
+	virtual ~BVHStreamTraverser() {}
 
-#endif
+	virtual void init_accel(const BVH& accel) {
+		bvh = &accel;
+	}
+
+	virtual void init_rays(const WorldRay* begin, const WorldRay* end) {
+		w_rays = begin;
+		w_rays_end = end;
+		rays.resize(std::distance(begin, end));
+
+		for (int i = 0; i < rays.size(); ++i) {
+			rays[i] = w_rays[i].to_ray();
+			rays[i].id = i;
+		}
+
+		// Initialize stack
+		stack_ptr = 0;
+		node_stack[0] = 0;
+		ray_stack[0].first = rays.begin();
+		ray_stack[0].second = rays.end();
+	}
+
+	virtual std::tuple<Ray*, Ray*, Primitive*> next_primitive();
+
+private:
+	enum {
+	    HIT = 1 << 0,
+	    DONE = 1 << 1,
+	    MISC = 1 << 2
+	};
+
+	const BVH* bvh = nullptr;
+	const WorldRay* w_rays = nullptr;
+	const WorldRay* w_rays_end = nullptr;
+	std::vector<Ray> rays;
+
+	// Stack data
+#define BVHST_STACK_SIZE 64
+	int stack_ptr;
+	size_t node_stack[BVHST_STACK_SIZE];
+	std::pair<std::vector<Ray>::iterator, std::vector<Ray>::iterator> ray_stack[BVHST_STACK_SIZE];
+
+};
+
+
+#endif // BVH_HPP
