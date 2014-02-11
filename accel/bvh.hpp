@@ -142,7 +142,7 @@ private:
 	}
 
 	inline bool is_leaf(const size_t node_i) const {
-		return nodes[node_i].flags | IS_LEAF;
+		return nodes[node_i].flags & IS_LEAF;
 	}
 
 	size_t split_primitives(size_t first_prim, size_t last_prim);
