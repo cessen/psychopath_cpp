@@ -60,7 +60,7 @@ struct Ray {
 	 * can be easily created when tracking e.g. the types of rays
 	 * in a path.
 	 */
-	enum Type {
+	enum Type: uint16_t {
 	    NONE       = 0,
 	    CAMERA     = 1 << 0,
 	    R_DIFFUSE  = 1 << 1, // Diffuse reflection
@@ -81,8 +81,9 @@ struct Ray {
 	float time; // Time coordinate
 	float max_t; // Maximum extent along the ray
 	Type type;
+	uint16_t flags; // Misc bit flags, can be used for whatever
 	uint32_t id;
-	uint8_t flags; // Misc bit flags, can be used for whatever
+
 
 
 
@@ -227,6 +228,8 @@ struct WorldRay {
 
 		// Ray type
 		r.type = type;
+		if (r.type == Ray::OCCLUSION)
+			r.max_t = 1.0f;
 
 		// Translate differentials into ray width approximation
 		// TODO: do this correctly for arbitrary ray differentials,
@@ -250,6 +253,8 @@ struct WorldRay {
 
 		// Ray type
 		r.type = type;
+		if (r.type == Ray::OCCLUSION)
+			r.max_t = 1.0f;
 
 		// Transformed ray differentials
 		Vec3 todx = t.dir_to(odx);

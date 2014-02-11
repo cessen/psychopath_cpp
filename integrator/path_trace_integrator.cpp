@@ -273,6 +273,7 @@ void PathTraceIntegrator::render_blocks()
 						//rays[sri].has_differentials = true;
 
 						// Ray differentials
+						// TODO: do this correctly
 						rays[sri].odx = Vec3(1,0,0) * paths[i].inter.owp();
 						rays[sri].ody = Vec3(0,1,0) * paths[i].inter.owp();
 						rays[sri].ddx = Vec3(1,0,0) * paths[i].inter.dw / d;

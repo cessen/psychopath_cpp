@@ -110,7 +110,7 @@ private:
 #endif
 		const Node& node = nodes[node_i];
 		const BBox b = lerp_seq<BBox, decltype(bboxes)::const_iterator >(ray.time, bboxes.cbegin() + node.bbox_index, node.ts);
-		return b.intersect_ray(ray, ray.d_inv, ray.d_sign, near_t, far_t);
+		return b.intersect_ray(ray, ray.d_inv, ray.d_sign, near_t, far_t, ray.max_t);
 	}
 
 	/**
