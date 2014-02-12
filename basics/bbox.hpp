@@ -121,7 +121,7 @@ struct BBox {
 	 *
 	 * @returns True if the ray hits, false if the ray misses.
 	 */
-	inline bool intersect_ray(const Ray& ray, const Vec3 d_inv, const Ray::Signs d_sign, float *hitt0, float *hitt1, float t=std::numeric_limits<float>::infinity()) const {
+	inline bool intersect_ray(const Ray& ray, float *hitt0, float *hitt1, const float t) const {
 #ifdef DEBUG
 		// Test for nan and inf
 		if (std::isnan(ray.o.x) || std::isnan(ray.o.y) || std::isnan(ray.o.z) ||
@@ -144,59 +144,34 @@ struct BBox {
 		const Vec3 *bounds = &min;
 
 		// Find slab intersections
-		const float txmin = (bounds[d_sign[0]].x - ray.o.x) * d_inv.x;
-		const float txmax = (bounds[1-d_sign[0]].x - ray.o.x) * d_inv.x;
-		const float tymin = (bounds[d_sign[1]].y - ray.o.y) * d_inv.y;
-		const float tymax = (bounds[1-d_sign[1]].y - ray.o.y) * d_inv.y;
-		const float tzmin = (bounds[d_sign[2]].z - ray.o.z) * d_inv.z;
-		const float tzmax = (bounds[1-d_sign[2]].z - ray.o.z) * d_inv.z;
-
-		// Furthest t value for valid intersections
-		const float tt = t < ray.max_t ? t : ray.max_t;
+		const float txmin = (bounds[ray.d_sign[0]].x - ray.o.x) * ray.d_inv.x;
+		const float txmax = (bounds[1-ray.d_sign[0]].x - ray.o.x) * ray.d_inv.x;
+		const float tymin = (bounds[ray.d_sign[1]].y - ray.o.y) * ray.d_inv.y;
+		const float tymax = (bounds[1-ray.d_sign[1]].y - ray.o.y) * ray.d_inv.y;
+		const float tzmin = (bounds[ray.d_sign[2]].z - ray.o.z) * ray.d_inv.z;
+		const float tzmax = (bounds[1-ray.d_sign[2]].z - ray.o.z) * ray.d_inv.z;
 
 		// Calculate tmin
 		const float tmin1 = txmin > tymin ? txmin : tymin;
 		const float tmin2 = tzmin > 0.0f ? tzmin : 0.0f;
-		const float tmin = tmin1 > tmin2 ? tmin1 : tmin2;
+		*hitt0 = tmin1 > tmin2 ? tmin1 : tmin2;
 
 		// Calculate tmax
 		const float tmax1 = txmax < tymax ? txmax : tymax;
-		const float tmax2 = tzmax < tt ? tzmax : tt;
-		const float tmax = (tmax1 < tmax2 ? tmax1 : tmax2) * BBOX_MAXT_ADJUST;
+		const float tmax2 = tzmax < t ? tzmax :t;
+		*hitt1 = (tmax1 < tmax2 ? tmax1 : tmax2) * BBOX_MAXT_ADJUST;
 
 		// Did we hit?
-		if ((tmin <= tmax) && (tmax > 0.0f)) {
-			*hitt0 = tmin;
-			*hitt1 = tmax;
-			return true;
-		} else {
-			return false;
-		}
+		return *hitt0 <= *hitt1;
 	}
 
-	inline bool intersect_ray(const Ray& ray, float *hitt0, float *hitt1, float t=std::numeric_limits<float>::infinity()) const {
-		const Vec3 d_inv = ray.get_d_inverse();
-		const Ray::Signs d_sign = ray.get_d_sign();
-
-		return intersect_ray(ray, d_inv, d_sign, hitt0, hitt1, t);
-	}
-
-
-	/**
-	 * @brief Tests a ray against the BBox.
-	 *
-	 * @param ray The ray to test against.
-	 *
-	 * @returns True if the ray hits, false if the ray misses.
-	 */
-	inline bool intersect_ray(const Ray& ray, const Vec3 d_inv, const Ray::Signs d_sign) const {
-		float hitt0, hitt1;
-		return intersect_ray(ray, d_inv, d_sign, &hitt0, &hitt1);
+	inline bool intersect_ray(const Ray& ray, float *hitt0, float *hitt1) const {
+		return intersect_ray(ray, hitt0, hitt1, ray.max_t);
 	}
 
 	inline bool intersect_ray(const Ray& ray) const {
 		float hitt0, hitt1;
-		return intersect_ray(ray, &hitt0, &hitt1);
+		return intersect_ray(ray, &hitt0, &hitt1, ray.max_t);
 	}
 
 	/**
