@@ -28,19 +28,6 @@ float lambert(Vec3 v1, Vec3 v2)
 	return f;
 }
 
-/*
- * A path tracing path.
- * Stores state of a path in progress.
- */
-struct PTPath {
-	Intersection inter = Intersection();
-	Color col {0.0f}; // Color of the sample collected so far
-	Color fcol {1.0f}; // Accumulated filter color from light path
-	Color lcol {0.0f}; // Temporary storage for incoming light color
-
-	bool done {false};
-};
-
 
 void PathTraceIntegrator::integrate()
 {
@@ -95,6 +82,166 @@ void PathTraceIntegrator::integrate()
 }
 
 
+/*
+ * Initializes the state of a path.
+ */
+void PathTraceIntegrator::init_path(PTState* pstate, const float* samps, short x, short y)
+{
+	*pstate = PTState();
+	pstate->samples = samps;
+	pstate->pix_x = x;
+	pstate->pix_y = y;
+}
+
+
+/*
+ * Calculate the next ray the path needs to shoot.
+ */
+WorldRay PathTraceIntegrator::next_ray_for_path(PTState* pstate)
+{
+	PTState& path = *pstate; // Shorthand for the passed path
+	WorldRay ray;
+
+	if (path.step == 0) {
+		// Camera ray
+		const float rx = (path.samples[0] - 0.5) * (image->max_x - image->min_x);
+		const float ry = (0.5 - path.samples[1]) * (image->max_y - image->min_y);
+		const float dx = (image->max_x - image->min_x) / image->width;
+		const float dy = (image->max_y - image->min_y) / image->height;
+		ray = scene->camera->generate_ray(rx, ry, dx, dy, path.samples[4], path.samples[2], path.samples[3]);
+		path.time = ray.time;
+
+		// Increment the sample pointer
+		path.samples += 5;
+	} else if (path.step % 2) {
+		// Shadow ray
+
+		// Select a light and store the normalization factor for it's output
+		Light& lighty = *(scene->finite_lights[(uint32_t)(path.samples[0] * scene->finite_lights.size()) % scene->finite_lights.size()]);
+
+		// Sample the light source
+		Vec3 ld;
+		path.lcol = lighty.sample(path.inter.p, path.samples[1], path.samples[2], path.time, &ld)
+		            * (float)(scene->finite_lights.size());
+
+		// Create a shadow ray for this path
+		float len = ld.length();
+		if (dot(path.inter.n.normalized(), ld.normalized()) >= 0.0f)
+			ray.o = path.inter.p + path.inter.offset;
+		else
+			ray.o = path.inter.p + (path.inter.offset * -1.0f);
+		ray.d = ld;
+		ray.time = path.time;
+		ray.type = Ray::OCCLUSION;
+
+		// Ray differentials
+		// TODO: do this correctly
+		ray.odx = Vec3(1,0,0) * path.inter.owp();
+		ray.ody = Vec3(0,1,0) * path.inter.owp();
+		ray.ddx = Vec3(1,0,0) * (path.inter.dw / len);
+		ray.ddy = Vec3(0,1,0) * (path.inter.dw / len);
+		/*
+		ray.odx = path.inter.pdx();
+		ray.ddx = ray.odx.normalized() * path.inter.ddx.length();
+		ray.ody = path.inter.pdy();
+		ray.ddy = ray.ody.normalized() * path.inter.ddy.length();
+		*/
+
+		// Increment the sample pointer
+		path.samples += 3;
+	} else {
+		// Bounce ray
+		const Vec3 nn = path.inter.n.normalized();
+		const Vec3 nns = (!path.inter.backfacing) ? nn : (nn * -1.0f); // Shading normal, flip for backfacing
+
+		// Generate a random ray direction in the hemisphere
+		// of the surface.
+		// TODO: use BxDF distribution here
+		// TODO: use proper PDF here
+		Vec3 dir = cosine_sample_hemisphere(path.samples[0], path.samples[1]);
+		float pdf = dir.z * 2;
+
+		if (pdf < 0.001)
+			pdf = 0.001;
+		dir = zup_to_vec(dir, nns);
+
+		// Calculate the color filtering effect that the
+		// bounce from the current intersection will create.
+		// TODO: use actual shaders here.
+		path.fcol *= lambert(dir, nns) / pdf;
+
+		// Create a bounce ray for this path
+		if (dot(nn, dir.normalized()) >= 0.0f)
+			ray.o = path.inter.p + path.inter.offset;
+		else
+			ray.o = path.inter.p + (path.inter.offset * -1.0f);
+		ray.d = dir;
+		ray.time = path.time;
+		ray.type = Ray::R_DIFFUSE;
+
+		// Ray differentials
+		// TODO: do this correctly
+		ray.odx = Vec3(1,0,0) * path.inter.owp();
+		ray.ody = Vec3(0,1,0) * path.inter.owp();
+		ray.ddx = Vec3(1,0,0) * 0.15;
+		ray.ddy = Vec3(0,1,0) * 0.15;
+		/*
+		ray.odx = path.inter.pdx();
+		ray.ddx = ray.odx.normalized() * path.inter.ddx.length();
+		ray.ody = path.inter.pdy();
+		ray.ddy = ray.ody.normalized() * path.inter.ddy.length();
+		*/
+
+		// Increment the sample pointer
+		path.samples += 2;
+	}
+
+	return ray;
+}
+
+
+/*
+ * Update the path based on the result of a ray shot
+ */
+void PathTraceIntegrator::update_path(PTState* pstate, const WorldRay& ray, const Intersection& inter)
+{
+	PTState& path = *pstate; // Shorthand for the passed path
+
+	if (path.step % 2) {
+		// Result of shadow ray
+		if (!inter.hit) {
+			// Sample was lit
+			// TODO: use actual shaders here
+			float lam = 0.0f;
+
+			if (path.inter.backfacing) {
+				lam = lambert(ray.d, path.inter.n * -1.0f);
+			} else {
+				lam = lambert(ray.d, path.inter.n);
+			}
+
+			path.col += path.fcol * path.lcol * lam;
+		}
+	} else {
+		// Result of bounce or camera ray
+		if (inter.hit) {
+			// Ray hit something!
+			path.inter = inter; // Store intersection data for creating shadow ray
+		} else {
+			// Ray didn't hit anything
+			path.done = true;
+			path.col += path.fcol * Color(0.0f); // Background color
+		}
+	}
+
+	path.step++;
+
+	// Has the path hit its maximum length?
+	if (path.step == (path_length * 2))
+		path.done = true;
+}
+
+
 void PathTraceIntegrator::render_blocks()
 {
 	PixelBlock pb {0,0,0,0};
@@ -107,18 +254,12 @@ void PathTraceIntegrator::render_blocks()
 	// Sample array
 	Array<float> samps;
 
-	// Coordinate array
-	Array<uint16_t> coords;
-
 	// Light path array
-	Array<PTPath> paths;
+	Array<PTState> paths;
 
 	// Ray and Intersection arrays
 	Array<WorldRay> rays;
 	Array<Intersection> intersections;
-
-	// ids corresponding to the rays
-	Array<uint32_t> ids;
 
 	// Keep rendering blocks as long as they exist in the queue
 	while (blocks.pop_blocking(&pb)) {
@@ -126,23 +267,17 @@ void PathTraceIntegrator::render_blocks()
 
 		// Resize arrays for the apropriate sample count
 		samps.resize(sample_count * samp_dim);
-		coords.resize(sample_count * 2);
 		paths.resize(sample_count);
 		rays.resize(sample_count);
 		intersections.resize(sample_count);
-		ids.resize(sample_count);
 
-		// Clear paths
-		for (auto& path: paths)
-			path = PTPath();
-
-		// Generate samples
+		// Generate samples and corresponding paths
 		int samp_i = 0;
 		for (int x = pb.x; x < (pb.x + pb.w); ++x) {
 			for (int y = pb.y; y < (pb.y + pb.h); ++y) {
 				for (int s = 0; s < spp; ++s) {
-					image_sampler.get_sample(x, y, s, samp_dim, &(samps[samp_i*samp_dim]), &(coords[samp_i*2]));
-
+					image_sampler.get_sample(x, y, s, samp_dim, &(samps[samp_i*samp_dim]));
+					init_path(paths.begin() + samp_i, samps.begin() + (samp_i*samp_dim), x, y);
 					++samp_i;
 				}
 			}
@@ -150,167 +285,34 @@ void PathTraceIntegrator::render_blocks()
 
 		uint32_t samp_size = samps.size() / samp_dim;
 
-		// Path tracing loop for the samples we have
-		for (int path_n=0; path_n < path_length; path_n++) {
-			// Size the ray buffer appropriately
-			rays.resize(samp_size);
-			intersections.resize(samp_size);
+		auto p_begin = paths.begin();
+		auto p_end = paths.end();
 
-			int32_t so = path_n * 5; // Sample offset
+		// Path tracing loop for the paths we have
+		while (p_begin != p_end) {
+			int path_count = std::distance(p_begin, p_end);
+
+			// Size the ray buffer and intersection buffers appropriately
+			rays.resize(path_count);
+			intersections.resize(path_count);
 
 			// Create path rays
-			//std::cout << "\tGenerating path rays" << std::endl;
-			if (path_n == 0) {
-				// Camera rays
-				for (uint32_t i = 0; i < sample_count; i++) {
-					float rx = (samps[i*samp_dim] - 0.5) * (image->max_x - image->min_x);
-					float ry = (0.5 - samps[i*samp_dim + 1]) * (image->max_y - image->min_y);
-					float dx = (image->max_x - image->min_x) / image->width;
-					float dy = (image->max_y - image->min_y) / image->height;
-					rays[i] = scene->camera->generate_ray(rx, ry, dx, dy, samps[i*samp_dim+4], samps[i*samp_dim+2], samps[i*samp_dim+3]);
-					ids[i] = i;
-				}
-			} else {
-				// Other path segments are bounces
-				uint32_t pri = 0; // Path ray index
-				for (uint32_t i = 0; i < samp_size; i++) {
-					if (!paths[i].done) {
-						const Vec3 nn = paths[i].inter.n.normalized();
-						const Vec3 nns = (!paths[i].inter.backfacing) ? nn : (nn * -1.0f); // Shading normal, flip for backfacing
-
-						// Generate a random ray direction in the hemisphere
-						// of the surface.
-						// TODO: use BxDF distribution here
-						// TODO: use proper PDF here
-						Vec3 dir = cosine_sample_hemisphere(samps[i*samp_dim+so], samps[i*samp_dim+so+1]);
-						float pdf = dir.z * 2;
-
-						if (pdf < 0.001)
-							pdf = 0.001;
-						dir = zup_to_vec(dir, nns);
-
-						// Calculate the color filtering effect that the
-						// bounce from the current intersection will create.
-						// TODO: use actual shaders here.
-						paths[i].fcol *= lambert(dir, nns) / pdf;
-
-						// Set the id
-						ids[pri] = i;
-
-						// Create a bounce ray for this path
-						if (dot(nn, dir.normalized()) >= 0.0f)
-							rays[pri].o = paths[i].inter.p + paths[i].inter.offset;
-						else
-							rays[pri].o = paths[i].inter.p + (paths[i].inter.offset * -1.0f);
-						rays[pri].d = dir;
-						rays[pri].time = samps[i*samp_dim+4];
-						rays[pri].type = Ray::R_DIFFUSE;
-
-						// Ray differentials
-						// TODO: do this correctly
-						rays[pri].odx = Vec3(1,0,0) * paths[i].inter.owp();
-						rays[pri].ody = Vec3(0,1,0) * paths[i].inter.owp();
-						rays[pri].ddx = Vec3(1,0,0) * 0.15;
-						rays[pri].ddy = Vec3(0,1,0) * 0.15;
-						//rays[pri].odx = paths[i].inter.pdx();
-						//rays[pri].ddx = rays[pri].odx.normalized() * paths[i].inter.ddx.length();
-						//rays[pri].ody = paths[i].inter.pdy();
-						//rays[pri].ddy = rays[pri].ody.normalized() * paths[i].inter.ddy.length();
-
-						// Increment path ray index
-						pri++;
-					}
-				}
-				rays.resize(pri);
+			for (int i = 0; i < path_count; ++i) {
+				rays[i] = next_ray_for_path(p_begin+i);
 			}
 
-
-			// Trace the rays
-			intersections.resize(rays.size());
+			// Trace rays
 			tracer.trace(Slice<WorldRay>(rays), Slice<Intersection>(intersections));
 
-			// Update paths
-			for (uint32_t i = 0; i < rays.size(); i++) {
-				const uint32_t id = ids[i];
-				if (intersections[i].hit) {
-					// Ray hit something!  Store intersection data
-					paths[id].inter = intersections[i];
-					//paths[id].fcol *= intersections[i].col;
-				} else {
-					// Ray didn't hit anything, done and black background
-					paths[id].done = true;
-					paths[id].col += Color(0.0f);
-				}
+			// Update paths based on result
+			for (int i = 0; i < path_count; ++i) {
+				update_path(p_begin+i, rays[i], intersections[i]);
 			}
 
-
-			// Generate a bunch of shadow rays
-			if (scene->finite_lights.size() > 0) {
-				//std::cout << "\tGenerating shadow rays" << std::endl;
-				uint32_t sri = 0; // Shadow ray index
-				for (uint32_t i = 0; i < paths.size(); i++) {
-					if (!paths[i].done) {
-						// Select a light and store the normalization factor for it's output
-						Light& lighty = *(scene->finite_lights[(uint32_t)(samps[i*samp_dim+5+so+2] * scene->finite_lights.size()) % scene->finite_lights.size()]);
-						//Light *lighty = scene->finite_lights[rng.next_uint() % scene->finite_lights.size()];
-
-						// Sample the light source
-						Vec3 ld;
-						paths[i].lcol = lighty.sample(paths[i].inter.p, samps[i*samp_dim+5+so+3], samps[i*samp_dim+5+so+4], samps[i*samp_dim+4], &ld)
-						                * (float)(scene->finite_lights.size());
-						//paths[i].lcol = lighty.sample(paths[i].inter.p, 0.0f, 0.0f, samps[i*samp_dim+4], &ld)
-						//                * (float)(scene->finite_lights.size());
-
-						// Create a shadow ray for this path
-						float d = ld.length();
-						if (dot(paths[i].inter.n.normalized(), ld) >= 0.0f)
-							rays[sri].o = paths[i].inter.p + paths[i].inter.offset;
-						else
-							rays[sri].o = paths[i].inter.p + (paths[i].inter.offset * -1.0f);
-						rays[sri].d = ld;
-						rays[sri].time = samps[i*samp_dim+4];
-						rays[sri].type = Ray::OCCLUSION;
-						//rays[sri].has_differentials = true;
-
-						// Ray differentials
-						// TODO: do this correctly
-						rays[sri].odx = Vec3(1,0,0) * paths[i].inter.owp();
-						rays[sri].ody = Vec3(0,1,0) * paths[i].inter.owp();
-						rays[sri].ddx = Vec3(1,0,0) * paths[i].inter.dw / d;
-						rays[sri].ddy = Vec3(0,1,0) * paths[i].inter.dw / d;
-						//rays[sri].odx = paths[i].inter.pdx();
-						//rays[sri].ddx = rays[sri].odx.normalized() * paths[i].inter.ddx.length();
-						//rays[sri].ody = paths[i].inter.pdy();
-						//rays[sri].ddy = rays[sri].ody.normalized() * paths[i].inter.ddy.length();
-
-						ids[sri] = i;
-
-						sri++;
-					}
-				}
-				rays.resize(sri);
-
-
-				// Trace the shadow rays
-				intersections.resize(rays.size());
-				tracer.trace(Slice<WorldRay>(rays), Slice<Intersection>(intersections));
-
-
-				// Calculate sample colors
-				for (uint32_t i = 0; i < rays.size(); i++) {
-					const uint32_t id = ids[i];
-					if (!intersections[i].hit) {
-						// Sample was lit
-						// TODO: use actual shaders here
-						float lam = 0.0f;
-						if (paths[id].inter.backfacing)
-							lam = lambert(rays[i].d, paths[id].inter.n * -1.0f);
-						else
-							lam = lambert(rays[i].d, paths[id].inter.n);
-						paths[id].col += paths[id].fcol * paths[id].lcol * lam;
-					}
-				}
-			}
+			// Partition paths based on which ones are active
+			p_begin = std::partition(p_begin, p_end, [this](const PTState& path) {
+				return path.done;
+			});
 		}
 
 
@@ -318,7 +320,7 @@ void PathTraceIntegrator::render_blocks()
 			// Accumulate the samples
 			image_mut.lock();
 			for (uint32_t i = 0; i < samp_size; i++) {
-				image->add_sample(paths[i].col, coords[i*2], coords[i*2+1]);
+				image->add_sample(paths[i].col, paths[i].pix_x, paths[i].pix_y);
 			}
 
 			// Callback

@@ -126,7 +126,7 @@ struct BBox {
 		// Test for nan and inf
 		if (std::isnan(ray.o.x) || std::isnan(ray.o.y) || std::isnan(ray.o.z) ||
 		        std::isnan(ray.d.x) || std::isnan(ray.d.y) || std::isnan(ray.d.z) ||
-		        std::isnan(d_inv.x) || std::isnan(d_inv.y) || std::isnan(d_inv.z) ||
+		        std::isnan(ray.d_inv.x) || std::isnan(ray.d_inv.y) || std::isnan(ray.d_inv.z) ||
 		        std::isnan(min.x) || std::isnan(min.y) || std::isnan(min.z) ||
 		        std::isnan(max.x) || std::isnan(max.y) || std::isnan(max.z)) {
 			std::cout << "NaN found!" << std::endl;

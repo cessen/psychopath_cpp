@@ -8,9 +8,9 @@ bool no_output = false; // Suppress writing the image to disk, for better timing
 float dice_rate = 0.5; // 0.7 is about half pixel area
 float min_upoly_size = 0.001; // Approximate minimum micropolygon size in world space
 uint8_t max_grid_size = 64;
-float grid_cache_size = 256.0; // In MB
+float grid_cache_size = 64.0; // In MB
 
-int samples_per_bucket = 1 << 18; // The number of samples to aim to take per-bucket (used in auto-sizing buckets)
+int samples_per_bucket = 1 << 16; // The number of samples to aim to take per-bucket (used in auto-sizing buckets)
 
 float displace_distance = 0.00f;
 }

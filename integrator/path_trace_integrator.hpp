@@ -42,12 +42,37 @@ class PathTraceIntegrator: Integrator
 		int w, h;
 	};
 
+	/*
+	 * A path tracing path state.
+	 * Stores state of a path in progress.
+	 */
+	struct PTState {
+		const float *samples = nullptr;
+		float time;
+		int step = 0;
+		short pix_x, pix_y;  // Pixel coordinates of the path
+		Intersection inter = Intersection();
+		Color col {0.0f}; // Color of the sample collected so far
+		Color fcol {1.0f}; // Accumulated filter color from light path
+		Color lcol {0.0f}; // Temporary storage for incoming light color
+
+		bool done {false};
+	};
+
+	void init_path(PTState* pstate, const float* samps, short x, short y);
+	WorldRay next_ray_for_path(PTState* pstate);
+	void update_path(PTState* pstate, const WorldRay& ray, const Intersection& inter);
+
+
+
 	size_t total_items = 0;
 	size_t completed_items = 0;
 	SpinLock progress_lock;
 	void print_progress() {
 		std::cout << "\rRendering: " << std::fixed << std::setprecision(2) << (float(completed_items) / total_items) * 100 << "%" << std::flush;
 	}
+
+
 
 public:
 	Scene *scene;

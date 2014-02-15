@@ -1,10 +1,10 @@
 - Ray stream tracing:
-	- Break acceleration structures (e.g. BVH) into two separate pieces:
-		- The builder -- builds and holds the acceleration structures
-		- The traverser -- traverses the acceleration structures
-	- This will allow multiple different traversal methods to be implemented
-	  for each acceleration structure, with consistent interfaces depending
-	  on the method.
+	- Optimizations...
+
+- Path Tracing code:
+	- Separate the path tracing code from the ray tracing loop.  have
+	  each path maintain a state, and have functions that move that
+	  state along and produce rays from that state.
 
 - Implement transforms and instancing:
 	- This will be easiest in the context of breadth-first ray tracing.  So
