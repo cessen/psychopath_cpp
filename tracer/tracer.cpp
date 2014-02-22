@@ -129,7 +129,9 @@ void Tracer::trace_diceable_surface(DiceableSurfacePrimitive* prim, Ray* rays, R
 
 					// Test against the ray
 					inter.hit |= micro_surface->intersect_ray(ray, width, &inter);
-					ray.max_t = inter.t;
+					if (inter.hit && ray.type != Ray::OCCLUSION) {
+						ray.max_t = inter.t;
+					}
 				}
 				// If it's over the max subdivisions allowed, mark for deeper traversal
 				else {
