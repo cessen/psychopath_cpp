@@ -183,12 +183,6 @@ public:
 	virtual std::tuple<Ray*, Ray*, Primitive*> next_primitive();
 
 private:
-	enum {
-	    HIT = 1 << 0,
-	    DONE = 1 << 1,
-	    MISC = 1 << 2
-	};
-
 	const BVH* bvh = nullptr;
 	const WorldRay* w_rays = nullptr;
 	const WorldRay* w_rays_end = nullptr;

@@ -70,6 +70,17 @@ struct Ray {
 	    OCCLUSION  = 1 << 5
 	};
 
+	enum {
+	    DONE = 1 << 0, // Indicates the ray is fully processed and can be ignored for any further traversal or testing
+	    TRAV_HIT = 1 << 1, // For accel traversal, indicates a ray hit a node
+	    DEEPER_SPLIT = 1 << 2, // For traversing splittable surfaces
+	    MISC5 = 1 << 3,
+	    MISC4 = 1 << 4,
+	    MISC3 = 1 << 5,
+	    MISC2 = 1 << 6,
+	    MISC1 = 1 << 7
+	};
+
 	// Local-space values
 	Vec3 o, d; // Origin and direction
 	Vec3 d_inv; // 1.0 / d
@@ -102,6 +113,7 @@ struct Ray {
 	  time {time_},
 	  max_t {std::numeric_limits<float>::infinity()},
 	  type {NONE},
+	  flags {0},
 	  id {0}
 	{}
 

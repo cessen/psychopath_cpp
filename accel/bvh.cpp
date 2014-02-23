@@ -344,14 +344,14 @@ std::tuple<Ray*, Ray*, Primitive*> BVHStreamTraverser::next_primitive()
 			const bool hit = bvh->intersect_node(node_stack[stack_ptr], *itr, &near_t, &far_t);
 
 			if (hit)
-				itr->flags |= HIT;
+				itr->flags |= Ray::TRAV_HIT;
 			else
-				itr->flags &= ~HIT;
+				itr->flags &= ~Ray::TRAV_HIT;
 		}
 
 		// Partition rays into rays that hit and didn't hit
 		ray_stack[stack_ptr].first = std::partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [this](const Ray& r) {
-			return (r.flags & HIT) == 0;
+			return ((r.flags & Ray::TRAV_HIT) == 0) || ((r.flags & Ray::DONE) != 0);
 		});
 
 		// If none of the rays hit

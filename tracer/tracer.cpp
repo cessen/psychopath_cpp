@@ -58,11 +58,6 @@ uint32_t Tracer::trace(const Slice<WorldRay> w_rays_, Slice<Intersection> inters
 void Tracer::trace_diceable_surface(DiceableSurfacePrimitive* prim, Ray* rays, Ray* end)
 {
 #define STACK_SIZE 32
-	enum {
-	    HIT = 1 << 0,
-	    DONE = 1 << 1,
-	    MISC = 1 << 2
-	};
 
 	using namespace MicroSurfaceCache;
 	int split_count = 0;
@@ -103,7 +98,7 @@ void Tracer::trace_diceable_surface(DiceableSurfacePrimitive* prim, Ray* rays, R
 		// if they can't be directly tested
 		for (auto ritr = ray_starts[stack_i]; ritr != ray_ends[stack_i]; ++ritr) {
 			// Setup
-			ritr->flags &= ~MISC; // No traversing deeper by default
+			ritr->flags &= ~Ray::DEEPER_SPLIT; // No traversing deeper by default
 			Ray& ray = *ritr;  // Shorthand reference to potint's ray
 			Intersection& inter = intersections[ritr->id]; // Shorthand reference to potint's intersection
 
@@ -129,13 +124,17 @@ void Tracer::trace_diceable_surface(DiceableSurfacePrimitive* prim, Ray* rays, R
 
 					// Test against the ray
 					inter.hit |= micro_surface->intersect_ray(ray, width, &inter);
-					if (inter.hit && ray.type != Ray::OCCLUSION) {
-						ray.max_t = inter.t;
+					if (inter.hit) {
+						if (ray.type == Ray::OCCLUSION) {
+							ray.flags |= Ray::DONE; // Early out for shadow rays
+						} else {
+							ray.max_t = inter.t;
+						}
 					}
 				}
 				// If it's over the max subdivisions allowed, mark for deeper traversal
 				else {
-					ray.flags |= MISC;
+					ray.flags |= Ray::DEEPER_SPLIT;
 				}
 			}
 		} // End test potints
@@ -146,7 +145,7 @@ void Tracer::trace_diceable_surface(DiceableSurfacePrimitive* prim, Ray* rays, R
 
 		// Filter potints based on whether they need deeper traversal
 		ray_starts[stack_i] = std::partition(ray_starts[stack_i], ray_ends[stack_i], [this](const Ray& r) {
-			return (r.flags & MISC) == 0;
+			return ((r.flags & Ray::DEEPER_SPLIT) == 0) || ((r.flags & Ray::DONE) != 0);
 		});
 
 		// If any potints left, traverse down the stack via splitting
