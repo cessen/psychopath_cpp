@@ -105,7 +105,7 @@ size_t BVH::split_primitives(size_t first_prim, size_t last_prim)
 #else
 
 /* SAH-based split */
-uint32_t BVH::split_primitives(size_t first_prim, size_t last_prim)
+size_t BVH::split_primitives(size_t first_prim, size_t last_prim)
 {
 	uint32_t split;
 
@@ -219,9 +219,9 @@ uint32_t BVH::split_primitives(size_t first_prim, size_t last_prim)
 			}
 
 
-			cost_x[i] = (b0_x.surface_area() / log2(count0_x)) + (b1_x.surface_area() / log2(count1_x));
-			cost_y[i] = (b0_y.surface_area() / log2(count0_y)) + (b1_y.surface_area() / log2(count1_y));
-			cost_z[i] = (b0_z.surface_area() / log2(count0_z)) + (b1_z.surface_area() / log2(count1_z));
+			cost_x[i] = (b0_x.surface_area() / fastlog2(count0_x)) + (b1_x.surface_area() / fastlog2(count1_x));
+			cost_y[i] = (b0_y.surface_area() / fastlog2(count0_y)) + (b1_y.surface_area() / fastlog2(count1_y));
+			cost_z[i] = (b0_z.surface_area() / fastlog2(count0_z)) + (b1_z.surface_area() / fastlog2(count1_z));
 		}
 
 		// Find the most efficient split
