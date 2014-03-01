@@ -1,11 +1,6 @@
 - Ray stream tracing:
 	- Optimizations...
 
-- Path Tracing code:
-	- Separate the path tracing code from the ray tracing loop.  have
-	  each path maintain a state, and have functions that move that
-	  state along and produce rays from that state.
-
 - Implement transforms and instancing:
 	- This will be easiest in the context of breadth-first ray tracing.  So
 	  change top-level traversal to use ray stream tracing of some kind.  This
