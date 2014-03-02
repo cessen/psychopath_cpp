@@ -7,7 +7,7 @@
 #include <vector>
 #include "vector.hpp"
 #include "grid.hpp"
-#include "primitive.hpp"
+#include "object.hpp"
 #include "timebox.hpp"
 
 /*
@@ -19,7 +19,7 @@
  * | v4----v3
  * \/
  */
-class Bilinear: public DiceableSurfacePrimitive
+class Bilinear: public DiceableSurface
 {
 public:
 	std::vector<std::array<Vec3, 4>> verts;
@@ -41,8 +41,8 @@ public:
 
 	virtual BBoxT &bounds();
 
-	virtual int split(std::unique_ptr<DiceableSurfacePrimitive> primitives[]);
-	virtual std::unique_ptr<DiceableSurfacePrimitive> copy();
+	virtual int split(std::unique_ptr<DiceableSurface> objects[]);
+	virtual std::unique_ptr<DiceableSurface> copy();
 	virtual size_t subdiv_estimate(float width) const;
 	virtual std::shared_ptr<MicroSurface> dice(size_t subdivisions);
 };

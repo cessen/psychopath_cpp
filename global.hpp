@@ -8,7 +8,7 @@
 
 namespace Global
 {
-extern std::atomic<size_t> next_primitive_uid;
+extern std::atomic<size_t> next_object_uid;
 
 namespace Stats
 {
@@ -19,7 +19,7 @@ extern std::atomic<uint64_t> microelement_count;
 extern std::atomic<uint64_t> microelement_min_count;
 extern std::atomic<uint64_t> microelement_max_count;
 extern std::atomic<uint64_t> cache_misses;
-extern std::atomic<size_t> primitive_ray_tests;
+extern std::atomic<size_t> object_ray_tests;
 extern std::atomic<size_t> top_level_bvh_node_tests;
 
 extern std::atomic<uint64_t> nan_count;
@@ -34,7 +34,7 @@ static void clear()
 	microelement_min_count = 99999999999999;
 	microelement_max_count = 0;
 	cache_misses = 0;
-	primitive_ray_tests = 0;
+	object_ray_tests = 0;
 	top_level_bvh_node_tests = 0;
 
 	nan_count = 0;

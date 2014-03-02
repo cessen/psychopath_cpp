@@ -8,7 +8,7 @@
 #include <iostream>
 #include <vector>
 #include <memory>
-#include "primitive.hpp"
+#include "object.hpp"
 #include "accel.hpp"
 #include "ray.hpp"
 #include "bbox.hpp"
@@ -28,7 +28,7 @@ class BVH: public Accel
 {
 public:
 	virtual ~BVH() {};
-	virtual void build(std::vector<std::unique_ptr<Primitive>>* primitives);
+	virtual void build(std::vector<std::unique_ptr<Object>>* objects);
 
 	// Traversers need access to private data
 	friend class BVHStreamTraverser;
@@ -48,7 +48,7 @@ public:
 		size_t bbox_index = 0;
 		union {
 			size_t child_index;
-			Primitive *data = nullptr;
+			Object *data = nullptr;
 		};
 		size_t parent_index = 0;
 		uint16_t ts = 0; // Time sample count
@@ -64,23 +64,23 @@ public:
 	};
 
 	/*
-	 * Used to store primitives that have yet to be
+	 * Used to store objects that have yet to be
 	 * inserted into the hierarchy.
-	 * Contains the time 0.5 bounds of the primitive and it's centroid.
+	 * Contains the time 0.5 bounds of the object and it's centroid.
 	 */
 	struct BVHPrimitive {
-		Primitive *data;
+		Object *data;
 		Vec3 bmin, bmax, c;
 
 		BVHPrimitive() {
 			data = nullptr;
 		}
 
-		BVHPrimitive(Primitive *prim) {
+		BVHPrimitive(Object *prim) {
 			init(prim);
 		}
 
-		void init(Primitive *prim) {
+		void init(Object *prim) {
 			data = prim;
 
 			// Get bounds at time 0.5
@@ -97,7 +97,7 @@ private:
 	BBoxT bbox;
 	std::vector<Node> nodes;
 	std::vector<BBox> bboxes;
-	std::vector<BVHPrimitive> bag;  // Temporary holding spot for primitives not yet added to the hierarchy
+	std::vector<BVHPrimitive> bag;  // Temporary holding spot for objects not yet added to the hierarchy
 
 	bool finalize();
 
@@ -168,7 +168,7 @@ public:
 		w_rays_end = end;
 		rays.resize(std::distance(begin, end));
 
-		for (int i = 0; i < rays.size(); ++i) {
+		for (size_t i = 0; i < rays.size(); ++i) {
 			rays[i] = w_rays[i].to_ray();
 			rays[i].id = i;
 		}
@@ -180,7 +180,7 @@ public:
 		ray_stack[0].second = rays.end();
 	}
 
-	virtual std::tuple<Ray*, Ray*, Primitive*> next_primitive();
+	virtual std::tuple<Ray*, Ray*, Object*> next_object();
 
 private:
 	const BVH* bvh = nullptr;

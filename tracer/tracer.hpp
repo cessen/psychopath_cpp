@@ -63,7 +63,7 @@ public:
 	uint32_t trace(const Slice<WorldRay> w_rays_, Slice<Intersection> intersections_);
 
 
-	void trace_diceable_surface(DiceableSurfacePrimitive* prim, Ray* rays, Ray* end);
+	void trace_diceable_surface(DiceableSurface* prim, Ray* rays, Ray* end);
 };
 
 #endif // TRACER_HPP

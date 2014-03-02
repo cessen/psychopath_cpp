@@ -107,12 +107,12 @@ std::unique_ptr<Renderer> Parser::parse_next_frame()
 			// Parse a bilinear patch
 			//std::cout << "Found BilinearPatch" << std::endl;
 			ungetline(psy_file);
-			scene->add_primitive(parse_bilinear_patch());
+			scene->add_object(parse_bilinear_patch());
 		} else if (line.find("BicubicPatch") == 0) {
 			// Parse a bicubic patch
 			//std::cout << "Found BicubicPatch" << std::endl;
 			ungetline(psy_file);
-			scene->add_primitive(parse_bicubic_patch());
+			scene->add_object(parse_bicubic_patch());
 		} else if (line.find("SphereLight") == 0) {
 			// Parse a spherical light
 			//std::cout << "Found SphereLight" << std::endl;

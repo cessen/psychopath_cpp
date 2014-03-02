@@ -110,7 +110,7 @@ include_directories ("${PROJECT_BINARY_DIR}",
                      "${PROJECT_SOURCE_DIR}/lights",
                      "${PROJECT_SOURCE_DIR}/math",
                      "${PROJECT_SOURCE_DIR}/parser",
-                     "${PROJECT_SOURCE_DIR}/primitives",
+                     "${PROJECT_SOURCE_DIR}/object",
                      "${PROJECT_SOURCE_DIR}/film",
                      "${PROJECT_SOURCE_DIR}/renderer",
                      "${PROJECT_SOURCE_DIR}/sampling",
@@ -129,7 +129,7 @@ add_subdirectory(basics)
 add_subdirectory(micro_surface)
 add_subdirectory(integrator)
 add_subdirectory(math)
-add_subdirectory(primitives)
+add_subdirectory(object)
 add_subdirectory(parser)
 add_subdirectory(renderer)
 add_subdirectory(sampling)
@@ -147,7 +147,7 @@ set (PSYCHO_LIB
 	tracer
 	sampling
 	parser
-	primitives
+	object
 	basics
 	micro_surface
 	accel

@@ -80,7 +80,7 @@ BBoxT &Bilinear::bounds()
 }
 
 
-int Bilinear::split(std::unique_ptr<DiceableSurfacePrimitive> primitives[])
+int Bilinear::split(std::unique_ptr<DiceableSurface> objects[])
 {
 	auto patch1 = new Bilinear();
 	auto patch2 = new Bilinear();
@@ -141,13 +141,13 @@ int Bilinear::split(std::unique_ptr<DiceableSurfacePrimitive> primitives[])
 	patch1->finalize();
 	patch2->finalize();
 
-	primitives[0] = std::unique_ptr<DiceableSurfacePrimitive>(patch1);
-	primitives[1] = std::unique_ptr<DiceableSurfacePrimitive>(patch2);
+	objects[0] = std::unique_ptr<DiceableSurface>(patch1);
+	objects[1] = std::unique_ptr<DiceableSurface>(patch2);
 
 	return 2;
 }
 
-std::unique_ptr<DiceableSurfacePrimitive> Bilinear::copy()
+std::unique_ptr<DiceableSurface> Bilinear::copy()
 {
 	auto patch = new Bilinear();
 
@@ -166,7 +166,7 @@ std::unique_ptr<DiceableSurfacePrimitive> Bilinear::copy()
 	patch->longest_v = longest_v;
 	patch->log_widest = log_widest;
 
-	return std::unique_ptr<DiceableSurfacePrimitive>(patch);
+	return std::unique_ptr<DiceableSurface>(patch);
 }
 
 

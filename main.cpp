@@ -19,10 +19,6 @@
 #include "transform.hpp"
 #include "camera.hpp"
 
-#include "primitive.hpp"
-#include "bilinear.hpp"
-#include "sphere.hpp"
-
 #include "light.hpp"
 #include "point_light.hpp"
 #include "sphere_light.hpp"

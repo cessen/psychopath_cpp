@@ -1,2 +1,2 @@
-add_library(primitives
+add_library(object
             bilinear bicubic sphere)

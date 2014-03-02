@@ -5,7 +5,7 @@
 
 #include <vector>
 #include "vector.hpp"
-#include "primitive.hpp"
+#include "object.hpp"
 #include "timebox.hpp"
 
 /**
@@ -13,7 +13,7 @@
  *
  * This serves as a simple example of how to implement a surface primitive.
  */
-class Sphere: public SurfacePrimitive
+class Sphere: public Surface
 {
 public:
 	TimeBox<Vec3> center;
@@ -31,12 +31,6 @@ public:
 
 	virtual bool intersect_ray(const Ray &ray, Intersection *intersection=nullptr);
 	virtual BBoxT &bounds();
-	bool is_traceable() {
-		return true;
-	}
-	virtual void refine(std::vector<Primitive *> &primitives) {
-		return;
-	}
 };
 
 #endif

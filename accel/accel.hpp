@@ -3,6 +3,7 @@
 
 #include "numtype.h"
 #include "ray.hpp"
+#include "object.hpp"
 
 #include <vector>
 #include <tuple>
@@ -21,13 +22,13 @@ public:
 	virtual ~Accel() {}
 
 	/**
-	 * @brief Builds the acceleration structure from the given primitives.
+	 * @brief Builds the acceleration structure from the given objects.
 	 *
-	 * Note that the Accel does not own the passed primitives (even though
+	 * Note that the Accel does not own the passed objects (even though
 	 * it takes a pointer to a vector of unique_ptr's), and will not free
 	 * them.  Their memory needs to be managed elsewhere (e.g. by the Scene).
 	 */
-	virtual void build(std::vector<std::unique_ptr<Primitive>>* primitives) = 0;
+	virtual void build(std::vector<std::unique_ptr<Object>>* objects) = 0;
 };
 
 
@@ -59,15 +60,15 @@ public:
 	virtual void init_rays(const WorldRay* begin, const WorldRay* end) = 0;
 
 	/**
-	 * @brief Traverses to the next relevant primitive.
+	 * @brief Traverses to the next relevant object.
 	 *
 	 * Returns a tuple with a pair of iterators to the begin and end of the relevant
-	 * Rays, and a pointer to the primitive they need to be tested against.
+	 * Rays, and a pointer to the object they need to be tested against.
 	 *
-	 * When traversal is complete, begin == end and primitive == nullptr.
+	 * When traversal is complete, begin == end and object == nullptr.
 	 */
-	virtual std::tuple<Ray*, Ray*, Primitive*>
-	next_primitive() = 0;
+	virtual std::tuple<Ray*, Ray*, Object*>
+	next_object() = 0;
 };
 
 #endif // ACCEL_HPP

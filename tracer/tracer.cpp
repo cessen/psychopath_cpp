@@ -43,11 +43,11 @@ uint32_t Tracer::trace(const Slice<WorldRay> w_rays_, Slice<Intersection> inters
 	traverser.init_rays(w_rays.begin(), w_rays.end());
 
 	// Trace potential intersections
-	auto hits = traverser.next_primitive();
+	auto hits = traverser.next_object();
 	while (std::get<2>(hits) != nullptr) {
-		trace_diceable_surface(reinterpret_cast<DiceableSurfacePrimitive*>(std::get<2>(hits)), std::get<0>(hits), std::get<1>(hits));
+		trace_diceable_surface(reinterpret_cast<DiceableSurface*>(std::get<2>(hits)), std::get<0>(hits), std::get<1>(hits));
 
-		hits = traverser.next_primitive();
+		hits = traverser.next_object();
 	}
 
 	return w_rays.size();
@@ -55,7 +55,7 @@ uint32_t Tracer::trace(const Slice<WorldRay> w_rays_, Slice<Intersection> inters
 
 
 
-void Tracer::trace_diceable_surface(DiceableSurfacePrimitive* prim, Ray* rays, Ray* end)
+void Tracer::trace_diceable_surface(DiceableSurface* prim, Ray* rays, Ray* end)
 {
 #define STACK_SIZE 32
 
@@ -70,7 +70,7 @@ void Tracer::trace_diceable_surface(DiceableSurfacePrimitive* prim, Ray* rays, R
 	uid2_stack[0] = 1;
 
 	// Stack
-	std::unique_ptr<DiceableSurfacePrimitive> primitive_stack[STACK_SIZE];
+	std::unique_ptr<DiceableSurface> primitive_stack[STACK_SIZE];
 	primitive_stack[0] = prim->copy();
 	int stack_i = 0;
 
@@ -83,7 +83,7 @@ void Tracer::trace_diceable_surface(DiceableSurfacePrimitive* prim, Ray* rays, R
 
 	// Traversal
 	while (stack_i >= 0) {
-		DiceableSurfacePrimitive& primitive = *(primitive_stack[stack_i]); // Shorthand reference to potint's primitive
+		DiceableSurface& primitive = *(primitive_stack[stack_i]); // Shorthand reference to potint's primitive
 
 		// Fetch the current primitive's microgeo cache if it exists
 		std::shared_ptr<MicroSurface> micro_surface = cache.get(Key(uid1, uid2_stack[stack_i]));
@@ -151,7 +151,7 @@ void Tracer::trace_diceable_surface(DiceableSurfacePrimitive* prim, Ray* rays, R
 		// If any potints left, traverse down the stack via splitting
 		if (ray_starts[stack_i] != ray_ends[stack_i]) {
 			++split_count;
-			std::unique_ptr<DiceableSurfacePrimitive> new_prims[4];
+			std::unique_ptr<DiceableSurface> new_prims[4];
 
 			// Split the primitive
 			const int new_count = primitive.split(new_prims);

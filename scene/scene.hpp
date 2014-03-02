@@ -13,7 +13,7 @@
 #include "global.hpp"
 #include "camera.hpp"
 #include "bvh.hpp"
-#include "primitive.hpp"
+#include "object.hpp"
 #include "light.hpp"
 
 /**
@@ -22,24 +22,21 @@
  * The Scene class is used to build and store the complete description of a 3d
  * scene to be rendered.
  *
- * The scene is built via the various methods to add primitives, lights, and
+ * The scene is built via the various methods to add objects, lights, and
  * shaders.  It must be finalized (which initializes important acceleration
  * structures, etc.) before being passed off for rendering.
  */
 struct Scene {
 	std::unique_ptr<Camera> camera;
-	std::vector<std::unique_ptr<Primitive>> primitives;
+	std::vector<std::unique_ptr<Object>> objects;
 	std::vector<std::unique_ptr<Light>> finite_lights;
 	BVH world;
 
 	Scene() {}
 
-
-
-
-	void add_primitive(std::unique_ptr<Primitive>&& primitive) {
-		primitives.push_back(std::move(primitive));
-		primitives.back()->uid = ++Global::next_primitive_uid;
+	void add_object(std::unique_ptr<Object>&& object) {
+		objects.push_back(std::move(object));
+		objects.back()->uid = ++Global::next_object_uid;
 	}
 
 	void add_finite_light(std::unique_ptr<Light>&& light) {
@@ -48,7 +45,7 @@ struct Scene {
 
 	// Finalizes the scene for rendering
 	void finalize() {
-		world.build(&primitives);
+		world.build(&objects);
 	}
 };
 

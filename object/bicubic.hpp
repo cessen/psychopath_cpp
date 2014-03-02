@@ -8,7 +8,7 @@
 #include <array>
 #include "vector.hpp"
 #include "grid.hpp"
-#include "primitive.hpp"
+#include "object.hpp"
 
 /*
  * A bicubic bezier patch.
@@ -22,7 +22,7 @@
  *    |     |     |     |
  *   v13---v14---v15---v16
  */
-class Bicubic: public DiceableSurfacePrimitive
+class Bicubic: public DiceableSurface
 {
 public:
 	std::vector<std::array<Vec3, 16>> verts;
@@ -49,8 +49,8 @@ public:
 
 	virtual BBoxT &bounds();
 
-	virtual int split(std::unique_ptr<DiceableSurfacePrimitive> primitives[]);
-	virtual std::unique_ptr<DiceableSurfacePrimitive> copy();
+	virtual int split(std::unique_ptr<DiceableSurface> objects[]);
+	virtual std::unique_ptr<DiceableSurface> copy();
 	virtual size_t subdiv_estimate(float width) const;
 	virtual std::shared_ptr<MicroSurface> dice(size_t subdivisions);
 };

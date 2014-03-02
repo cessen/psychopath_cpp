@@ -8,13 +8,13 @@
 #include <cmath>
 
 
-void BVH::build(std::vector<std::unique_ptr<Primitive>>* primitives)
+void BVH::build(std::vector<std::unique_ptr<Object>>* objects)
 {
 	size_t start = bag.size();
-	size_t added = primitives->size();
+	size_t added = objects->size();
 	bag.reserve(start + added);
 
-	for (auto& p: *primitives)
+	for (auto& p: *objects)
 		bag.push_back(BVHPrimitive(p.get()));
 
 	finalize();
@@ -334,7 +334,7 @@ size_t BVH::recursive_build(size_t parent, size_t first_prim, size_t last_prim)
 }
 
 
-std::tuple<Ray*, Ray*, Primitive*> BVHStreamTraverser::next_primitive()
+std::tuple<Ray*, Ray*, Object*> BVHStreamTraverser::next_object()
 {
 	float near_t, far_t;
 

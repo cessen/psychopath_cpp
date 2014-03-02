@@ -131,7 +131,7 @@ BBoxT &Bicubic::bounds()
 }
 
 
-int Bicubic::split(std::unique_ptr<DiceableSurfacePrimitive> primitives[])
+int Bicubic::split(std::unique_ptr<DiceableSurface> objects[])
 {
 	auto patch1 = new Bicubic();
 	auto patch2 = new Bicubic();
@@ -291,13 +291,13 @@ int Bicubic::split(std::unique_ptr<DiceableSurfacePrimitive> primitives[])
 	patch1->finalize();
 	patch2->finalize();
 
-	primitives[0] = std::unique_ptr<DiceableSurfacePrimitive>(patch1);
-	primitives[1] = std::unique_ptr<DiceableSurfacePrimitive>(patch2);
+	objects[0] = std::unique_ptr<DiceableSurface>(patch1);
+	objects[1] = std::unique_ptr<DiceableSurface>(patch2);
 
 	return 2;
 }
 
-std::unique_ptr<DiceableSurfacePrimitive> Bicubic::copy()
+std::unique_ptr<DiceableSurface> Bicubic::copy()
 {
 	auto patch = new Bicubic();
 
@@ -316,7 +316,7 @@ std::unique_ptr<DiceableSurfacePrimitive> Bicubic::copy()
 	patch->longest_v = longest_v;
 	patch->log_widest = log_widest;
 
-	return std::unique_ptr<DiceableSurfacePrimitive>(patch);
+	return std::unique_ptr<DiceableSurface>(patch);
 }
 
 
