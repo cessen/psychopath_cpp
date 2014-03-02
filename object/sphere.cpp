@@ -57,8 +57,6 @@ void Sphere::add_time_sample(int samp, Vec3 center_, float radius_)
 
 bool Sphere::intersect_ray(const Ray &ray, Intersection *intersection)
 {
-	Global::Stats::object_ray_tests++;
-
 	// Get the center and radius of the sphere at the ray's time
 	int ia, ib;
 	float alpha;
@@ -135,21 +133,18 @@ bool Sphere::intersect_ray(const Ray &ray, Intersection *intersection)
 		return false;
 	}
 
-	// If we have an intersection struct
-	if (intersection) {
-		// Check out intersection for validity against this ray's previous
-		// intersection.
-		if (t > intersection->t)
-			return false;
-
+	if (intersection && !(ray.type == Ray::OCCLUSION)) {
 		intersection->p = ray.o + (ray.d * t);
+		intersection->t = t;
 		intersection->n = intersection->p - cent;
 		intersection->n.normalize();
 		intersection->in = ray.d;
-		intersection->t = t;
+		intersection->ow = ray.ow;
+		intersection->dw = ray.dw;
+
 		intersection->offset = Vec3(0.0f, 0.0f, 0.0f);
 
-		intersection->col = Color((intersection->n.x+1.0)/2, (intersection->n.y+1.0)/2, (intersection->n.z+1.0)/2);
+		intersection->col = Color(0.8, 0.8, 0.8);
 	}
 
 	return true;

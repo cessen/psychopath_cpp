@@ -143,9 +143,6 @@ bool MicroSurface::intersect_ray(const Ray &ray, float ray_width, Intersection *
 
 	// Calculate intersection data
 	if (hit && !(ray.type == Ray::OCCLUSION)) {
-		if (t >= inter->t)
-			return false;
-
 		// Calculate time indices and alpha
 		uint32_t t_i = 0;
 		float t_alpha = 0.0f;

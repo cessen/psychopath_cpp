@@ -58,6 +58,8 @@ uint32_t Tracer::trace(const Slice<WorldRay> w_rays_, Slice<Intersection> inters
 				break;
 		}
 
+		Global::Stats::object_ray_tests += std::distance(std::get<0>(hits), std::get<1>(hits));
+
 		hits = traverser.next_object();
 	}
 
@@ -73,8 +75,9 @@ void Tracer::trace_surface(Surface* surface, Ray* rays, Ray* end)
 		Intersection& inter = intersections[ritr->id]; // Shorthand reference to ray's intersection
 
 		// Test against the ray
-		inter.hit |= surface->intersect_ray(ray, &inter);
-		if (inter.hit) {
+		if (surface->intersect_ray(ray, &inter)) {
+			inter.hit = true;
+
 			if (ray.type == Ray::OCCLUSION) {
 				ray.flags |= Ray::DONE; // Early out for shadow rays
 			} else {
@@ -154,8 +157,9 @@ void Tracer::trace_diceable_surface(DiceableSurface* prim, Ray* rays, Ray* end)
 					}
 
 					// Test against the ray
-					inter.hit |= micro_surface->intersect_ray(ray, width, &inter);
-					if (inter.hit) {
+					if (micro_surface->intersect_ray(ray, width, &inter)) {
+						inter.hit = true;
+
 						if (ray.type == Ray::OCCLUSION) {
 							ray.flags |= Ray::DONE; // Early out for shadow rays
 						} else {
