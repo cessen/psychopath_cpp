@@ -8,6 +8,7 @@
 #include "sphere_light.hpp"
 #include "bilinear.hpp"
 #include "bicubic.hpp"
+#include "sphere.hpp"
 
 #include "renderer.hpp"
 #include "scene.hpp"
@@ -38,6 +39,11 @@ class Parser
 	 * @brief Parses a bicubic patch section.
 	 */
 	std::unique_ptr<Bicubic> parse_bicubic_patch();
+
+	/**
+	 * @brief Parses a sphere section.
+	 */
+	std::unique_ptr<Sphere> parse_sphere();
 
 	/**
 	 * @brief Parses a sphere light section.

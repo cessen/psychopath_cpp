@@ -54,13 +54,13 @@ public:
 	virtual ~Surface() {}
 
 	Object::Type get_type() const final {
-		return SURFACE;
+		return Object::SURFACE;
 	}
 
 	/**
 	 * @brief Tests a ray against the surface.
 	 */
-	virtual bool intersect_ray(const Ray &ray, Intersection *intersection=nullptr);
+	virtual bool intersect_ray(const Ray &ray, Intersection *intersection=nullptr) = 0;
 };
 
 

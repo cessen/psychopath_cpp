@@ -43,14 +43,45 @@ uint32_t Tracer::trace(const Slice<WorldRay> w_rays_, Slice<Intersection> inters
 	traverser.init_rays(w_rays.begin(), w_rays.end());
 
 	// Trace potential intersections
-	auto hits = traverser.next_object();
+	std::tuple<Ray*, Ray*, Object*> hits = traverser.next_object();
 	while (std::get<2>(hits) != nullptr) {
-		trace_diceable_surface(reinterpret_cast<DiceableSurface*>(std::get<2>(hits)), std::get<0>(hits), std::get<1>(hits));
+		// Branch to different code path based on object type
+		switch (std::get<2>(hits)->get_type()) {
+			case Object::SURFACE:
+				trace_surface(reinterpret_cast<Surface*>(std::get<2>(hits)), std::get<0>(hits), std::get<1>(hits));
+				break;
+			case Object::DICEABLE_SURFACE:
+				trace_diceable_surface(reinterpret_cast<DiceableSurface*>(std::get<2>(hits)), std::get<0>(hits), std::get<1>(hits));
+				break;
+			default:
+				std::cout << "WARNING: unknown object type, skipping." << std::endl;
+				break;
+		}
 
 		hits = traverser.next_object();
 	}
 
 	return w_rays.size();
+}
+
+
+
+void Tracer::trace_surface(Surface* surface, Ray* rays, Ray* end)
+{
+	for (auto ritr = rays; ritr != end; ++ritr) {
+		Ray& ray = *ritr;  // Shorthand reference to the ray
+		Intersection& inter = intersections[ritr->id]; // Shorthand reference to ray's intersection
+
+		// Test against the ray
+		inter.hit |= surface->intersect_ray(ray, &inter);
+		if (inter.hit) {
+			if (ray.type == Ray::OCCLUSION) {
+				ray.flags |= Ray::DONE; // Early out for shadow rays
+			} else {
+				ray.max_t = inter.t;
+			}
+		}
+	}
 }
 
 
@@ -94,13 +125,13 @@ void Tracer::trace_diceable_surface(DiceableSurface* prim, Ray* rays, Ray* end)
 		if (micro_surface)
 			current_subdivs = micro_surface->subdivisions();
 
-		// Test potints against primitive, marking for deeper traversal
+		// Test rays against primitive, marking for deeper traversal
 		// if they can't be directly tested
 		for (auto ritr = ray_starts[stack_i]; ritr != ray_ends[stack_i]; ++ritr) {
 			// Setup
 			ritr->flags &= ~Ray::DEEPER_SPLIT; // No traversing deeper by default
-			Ray& ray = *ritr;  // Shorthand reference to potint's ray
-			Intersection& inter = intersections[ritr->id]; // Shorthand reference to potint's intersection
+			Ray& ray = *ritr;  // Shorthand reference to the ray
+			Intersection& inter = intersections[ritr->id]; // Shorthand reference to ray's intersection
 
 			// If the potint intersects with the primitive's bbox
 			float tnear, tfar;

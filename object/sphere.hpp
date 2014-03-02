@@ -25,7 +25,7 @@ public:
 
 	Sphere(Vec3 center_, float radius_);
 	Sphere(uint8_t res_time_);
-	virtual ~Sphere();
+	virtual ~Sphere() {};
 
 	void add_time_sample(int samp, Vec3 center_, float radius_);
 

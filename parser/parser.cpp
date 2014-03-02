@@ -13,6 +13,7 @@
 #include "transform.hpp"
 
 #include "sphere_light.hpp"
+#include "sphere.hpp"
 #include "bilinear.hpp"
 #include "bicubic.hpp"
 
@@ -103,22 +104,27 @@ std::unique_ptr<Renderer> Parser::parse_next_frame()
 		if (!getline(psy_file, line))
 			break;
 
-		if (line.find("BilinearPatch") == 0) {
+		if (line == "BilinearPatch") {
 			// Parse a bilinear patch
 			//std::cout << "Found BilinearPatch" << std::endl;
 			ungetline(psy_file);
 			scene->add_object(parse_bilinear_patch());
-		} else if (line.find("BicubicPatch") == 0) {
+		} else if (line == "BicubicPatch") {
 			// Parse a bicubic patch
 			//std::cout << "Found BicubicPatch" << std::endl;
 			ungetline(psy_file);
 			scene->add_object(parse_bicubic_patch());
-		} else if (line.find("SphereLight") == 0) {
+		} else if (line == "Sphere") {
+			// Parse a sphere
+			//std::cout << "Found Sphere" << std::endl;
+			ungetline(psy_file);
+			scene->add_object(parse_sphere());
+		} else if (line == "SphereLight") {
 			// Parse a spherical light
 			//std::cout << "Found SphereLight" << std::endl;
 			ungetline(psy_file);
 			scene->add_finite_light(parse_sphere_light());
-		} else if (line.find("Frame") == 0) {
+		} else if (line == "Frame") {
 			ungetline(psy_file);
 			break;
 		}
@@ -192,7 +198,7 @@ std::unique_ptr<Camera> Parser::parse_camera()
 
 	std::string line;
 	getline(psy_file, line);
-	if (line.find("Camera") == 0) { // Verify this is a "Frame" section
+	if (line.find("Camera") == 0) { // Verify this is a "Camera" section
 		// Loop through the lines
 		while (getline(psy_file, line)) {
 			if (line.find("Matrix:") == 0) {
@@ -269,7 +275,7 @@ std::unique_ptr<SphereLight> Parser::parse_sphere_light()
 
 	std::string line;
 	getline(psy_file, line);
-	if (line.find("SphereLight") == 0) { // Verify this is a "Frame" section
+	if (line.find("SphereLight") == 0) { // Verify this is a "SphereLight" section
 		while (getline(psy_file, line)) { // Loop through the lines
 			if (line.find("Location:") == 0) {
 				// Get the camera's location
@@ -325,7 +331,7 @@ std::unique_ptr<Bilinear> Parser::parse_bilinear_patch()
 
 	std::string line;
 	getline(psy_file, line);
-	if (line.find("BilinearPatch") == 0) { // Verify this is a "Frame" section
+	if (line.find("BilinearPatch") == 0) { // Verify this is a "BilinearPatch" section
 		// Get the vertices of the patch; multiple vert lines means motion blur
 		while (getline(psy_file, line)) {
 			if (line.find("Vertices:") == 0) {
@@ -370,7 +376,7 @@ std::unique_ptr<Bicubic> Parser::parse_bicubic_patch()
 
 	std::string line;
 	getline(psy_file, line);
-	if (line.find("BicubicPatch") == 0) { // Verify this is a "Frame" section
+	if (line.find("BicubicPatch") == 0) { // Verify this is a "BicubicPatch" section
 		// Get the vertices of the patch; multiple vert lines means motion blur
 		while (getline(psy_file, line)) {
 			if (line.find("Vertices:") == 0) {
@@ -416,5 +422,43 @@ std::unique_ptr<Bicubic> Parser::parse_bicubic_patch()
 	patch->finalize();
 
 	return patch;
+}
+
+
+std::unique_ptr<Sphere> Parser::parse_sphere()
+{
+	// TODO: motion blur for spheres
+	Vec3 location {0,0,0};
+	float radius {0.5f};
+
+	std::string line;
+	getline(psy_file, line);
+	if (line.find("Sphere") == 0) { // Verify this is a "Sphere" section
+		while (getline(psy_file, line)) { // Loop through the lines
+			if (line.find("Location:") == 0) {
+				// Get the camera's location
+				boost::sregex_iterator matches(line.begin(), line.end(), re_float);
+				for (int i = 0; matches != boost::sregex_iterator() && i < 3; ++matches) {
+					location[i] = std::stof(matches->str());
+					++i;
+				}
+			} else if (line.find("Radius:") == 0) {
+				// Get the camera's field of view
+				boost::sregex_iterator matches(line.begin(), line.end(), re_float);
+				if (matches != boost::sregex_iterator()) {
+					radius = std::stof(matches->str());
+				}
+			} else {
+				// Not a valid line for this section, stop
+				ungetline(psy_file);
+				break;
+			}
+		}
+	}
+
+	// Build light
+	std::unique_ptr<Sphere> s(new Sphere(location, radius));
+
+	return s;
 }
 

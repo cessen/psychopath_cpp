@@ -39,12 +39,6 @@ Sphere::Sphere(uint8_t res_time_)
 }
 
 
-Sphere::~Sphere()
-{
-	return;
-}
-
-
 /**
  * @brief Fills in a time sample with the given center and radius.
  *
