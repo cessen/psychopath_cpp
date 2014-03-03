@@ -138,6 +138,7 @@ bool Sphere::intersect_ray(const Ray &ray, Intersection *intersection)
 		intersection->t = t;
 		intersection->n = intersection->p - cent;
 		intersection->n.normalize();
+		intersection->backfacing = dot(intersection->n, ray.d.normalized()) > 0.0f;
 		intersection->in = ray.d;
 		intersection->ow = ray.ow;
 		intersection->dw = ray.dw;
