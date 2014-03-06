@@ -1,22 +1,22 @@
 - Ray stream tracing:
 	- Optimizations...
 
+- Implement proper "scene" data structure
+	- Should have built-in methods for manipulating and transforming it, for
+	  e.g. optimization.
+	- The scene is like a database with references.
+	- For the first iteration, leave lights out of the scene hierarchy, and
+	  just have them be a flat list.  Later iterations can find ways to
+	  integrate them.
+
 - Implement transforms and instancing:
-	- This will be easiest in the context of breadth-first ray tracing.  So
-	  change top-level traversal to use ray stream tracing of some kind.  This
-	  will also have the side benefit of accessing the top-level BVH in a coherent
-	  way as well.
-	- How to pass existing hierarchy to the acceleration structure?  E.g.
-	  hierarchical transforms and instancing?  We need some way to represent that.
-	- Maybe transformed geo = instance?  That seems a bit limiting, though.
-	- Maybe the input to the acceleration structure is a scene hierarchy rather
-	  than primitives added one-at-a-time.  That scene hierarchy can make a
-	  distinction between instances and transform hierarchies.  And there can
-	  be separate code completely outside of the accel builder that optimizes
-	  the scene hierarchy (e.g. applying static transforms, collapsing meaningless
-	  motion transforms, de-instancing instances that only appear once, etc.).  Then
-	  the responsibility of the accel builder is purely to take that straight-forward
-	  description and make an accel structure for it.
+	- The input to the acceleration structure is a scene hierarchy rather
+	  than primitives added one-at-a-time.  There can be separate code
+	  completely outside of the accel builder that optimizes the scene
+	  hierarchy (e.g. applying static transforms, collapsing meaningless motion
+	  transforms, de-instancing instances that only appear once, etc.).  Then
+	  the responsibility of the accel builder is purely to take that
+	  straight-forward description and make an accel structure for it.
 	- Scene file(s)
 	   |PARSER|
 	  Scene hierarchy
@@ -26,14 +26,15 @@
 	  Acceleration structure
 
 - Implement a shading system
-	- Use OSL
 	- Proper ray differentials
+	- Stupid simple shaders first
+	- Then use OSL
 
 - More geometry types:
 	//- Bicubic bezier patches
 	- Catmull-clark subdivision surfaces
 	- Triangle meshes
-	- Make spheres work again
+	//- Make spheres work again
 
 - Performance improvements:
 	- Change MicroSurface to use a BVH4
