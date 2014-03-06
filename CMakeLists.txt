@@ -8,7 +8,7 @@ cmake_minimum_required (VERSION 2.8)
 
 # Custom modules
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
-	"${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 
 
@@ -136,29 +136,29 @@ add_subdirectory(sampling)
 add_subdirectory(tracer)
 
 add_library(config
-	config)
+    config)
 add_library(global
-	global)
+    global)
 
 # Main library
 set (PSYCHO_LIB
-	renderer
-	integrator
-	tracer
-	sampling
-	parser
-	object
-	basics
-	micro_surface
-	accel
-	config
-	global)
+    renderer
+    integrator
+    tracer
+    sampling
+    parser
+    object
+    basics
+    micro_surface
+    accel
+    config
+    global)
 
 # Main executable
 add_executable(psychopath
     main)
 target_link_libraries(psychopath
-	${PSYCHO_LIB}
+    ${PSYCHO_LIB}
     ${Boost_LIBRARIES}
     ${ILMBASE_LIBRARIES}
     ${OIIO_LIBRARY}
@@ -169,12 +169,12 @@ target_link_libraries(psychopath
 file(GLOB_RECURSE TEST_FILES *_test.cpp) # Find all tests
 
 add_executable(unit_tests
-	"test/test_main" "test/test_float.cpp" ${TEST_FILES})
+    "test/test_main" "test/test_float.cpp" ${TEST_FILES})
 target_link_libraries(unit_tests
-	${PSYCHO_LIB}
-	${Boost_LIBRARIES}
-	${ILMBASE_LIBRARIES}
-	${OIIO_LIBRARY}
-	${OSL_LIBRARYS}
+    ${PSYCHO_LIB}
+    ${Boost_LIBRARIES}
+    ${ILMBASE_LIBRARIES}
+    ${OIIO_LIBRARY}
+    ${OSL_LIBRARYS}
     )
 
