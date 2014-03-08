@@ -29,9 +29,9 @@ public:
 
 	BlockedArray(uint32_t w, uint32_t h) {
 		init(w, h);
-		
+
 	}
-	
+
 	void init(uint32_t w, uint32_t h) {
 		width = w;
 		height = h;
