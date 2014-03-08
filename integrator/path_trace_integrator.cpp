@@ -28,6 +28,62 @@ float lambert(Vec3 v1, Vec3 v2)
 	return f;
 }
 
+class Lambert
+{
+public:
+	Color col {1.0f};
+
+	void sample(const WorldRay &in, const Intersection &inter, const float &su, const float &sv,
+	            WorldRay *out, Color *filter, float *pdf) {
+		const Vec3 nn = inter.n.normalized();
+		const Vec3 nns = (!inter.backfacing) ? nn : (nn * -1.0f); // Shading normal, flip for backfacing
+
+		// Generate a random ray direction in the hemisphere
+		// of the surface.
+		Vec3 dir = cosine_sample_hemisphere(su, sv);
+		*pdf = dir.z * 2;
+
+		if (*pdf < 0.001)
+			*pdf = 0.001;
+		dir = zup_to_vec(dir, nns);
+
+		*filter = col * lambert(dir, nns);
+
+		if (dot(nn, dir.normalized()) >= 0.0f)
+			out->o = inter.p + inter.offset;
+		else
+			out->o = inter.p + (inter.offset * -1.0f);
+		out->d = dir;
+		out->time = in.time;
+		out->type = Ray::R_DIFFUSE;
+
+		// Ray differentials
+		// TODO: do this correctly
+		out->odx = Vec3(1,0,0) * inter.owp();
+		out->ody = Vec3(0,1,0) * inter.owp();
+		out->ddx = Vec3(1,0,0) * 0.15;
+		out->ddy = Vec3(0,1,0) * 0.15;
+		/*
+		ray.odx = inter.pdx();
+		ray.ddx = ray.odx.normalized() * inter.ddx.length();
+		ray.ody = inter.pdy();
+		ray.ddy = ray.ody.normalized() * inter.ddy.length();
+		*/
+	}
+
+	Color evaluate(const Vec3& in, const Vec3& out, const Intersection& inter) {
+		Color lam;
+
+		if (inter.backfacing) {
+			lam = col * lambert(out, inter.n * -1.0f);
+		} else {
+			lam = col * lambert(out, inter.n);
+		}
+
+		return lam;
+	}
+};
+
 
 void PathTraceIntegrator::integrate()
 {
@@ -97,7 +153,7 @@ void PathTraceIntegrator::init_path(PTState* pstate, const float* samps, short x
 /*
  * Calculate the next ray the path needs to shoot.
  */
-WorldRay PathTraceIntegrator::next_ray_for_path(PTState* pstate)
+WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTState* pstate)
 {
 	PTState& path = *pstate; // Shorthand for the passed path
 	WorldRay ray;
@@ -151,46 +207,17 @@ WorldRay PathTraceIntegrator::next_ray_for_path(PTState* pstate)
 		path.samples += 3;
 	} else {
 		// Bounce ray
-		const Vec3 nn = path.inter.n.normalized();
-		const Vec3 nns = (!path.inter.backfacing) ? nn : (nn * -1.0f); // Shading normal, flip for backfacing
 
-		// Generate a random ray direction in the hemisphere
-		// of the surface.
-		// TODO: use BxDF distribution here
-		// TODO: use proper PDF here
-		Vec3 dir = cosine_sample_hemisphere(path.samples[0], path.samples[1]);
-		float pdf = dir.z * 2;
+		Lambert bsdf;
+		Color filter;
+		float pdf;
 
-		if (pdf < 0.001)
-			pdf = 0.001;
-		dir = zup_to_vec(dir, nns);
+		bsdf.sample(prev_ray, path.inter, path.samples[0], path.samples[1], &ray, &filter, &pdf);
 
 		// Calculate the color filtering effect that the
 		// bounce from the current intersection will create.
 		// TODO: use actual shaders here.
-		path.fcol *= lambert(dir, nns) / pdf;
-
-		// Create a bounce ray for this path
-		if (dot(nn, dir.normalized()) >= 0.0f)
-			ray.o = path.inter.p + path.inter.offset;
-		else
-			ray.o = path.inter.p + (path.inter.offset * -1.0f);
-		ray.d = dir;
-		ray.time = path.time;
-		ray.type = Ray::R_DIFFUSE;
-
-		// Ray differentials
-		// TODO: do this correctly
-		ray.odx = Vec3(1,0,0) * path.inter.owp();
-		ray.ody = Vec3(0,1,0) * path.inter.owp();
-		ray.ddx = Vec3(1,0,0) * 0.15;
-		ray.ddy = Vec3(0,1,0) * 0.15;
-		/*
-		ray.odx = path.inter.pdx();
-		ray.ddx = ray.odx.normalized() * path.inter.ddx.length();
-		ray.ody = path.inter.pdy();
-		ray.ddy = ray.ody.normalized() * path.inter.ddy.length();
-		*/
+		path.fcol *= filter / pdf;
 
 		// Increment the sample pointer
 		path.samples += 2;
@@ -211,14 +238,9 @@ void PathTraceIntegrator::update_path(PTState* pstate, const WorldRay& ray, cons
 		// Result of shadow ray
 		if (!inter.hit) {
 			// Sample was lit
-			// TODO: use actual shaders here
-			float lam = 0.0f;
+			Lambert bsdf;
 
-			if (path.inter.backfacing) {
-				lam = lambert(ray.d, path.inter.n * -1.0f);
-			} else {
-				lam = lambert(ray.d, path.inter.n);
-			}
+			Color lam = bsdf.evaluate(Vec3(), ray.d, path.inter);
 
 			path.col += path.fcol * path.lcol * lam;
 		}
@@ -298,7 +320,7 @@ void PathTraceIntegrator::render_blocks()
 
 			// Create path rays
 			for (int i = 0; i < path_count; ++i) {
-				rays[i] = next_ray_for_path(p_begin+i);
+				rays[i] = next_ray_for_path(rays[i], p_begin+i);
 			}
 
 			// Trace rays
@@ -318,7 +340,7 @@ void PathTraceIntegrator::render_blocks()
 
 		if (!Config::no_output) {
 			// Accumulate the samples
-			
+
 			for (uint32_t i = 0; i < samp_size; i++) {
 				image->add_sample(paths[i].col, paths[i].pix_x, paths[i].pix_y);
 			}

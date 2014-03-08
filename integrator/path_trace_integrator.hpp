@@ -60,7 +60,7 @@ class PathTraceIntegrator: Integrator
 	};
 
 	void init_path(PTState* pstate, const float* samps, short x, short y);
-	WorldRay next_ray_for_path(PTState* pstate);
+	WorldRay next_ray_for_path(const WorldRay& prev_ray, PTState* pstate);
 	void update_path(PTState* pstate, const WorldRay& ray, const Intersection& inter);
 
 
