@@ -318,16 +318,17 @@ void PathTraceIntegrator::render_blocks()
 
 		if (!Config::no_output) {
 			// Accumulate the samples
-			image_mut.lock();
+			
 			for (uint32_t i = 0; i < samp_size; i++) {
 				image->add_sample(paths[i].col, paths[i].pix_x, paths[i].pix_y);
 			}
 
 			// Callback
-			if (callback)
+			if (callback) {
+				image_mut.lock();
 				callback();
-
-			image_mut.unlock();
+				image_mut.unlock();
+			}
 		}
 
 		// Update render progress

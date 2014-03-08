@@ -27,8 +27,15 @@ public:
 
 	BlockedArray() {}
 
-	BlockedArray(uint32_t w, uint32_t h):
-		width {w}, height {h} {
+	BlockedArray(uint32_t w, uint32_t h) {
+		init(w, h);
+		
+	}
+	
+	void init(uint32_t w, uint32_t h) {
+		width = w;
+		height = h;
+
 		// Round width and height up to the nearest multiple of block_size
 		if (width % block_size)
 			width = width - (width % block_size) + block_size;

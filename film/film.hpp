@@ -11,7 +11,7 @@
 #include "morton.hpp"
 #include "color.hpp"
 #include "rng.hpp"
-#include "blocked_array_disk_cache.hpp"
+#include "blocked_array.hpp"
 
 #define LBS 5
 
@@ -84,10 +84,10 @@ public:
 	float min_x, min_y; // Minimum x/y coordinates of the image
 	float max_x, max_y; // Maximum x/y coordinates of the image
 
-	BlockedArrayDiskCache<PIXFMT, LBS> pixels; // Pixel data
-	BlockedArrayDiskCache<uint16_t, LBS> accum; // Accumulation buffer
-	BlockedArrayDiskCache<PIXFMT, LBS> var_p; // Entropy buffer "previous"
-	BlockedArrayDiskCache<PIXFMT, LBS> var_f; // Entropy buffer "final"
+	BlockedArray<PIXFMT, LBS> pixels; // Pixel data
+	BlockedArray<uint16_t, LBS> accum; // Accumulation buffer
+	BlockedArray<PIXFMT, LBS> var_p; // Entropy buffer "previous"
+	BlockedArray<PIXFMT, LBS> var_f; // Entropy buffer "final"
 
 	/**
 	 * @brief Constructor.
