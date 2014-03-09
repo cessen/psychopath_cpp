@@ -71,6 +71,22 @@ public:
 		*/
 	}
 
+	void propagate_differentials(const WorldRay& in, const Intersection& inter, WorldRay* out) {
+		const float len = out->d.length();
+
+		// TODO: do this correctly
+		out->odx = Vec3(1,0,0) * inter.owp();
+		out->ody = Vec3(0,1,0) * inter.owp();
+		out->ddx = Vec3(1,0,0) * (inter.dw / len);
+		out->ddy = Vec3(0,1,0) * (inter.dw / len);
+		/*
+		ray.odx = path.inter.pdx();
+		ray.ddx = ray.odx.normalized() * path.inter.ddx.length();
+		ray.ody = path.inter.pdy();
+		ray.ddy = ray.ody.normalized() * path.inter.ddy.length();
+		*/
+	}
+
 	Color evaluate(const Vec3& in, const Vec3& out, const Intersection& inter) {
 		Color lam;
 
@@ -181,7 +197,6 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		            * (float)(scene->finite_lights.size());
 
 		// Create a shadow ray for this path
-		float len = ld.length();
 		if (dot(path.inter.n.normalized(), ld.normalized()) >= 0.0f)
 			ray.o = path.inter.p + path.inter.offset;
 		else
@@ -190,18 +205,9 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		ray.time = path.time;
 		ray.type = Ray::OCCLUSION;
 
-		// Ray differentials
-		// TODO: do this correctly
-		ray.odx = Vec3(1,0,0) * path.inter.owp();
-		ray.ody = Vec3(0,1,0) * path.inter.owp();
-		ray.ddx = Vec3(1,0,0) * (path.inter.dw / len);
-		ray.ddy = Vec3(0,1,0) * (path.inter.dw / len);
-		/*
-		ray.odx = path.inter.pdx();
-		ray.ddx = ray.odx.normalized() * path.inter.ddx.length();
-		ray.ody = path.inter.pdy();
-		ray.ddy = ray.ody.normalized() * path.inter.ddy.length();
-		*/
+		// Propagate ray differentials
+		Lambert bsdf;
+		bsdf.propagate_differentials(prev_ray, path.inter, &ray);
 
 		// Increment the sample pointer
 		path.samples += 3;
