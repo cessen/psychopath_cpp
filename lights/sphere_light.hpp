@@ -93,6 +93,14 @@ public:
 	virtual bool is_infinite() const {
 		return false;
 	}
+
+	virtual float total_energy() const {
+		return col.energy();
+	}
+
+	virtual BBox bounds() const {
+		return BBox(pos - Vec3(radius), pos + Vec3(radius));
+	}
 };
 
 #endif // SPHERE_LIGHT_HPP

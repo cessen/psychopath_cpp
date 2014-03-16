@@ -10,6 +10,8 @@
 #include "global.hpp"
 #include "camera.hpp"
 #include "bvh.hpp"
+#include "light_array.hpp"
+#include "light_tree.hpp"
 #include "scene_graph.hpp"
 
 #include <vector>
@@ -36,7 +38,7 @@ struct Scene {
 	// Scene acceleration structures, generated after the scene is fully
 	// described
 	BVH object_accel;
-	std::vector<Light*> finite_light_accel;
+	LightTree finite_light_accel;
 
 	Scene() {}
 
@@ -71,13 +73,7 @@ struct Scene {
 	void finalize() {
 		std::cout << "Finalizing scene with " << scene_graph.objects.size() << " objects." << std::endl;
 		object_accel.build(scene_graph);
-
-		//std::cout << object_accel. << std::endl;
-
-		// TODO: use a real light acceleration structure
-		for (auto& l: scene_graph.finite_lights) {
-			finite_light_accel.push_back(l.second.get());
-		}
+		finite_light_accel.build(scene_graph);
 	}
 };
 

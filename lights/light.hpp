@@ -1,6 +1,7 @@
 #ifndef LIGHT_HPP
 #define LIGHT_HPP
 
+#include "bbox.hpp"
 #include "vector.hpp"
 #include "color.hpp"
 
@@ -82,6 +83,10 @@ public:
 	 * only the direction of the light matters.
 	 */
 	virtual bool is_infinite() const = 0;
+
+	virtual float total_energy() const = 0;
+
+	virtual BBox bounds() const = 0;
 };
 
 #endif // LIGHT_HPP

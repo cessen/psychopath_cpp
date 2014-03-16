@@ -41,6 +41,14 @@ public:
 	virtual bool is_infinite() const {
 		return false;
 	}
+
+	virtual float total_energy() const {
+		return col.energy();
+	}
+
+	virtual BBox bounds() const {
+		return BBox(pos, pos);
+	}
 };
 
 #endif // POINT_LIGHT_HPP
