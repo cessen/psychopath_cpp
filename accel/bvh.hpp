@@ -4,10 +4,6 @@
 #include "numtype.h"
 #include "global.hpp"
 
-#include <stdlib.h>
-#include <iostream>
-#include <vector>
-#include <memory>
 #include "object.hpp"
 #include "accel.hpp"
 #include "ray.hpp"
@@ -15,8 +11,12 @@
 #include "utils.hpp"
 #include "vector.hpp"
 #include "chunked_array.hpp"
+#include "scene_graph.hpp"
 
-
+#include <stdlib.h>
+#include <iostream>
+#include <vector>
+#include <memory>
 
 
 
@@ -28,7 +28,7 @@ class BVH: public Accel
 {
 public:
 	virtual ~BVH() {};
-	virtual void build(std::vector<std::unique_ptr<Object>>* objects);
+	virtual void build(const SceneGraph& scene_graph);
 
 	// Traversers need access to private data
 	friend class BVHStreamTraverser;

@@ -50,7 +50,7 @@ public:
 	Slice<Intersection> intersections; // Resulting intersections
 
 	Tracer(Scene *scene_): scene {scene_} {
-		traverser.init_accel(scene->world);
+		traverser.init_accel(scene->object_accel);
 	}
 
 

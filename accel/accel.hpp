@@ -3,6 +3,7 @@
 
 #include "numtype.h"
 #include "ray.hpp"
+#include "scene_graph.hpp"
 #include "object.hpp"
 
 #include <vector>
@@ -28,7 +29,7 @@ public:
 	 * it takes a pointer to a vector of unique_ptr's), and will not free
 	 * them.  Their memory needs to be managed elsewhere (e.g. by the Scene).
 	 */
-	virtual void build(std::vector<std::unique_ptr<Object>>* objects) = 0;
+	virtual void build(const SceneGraph& scene_graph) = 0;
 };
 
 

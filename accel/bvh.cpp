@@ -8,24 +8,22 @@
 #include <cmath>
 
 
-void BVH::build(std::vector<std::unique_ptr<Object>>* objects)
+void BVH::build(const SceneGraph& scene_graph)
 {
-	size_t start = bag.size();
-	size_t added = objects->size();
-	bag.reserve(start + added);
+	bag.reserve(scene_graph.objects.size());
+	for (auto& p: scene_graph.objects)
+		bag.push_back(BVHPrimitive(p.second.get()));
 
-	for (auto& p: *objects)
-		bag.push_back(BVHPrimitive(p.get()));
+	if (bag.size() == 0)
+		return;
 
-	finalize();
+	recursive_build(0, 0, bag.size()-1);
+	bag.resize(0);
 }
 
 bool BVH::finalize()
 {
-	if (bag.size() == 0)
-		return true;
-	recursive_build(0, 0, bag.size()-1);
-	bag.resize(0);
+	// TODO: this method is no longer necessary
 	return true;
 }
 
@@ -336,6 +334,10 @@ size_t BVH::recursive_build(size_t parent, size_t first_prim, size_t last_prim)
 
 std::tuple<Ray*, Ray*, Object*> BVHStreamTraverser::next_object()
 {
+	// If there aren't any objects in the scene, return finished
+	if (bvh->nodes.size() == 0)
+		return std::make_tuple(&(*rays.end()), &(*rays.end()), nullptr);
+
 	float near_t, far_t;
 
 	while (stack_ptr >= 0) {
