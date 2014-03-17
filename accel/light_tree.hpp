@@ -111,13 +111,9 @@ class LightTree: public LightAccel
 	}
 
 	float node_prob(Vec3 p, uint32_t index) const {
-		const float d = (p - nodes[index].center).length() - nodes[index].radius;
+		const float d2 = (p - nodes[index].center).length2();
 
-		if (d > 0) {
-			return nodes[index].energy / ((d * d) + 1.0f);
-		} else {
-			return nodes[index].energy;
-		}
+		return nodes[index].energy / (d2 + 1.0f);
 	}
 
 
