@@ -112,8 +112,13 @@ class LightTree: public LightAccel
 
 	float node_prob(Vec3 p, uint32_t index) const {
 		const float d2 = (p - nodes[index].center).length2();
+		const float r2 = nodes[index].radius * nodes[index].radius;
+		const float inv_surface_area = 1.0f / r2;
 
-		return nodes[index].energy / (d2 + 1.0f);
+		const float sin_theta_max2 = std::min(1.0f, r2 / d2);
+		const float cos_theta_max = std::sqrt(1.0f - sin_theta_max2);
+
+		return nodes[index].energy * inv_surface_area * (1.0 - cos_theta_max);
 	}
 
 
