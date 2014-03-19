@@ -9,13 +9,12 @@ class LightTree: public LightAccel
 	struct BuildNode {
 		Light* light;
 		Vec3 center;
-		float radius;
+		BBox bbox;
 		float energy;
 	};
 
 	struct Node {
-		Vec3 center;
-		float radius;
+		BBox bbox;
 		float energy;
 
 		size_t index1;
@@ -82,8 +81,7 @@ class LightTree: public LightAccel
 			nodes[me].light = start->light;
 
 			// Copy bounds
-			nodes[me].center = start->center;
-			nodes[me].radius = start->radius;
+			nodes[me].bbox = start->bbox;
 
 			// Copy energy
 			nodes[me].energy = start->energy;
@@ -99,9 +97,7 @@ class LightTree: public LightAccel
 			nodes[me].index2 = c2;
 
 			// Calculate bounds
-			nodes[me].center = (nodes[c1].center + nodes[c2].center) * 0.5f;
-			nodes[me].radius = std::abs((nodes[c1].center - nodes[c2].center).length()) * 0.5f;
-			nodes[me].radius += std::max(nodes[c1].radius, nodes[c2].radius);
+			nodes[me].bbox = nodes[c1].bbox | nodes[c2].bbox;
 
 			// Calculate energy
 			nodes[me].energy = nodes[c1].energy + nodes[c2].energy;
@@ -111,8 +107,9 @@ class LightTree: public LightAccel
 	}
 
 	float node_prob(Vec3 p, uint32_t index) const {
-		const float d2 = (p - nodes[index].center).length2();
-		const float r2 = nodes[index].radius * nodes[index].radius;
+		const float d2 = (p - nodes[index].bbox.center()).length2();
+		const float r = nodes[index].bbox.diagonal() * 0.5f;
+		const float r2 = r * r;
 		const float inv_surface_area = 1.0f / r2;
 
 		const float sin_theta_max2 = std::min(1.0f, r2 / d2);
@@ -129,12 +126,11 @@ public:
 		// Populate the build nodes
 		for (auto& l: scene_graph.finite_lights) {
 			Light* light = l.second.get();
-			BBox bbox = light->bounds();
 
 			build_nodes.push_back(BuildNode());
 			build_nodes.back().light = light;
-			build_nodes.back().center = bbox.center();
-			build_nodes.back().radius = bbox.diagonal() * 0.5f;
+			build_nodes.back().bbox = light->bounds();
+			build_nodes.back().center = build_nodes.back().bbox.center();
 			build_nodes.back().energy = light->total_energy();
 		}
 
