@@ -66,6 +66,9 @@ class LightTree: public LightAccel
 		                              end,
 		                              CompareToMid(max_axis, pmid));
 
+		if (mid_itr == start)
+			mid_itr++;
+
 		return mid_itr;
 	}
 
