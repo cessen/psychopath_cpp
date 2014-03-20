@@ -6,6 +6,7 @@
 #include "numtype.h"
 
 #include <algorithm>
+#include <cmath>
 #include <assert.h>
 
 #include "morton.hpp"
@@ -132,6 +133,14 @@ public:
 	 * opportunity for noise to be introduced.
 	 */
 	void add_sample(PIXFMT samp, uint x, uint y) {
+		// Skip NaN and infinite samples
+		for (auto s: samp.spectrum) {
+			if (std::isnan(s) || !std::isfinite(s)) {
+				// TODO: log when this happens
+				return;
+			}
+		}
+
 		pixels(x,y) += samp;
 		accum(x,y)++;
 
