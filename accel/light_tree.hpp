@@ -109,16 +109,27 @@ class LightTree: public LightAccel
 		return me;
 	}
 
-	float node_prob(Vec3 p, uint32_t index) const {
-		const float d2 = (p - nodes[index].bbox.center()).length2();
+	float node_prob(Vec3 p, Vec3 nor, uint32_t index) const {
+		const Vec3 d = nodes[index].bbox.center() - p;
+		const float dist2 = d.length2();
 		const float r = nodes[index].bbox.diagonal() * 0.5f;
 		const float r2 = r * r;
 		const float inv_surface_area = 1.0f / r2;
 
-		const float sin_theta_max2 = std::min(1.0f, r2 / d2);
+		const float sin_theta_max2 = std::min(1.0f, r2 / dist2);
 		const float cos_theta_max = std::sqrt(1.0f - sin_theta_max2);
 
-		return nodes[index].energy * inv_surface_area * (1.0 - cos_theta_max);
+		// TODO: why does this work so well?  Specifically: does
+		// it also work well with BSDF's other than lambert?
+		float frac = (dot(nor, d) + r) / std::sqrt(dist2);
+		frac = std::max(0.0f, frac);
+
+		// An alternative to the above that's supposedly more "generic",
+		// but dunno if it actually is.
+		// // float frac = (dot(nor, d) + r) / (r * 2.0f);
+		// // frac = std::max(0.0f, std::min(1.0f, frac));
+
+		return nodes[index].energy * inv_surface_area * (1.0 - cos_theta_max) * frac;
 	}
 
 
@@ -140,7 +151,7 @@ public:
 		recursive_build(build_nodes.begin(), build_nodes.end());
 	}
 
-	virtual std::tuple<Light*, float> sample(Vec3 pos, float n) {
+	virtual std::tuple<Light*, float> sample(Vec3 pos, Vec3 nor, float n) {
 		Node* node = &(nodes[0]);
 
 		float tot_prob = 1.0f;
@@ -151,11 +162,16 @@ public:
 				break;
 
 			// Calculate the relative probabilities of the two children
-			float p1 = node_prob(pos, node->index1);
-			float p2 = node_prob(pos, node->index2);
+			float p1 = node_prob(pos, nor, node->index1);
+			float p2 = node_prob(pos, nor, node->index2);
 			const float total = p1 + p2;
-			p1 /= total;
-			p2 /= total;
+			if (total <= 0.0f) {
+				p1 = 0.5f;
+				p2 = 0.5f;
+			} else {
+				p1 /= total;
+				p2 /= total;
+			}
 
 			if (n <= p1) {
 				tot_prob *= p1;

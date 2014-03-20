@@ -21,7 +21,7 @@ public:
 
 	virtual void build(const SceneGraph& scene_graph) = 0;
 
-	virtual std::tuple<Light*, float> sample(Vec3 pos, float n) = 0;
+	virtual std::tuple<Light*, float> sample(Vec3 pos, Vec3 nor, float n) = 0;
 };
 
 

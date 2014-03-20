@@ -188,8 +188,14 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 	} else if (path.step % 2) {
 		// Shadow ray
 
+		// Calculate the surface normal facing in the direction of where the ray hit came from
+		Vec3 nor = path.inter.n;
+		if (dot(nor, path.inter.in.normalized()) > 0.0f) {
+			nor *= -1.0f;
+		}
+
 		// Select a light and store the normalization factor for it's output
-		std::tuple<Light*, float> light_select = scene->finite_light_accel.sample(path.inter.p, path.samples[0]);
+		std::tuple<Light*, float> light_select = scene->finite_light_accel.sample(path.inter.p, nor, path.samples[0]);
 		Light* lighty = std::get<0>(light_select);
 		const float inv_probability = 1.0f / std::get<1>(light_select);
 

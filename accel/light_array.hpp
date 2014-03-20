@@ -16,7 +16,7 @@ public:
 		}
 	}
 
-	virtual std::tuple<Light*, float> sample(Vec3 pos, float n) {
+	virtual std::tuple<Light*, float> sample(Vec3 pos, Vec3 nor, float n) {
 		Light* light = lights[static_cast<uint32_t>(n * lights.size()) % lights.size()];
 		float p = 1.0f / lights.size();
 
