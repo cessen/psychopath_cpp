@@ -122,10 +122,11 @@ class LightTree: public LightAccel
 		// TODO: why does this work so well?  Specifically: does
 		// it also work well with BSDF's other than lambert?
 		float frac = (dot(nor, d) + r) / std::sqrt(dist2);
-		frac = std::max(0.0f, frac);
+		frac = std::max(0.0f, std::min(1.0f, frac));
 
 		// An alternative to the above that's supposedly more "generic",
-		// but dunno if it actually is.
+		// because it's just expressing the fraction of the light that's
+		// above the surface's horizon.
 		// // float frac = (dot(nor, d) + r) / (r * 2.0f);
 		// // frac = std::max(0.0f, std::min(1.0f, frac));
 
