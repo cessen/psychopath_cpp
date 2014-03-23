@@ -1,3 +1,4 @@
 # Auto-formatting backups
 *.orig
+*.orig~
 
