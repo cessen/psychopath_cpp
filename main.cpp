@@ -124,6 +124,8 @@ int main(int argc, char **argv)
 	 **********************************************************************
 	 */
 	int spp = SPP;
+	int spp_max = SPP;
+	float variance_max = -1.0f;
 	int threads = std::thread::hardware_concurrency();
 	std::string output_path = "default.png";
 	std::string input_path = "";
@@ -135,6 +137,8 @@ int main(int argc, char **argv)
 	("help,h", "Print this help message")
 	("scenefile,i", BPO::value<std::string>(), "Input scene file")
 	("spp,s", BPO::value<int>(), "Number of samples to take per pixel")
+	("sppmax,m", BPO::value<int>(), "Max number of samples to take per pixel")
+	("variance,v", BPO::value<float>(), "Max image variance")
 	("threads,t", BPO::value<int>(), "Number of threads to render with")
 	("output,o", BPO::value<std::string>(), "The PNG file to render to")
 	("nooutput,n", "Don't save render (for timing tests)")
@@ -161,6 +165,16 @@ int main(int argc, char **argv)
 		if (spp < 1)
 			spp = 1;
 		std::cout << "Samples per pixel: " << spp << "\n";
+	}
+	if (vm.count("sppmax")) {
+		spp_max = vm["sppmax"].as<int>();
+		if (spp_max < spp)
+			spp_max = spp;
+		std::cout << "Max samples per pixel: " << spp_max << "\n";
+	}
+	if (vm.count("variance")) {
+		variance_max = vm["variance"].as<float>();
+		std::cout << "Max image variance: " << variance_max << "\n";
 	}
 
 	// Thread count
@@ -213,6 +227,10 @@ int main(int argc, char **argv)
 			r->set_resolution(resolution.x, resolution.y);
 		if (vm.count("spp"))
 			r->set_spp(spp);
+		if (vm.count("sppmax"))
+			r->set_spp_max(spp_max);
+		if (vm.count("variance"))
+			r->set_variance_max(variance_max);
 
 		/*
 		 **********************************************************************

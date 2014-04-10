@@ -38,16 +38,20 @@ class Renderer
 private:
 	uint res_x, res_y;
 	uint spp;
+	uint spp_max;
+	float variance_max;
 	uint seed;
 	std::string output_path;
 
 public:
 	std::unique_ptr<Scene> scene;
 
-	Renderer(Scene *scene, uint res_x, uint res_y, uint spp, uint seed, std::string output_path):
+	Renderer(Scene *scene, uint res_x, uint res_y, uint spp, uint spp_max, float variance_max, uint seed, std::string output_path):
 		res_x {res_x},
 	      res_y {res_y},
 	      spp {spp},
+	      spp_max {spp_max},
+	      variance_max {variance_max},
 	      seed {seed},
 	      output_path {output_path},
 	      scene {scene}
@@ -60,6 +64,14 @@ public:
 
 	void set_spp(int spp_) {
 		spp = spp_;
+	}
+
+	void set_spp_max(int spp_max_) {
+		spp_max = spp_max_;
+	}
+
+	void set_variance_max(float variance_max_) {
+		variance_max = variance_max_;
 	}
 
 	// Starts a render with the given number of threads.

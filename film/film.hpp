@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <assert.h>
 
 #include "morton.hpp"
@@ -25,7 +26,7 @@ static float hcol(float n)
 {
 	if (n < 0.0f)
 		n = 0.0f;
-	return log((n*100)+1) / log(101);
+	return pow(n, 1.0f/2.2f);
 }
 static Color hcol(Color n)
 {
@@ -153,50 +154,15 @@ public:
 	}
 
 	/**
-	 * Returns a maximal estimate of the variance of the pixel.
-	 *
-	 * The intent is for this to give a good idea of the amount
-	 * of "noise" that a pixel contributes to the image, which
-	 * is useful for e.g. adaptive sampling.
-	 *
-	 * The estimate is calculated by taking the maximum
-	 * esimated variance from a surrounding block of pixels.
-	 * The size of the block depends on the sample count of
-	 * the current pixel: lower sample counts lead to larger
-	 * block sizes, to minimize the chances of underestimating
-	 * variance with low sample counts.
-	 * Finally, that maximum is divided by the square root of
-	 * the number of samples in the pixel, so that the estimate
-	 * decreases appropriately as the samples increase.
+	 * Returns an estimate of the variance of the pixel.
 	 */
 	PIXFMT variance_estimate(int32_t x, int32_t y) {
-		// Calculate block size
-		uint r;
-		if (accum(x,y) < 2)
-			r = 0;
+		const int samps = accum(x,y);
+
+		if (samps < 2)
+			return std::numeric_limits<float>::infinity();
 		else
-			r = (uint)(11.0f / sqrt(accum(x,y)) + 0.9f);
-
-		// Calculate block extents
-		uint i1, j1, i2, j2;
-		i1 = std::max((int32_t)(0), x-(int32_t)(r));
-		i2 = std::min((int32_t)(width), x+(int32_t)(r));
-		j1 = std::max((int32_t)(0), y-(int32_t)(r));
-		j2 = std::min((int32_t)(height), y+(int32_t)(r));
-
-		// Get the largest variance estimate within the block
-		PIXFMT result = PIXFMT(0);
-		for (uint i = i1; i <= i2; i++) {
-			for (uint j = j1; j <= j2; j++) {
-				if (accum(i,j) > 1) {
-					PIXFMT t = var_f(i,j) / (accum(i,j)-1);
-					result = mmax(result, t);
-				}
-			}
-		}
-
-		// Variance is reduced by increased number of samples
-		return result / sqrt(accum(x,y));
+			return (var_f(x,y) / (samps-1)) / sqrt(samps);
 	}
 
 	/**
@@ -228,9 +194,9 @@ public:
 //#define VARIANCE
 #ifdef VARIANCE
 				const PIXFMT var_est = variance_estimate(x, y);
-				r = var_est[0];
-				g = var_est[1];
-				b = var_est[2];
+				r = pow(var_est[0], inv_gamma);
+				g = pow(var_est[1], inv_gamma);
+				b = pow(var_est[2], inv_gamma);
 #else
 				// Get color and apply gamma correction
 				if (accum(x,y) != 0.0) {

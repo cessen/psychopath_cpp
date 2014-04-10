@@ -79,6 +79,8 @@ public:
 	Film<Color> *image;
 	std::mutex image_mut;
 	int spp;
+	int spp_max;
+	float image_variance_max;
 	uint seed;
 	int path_length;
 	int thread_count;
@@ -91,16 +93,16 @@ public:
 	 *
 	 * @param[in] scene_ A pointer to the scene to render.  Should be fully
 	 *                   finalized for rendering.
-	 * @param[in] tracers_ A Tracer instance to use for the ray tracing.  It
-	 *                    should already be fully initialized.
 	 * @param[out] image_ The image to render to.  Should be already
 	 *                    initialized with 3 channels, for rgb.
 	 * @param spp_ The number of samples to take per pixel for integration.
 	 */
-	PathTraceIntegrator(Scene *scene_, Film<Color> *image_, int spp_, uint seed_, int thread_count_=1, std::function<void()> callback_ = std::function<void()>()) {
+	PathTraceIntegrator(Scene *scene_, Film<Color> *image_, int spp_, int spp_max_, float variance_max_, uint seed_, int thread_count_=1, std::function<void()> callback_ = std::function<void()>()) {
 		scene = scene_;
 		image = image_;
 		spp = spp_;
+		spp_max = spp_max_;
+		image_variance_max = variance_max_;
 		seed = seed_;
 		thread_count = thread_count_;
 		path_length = 3;

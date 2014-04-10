@@ -298,72 +298,86 @@ void PathTraceIntegrator::render_blocks()
 
 	// Keep rendering blocks as long as they exist in the queue
 	while (blocks.pop_blocking(&pb)) {
-		const size_t sample_count = (pb.h * pb.w) * spp;
+		Color max_variance = Color(9999999999.0f);
+		float samp_it = 0;
 
-		// Resize arrays for the apropriate sample count
-		samps.resize(sample_count * samp_dim);
-		paths.resize(sample_count);
-		rays.resize(sample_count);
-		intersections.resize(sample_count);
+		while (max_variance[0] > image_variance_max && samp_it < spp_max) {
+			const size_t sample_count = (pb.h * pb.w) * spp;
 
-		// Generate samples and corresponding paths
-		int samp_i = 0;
-		for (int x = pb.x; x < (pb.x + pb.w); ++x) {
-			for (int y = pb.y; y < (pb.y + pb.h); ++y) {
-				for (int s = 0; s < spp; ++s) {
-					image_sampler.get_sample(x, y, s, samp_dim, &(samps[samp_i*samp_dim]));
-					init_path(paths.begin() + samp_i, samps.begin() + (samp_i*samp_dim), x, y);
-					++samp_i;
+			// Resize arrays for the apropriate sample count
+			samps.resize(sample_count * samp_dim);
+			paths.resize(sample_count);
+			rays.resize(sample_count);
+			intersections.resize(sample_count);
+
+			// Generate samples and corresponding paths
+			int samp_i = 0;
+			for (int x = pb.x; x < (pb.x + pb.w); ++x) {
+				for (int y = pb.y; y < (pb.y + pb.h); ++y) {
+					for (int s = samp_it; s < (samp_it + spp); ++s) {
+						image_sampler.get_sample(x, y, s, samp_dim, &(samps[samp_i*samp_dim]));
+						init_path(paths.begin() + samp_i, samps.begin() + (samp_i*samp_dim), x, y);
+						++samp_i;
+					}
 				}
 			}
-		}
+			samp_it += spp;
 
-		uint32_t samp_size = samps.size() / samp_dim;
+			uint32_t samp_size = samps.size() / samp_dim;
 
-		auto p_begin = paths.begin();
-		auto p_end = paths.end();
+			auto p_begin = paths.begin();
+			auto p_end = paths.end();
 
-		// Path tracing loop for the paths we have
-		while (p_begin != p_end) {
-			int path_count = std::distance(p_begin, p_end);
+			// Path tracing loop for the paths we have
+			while (p_begin != p_end) {
+				int path_count = std::distance(p_begin, p_end);
 
-			// Size the ray buffer and intersection buffers appropriately
-			rays.resize(path_count);
-			intersections.resize(path_count);
+				// Size the ray buffer and intersection buffers appropriately
+				rays.resize(path_count);
+				intersections.resize(path_count);
 
-			// Create path rays
-			for (int i = 0; i < path_count; ++i) {
-				rays[i] = next_ray_for_path(rays[i], p_begin+i);
+				// Create path rays
+				for (int i = 0; i < path_count; ++i) {
+					rays[i] = next_ray_for_path(rays[i], p_begin+i);
+				}
+
+				// Trace rays
+				tracer.trace(Slice<WorldRay>(rays), Slice<Intersection>(intersections));
+
+				// Update paths based on result
+				for (int i = 0; i < path_count; ++i) {
+					update_path(p_begin+i, rays[i], intersections[i]);
+				}
+
+				// Partition paths based on which ones are active
+				p_begin = std::partition(p_begin, p_end, [this](const PTState& path) {
+					return path.done;
+				});
 			}
 
-			// Trace rays
-			tracer.trace(Slice<WorldRay>(rays), Slice<Intersection>(intersections));
 
-			// Update paths based on result
-			for (int i = 0; i < path_count; ++i) {
-				update_path(p_begin+i, rays[i], intersections[i]);
+			if (!Config::no_output) {
+				// Accumulate the samples
+
+				for (uint32_t i = 0; i < samp_size; i++) {
+					image->add_sample(paths[i].col, paths[i].pix_x, paths[i].pix_y);
+				}
+
+				// Callback
+				if (callback) {
+					image_mut.lock();
+					callback();
+					image_mut.unlock();
+				}
 			}
 
-			// Partition paths based on which ones are active
-			p_begin = std::partition(p_begin, p_end, [this](const PTState& path) {
-				return path.done;
-			});
-		}
-
-
-		if (!Config::no_output) {
-			// Accumulate the samples
-
-			for (uint32_t i = 0; i < samp_size; i++) {
-				image->add_sample(paths[i].col, paths[i].pix_x, paths[i].pix_y);
+			max_variance = Color(0.0f);
+			for (int x = pb.x; x < (pb.x + pb.w); ++x) {
+				for (int y = pb.y; y < (pb.y + pb.h); ++y) {
+					max_variance = mmax(max_variance, image->variance_estimate(x,y));
+				}
 			}
 
-			// Callback
-			if (callback) {
-				image_mut.lock();
-				callback();
-				image_mut.unlock();
-			}
 		}
 
 		// Update render progress

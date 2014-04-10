@@ -142,7 +142,7 @@ std::unique_ptr<Renderer> Parser::parse_next_frame()
 
 	scene->finalize();
 
-	std::unique_ptr<Renderer> renderer(new Renderer(scene.release(), res_x, res_y, spp, seed, output_path));
+	std::unique_ptr<Renderer> renderer(new Renderer(scene.release(), res_x, res_y, spp, spp, 0.0f, seed, output_path));
 
 	return renderer;
 }
