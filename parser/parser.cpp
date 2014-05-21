@@ -115,25 +115,25 @@ std::unique_ptr<Renderer> Parser::parse_next_frame()
 			std::string name = line.substr(bilinear_patch_header.length());
 
 			//std::cout << "Found BilinearPatch: " << name << std::endl;
-			scene->add_object(name, parse_bilinear_patch());
+			scene->root->add_object(name, parse_bilinear_patch());
 		} else if (line.find(bicubic_patch_header) == 0) {
 			// Parse a bicubic patch
 			std::string name = line.substr(bicubic_patch_header.length());
 
 			//std::cout << "Found BicubicPatch: " << name << std::endl;
-			scene->add_object(name, parse_bicubic_patch());
+			scene->root->add_object(name, parse_bicubic_patch());
 		} else if (line.find(sphere_header) == 0) {
 			// Parse a sphere
 			std::string name = line.substr(sphere_header.length());
 
 			//std::cout << "Found Sphere: " << name << std::endl;
-			scene->add_object(name, parse_sphere());
+			scene->root->add_object(name, parse_sphere());
 		} else if (line.find(sphere_light_header) == 0) {
 			// Parse a spherical light
 			std::string name = line.substr(sphere_light_header.length());
 
 			//std::cout << "Found SphereLight: " << name << std::endl;
-			scene->add_finite_light(name, parse_sphere_light());
+			scene->root->add_object(name, parse_sphere_light());
 		} else if (line == "Frame") {
 			ungetline(psy_file);
 			break;

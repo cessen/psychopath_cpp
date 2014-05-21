@@ -16,14 +16,12 @@ class SphereLight: public Light
 	Vec3 pos;
 	float radius;
 	Color col;
+	BBoxT bounds_;
 	float surface_area_inv;
 
 public:
-	SphereLight(Vec3 pos_, float radius_, Color col_) {
-		pos = pos_;
-		radius = radius_;
+	SphereLight(Vec3 pos_, float radius_, Color col_): pos {pos_}, radius {radius_}, col {col_}, bounds_ {pos - Vec3(radius), pos + Vec3(radius)} {
 		surface_area_inv = 1.0f / (4 * M_PI * radius * radius);
-		col = col_;
 	}
 
 	/**
@@ -98,8 +96,8 @@ public:
 		return col.energy();
 	}
 
-	virtual BBox bounds() const {
-		return BBox(pos - Vec3(radius), pos + Vec3(radius));
+	virtual BBoxT& bounds() {
+		return bounds_;
 	}
 };
 

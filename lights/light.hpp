@@ -1,6 +1,7 @@
 #ifndef LIGHT_HPP
 #define LIGHT_HPP
 
+#include "object.hpp"
 #include "bbox.hpp"
 #include "vector.hpp"
 #include "color.hpp"
@@ -8,10 +9,14 @@
 /**
  * @brief An interface for light sources.
  */
-class Light
+class Light: public Object
 {
 public:
 	virtual ~Light() {}
+
+	Object::Type get_type() const final {
+		return Object::LIGHT;
+	}
 
 	/**
 	 * @brief Samples the light source for a given point to be illuminated.
@@ -68,25 +73,18 @@ public:
 	/**
 	 * @brief Returns whether the light has a delta distribution.
 	 *
-	 * If a light has not chance of a ray hitting it through random process
+	 * If a light has no chance of a ray hitting it through random process
 	 * then it is a delta light source.  For example, point light sources,
 	 * lights that only emit in a single direction, etc.
 	 */
 	virtual bool is_delta() const = 0;
 
-
-	/**
-	 * @brief Returns whether the light is infinite.
-	 *
-	 * Sun light sources, sky dome lights, etc.  Basically, any light that
-	 * cannot be thought of as existing within the 3d scene, and thus where
-	 * only the direction of the light matters.
-	 */
-	virtual bool is_infinite() const = 0;
-
 	virtual float total_energy() const = 0;
 
-	virtual BBox bounds() const = 0;
+	/**
+	 * @brief Tests a ray against the light.
+	 */
+	//virtual bool intersect_ray(const Ray &ray, Intersection *intersection=nullptr) = 0;
 };
 
 #endif // LIGHT_HPP

@@ -10,6 +10,7 @@
 #include "ray.hpp"
 #include "intersection.hpp"
 #include "bbox.hpp"
+#include "transform.hpp"
 #include "micro_surface.hpp"
 
 
@@ -19,14 +20,22 @@
 class Object
 {
 public:
-	virtual ~Object() {}
+	// Virtual destructor, and don't delete default copy/move constructors
+	Object() = default;
+	virtual ~Object() = default;
+	Object(const Object&) = default;
+	Object(Object&&) = default;
+	Object& operator=(const Object&) = default;
+	Object& operator=(Object&&) = default;
 
 	/**
 	 * @brief An enum type for describing the type of an object.
 	 */
 	enum Type {
 	    SURFACE,
-	    DICEABLE_SURFACE
+	    DICEABLE_SURFACE,
+	    LIGHT,
+	    ASSEMBLY_INSTANCE
 	};
 
 	// Unique ID, used by Scene and Tracer for various purposes
@@ -40,6 +49,8 @@ public:
 
 	/**
 	 * @brief Returns the bounds of the object.
+	 *
+	 * IMPORTANT: these should be the post-transform bounds.
 	 */
 	virtual BBoxT &bounds() = 0;
 };

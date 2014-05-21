@@ -195,7 +195,7 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		}
 
 		// Select a light and store the normalization factor for it's output
-		std::tuple<Light*, float> light_select = scene->finite_light_accel.sample(path.inter.p, nor, path.samples[0]);
+		std::tuple<Light*, float> light_select = scene->root->light_accel.sample(path.inter.p, nor, path.samples[0]);
 		Light* lighty = std::get<0>(light_select);
 		const float inv_probability = 1.0f / std::get<1>(light_select);
 

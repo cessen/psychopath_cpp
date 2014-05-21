@@ -28,7 +28,7 @@ class BVH: public Accel
 {
 public:
 	virtual ~BVH() {};
-	virtual void build(const SceneGraph& scene_graph);
+	virtual void build(const Assembly& assembly);
 
 	// Traversers need access to private data
 	friend class BVHStreamTraverser;

@@ -13,12 +13,11 @@ class PointLight: public Light
 {
 	Vec3 pos;
 	Color col;
+	BBoxT bounds_;
 
 public:
-	PointLight(Vec3 pos_, Color col_) {
-		pos = pos_;
-		col = col_;
-	}
+	PointLight(Vec3 pos_, Color col_): pos {pos_}, col {col_}, bounds_ {pos_, pos_}
+	{}
 
 	virtual Color sample(const Vec3 &arr, float u, float v, float time,
 	                     Vec3 *shadow_vec) const {
@@ -46,8 +45,8 @@ public:
 		return col.energy();
 	}
 
-	virtual BBox bounds() const {
-		return BBox(pos, pos);
+	virtual BBoxT &bounds() {
+		return bounds_;
 	}
 };
 

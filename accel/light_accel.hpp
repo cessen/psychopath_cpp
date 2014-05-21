@@ -3,13 +3,14 @@
 
 #include "numtype.h"
 #include "ray.hpp"
-#include "scene_graph.hpp"
 #include "light.hpp"
 
 #include <vector>
 #include <tuple>
 #include <memory>
 
+// Forward declaration of Assembly from scene/assembly.hpp
+class Assembly;
 
 /**
  * @brief An acceleration structure for sampling a collection of light sources.
@@ -19,7 +20,7 @@ class LightAccel
 public:
 	virtual ~LightAccel() {}
 
-	virtual void build(const SceneGraph& scene_graph) = 0;
+	virtual void build(const Assembly& assembly) = 0;
 
 	virtual std::tuple<Light*, float> sample(Vec3 pos, Vec3 nor, float n) = 0;
 };

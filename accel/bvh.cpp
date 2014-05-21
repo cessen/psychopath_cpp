@@ -3,16 +3,20 @@
 #include <iostream>
 #include <algorithm>
 #include <memory>
-#include "ray.hpp"
-#include "bvh.hpp"
 #include <cmath>
 
+#include "bvh.hpp"
 
-void BVH::build(const SceneGraph& scene_graph)
+#include "ray.hpp"
+#include "assembly.hpp"
+
+void BVH::build(const Assembly& assembly)
 {
-	bag.reserve(scene_graph.objects.size());
-	for (auto& p: scene_graph.objects)
-		bag.push_back(BVHPrimitive(p.second.get()));
+	bag.reserve(assembly.objects.size());
+	for (const auto& ptr: assembly.objects) {
+		if (ptr->get_type() != Object::LIGHT)
+			bag.push_back(BVHPrimitive(ptr.get()));
+	}
 
 	if (bag.size() == 0)
 		return;

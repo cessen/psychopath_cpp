@@ -10,11 +10,7 @@ class LightArray: public LightAccel
 public:
 	~LightArray() {}
 
-	virtual void build(const SceneGraph& scene_graph) {
-		for (auto& l: scene_graph.finite_lights) {
-			lights.push_back(l.second.get());
-		}
-	}
+	virtual void build(const Assembly& assembly);
 
 	virtual std::tuple<Light*, float> sample(Vec3 pos, Vec3 nor, float n) {
 		Light* light = lights[static_cast<uint32_t>(n * lights.size()) % lights.size()];

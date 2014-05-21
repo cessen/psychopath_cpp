@@ -137,20 +137,7 @@ class LightTree: public LightAccel
 public:
 	~LightTree() {}
 
-	virtual void build(const SceneGraph& scene_graph) {
-		// Populate the build nodes
-		for (auto& l: scene_graph.finite_lights) {
-			Light* light = l.second.get();
-
-			build_nodes.push_back(BuildNode());
-			build_nodes.back().light = light;
-			build_nodes.back().bbox = light->bounds();
-			build_nodes.back().center = build_nodes.back().bbox.center();
-			build_nodes.back().energy = light->total_energy();
-		}
-
-		recursive_build(build_nodes.begin(), build_nodes.end());
-	}
+	virtual void build(const Assembly& assembly);
 
 	virtual std::tuple<Light*, float> sample(Vec3 pos, Vec3 nor, float n) {
 		Node* node = &(nodes[0]);
