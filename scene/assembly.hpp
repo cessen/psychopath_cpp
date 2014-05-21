@@ -109,6 +109,7 @@ public:
 		object_accel.build(*this);
 
 		// Build light accel
+		light_accel.build(*this);
 
 		return true;
 	}

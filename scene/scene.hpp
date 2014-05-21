@@ -37,7 +37,9 @@ struct Scene {
 	std::unique_ptr<Assembly> root; // The root assembly of the scene
 
 
-	Scene() {}
+	Scene() {
+		root = std::unique_ptr<Assembly>(new Assembly());
+	}
 
 	/**
 	 * @brief Sets the root assembly of the scene.
@@ -48,6 +50,7 @@ struct Scene {
 
 	// Finalizes the scene for rendering
 	void finalize() {
+		root->finalize();
 	}
 };
 
