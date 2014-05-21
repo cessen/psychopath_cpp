@@ -6,6 +6,7 @@
 #include <memory>
 
 #include "numtype.h"
+#include "global.hpp"
 #include "utils.hpp"
 #include "bbox.hpp"
 #include "transform.hpp"
@@ -73,6 +74,7 @@ public:
 	 * assembly with create_object_instance().
 	 */
 	bool add_object(const std::string& name, std::unique_ptr<Object>&& object) {
+		object->uid = ++Global::next_object_uid; // TODO: use implicit ID's derived from scene hierarchy.
 		objects.emplace_back(std::move(object));
 		object_map.emplace(name, objects.size() -1);
 
