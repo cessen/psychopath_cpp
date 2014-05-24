@@ -33,6 +33,7 @@
 #include "timer.hpp"
 
 #include "parser.hpp"
+#include "data_tree.hpp"
 
 namespace BPO = boost::program_options;
 
@@ -205,11 +206,10 @@ int main(int argc, char **argv)
 
 	std::cout << std::endl;
 
-
 	/*
-	 *********************
+	 ***********************************************
 	 * Parse scene file, rendering frames as we go.
-	 *********************
+	 ***********************************************
 	 */
 	Parser parser(input_path);
 	Timer<> total_timer;

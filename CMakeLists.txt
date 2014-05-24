@@ -177,4 +177,3 @@ target_link_libraries(unit_tests
     ${OIIO_LIBRARY}
     ${OSL_LIBRARYS}
     )
-

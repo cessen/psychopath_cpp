@@ -32,6 +32,8 @@
  * scene to be rendered.
  */
 struct Scene {
+	std::string name;
+
 	std::unique_ptr<Camera> camera; // The camera of the scene
 
 	std::unique_ptr<Assembly> root; // The root assembly of the scene
@@ -41,16 +43,9 @@ struct Scene {
 		root = std::unique_ptr<Assembly>(new Assembly());
 	}
 
-	/**
-	 * @brief Sets the root assembly of the scene.
-	 */
-	void set_root_assembly(std::unique_ptr<Assembly>&& root_) {
-		root = std::move(root_);
-	}
 
 	// Finalizes the scene for rendering
 	void finalize() {
-		root->finalize();
 	}
 };
 

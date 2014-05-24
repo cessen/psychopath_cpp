@@ -5,6 +5,8 @@
 #include <fstream>
 #include <memory>
 
+#include "data_tree.hpp"
+
 #include "sphere_light.hpp"
 #include "bilinear.hpp"
 #include "bicubic.hpp"
@@ -16,43 +18,51 @@
 
 class Parser
 {
-	std::ifstream psy_file;
+	DataTree::Node tree;
+	unsigned int node_index = 0;
 
 	// Methods
 
 	/**
-	 * @brief Parses the frame header.
-	 */
-	std::tuple<int, int, int, int, std::string> parse_frame_header();
+	* @brief Parses a transform matrix.
+	*/
+	Matrix44 parse_matrix(const std::string line);
 
 	/**
-	 * @brief Parses a camera section.
+	* @brief Parses a Camera section.
+	*/
+	std::unique_ptr<Camera> parse_camera(const DataTree::Node& node);
+
+	/**
+	 * @brief Parses an Assembly section.
 	 */
-	std::unique_ptr<Camera> parse_camera();
+	std::unique_ptr<Assembly> parse_assembly(const DataTree::Node& node);
+
 
 	/**
 	 * @brief Parses a bilinear patch section.
 	 */
-	std::unique_ptr<Bilinear> parse_bilinear_patch();
+	std::unique_ptr<Bilinear> parse_bilinear_patch(const DataTree::Node& node);
 
-	/**
-	 * @brief Parses a bicubic patch section.
-	 */
-	std::unique_ptr<Bicubic> parse_bicubic_patch();
+	// /**
+	//  * @brief Parses a bicubic patch section.
+	//  */
+	// std::unique_ptr<Bicubic> parse_bicubic_patch();
 
-	/**
-	 * @brief Parses a sphere section.
-	 */
-	std::unique_ptr<Sphere> parse_sphere();
+	// /**
+	//  * @brief Parses a sphere section.
+	//  */
+	// std::unique_ptr<Sphere> parse_sphere();
 
 	/**
 	 * @brief Parses a sphere light section.
 	 */
-	std::unique_ptr<SphereLight> parse_sphere_light();
+	std::unique_ptr<SphereLight> parse_sphere_light(const DataTree::Node& node);
 
 public:
-	Parser(std::string filename) {
-		psy_file.open(filename);
+	Parser(std::string input_path) {
+		tree = DataTree::build_from_file(input_path.c_str());
+		//DataTree::print_tree(tree);
 	}
 
 	/**

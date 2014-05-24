@@ -83,6 +83,22 @@ public:
 
 
 	/**
+	* Adds a sub-assembly to the assembly.
+	*
+	* Note that this does not add the sub-assembly in such a way that it will
+	* be rendered.  To make the sub-assembly render, you also must instance it
+	* in the assembly with create_assembly_instance().
+	*/
+	bool add_assembly(const std::string& name, std::unique_ptr<Assembly>&& assembly) {
+		//assembly->uid = ++Global::next_object_uid; // TODO: use implicit ID's derived from scene hierarchy.
+		assemblies.emplace_back(std::move(assembly));
+		assembly_map.emplace(name, assemblies.size() -1);
+
+		return true;
+	}
+
+
+	/**
 	 * Creates an instance of an already added object.
 	 */
 	bool create_object_instance(const std::string& name, const std::vector<Transform>& transforms) {
