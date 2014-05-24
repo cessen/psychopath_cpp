@@ -1,0 +1,169 @@
+# Psy files must be valid utf8 files
+
+# Comments start with a hash and go to the end of the line.  Comments are
+# considered whitespace.
+
+# Contiguous strings of whitespace characters (and comments) are always
+# semantically equivalent to a single space.  Whitespace formatting is purely
+# for human readability and does not affect how the file is interpretted.
+
+# Non-leaf properties follow the format:
+#   TypeName $optional_name {<contents>}
+#
+# The contents of a non-leaf property is other properties, both
+# leaf and non-leaf.
+
+# Leaf properties follow the format:
+#   TypeName [<contents>]
+#
+# Note the square brackets instead of curly braces.
+# The contents of a leaf property can be any utf8 text.
+
+# Backslashes (\) are used for escaping characters inside property names and
+# leaf property contents.  Escaping is not allowed anywhere else.
+# In these contexts, Any character immediately following a backslash is
+# interpreted literally and is stripped of any semantic meaning.  This allows,
+# for example, closing square brackets and hash symbols (] and #) to be
+# included in leaf contents.  It also allows white space, hashes, and opening
+# square and curly braces to be in property names.
+
+# A scene defines a single frame to be rendered
+Scene $yar_0001 {
+	# The output section defines how the rendered image should be output to disk
+	Output {
+		Path ["/home/cessen/test/psychopath/render/yar_0001.png"]
+		Format [png]
+		ColorSpace [srgb]
+		Dither [random 1.0]
+	}
+
+	# Render settings... fairly self explanatory
+	RenderSettings {
+		Resolution [1280 720]
+		PixelAspect [1.0]
+		Filter [gaussian 1.5]
+		Seed [1]
+	}
+
+	# Each scene contains a single camera
+	Camera {
+		Fov [0.785398163] # In radians
+		FocalDistance [23.1]
+		ApertureRadius [0.1]
+
+		# Multiple of the same property listed in the same context implies animation.
+		# In this case, the camera has an animated transform.
+		Transform [
+			1 0 0 0
+			0 1 0 0
+			0 0 1 0
+			0 0 0 1
+		]
+
+		Transform [
+			1 0 0 0
+			0 0.9 0 0
+			0 0 0.8 0
+			0 0 0 1.3
+		]
+	}
+
+	# Each scene contains a single world description, which includes everything
+	# of infinite extent.  For example: background shader, distant lights, volumes
+	# that occupy the entire world, etc.
+	World {
+		Background {
+			Color [0.8 0.8 0.8]
+		}
+
+		DistantDiskLight {
+			Direction [1.0 0.5 0.5]
+			Radius [0.00872664] # In radians
+			Color [1.0 1.0 1.0]
+		}
+	}
+
+	# Each scene contains a single root assembly.
+	# All further scene description occurs within this assembly,
+	# or in other files referenced by this assembly.
+	Assembly {
+		# Shaders, objects, sub-assemblies, and instances can be listed in any
+		# order, as long as all data preceeds any references to it.
+
+		OSLShader $grey_diffuse ["/home/cessen/shaders/grey_diffuse.osl"]
+
+		OSLShader $mirror ["/home/cessen/shaders/mirror.osl"]
+
+		SphereLight $light.001 {
+			Position [20 20 20]
+			Radius [1.0]
+			Color [1.0 1.0 1.0]
+		}
+
+		CatmullClarkSubdiv $subdiv_test {
+			GeometryFile ["/home/cessen/thing.obj"]
+			ShaderRef [$mirror] # Referencing the shader defined previously
+		}
+
+		# Assemblies can contain other assemblies
+		Assembly $gruble {
+			OSLShader $mirror2 ["/home/cessen/shaders/mirror2.osl"]
+
+			# Assembly namespaces are local, so $subdiv_test here does
+			# not conflict with $subdiv_test in the parent assembly.
+			CatmullClarkSubdiv $subdiv_test {
+				GeometryFile ["/home/cessen/thing2.obj"]
+				ShaderRef [$mirror] # Referencing the shader defined previously
+			}
+
+			Instance {
+				Data [$subdiv_test]
+			}
+		}
+
+		# The Objects and SubAssemblies don't directly manifest inside
+		# this assembly.  They must be instanced into it.  An object or
+		# sub-assembly can be instanced any number of times within the
+		# assembly.
+		Instance {
+			Data [$light.001]
+			Transform [
+				1 0 0 0
+				0 1 0 0
+				0 0 1 0
+				0 0 0 1
+			]
+		}
+
+		Instance {
+			Data [$subdiv_test]
+			# Transforms are not necessary: an instance can have no transforms
+		}
+
+		Instance {
+			Data [$subdiv_test]
+			Transform [
+				2 0 0 0
+				0 3 4 0
+				1 0 -1 0
+				0 0 0 1
+			]
+			Transform [
+				3 0 0 0
+				0 4 -2 1
+				1 0 -1 0
+				0 0 0 1
+			]
+		}
+
+		Instance {
+			Data [$gruble]
+			Transform [
+				2 0 0 0
+				0 3 4 0
+				1 0 -1 0
+				0 0 0 1
+			]
+		}
+	}
+}
