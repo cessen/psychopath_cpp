@@ -229,6 +229,11 @@ std::unique_ptr<Assembly> Parser::parse_assembly(const DataTree::Node& node)
 			assembly->add_object(child.name, parse_bilinear_patch(child));
 		}
 
+		// Bicubic Patch
+		else if (child.type == "BicubicPatch") {
+			assembly->add_object(child.name, parse_bicubic_patch(child));
+		}
+
 		// Spehere Light
 		else if (child.type == "Sphere") {
 			assembly->add_object(child.name, parse_sphere(child));
@@ -305,6 +310,57 @@ std::unique_ptr<Bilinear> Parser::parse_bilinear_patch(const DataTree::Node& nod
 }
 
 
+std::unique_ptr<Bicubic> Parser::parse_bicubic_patch(const DataTree::Node& node)
+{
+	struct BicubicPatchVerts {
+		float v[48];
+	};
+
+	std::vector<BicubicPatchVerts> patch_verts;
+
+	for (const auto& child: node.children) {
+		// Vertex list
+		if (child.type == "Vertices") {
+			BicubicPatchVerts verts;
+			boost::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
+			for (int i = 0; matches != boost::sregex_iterator() && i < 48; ++matches) {
+				verts.v[i] = std::stof(matches->str());
+				++i;
+			}
+			patch_verts.push_back(verts);
+		}
+	}
+
+	// Build the patch
+	std::unique_ptr<Bicubic> patch(new Bicubic());
+	for (auto& p: patch_verts) {
+		patch->add_time_sample(Vec3(p.v[0], p.v[1], p.v[2]),
+		                       Vec3(p.v[3], p.v[4], p.v[5]),
+		                       Vec3(p.v[6], p.v[7], p.v[8]),
+		                       Vec3(p.v[9], p.v[10], p.v[11]),
+
+		                       Vec3(p.v[12], p.v[13], p.v[14]),
+		                       Vec3(p.v[15], p.v[16], p.v[17]),
+		                       Vec3(p.v[18], p.v[19], p.v[20]),
+		                       Vec3(p.v[21], p.v[22], p.v[23]),
+
+		                       Vec3(p.v[24], p.v[25], p.v[26]),
+		                       Vec3(p.v[27], p.v[28], p.v[29]),
+		                       Vec3(p.v[30], p.v[31], p.v[32]),
+		                       Vec3(p.v[33], p.v[34], p.v[35]),
+
+		                       Vec3(p.v[36], p.v[37], p.v[38]),
+		                       Vec3(p.v[39], p.v[40], p.v[41]),
+		                       Vec3(p.v[42], p.v[43], p.v[44]),
+		                       Vec3(p.v[45], p.v[46], p.v[47]));
+	}
+
+	patch->finalize();
+
+	return patch;
+}
+
+
 std::unique_ptr<SphereLight> Parser::parse_sphere_light(const DataTree::Node& node)
 {
 	Vec3 location {0,0,0};
@@ -350,66 +406,6 @@ std::unique_ptr<SphereLight> Parser::parse_sphere_light(const DataTree::Node& no
 
 	return sl;
 }
-
-
-
-
-
-// struct BicubicPatchVerts {
-// 	float v[48];
-// };
-//
-// std::unique_ptr<Bicubic> Parser::parse_bicubic_patch()
-// {
-// 	std::vector<BicubicPatchVerts> patch_verts;
-//
-// 	std::string line;
-//
-// 	// Get the vertices of the patch; multiple vert lines means motion blur
-// 	while (getline(psy_file, line)) {
-// 		if (line.find("Vertices:") == 0) {
-// 			BicubicPatchVerts verts;
-// 			boost::sregex_iterator matches(line.begin(), line.end(), re_float);
-// 			for (int i = 0; matches != boost::sregex_iterator() && i < 48; ++matches) {
-// 				verts.v[i] = std::stof(matches->str());
-// 				++i;
-// 			}
-// 			patch_verts.push_back(verts);
-// 		} else {
-// 			// No more verts
-// 			ungetline(psy_file);
-// 			break;
-// 		}
-// 	}
-//
-// 	// Build the patch
-// 	std::unique_ptr<Bicubic> patch(new Bicubic());
-// 	for (auto& p: patch_verts) {
-// 		patch->add_time_sample(Vec3(p.v[0], p.v[1], p.v[2]),
-// 		                       Vec3(p.v[3], p.v[4], p.v[5]),
-// 		                       Vec3(p.v[6], p.v[7], p.v[8]),
-// 		                       Vec3(p.v[9], p.v[10], p.v[11]),
-//
-// 		                       Vec3(p.v[12], p.v[13], p.v[14]),
-// 		                       Vec3(p.v[15], p.v[16], p.v[17]),
-// 		                       Vec3(p.v[18], p.v[19], p.v[20]),
-// 		                       Vec3(p.v[21], p.v[22], p.v[23]),
-//
-// 		                       Vec3(p.v[24], p.v[25], p.v[26]),
-// 		                       Vec3(p.v[27], p.v[28], p.v[29]),
-// 		                       Vec3(p.v[30], p.v[31], p.v[32]),
-// 		                       Vec3(p.v[33], p.v[34], p.v[35]),
-//
-// 		                       Vec3(p.v[36], p.v[37], p.v[38]),
-// 		                       Vec3(p.v[39], p.v[40], p.v[41]),
-// 		                       Vec3(p.v[42], p.v[43], p.v[44]),
-// 		                       Vec3(p.v[45], p.v[46], p.v[47]));
-// 	}
-//
-// 	patch->finalize();
-//
-// 	return patch;
-// }
 
 
 std::unique_ptr<Sphere> Parser::parse_sphere(const DataTree::Node& node)

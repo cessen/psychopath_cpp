@@ -44,10 +44,10 @@ class Parser
 	 */
 	std::unique_ptr<Bilinear> parse_bilinear_patch(const DataTree::Node& node);
 
-	// /**
-	//  * @brief Parses a bicubic patch section.
-	//  */
-	// std::unique_ptr<Bicubic> parse_bicubic_patch();
+	/**
+	 * @brief Parses a bicubic patch section.
+	 */
+	std::unique_ptr<Bicubic> parse_bicubic_patch(const DataTree::Node& node);
 
 	/**
 	 * @brief Parses a sphere section.
