@@ -230,8 +230,36 @@ std::unique_ptr<Assembly> Parser::parse_assembly(const DataTree::Node& node)
 		}
 
 		// Spehere Light
+		else if (child.type == "Sphere") {
+			assembly->add_object(child.name, parse_sphere(child));
+		}
+
+		// Spehere Light
 		else if (child.type == "SphereLight") {
 			assembly->add_object(child.name, parse_sphere_light(child));
+		}
+
+		// Instance
+		else if (child.type == "Instance") {
+			// Parse
+			std::string name = "";
+			std::vector<Transform> xforms;
+			for (const auto& child2: child.children) {
+				if (child2.type == "Transform") {
+					xforms.emplace_back(parse_matrix(child2.leaf_contents));
+				} else if (child2.type == "Data") {
+					name = child2.leaf_contents;
+				}
+			}
+
+			// Add instance
+			if (assembly->object_map.count(name) != 0) {
+				assembly->create_object_instance(name, xforms);
+			} else if (assembly->assembly_map.count(name) != 0) {
+				assembly->create_assembly_instance(name, xforms);
+			} else {
+				std::cout << "ERROR: attempted to add instace for data that doesn't exist." << std::endl;
+			}
 		}
 	}
 
@@ -382,40 +410,34 @@ std::unique_ptr<SphereLight> Parser::parse_sphere_light(const DataTree::Node& no
 //
 // 	return patch;
 // }
-//
-//
-// std::unique_ptr<Sphere> Parser::parse_sphere()
-// {
-// 	// TODO: motion blur for spheres
-// 	Vec3 location {0,0,0};
-// 	float radius {0.5f};
-//
-// 	std::string line;
-//
-// 	// Loop through the lines
-// 	while (getline(psy_file, line)) {
-// 		if (line.find("Location:") == 0) {
-// 			// Get the camera's location
-// 			boost::sregex_iterator matches(line.begin(), line.end(), re_float);
-// 			for (int i = 0; matches != boost::sregex_iterator() && i < 3; ++matches) {
-// 				location[i] = std::stof(matches->str());
-// 				++i;
-// 			}
-// 		} else if (line.find("Radius:") == 0) {
-// 			// Get the camera's field of view
-// 			boost::sregex_iterator matches(line.begin(), line.end(), re_float);
-// 			if (matches != boost::sregex_iterator()) {
-// 				radius = std::stof(matches->str());
-// 			}
-// 		} else {
-// 			// Not a valid line for this section, stop
-// 			ungetline(psy_file);
-// 			break;
-// 		}
-// 	}
-//
-// 	// Build light
-// 	std::unique_ptr<Sphere> s(new Sphere(location, radius));
-//
-// 	return s;
-// }
+
+
+std::unique_ptr<Sphere> Parser::parse_sphere(const DataTree::Node& node)
+{
+	// TODO: motion blur for spheres
+	Vec3 location {0,0,0};
+	float radius {0.5f};
+
+	// Parse
+	for (const auto& child: node.children) {
+		if (child.type == "Radius") {
+			// Get radius
+			boost::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
+			if (matches != boost::sregex_iterator()) {
+				radius = std::stof(matches->str());
+			}
+		} else if (child.type == "Location") {
+			// Get location
+			boost::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
+			for (int i = 0; matches != boost::sregex_iterator() && i < 3; ++matches) {
+				location[i] = std::stof(matches->str());
+				++i;
+			}
+		}
+	}
+
+	// Build sphere
+	std::unique_ptr<Sphere> s(new Sphere(location, radius));
+
+	return s;
+}

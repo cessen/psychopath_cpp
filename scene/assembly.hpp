@@ -115,6 +115,22 @@ public:
 
 
 	/**
+	* Creates an instance of an already added assembly.
+	*/
+	bool create_assembly_instance(const std::string& name, const std::vector<Transform>& transforms) {
+		// Add the instance
+		instances.emplace_back(Instance {Instance::ASSEMBLY, assembly_map[name], xforms.size(), transforms.size()});
+
+		// Add transforms
+		for (const auto& trans: transforms) {
+			xforms.emplace_back(trans);
+		}
+
+		return true;
+	}
+
+
+	/**
 	 * Prepares the assembly to be used for rendering.
 	 */
 	bool finalize() {

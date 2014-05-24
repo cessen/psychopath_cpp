@@ -49,10 +49,10 @@ class Parser
 	//  */
 	// std::unique_ptr<Bicubic> parse_bicubic_patch();
 
-	// /**
-	//  * @brief Parses a sphere section.
-	//  */
-	// std::unique_ptr<Sphere> parse_sphere();
+	/**
+	 * @brief Parses a sphere section.
+	 */
+	std::unique_ptr<Sphere> parse_sphere(const DataTree::Node& node);
 
 	/**
 	 * @brief Parses a sphere light section.
