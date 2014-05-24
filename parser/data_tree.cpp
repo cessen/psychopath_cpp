@@ -49,15 +49,14 @@ static inline bool is_ws_char(const std::string& s)
  */
 static inline bool is_nl_char(const std::string& s)
 {
-	if (s.length() == 0)
-		return false;
-
-	switch (s[0]) {
-		case '\n':
-		case '\r':
-			return true;
-		default:
-			break;
+	if (s.length() == 1) {
+		switch (s[0]) {
+			case '\n':
+			case '\r':
+				return true;
+			default:
+				break;
+		}
 	}
 
 	return false;
@@ -258,11 +257,14 @@ Token lex_token(std::string::const_iterator& str_iter, const std::string::const_
 std::string lex_leaf_contents(std::string::const_iterator& str_iter, const std::string::const_iterator& str_iter_end)
 {
 	std::string contents;
-	std::string cur_c = next_utf8(str_iter, str_iter_end);
+	std::string cur_c;
 
+	skip_whitespace_and_comments(str_iter, str_iter_end);
+
+	cur_c = next_utf8(str_iter, str_iter_end);
 	while (cur_c.size() > 0) {
 		// Skip whitespace and comments
-		if (is_ws_char(cur_c) || is_comment_char(cur_c)) {
+		if (is_ws_char(cur_c) || is_nl_char(cur_c) || is_comment_char(cur_c)) {
 			str_iter -= cur_c.length();
 			skip_whitespace_and_comments(str_iter, str_iter_end);
 			contents.append(" ");
@@ -270,8 +272,13 @@ std::string lex_leaf_contents(std::string::const_iterator& str_iter, const std::
 		}
 
 		// End on close bracket
-		if (cur_c == "]")
+		if (cur_c == "]") {
+			// Get rid of ending whitespace
+			if (contents.size() > 0 && contents.back() == ' ') {
+				contents.pop_back();
+			}
 			break;
+		}
 
 		contents.append(cur_c);
 
@@ -335,6 +342,7 @@ Node parse_node(const std::string& type, std::string::const_iterator& str_iter, 
 	return node;
 }
 
+
 Node build_from_file(const char* file_path)
 {
 	// Read the file into text
@@ -352,6 +360,7 @@ Node build_from_file(const char* file_path)
 
 	// Start parsing!
 	Node root;
+	root.type = "ROOT";
 	auto str_iter = text.cbegin();
 	auto str_iter_end = text.cend();
 	Token token;
@@ -367,5 +376,25 @@ Node build_from_file(const char* file_path)
 
 	return root;
 }
+
+
+void print_tree(const Node& node, const std::string& indent)
+{
+	if (node.children.size() > 0) {
+		std::cout << indent << node.type << " ";
+		if (node.name.size() > 0)
+			std::cout << node.name << " ";
+		std::cout << "{\n";
+
+		for (const auto& child: node.children) {
+			print_tree(child, indent + "    ");
+		}
+
+		std::cout << indent << "}\n";
+	} else {
+		std::cout << indent << node.type << " [" << node.leaf_contents << "]\n";
+	}
+}
+
 
 } // namespace DataTree

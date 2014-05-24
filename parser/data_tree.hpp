@@ -22,6 +22,12 @@ struct Node {
  */
 Node build_from_file(const char* file_path);
 
+
+/**
+ * Prints a DataTree to the console, for debugging purposes.
+ */
+void print_tree(const Node& node, const std::string& indent = "");
+
 }
 
 #endif // DATA_TREE_HPP
