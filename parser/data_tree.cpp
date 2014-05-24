@@ -200,6 +200,13 @@ Token lex_token(std::string::const_iterator& str_iter, const std::string::const_
 		do {
 			token.text.append(cur_c);
 			cur_c = next_utf8(str_iter, str_iter_end);
+
+			// Handle escaped characters
+			while (cur_c == "\\") {
+				cur_c = next_utf8(str_iter, str_iter_end);
+				token.text.append(cur_c);
+				cur_c = next_utf8(str_iter, str_iter_end);
+			}
 		} while (is_ident_char(cur_c));
 	}
 
@@ -268,6 +275,13 @@ std::string lex_leaf_contents(std::string::const_iterator& str_iter, const std::
 			str_iter -= cur_c.length();
 			skip_whitespace_and_comments(str_iter, str_iter_end);
 			contents.append(" ");
+			cur_c = next_utf8(str_iter, str_iter_end);
+		}
+
+		// Handle escaped characters
+		while (cur_c == "\\") {
+			cur_c = next_utf8(str_iter, str_iter_end);
+			contents.append(cur_c);
 			cur_c = next_utf8(str_iter, str_iter_end);
 		}
 
