@@ -1,2 +1,2 @@
 add_library(parser
-	parser)
+	parser data_tree)
