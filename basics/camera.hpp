@@ -4,6 +4,7 @@
 #include "numtype.h"
 #include <cmath>
 #include <vector>
+#include <iostream>
 
 
 #include "config.hpp"
@@ -34,6 +35,14 @@ public:
 
 		lens_diameter = lens_diameter_;
 		focus_distance = focus_distance_;
+
+		// Can't have focus distance of zero
+		// TODO: emit error
+		if (focus_distance <= 0.0f) {
+			std::cout << "WARNING: camera focal distance is zero.  Disabling focal blur.\n";
+			lens_diameter = 0.0f;
+			focus_distance = 1.0f;
+		}
 	}
 
 	/*
