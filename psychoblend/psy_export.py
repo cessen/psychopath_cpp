@@ -3,7 +3,6 @@ import bpy
 from math import degrees, pi
 from mathutils import Vector, Matrix
 
-SPP = scene.cycles.samples
 TIME_SEG_SAMPS = 4
 SHUTTER_TIME = 0.5
 
@@ -69,7 +68,7 @@ def export_psy(scene, filename):
         res_x = int(scene.render.resolution_x * (scene.render.resolution_percentage / 100))
         res_y = int(scene.render.resolution_y * (scene.render.resolution_percentage / 100))
         w.write('Resolution [%d %d]\n' % (res_x, res_y))
-        w.write("SamplesPerPixel [%d]\n" % SPP)
+        w.write("SamplesPerPixel [%d]\n" % scene.psychopath.spp)
         w.write('Seed [%d]\n' % fr)
 
         # RenderSettings section end
