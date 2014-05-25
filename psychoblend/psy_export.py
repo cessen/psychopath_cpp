@@ -112,7 +112,7 @@ def export_psy(scene, export_path, render_image_path):
 
     # Scene end
     w.unindent()
-    w.write("\n}\n")
+    w.write("}\n")
 
     # Cleanup
     f.close()
@@ -236,4 +236,4 @@ def export_scene_objects(scene, w):
 
     # Assembly section end
     w.unindent()
-    w.write("\n}\n")
+    w.write("}\n")
