@@ -1,10 +1,8 @@
 import bpy
 
-from math import degrees, pi
+from math import degrees, pi, log
 from mathutils import Vector, Matrix
 
-TIME_SEG_SAMPS = 4
-SHUTTER_TIME = 0.5
 
 def mat2str(m):
     """ Converts a matrix into a single-line string of values.
@@ -14,6 +12,7 @@ def mat2str(m):
         for i in range(4):
             s += (" %f" % m[i][j])
     return s[1:]
+
 
 class IndentedWriter:
     def __init__(self, file_handle):
@@ -33,86 +32,106 @@ class IndentedWriter:
         self.f.write(' '*self.indent_level + text)
 
 
-def export_psy(scene, filename):
-    f = open(filename, 'w')
+
+
+
+def export_psy(scene, export_path, render_image_path):
+    f = open(export_path, 'w')
     w = IndentedWriter(f)
+
+    # Motion blur segments are rounded down to a power of two
+    if scene.psychopath.motion_blur_segments > 0:
+        time_samples = (2**int(log(scene.psychopath.motion_blur_segments, 2))) + 1
+    else:
+        time_samples = 1
+
+    # pre-calculate useful values for exporting motion blur
+    shutter_start = scene.psychopath.shutter_start
+    shutter_diff = (scene.psychopath.shutter_end - scene.psychopath.shutter_start) / max(1, (time_samples-1))
 
     # Info
     w.write("# Exported from Blender 2.7x\n")
 
-    cur_fr = scene.frame_current
+    fr = scene.frame_current
 
-    for fr in range(scene.frame_start, scene.frame_end+1):
-        scene.frame_set(fr)
+    # Scene begin
+    w.write("\n\nScene $%s_fr%d {\n" % (scene.name, fr))
+    w.indent()
 
-        # Scene begin
-        w.write("\n\nScene $%s_fr%d {\n" % (scene.name, fr))
-        w.indent()
+    #######################
+    # Output section begin
+    w.write("Output {\n")
+    w.indent()
 
-        #######################
-        # Output section begin
-        w.write("Output {\n")
-        w.indent()
+    w.write('Path ["%s"]\n' % render_image_path)
 
-        w.write('Path ["' + scene.render.filepath + '%04d.png"]\n' % fr)
+    # Output section end
+    w.unindent()
+    w.write("}\n")
 
-        # Output section end
-        w.unindent()
-        w.write("}\n")
+    ###############################
+    # RenderSettings section begin
+    w.write("RenderSettings {\n")
+    w.indent()
 
-        ###############################
-        # RenderSettings section begin
-        w.write("RenderSettings {\n")
-        w.indent()
+    res_x = int(scene.render.resolution_x * (scene.render.resolution_percentage / 100))
+    res_y = int(scene.render.resolution_y * (scene.render.resolution_percentage / 100))
+    w.write('Resolution [%d %d]\n' % (res_x, res_y))
+    w.write("SamplesPerPixel [%d]\n" % scene.psychopath.spp)
+    w.write('Seed [%d]\n' % fr)
 
-        res_x = int(scene.render.resolution_x * (scene.render.resolution_percentage / 100))
-        res_y = int(scene.render.resolution_y * (scene.render.resolution_percentage / 100))
-        w.write('Resolution [%d %d]\n' % (res_x, res_y))
-        w.write("SamplesPerPixel [%d]\n" % scene.psychopath.spp)
-        w.write('Seed [%d]\n' % fr)
+    # RenderSettings section end
+    w.unindent()
+    w.write("}\n")
 
-        # RenderSettings section end
-        w.unindent()
-        w.write("}\n")
+    #######################
+    # Camera section begin
+    w.write("Camera {\n")
+    w.indent()
 
-        #######################
-        # Camera section begin
-        w.write("Camera {\n")
-        w.indent()
+    cam = scene.camera
+    w.write("Fov [%f]\n" % degrees(cam.data.angle))
+    w.write("FocalDistance [%f]\n" % cam.data.dof_distance)
+    w.write("ApertureRadius [%f]\n" % (cam.data.cycles.aperture_size * 2))
 
-        cam = scene.camera
-        w.write("Fov [%f]\n" % degrees(cam.data.angle))
-        w.write("FocalDistance [%f]\n" % cam.data.dof_distance)
-        w.write("ApertureRadius [%f]\n" % (cam.data.cycles.aperture_size * 2))
+    matz = Matrix()
+    matz[2][2] = -1
+    for i in range(time_samples):
+        scene.frame_set(fr, shutter_start + (shutter_diff*i))
+        mat = cam.matrix_world.copy()
+        mat = mat * matz
+        w.write("Transform [%s]\n" % mat2str(mat))
 
-        matz = Matrix()
-        matz[2][2] = -1
-        for i in range(TIME_SEG_SAMPS):
-            scene.frame_set(fr, (SHUTTER_TIME/max(1,TIME_SEG_SAMPS-1))*i)
-            mat = cam.matrix_world.copy()
-            mat = mat * matz
-            w.write("Transform [%s]\n" % mat2str(mat))
+    # Camera section end
+    w.unindent()
+    w.write("}\n")
 
-        # Camera section end
-        w.unindent()
-        w.write("}\n")
+    #######################
+    # Export objects and materials
+    export_scene_objects(scene, w)
 
-        #######################
-        # Export objects and materials
-        export_scene_objects(scene, w)
+    # Scene end
+    w.unindent()
+    w.write("\n}\n")
 
-        # Scene end
-        w.unindent()
-        w.write("\n}\n")
-
-        # Cleanup
-        f.close()
-        scene.frame_set(cur_fr)
+    # Cleanup
+    f.close()
+    scene.frame_set(fr)
 
 
 
 
 def export_scene_objects(scene, w):
+    # Motion blur segments are rounded down to a power of two
+    if scene.psychopath.motion_blur_segments > 0:
+        time_samples = (2**int(log(scene.psychopath.motion_blur_segments, 2))) + 1
+    else:
+        time_samples = 1
+
+    # pre-calculate useful values for exporting motion blur
+    shutter_start = scene.psychopath.shutter_start
+    shutter_diff = (scene.psychopath.shutter_end - scene.psychopath.shutter_start) / max(1, (time_samples-1))
+
     #######################
     # Assembly section begin
     w.write("Assembly {\n")
@@ -127,8 +146,8 @@ def export_scene_objects(scene, w):
             # Collect time samples
             time_meshes = []
             time_mats = []
-            for i in range(TIME_SEG_SAMPS):
-                scene.frame_set(fr, (SHUTTER_TIME/max(1,TIME_SEG_SAMPS-1))*i)
+            for i in range(time_samples):
+                scene.frame_set(fr, shutter_start + (shutter_diff*i))
                 time_meshes += [ob.to_mesh(scene, True, 'RENDER')]
                 time_mats += [ob.matrix_world.copy()]
 
@@ -141,7 +160,7 @@ def export_scene_objects(scene, w):
                     # Object
                     w.write("BilinearPatch $%s.%d {\n" % (ob.name, face_count))
                     w.indent()
-                    for i in range(TIME_SEG_SAMPS):
+                    for i in range(time_samples):
                         mat = time_mats[i]
                         verts = time_meshes[i].vertices
                         vstr = ""
@@ -167,15 +186,15 @@ def export_scene_objects(scene, w):
             # Collect time samples
             time_surfaces = []
             time_mats = []
-            for i in range(TIME_SEG_SAMPS):
-                scene.frame_set(fr, (SHUTTER_TIME/max(1,TIME_SEG_SAMPS-1))*i)
+            for i in range(time_samples):
+                scene.frame_set(fr, shutter_start + (shutter_diff*i))
                 time_surfaces += [ob.data.copy()]
                 time_mats += [ob.matrix_world.copy()]
 
             # Write patch
             w.write("BicubicPatch $" + ob.name + " {\n")
             w.indent()
-            for i in range(TIME_SEG_SAMPS):
+            for i in range(time_samples):
                 mat = time_mats[i]
                 verts = time_surfaces[i].splines[0].points
                 vstr = ""

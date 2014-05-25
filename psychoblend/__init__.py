@@ -36,12 +36,34 @@ from bpy.props import (StringProperty,
 # Custom Scene settings
 class RenderPsychopathSettingsScene(PropertyGroup):
     spp = IntProperty(
-            name="Samples Per Pixel", description="Total number of samples to take per pixel",
-            min=1, max=65536, default=16)
+        name="Samples Per Pixel", description="Total number of samples to take per pixel",
+        min=1, max=65536, default=16
+        )
 
     dicing_rate = FloatProperty(
-            name="Dicing Rate", description="The target microgeometry width in pixels",
-            min=0.0001, max=100.0, soft_min=0.125, soft_max=1.0, default=0.5)
+        name="Dicing Rate", description="The target microgeometry width in pixels",
+        min=0.0001, max=100.0, soft_min=0.125, soft_max=1.0, default=0.5
+        )
+
+    motion_blur_segments = IntProperty(
+        name="Motion Segments", description="The number of segments to use in motion blur.  Zero means no motion blur.  Will be rounded down to the nearest power of two.",
+        min=0, max=256, default=0
+        )
+        
+    shutter_start = FloatProperty(
+        name="Shutter Open", description="The time during the frame that the shutter opens, for motion blur",
+        min=-1.0, max=1.0, soft_min=0.0, soft_max=1.0, default=0.0
+        )
+
+    shutter_end = FloatProperty(
+        name="Shutter Close", description="The time during the frame that the shutter closes, for motion blur",
+        min=-1.0, max=1.0, soft_min=0.0, soft_max=1.0, default=0.5
+        )
+
+    export_path = StringProperty(
+        name="Export Path", description="The path to where the .psy files should be exported when rendering.  If left blank, /tmp or the equivalent is used.",
+        subtype='FILE_PATH'
+        )
 
 
 # Addon Preferences
@@ -51,7 +73,7 @@ class PsychopathPreferences(AddonPreferences):
     filepath_psychopath = StringProperty(
                 name="Psychopath Location",
                 description="Path to renderer executable",
-                subtype='FILE_PATH',
+                subtype='DIR_PATH',
                 )
 
     def draw(self, context):
