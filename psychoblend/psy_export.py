@@ -217,11 +217,11 @@ def export_scene_objects(scene, w):
             w.write("Data [$%s]\n" % ob.name)
             w.unindent()
             w.write("}\n")
-        elif ob.type == 'LAMP':
+        elif ob.type == 'LAMP' and ob.data.type == 'POINT':
             mat = ob.matrix_world
             loc = mat.to_translation()
-            coldata = ob.data.node_tree.nodes['Emission'].inputs['Color'].default_value[:3]
-            energy = ob.data.node_tree.nodes['Emission'].inputs['Strength'].default_value
+            coldata = ob.data.color
+            energy = ob.data.energy
             w.write("SphereLight $%s {\n" % ob.name)
             w.indent()
             w.write("Location [%f %f %f]\n" % (loc[0], loc[1], loc[2]))

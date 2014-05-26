@@ -82,13 +82,40 @@ class DATA_PT_psychopath_camera_dof(PsychopathPanel, bpy.types.Panel):
         col.prop(ob.data, "dof_distance")
         col.prop(ob.data.psychopath, "aperture_radius")
 
+class DATA_PT_psychopath_lamp(PsychopathPanel, bpy.types.Panel):
+    bl_label = "Lamp"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "data"
+
+    @classmethod
+    def poll(cls, context):
+        engine = context.scene.render.engine
+        return context.lamp and (engine in cls.COMPAT_ENGINES)
+
+    def draw(self, context):
+        ob = context.active_object
+        layout = self.layout
+
+        col = layout.column()
+
+        row = col.row()
+        row.prop(ob.data, "type", expand=True)
+
+        if ob.data.type != 'HEMI' and ob.data.type != 'AREA':
+            col.prop(ob.data, "shadow_soft_size")
+        col.prop(ob.data, "color")
+        col.prop(ob.data, "energy")
+
 
 def register():
     bpy.utils.register_class(RENDER_PT_psychopath_render_settings)
     bpy.utils.register_class(RENDER_PT_psychopath_export_settings)
     bpy.utils.register_class(DATA_PT_psychopath_camera_dof)
+    bpy.utils.register_class(DATA_PT_psychopath_lamp)
 
 def unregister():
     bpy.utils.unregister_class(RENDER_PT_psychopath_render_settings)
     bpy.utils.unregister_class(RENDER_PT_psychopath_export_settings)
     bpy.utils.unregister_class(DATA_PT_psychopath_camera_dof)
+    bpy.utils.unregister_class(DATA_PT_psychopath_lamp)
