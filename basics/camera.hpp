@@ -23,9 +23,9 @@ class Camera
 public:
 	TimeBox<Transform> transforms;
 	float fov, tfov;
-	float lens_diameter, focus_distance;
+	float aperture_radius, focus_distance;
 
-	Camera(std::vector<Transform> &trans, float fov_, float lens_diameter_, float focus_distance_) {
+	Camera(std::vector<Transform> &trans, float fov_, float aperture_radius_, float focus_distance_) {
 		transforms.init(trans.size());
 		for (uint32_t i=0; i < trans.size(); i++)
 			transforms[i] = trans[i];
@@ -33,14 +33,14 @@ public:
 		fov = fov_;
 		tfov = sin(fov/2) / cos(fov/2);
 
-		lens_diameter = lens_diameter_;
+		aperture_radius = aperture_radius_;
 		focus_distance = focus_distance_;
 
 		// Can't have focus distance of zero
 		// TODO: emit error
 		if (focus_distance <= 0.0f) {
 			std::cout << "WARNING: camera focal distance is zero.  Disabling focal blur.\n";
-			lens_diameter = 0.0f;
+			aperture_radius = 0.0f;
 			focus_distance = 1.0f;
 		}
 	}
@@ -55,8 +55,8 @@ public:
 		wray.time = time;
 
 		// Ray origin
-		wray.o.x = lens_diameter * ((u * 2) - 1) * 0.5;
-		wray.o.y = lens_diameter * ((v * 2) - 1) * 0.5;
+		wray.o.x = aperture_radius * ((u * 2) - 1);
+		wray.o.y = aperture_radius * ((v * 2) - 1);
 		wray.o.z = 0.0;
 		square_to_circle(&wray.o.x, &wray.o.y);
 
