@@ -49,7 +49,7 @@ class RenderPsychopathSettingsScene(PropertyGroup):
         name="Motion Segments", description="The number of segments to use in motion blur.  Zero means no motion blur.  Will be rounded down to the nearest power of two.",
         min=0, max=256, default=0
         )
-        
+
     shutter_start = FloatProperty(
         name="Shutter Open", description="The time during the frame that the shutter opens, for motion blur",
         min=-1.0, max=1.0, soft_min=0.0, soft_max=1.0, default=0.0
@@ -63,6 +63,13 @@ class RenderPsychopathSettingsScene(PropertyGroup):
     export_path = StringProperty(
         name="Export Path", description="The path to where the .psy files should be exported when rendering.  If left blank, /tmp or the equivalent is used.",
         subtype='FILE_PATH'
+        )
+
+# Custom Camera properties
+class PsychopathCamera(bpy.types.PropertyGroup):
+    aperture_radius = FloatProperty(
+        name="Aperture Radius", description="Size of the camera's aperture, for DoF",
+        min=0.0, max=10000.0, soft_min=0.0, soft_max=2.0, default=0.0
         )
 
 
@@ -85,7 +92,9 @@ class PsychopathPreferences(AddonPreferences):
 def register():
     bpy.utils.register_class(PsychopathPreferences)
     bpy.utils.register_class(RenderPsychopathSettingsScene)
+    bpy.utils.register_class(PsychopathCamera)
     bpy.types.Scene.psychopath = PointerProperty(type=RenderPsychopathSettingsScene)
+    bpy.types.Camera.psychopath = PointerProperty(type=PsychopathCamera)
     render.register()
     ui.register()
 
@@ -93,6 +102,8 @@ def register():
 def unregister():
     bpy.utils.unregister_class(PsychopathPreferences)
     bpy.utils.unregister_class(RenderPsychopathSettingsScene)
+    bpy.utils.unregister_class(PsychopathCamera)
     del bpy.types.Scene.psychopath
+    del bpy.types.Camera.psychopath
     render.unregister()
     ui.unregister()

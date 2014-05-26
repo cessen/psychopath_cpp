@@ -96,7 +96,7 @@ def export_psy(scene, export_path, render_image_path):
     cam = scene.camera
     w.write("Fov [%f]\n" % degrees(cam.data.angle))
     w.write("FocalDistance [%f]\n" % cam.data.dof_distance)
-    w.write("ApertureRadius [%f]\n" % (cam.data.cycles.aperture_size * 2))
+    w.write("ApertureRadius [%f]\n" % (cam.data.psychopath.aperture_radius))
 
     matz = Matrix()
     matz[2][2] = -1
