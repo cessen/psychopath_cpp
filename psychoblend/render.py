@@ -2,12 +2,18 @@ import bpy
 import time
 import os
 import subprocess
+import tempfile
 from . import psy_export
+
+def get_temp_filename(suffix=""):
+    tmpf = tempfile.mkstemp(suffix=suffix, prefix='tmp')
+    os.close(tmpf[0])
+    return(tmpf[1])
 
 class PsychopathRender(bpy.types.RenderEngine):
     bl_idname = 'PSYCHOPATH_RENDER'
     bl_label = "Psychopath"
-    DELAY = 0.5
+    DELAY = 1.0
 
     @staticmethod
     def _locate_binary():
@@ -56,10 +62,7 @@ class PsychopathRender(bpy.types.RenderEngine):
             print ("***-DONE-***")
             return False
 
-        else:
-            print("Psychopath found")
-            print("Command line arguments passed: " + str(args))
-            return True
+        return True
 
 
     def _cleanup(self):
@@ -88,14 +91,18 @@ class PsychopathRender(bpy.types.RenderEngine):
         scene.frame_set(scene.frame_current)
 
         export_path = scene.psychopath.export_path
-        export_path += "_%d.psy" % scene.frame_current
+        if export_path != "":
+            export_path += "_%d.psy" % scene.frame_current
+        else:
+            # Create a temporary file for exporting
+            export_path = get_temp_filename('.psy')
 
-        render_image_path = scene.render.filepath + "_%d.png" % scene.frame_current
+        # Create a temporary file to render into
+        render_image_path = get_temp_filename('.png')
 
         # start export
         self.update_stats("", "Psychopath: Exporting data from Blender")
         self._export(scene, export_path, render_image_path)
-
 
         # Start rendering
         self.update_stats("", "Psychopath: Rendering from exported file")
@@ -103,28 +110,40 @@ class PsychopathRender(bpy.types.RenderEngine):
             self.update_stats("", "Psychopath: Not found")
             return
 
-        self._process.wait()
-
         r = scene.render
         # compute resolution
-        x = int(r.resolution_x * r.resolution_percentage * 0.01)
-        y = int(r.resolution_y * r.resolution_percentage * 0.01)
+        x = int(r.resolution_x * r.resolution_percentage)
+        y = int(r.resolution_y * r.resolution_percentage)
 
-        if os.path.exists(render_image_path):
-            xmin = int(r.border_min_x * x)
-            ymin = int(r.border_min_y * y)
-            xmax = int(r.border_max_x * x)
-            ymax = int(r.border_max_y * y)
+        result = self.begin_result(0, 0, x, y)
+        lay = result.layers[0]
 
-            result = self.begin_result(0, 0, x, y)
-            lay = result.layers[0]
+        # TODO: Update viewport with render result while rendering
+        while self._process.poll() == None:
+            # Wait for self.DELAY seconds, but check for render cancels
+            # while waiting.
+            t = 0.0
+            while t < self.DELAY:
+                if self.test_break():
+                    self._process.terminate()
+                    break
+                time.sleep(0.05)
+                t += 0.05
+            # # Update viewport image with latest render output
+            # if os.path.exists(render_image_path):
+            #     # This assumes the file has been fully written We wait a bit, just in case!
+            #     try:
+            #         lay.load_from_file(render_image_path)
+            #         self.update_result(result)
+            #     except RuntimeError:
+            #         pass
 
-            # This assumes the file has been fully written We wait a bit, just in case!
-            time.sleep(self.DELAY)
-            try:
-                lay.load_from_file(render_image_path)
-            except RuntimeError:
-                print("***PSYCHOPATH ERROR WHILE READING OUTPUT FILE***")
+        # Load final image
+        lay.load_from_file(render_image_path)
+        self.end_result(result)
+
+        # Delete temporary image file
+        os.remove(render_image_path)
 
 def register():
     bpy.utils.register_class(PsychopathRender)
