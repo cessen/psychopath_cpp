@@ -32,7 +32,11 @@ class IndentedWriter:
         self.f.write(' '*self.indent_level + text)
 
 
-
+def set_frame(scene, frame, fraction):
+    if fraction >= 0:
+        scene.frame_set(frame, fraction)
+    else:
+        scene.frame_set(frame-1, 1.0+fraction)
 
 
 def export_psy(scene, export_path, render_image_path):
@@ -97,7 +101,7 @@ def export_psy(scene, export_path, render_image_path):
     matz = Matrix()
     matz[2][2] = -1
     for i in range(time_samples):
-        scene.frame_set(fr, shutter_start + (shutter_diff*i))
+        set_frame(scene, fr, shutter_start + (shutter_diff*i))
         mat = cam.matrix_world.copy()
         mat = mat * matz
         w.write("Transform [%s]\n" % mat2str(mat))
@@ -147,7 +151,7 @@ def export_scene_objects(scene, w):
             time_meshes = []
             time_mats = []
             for i in range(time_samples):
-                scene.frame_set(fr, shutter_start + (shutter_diff*i))
+                set_frame(scene, fr, shutter_start + (shutter_diff*i))
                 time_meshes += [ob.to_mesh(scene, True, 'RENDER')]
                 time_mats += [ob.matrix_world.copy()]
 
@@ -187,7 +191,7 @@ def export_scene_objects(scene, w):
             time_surfaces = []
             time_mats = []
             for i in range(time_samples):
-                scene.frame_set(fr, shutter_start + (shutter_diff*i))
+                set_frame(scene, fr, shutter_start + (shutter_diff*i))
                 time_surfaces += [ob.data.copy()]
                 time_mats += [ob.matrix_world.copy()]
 
