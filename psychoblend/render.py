@@ -1,4 +1,7 @@
 import bpy
+import time
+import os
+import subprocess
 from . import psy_export
 
 class PsychopathRender(bpy.types.RenderEngine):
@@ -32,37 +35,31 @@ class PsychopathRender(bpy.types.RenderEngine):
     def _export(self, scene, export_path, render_image_path):
         psy_export.export_psy(scene, export_path, render_image_path)
 
-    def _render(self, scene):
-        # try:
-        #     os.remove(self._temp_file_out)  # so as not to load the old file
-        # except OSError:
-        #     pass
-        #
-        # psy_binary = PsychopathRender._locate_binary()
-        # if not psy_binary:
-        #     print("Psychopath: could not execute psychopath, possibly Psychopath isn't installed")
-        #     return False
-        #
-        # # TODO: figure out command line options
-        # args = []
-        #
-        # # Start Rendering!
-        # try:
-        #     self._process = subprocess.Popen([psy_binary] + args,
-        #                                      stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        # except OSError:
-        #     # TODO, report api
-        #     print("Psychopath: could not execute '%s'" % psy_binary)
-        #     import traceback
-        #     traceback.print_exc()
-        #     print ("***-DONE-***")
-        #     return False
-        #
-        # else:
-        #     print("Psychopath found")
-        #     print("Command line arguments passed: " + str(args))
-        #     return True
-        pass
+    def _render(self, scene, psy_filepath):
+        psy_binary = PsychopathRender._locate_binary()
+        if not psy_binary:
+            print("Psychopath: could not execute psychopath, possibly Psychopath isn't installed")
+            return False
+
+        # TODO: figure out command line options
+        args = ["-i", psy_filepath]
+
+        # Start Rendering!
+        try:
+            self._process = subprocess.Popen([psy_binary] + args,
+                                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        except OSError:
+            # TODO, report api
+            print("Psychopath: could not execute '%s'" % psy_binary)
+            import traceback
+            traceback.print_exc()
+            print ("***-DONE-***")
+            return False
+
+        else:
+            print("Psychopath found")
+            print("Command line arguments passed: " + str(args))
+            return True
 
 
     def _cleanup(self):
@@ -98,33 +95,36 @@ class PsychopathRender(bpy.types.RenderEngine):
         # start export
         self.update_stats("", "Psychopath: Exporting data from Blender")
         self._export(scene, export_path, render_image_path)
-        self.update_stats("", "Psychopath: Parsing File")
 
-        # # Start rendering
-        # if not self._render(scene):
-        #     self.update_stats("", "Psychopath: Not found")
-        #     return
-        #
-        # r = scene.render
-        # # compute resolution
-        # x = int(r.resolution_x * r.resolution_percentage * 0.01)
-        # y = int(r.resolution_y * r.resolution_percentage * 0.01)
-        #
-        # if os.path.exists(self._temp_file_out):
-        #     xmin = int(r.border_min_x * x)
-        #     ymin = int(r.border_min_y * y)
-        #     xmax = int(r.border_max_x * x)
-        #     ymax = int(r.border_max_y * y)
-        #
-        #     result = self.begin_result(0, 0, x, y)
-        #     lay = result.layers[0]
-        #
-        #     # This assumes the file has been fully written We wait a bit, just in case!
-        #     time.sleep(self.DELAY)
-        #     try:
-        #         lay.load_from_file(self._temp_file_out)
-        #     except RuntimeError:
-        #         print("***PSYCHOPATH ERROR WHILE READING OUTPUT FILE***")
+
+        # Start rendering
+        self.update_stats("", "Psychopath: Rendering from exported file")
+        if not self._render(scene, export_path):
+            self.update_stats("", "Psychopath: Not found")
+            return
+
+        self._process.wait()
+
+        r = scene.render
+        # compute resolution
+        x = int(r.resolution_x * r.resolution_percentage * 0.01)
+        y = int(r.resolution_y * r.resolution_percentage * 0.01)
+
+        if os.path.exists(render_image_path):
+            xmin = int(r.border_min_x * x)
+            ymin = int(r.border_min_y * y)
+            xmax = int(r.border_max_x * x)
+            ymax = int(r.border_max_y * y)
+
+            result = self.begin_result(0, 0, x, y)
+            lay = result.layers[0]
+
+            # This assumes the file has been fully written We wait a bit, just in case!
+            time.sleep(self.DELAY)
+            try:
+                lay.load_from_file(render_image_path)
+            except RuntimeError:
+                print("***PSYCHOPATH ERROR WHILE READING OUTPUT FILE***")
 
 def register():
     bpy.utils.register_class(PsychopathRender)
