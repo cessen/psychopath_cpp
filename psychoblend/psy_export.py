@@ -94,8 +94,16 @@ def export_psy(scene, export_path, render_image_path):
     w.indent()
 
     cam = scene.camera
+
+    if cam.data.dof_object == None:
+        dof_distance = cam.data.dof_distance
+    else:
+        # TODO: implement DoF object tracking here
+        dof_distance = 0.0
+        print("WARNING: DoF object tracking not yet implemented.")
+
     w.write("Fov [%f]\n" % degrees(cam.data.angle))
-    w.write("FocalDistance [%f]\n" % cam.data.dof_distance)
+    w.write("FocalDistance [%f]\n" % dof_distance)
     w.write("ApertureRadius [%f]\n" % (cam.data.psychopath.aperture_radius))
 
     matz = Matrix()
