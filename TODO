@@ -1,51 +1,15 @@
 - Ray stream tracing:
 	- Optimizations...
 
-- Roll Lights into Objects, so that every finite thing in the scene is an object.
-  Lights are then simply objects that happen to emit light.
 
 - Infinite lights (e.g. sun lights) will be considered part of the background,
   along with e.g. HDRI lighting backgrounds.
 
-- Implement proper "scene" data structure
-	- Should have built-in methods for manipulating and transforming it, for
-	  e.g. optimization.
-	- The scene is like a database with references.
-	- For the first iteration, leave lights out of the scene hierarchy, and
-	  just have them be a flat list.  Later iterations can find ways to
-	  integrate them.
-	- All instances should have implicit GUID's based on the scene hierarchy,
-	  so that they can be referenced independently of how the acceleration
-	  structures are built.  This also provides a nice unique number for
-	  shaders to use for randomizing shading among instances of the same
-	  object.
-	- The concept of an "assembly" is a powerful one.  And it simplifies
-	  things if we do all instancing via assemblies.  To further simplify
-	  things, assemblies should be totally self-contained, containing all
-	  geometry, shaders, and lights within them.  Assemblies should not
-	  be able to directly reference data from other assemblies.  The
-	  only way assemblies should be able to reference each other is to
-	  instance each other.
-	- Lights are just objects that happen to emit light.
-	- Lights, objects, volumes, etc. of infinite extent should not be allowed
-	  inside assemblies.  Those should go in a separate "world" structure, or
-	  some such thing.
-
 - Implement transforms and instancing:
-	- The input to the acceleration structure is a scene hierarchy rather
-	  than primitives added one-at-a-time.  There can be separate code
-	  completely outside of the accel builder that optimizes the scene
-	  hierarchy (e.g. applying static transforms, collapsing meaningless motion
-	  transforms, de-instancing instances that only appear once, etc.).  Then
-	  the responsibility of the accel builder is purely to take that
-	  straight-forward description and make an accel structure for it.
-	- Scene file(s)
-	   |PARSER|
-	  Scene hierarchy
-	   |OPTIMIZER(S)|
-	  Optimized scene hierarchy
-	   |ACCEL BUILDER|
-	  Acceleration structure
+	// - Implement relevant data structures and scene import code
+	- Make BVH use instances instead of raw objects
+	- Implement ray transforms during scene traversal
+	- Implement recursive calls of traversers for assemblies
 
 - Implement a shading system
 	- Proper ray differentials
