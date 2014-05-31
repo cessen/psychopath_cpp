@@ -7,15 +7,40 @@
 
 #include "bvh.hpp"
 
+#include "utils.hpp"
 #include "ray.hpp"
 #include "assembly.hpp"
 
-void BVH::build(const Assembly& assembly)
+void BVH::build(const Assembly& _assembly)
 {
-	bag.reserve(assembly.objects.size());
-	for (const auto& ptr: assembly.objects) {
-		if (ptr->get_type() != Object::LIGHT)
-			bag.push_back(BVHPrimitive(ptr.get()));
+	assembly = &_assembly;
+
+	// Abbreviating subsequent code
+	const auto& instances = assembly->instances;
+
+	// Create BVHPrimitive bag
+	bag.reserve(instances.size());
+	for (size_t i = 0; i < instances.size(); ++i) {
+		// Skip if it's a light
+		// TODO: lights should be included too, with MIS
+		if (assembly->instances[i].type == Instance::OBJECT) {
+			Object* obj = assembly->objects[assembly->instances[i].data_index].get();
+			if (obj->get_type() == Object::LIGHT)
+				continue;
+		}
+
+		// Get instance bounds at time 0.5
+		BBox bb = assembly->instance_bounds_at(0.5f, i);
+
+		// Create primitive
+		BVHPrimitive prim;
+		prim.instance_index = i;
+		prim.bmin = bb.min;
+		prim.bmax = bb.max;
+		prim.c = lerp(0.5f, bb.min, bb.max);
+
+		// Add it to the bag
+		bag.push_back(prim);
 	}
 
 	if (bag.size() == 0)
@@ -286,15 +311,15 @@ size_t BVH::recursive_build(size_t parent, size_t first_prim, size_t last_prim)
 
 	if (first_prim == last_prim) {
 		// Leaf node
-
 		nodes[me].flags |= IS_LEAF;
-		nodes[me].data = bag[first_prim].data;
+		nodes[me].data_index = bag[first_prim].instance_index;
 
 		// Copy bounding boxes
+		auto bbs = assembly->instance_bounds(bag[first_prim].instance_index);
 		nodes[me].bbox_index = bboxes.size();
-		nodes[me].ts = bag[first_prim].data->bounds().size();
-		for (size_t i = 0; i < nodes[me].ts; i++)
-			bboxes.push_back(bag[first_prim].data->bounds()[i]);
+		nodes[me].ts = bbs.size();
+		for (auto bb: bbs)
+			bboxes.push_back(bb);
 	} else {
 		// Not a leaf node
 
@@ -336,11 +361,11 @@ size_t BVH::recursive_build(size_t parent, size_t first_prim, size_t last_prim)
 }
 
 
-std::tuple<Ray*, Ray*, Object*> BVHStreamTraverser::next_object()
+std::tuple<Ray*, Ray*, size_t> BVHStreamTraverser::next_object()
 {
 	// If there aren't any objects in the scene, return finished
 	if (bvh->nodes.size() == 0)
-		return std::make_tuple(&(*rays.end()), &(*rays.end()), nullptr);
+		return std::make_tuple(&(*rays.end()), &(*rays.end()), 0);
 
 	float near_t, far_t;
 
@@ -376,7 +401,7 @@ std::tuple<Ray*, Ray*, Object*> BVHStreamTraverser::next_object()
 		}
 		// If it's a leaf
 		else if (bvh->is_leaf(node_stack[stack_ptr])) {
-			auto rv = std::make_tuple(&(*ray_stack[stack_ptr].first), &(*ray_stack[stack_ptr].second), bvh->nodes[node_stack[stack_ptr]].data);
+			auto rv = std::make_tuple(&(*ray_stack[stack_ptr].first), &(*ray_stack[stack_ptr].second), bvh->nodes[node_stack[stack_ptr]].data_index);
 			--stack_ptr;
 			return rv;
 		}
@@ -392,5 +417,5 @@ std::tuple<Ray*, Ray*, Object*> BVHStreamTraverser::next_object()
 	}
 
 	// Finished traversal
-	return std::make_tuple(&(*rays.end()), &(*rays.end()), nullptr);
+	return std::make_tuple(&(*rays.end()), &(*rays.end()), 0);
 }

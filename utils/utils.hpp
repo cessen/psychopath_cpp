@@ -71,6 +71,12 @@ static inline const T lerp_seq(const float &alpha, const iterator &seq, const si
 	return seq[seq_length-1];
 }
 
+template <class T, class iterator>
+static inline const T lerp_seq(const float &alpha, const iterator &seq_begin, const iterator &seq_end)
+{
+	return lerp_seq<T,iterator>(alpha, seq_begin, std::distance(seq_begin, seq_end));
+}
+
 #define QPI (3.1415926535897932384626433 / 4)
 
 /*

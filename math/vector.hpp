@@ -176,4 +176,4 @@ static inline Vec3 max(const Vec3 &a, const Vec3 &b)
 	return c;
 }
 
-#endif
+#endif // VECTOR_HPP

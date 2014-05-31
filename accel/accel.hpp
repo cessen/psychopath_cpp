@@ -4,6 +4,7 @@
 #include "numtype.h"
 #include "ray.hpp"
 #include "object.hpp"
+#include "bbox.hpp"
 
 #include <vector>
 #include <tuple>
@@ -27,6 +28,13 @@ public:
 	 * @brief Builds the acceleration structure from the given assembly.
 	 */
 	virtual void build(const Assembly& assembly) = 0;
+
+	/**
+	 * @brief Returns the spatial bounds of the acceleration structure.
+	 *
+	 * Should not be called until after build() is called.
+	 */
+	virtual const std::vector<BBox>& bounds() const = 0;
 };
 
 
@@ -60,12 +68,13 @@ public:
 	/**
 	 * @brief Traverses to the next relevant object.
 	 *
-	 * Returns a tuple with a pair of iterators to the begin and end of the relevant
-	 * Rays, and a pointer to the object they need to be tested against.
+	 * Returns a tuple with a pair of iterators to the begin and end of the
+	 * relevant Rays, and an index to the object instance they need to be
+	 * tested against.
 	 *
-	 * When traversal is complete, begin == end and object == nullptr.
+	 * When traversal is complete, begin == end and object == 0.
 	 */
-	virtual std::tuple<Ray*, Ray*, Object*>
+	virtual std::tuple<Ray*, Ray*, size_t>
 	next_object() = 0;
 };
 

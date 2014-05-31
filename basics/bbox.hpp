@@ -8,11 +8,14 @@
 #include <cmath>
 #include <stdlib.h>
 #include <tuple>
+#include <array>
+
 #include "simd.hpp"
 #include "global.hpp"
 #include "timebox.hpp"
 #include "vector.hpp"
 #include "ray.hpp"
+#include "transform.hpp"
 #include "utils.hpp"
 
 #define BBOX_MAXT_ADJUST 1.00000024f
@@ -172,6 +175,72 @@ struct BBox {
 	inline bool intersect_ray(const Ray& ray) const {
 		float hitt0, hitt1;
 		return intersect_ray(ray, &hitt0, &hitt1, ray.max_t);
+	}
+
+	/**
+	 * @brief Creates a new BBox transformed into a different space.
+	 *
+	 * TODO: there is a more efficient, though less intuitive, algorithm for
+	 * this.  Implement it.
+	 */
+	BBox transformed(const Transform& trans) const {
+		// BBox corners
+		std::array<Vec3,8> vs {{
+				Vec3(min[0], min[1], min[2]),
+				Vec3(min[0], min[1], max[2]),
+				Vec3(min[0], max[1], min[2]),
+				Vec3(min[0], max[1], max[2]),
+				Vec3(max[0], min[1], min[2]),
+				Vec3(max[0], min[1], max[2]),
+				Vec3(max[0], max[1], min[2]),
+				Vec3(max[0], max[1], max[2])
+			}
+		};
+
+		// Transform BBox corners
+		for (auto& v: vs)
+			v = trans.pos_to(v);
+
+		// Find the min and max
+		BBox b;
+		for (auto& v: vs) {
+			for (int i = 0; i < 3; i++) {
+				b.min[i] = v[i] < b.min[i] ? v[i] : b.min[i];
+				b.max[i] = v[i] > b.max[i] ? v[i] : b.max[i];
+			}
+		}
+
+		return b;
+	}
+
+	BBox inverse_transformed(const Transform& trans) const {
+		// BBox corners
+		std::array<Vec3,8> vs {{
+				Vec3(min[0], min[1], min[2]),
+				Vec3(min[0], min[1], max[2]),
+				Vec3(min[0], max[1], min[2]),
+				Vec3(min[0], max[1], max[2]),
+				Vec3(max[0], min[1], min[2]),
+				Vec3(max[0], min[1], max[2]),
+				Vec3(max[0], max[1], min[2]),
+				Vec3(max[0], max[1], max[2])
+			}
+		};
+
+		// Transform BBox corners
+		for (auto& v: vs)
+			v = trans.pos_from(v);
+
+		// Find the min and max
+		BBox b;
+		for (auto& v: vs) {
+			for (int i = 0; i < 3; i++) {
+				b.min[i] = v[i] < b.min[i] ? v[i] : b.min[i];
+				b.max[i] = v[i] > b.max[i] ? v[i] : b.max[i];
+			}
+		}
+
+		return b;
 	}
 
 	/**

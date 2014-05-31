@@ -164,7 +164,80 @@ public:
 		return intlog2(upper_power_of_two(instances.size()));
 	}
 
-	//std::vector<BBox> bounds() const;
+
+	/**
+	 * Calculates and returns the proper transformed bounding boxes of an
+	 * instance.
+	 */
+	std::vector<BBox> instance_bounds(size_t index) const {
+		std::vector<BBox> bbs;
+
+		// Get bounding boxes
+		if (instances[index].type == Instance::OBJECT) {
+			auto obj = objects[instances[index].data_index].get();
+			for (int i = 0; i < obj->bounds().size(); ++i) {
+				bbs.push_back(obj->bounds()[i]);
+			}
+		} else { /* Instance::ASSEMBLY */
+			auto asmb = assemblies[instances[index].data_index].get();
+			bbs = asmb->object_accel.bounds();
+		}
+
+		// Transform the bounding boxes
+		auto tb = instances[index].transform_index;
+		auto te = instances[index].transform_index + instances[index].transform_count;
+		auto tcount = instances[index].transform_count;
+
+		if (tcount == 0) {
+			// Do nothing
+		} else if (bbs.size() == tcount) {
+			for (size_t i = 0; i < bbs.size(); ++i)
+				bbs[i] = bbs[i].inverse_transformed(xforms[tb+i]);
+		} else if (bbs.size() > tcount) {
+			const float s = bbs.size() - 1;
+			for (size_t i = 0; i < bbs.size(); ++i)
+				bbs[i] = bbs[i].inverse_transformed(lerp_seq<Transform, decltype(&(xforms[tb]))>(i/s, &(xforms[tb]), &(xforms[te])));
+		} else if (bbs.size() < tcount) {
+			const float s = tcount - 1;
+			std::vector<BBox> tbbs;
+			for (size_t i = 0; i < tcount; ++i)
+				tbbs.push_back(lerp_seq<BBox, std::vector<BBox>::const_iterator>(i/s, bbs.cbegin(), bbs.cend()).inverse_transformed(xforms[tb+i]));
+			bbs = std::move(tbbs);
+		}
+
+		return bbs;
+	}
+
+
+	/**
+	 * Calculates and returns the bounds of an instance at a particular moment
+	 * in time.
+	 */
+	BBox instance_bounds_at(float t, size_t index) const {
+		BBox bb;
+
+		// Calculate bounds at time t
+		if (instances[index].type == Instance::OBJECT) {
+			// Get BBox at time t
+			bb = objects[instances[index].data_index]->bounds().at_time(t);
+		} else { /* Instance::ASSEMBLY */
+			// Get BBox at time t
+			const auto& bbs = assemblies[instances[index].data_index]->object_accel.bounds();
+			auto begin = bbs.begin();
+			auto end = bbs.end();
+			bb = lerp_seq<BBox, decltype(begin)>(t, begin, end);
+		}
+
+		// Transform bounds if necessary
+		if (instances[index].transform_count > 0) {
+			// Get bounds and center at time t
+			auto tb = xforms.begin() + instances[index].transform_index;
+			auto te = tb + instances[index].transform_count;
+			bb = bb.inverse_transformed(lerp_seq<Transform, decltype(tb)>(t, tb, te));
+		}
+
+		return bb;
+	}
 };
 
 #endif // ASSEMBLY_HPP

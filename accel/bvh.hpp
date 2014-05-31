@@ -26,9 +26,14 @@
  */
 class BVH: public Accel
 {
+	std::vector<BBox> bbs {BBox()}; // TODO: build this properly
+
 public:
 	virtual ~BVH() {};
 	virtual void build(const Assembly& assembly);
+	virtual const std::vector<BBox>& bounds() const {
+		return bbs;
+	};
 
 	// Traversers need access to private data
 	friend class BVHStreamTraverser;
@@ -48,7 +53,7 @@ public:
 		size_t bbox_index = 0;
 		union {
 			size_t child_index;
-			Object *data = nullptr;
+			size_t data_index;
 		};
 		size_t parent_index = 0;
 		uint16_t ts = 0; // Time sample count
@@ -69,31 +74,12 @@ public:
 	 * Contains the time 0.5 bounds of the object and it's centroid.
 	 */
 	struct BVHPrimitive {
-		Object *data;
+		size_t instance_index;
 		Vec3 bmin, bmax, c;
-
-		BVHPrimitive() {
-			data = nullptr;
-		}
-
-		BVHPrimitive(Object *prim) {
-			init(prim);
-		}
-
-		void init(Object *prim) {
-			data = prim;
-
-			// Get bounds at time 0.5
-			BBox mid_bb = data->bounds().at_time(0.5);
-			bmin = mid_bb.min;
-			bmax = mid_bb.max;
-
-			// Get centroid
-			c = (bmin * 0.5) + (bmax * 0.5);
-		}
 	};
 
 private:
+	const Assembly* assembly; // Set during build()
 	BBoxT bbox;
 	std::vector<Node> nodes;
 	std::vector<BBox> bboxes;
@@ -180,7 +166,7 @@ public:
 		ray_stack[0].second = rays.end();
 	}
 
-	virtual std::tuple<Ray*, Ray*, Object*> next_object();
+	virtual std::tuple<Ray*, Ray*, size_t> next_object();
 
 private:
 	const BVH* bvh = nullptr;

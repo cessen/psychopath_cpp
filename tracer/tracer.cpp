@@ -21,11 +21,8 @@
 
 #include "ray.hpp"
 #include "intersection.hpp"
+#include "assembly.hpp"
 #include "scene.hpp"
-
-#define RAY_STATE_SIZE scene->world.ray_state_size()
-#define MAX_POTINT 1u
-#define RAY_JOB_SIZE (1024*4)
 
 
 uint32_t Tracer::trace(const Slice<WorldRay> w_rays_, Slice<Intersection> intersections_)
@@ -40,22 +37,32 @@ uint32_t Tracer::trace(const Slice<WorldRay> w_rays_, Slice<Intersection> inters
 	std::fill(intersections.begin(), intersections.end(), Intersection());
 
 	// Initialize traverser
+	traverser.init_accel(scene->root->object_accel);
 	traverser.init_rays(w_rays.begin(), w_rays.end());
 
 	// Trace potential intersections
-	std::tuple<Ray*, Ray*, Object*> hits = traverser.next_object();
-	while (std::get<2>(hits) != nullptr) {
-		// Branch to different code path based on object type
-		switch (std::get<2>(hits)->get_type()) {
-			case Object::SURFACE:
-				trace_surface(reinterpret_cast<Surface*>(std::get<2>(hits)), std::get<0>(hits), std::get<1>(hits));
-				break;
-			case Object::DICEABLE_SURFACE:
-				trace_diceable_surface(reinterpret_cast<DiceableSurface*>(std::get<2>(hits)), std::get<0>(hits), std::get<1>(hits));
-				break;
-			default:
-				std::cout << "WARNING: unknown object type, skipping." << std::endl;
-				break;
+	std::tuple<Ray*, Ray*, size_t> hits = traverser.next_object();
+	while (std::get<0>(hits) != std::get<1>(hits)) {
+		const auto& instance = scene->root->instances[std::get<2>(hits)]; // Short-hand for the current instance
+
+		// Object or Assembly?
+		if (instance.type == Instance::OBJECT) {
+			Object* obj = scene->root->objects[instance.data_index].get(); // Short-hand for the current object
+
+			// Branch to different code path based on object type
+			switch (obj->get_type()) {
+				case Object::SURFACE:
+					trace_surface(reinterpret_cast<Surface*>(obj), std::get<0>(hits), std::get<1>(hits));
+					break;
+				case Object::DICEABLE_SURFACE:
+					trace_diceable_surface(reinterpret_cast<DiceableSurface*>(obj), std::get<0>(hits), std::get<1>(hits));
+					break;
+				default:
+					std::cout << "WARNING: unknown object type, skipping." << std::endl;
+					break;
+			}
+		} else { /* Instance::ASSEMBLY */
+			// Do nothing
 		}
 
 		Global::Stats::object_ray_tests += std::distance(std::get<0>(hits), std::get<1>(hits));
