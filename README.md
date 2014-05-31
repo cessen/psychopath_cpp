@@ -26,11 +26,17 @@ able to render using this technique very efficiently.
 Current Features
 ----------------
 - Bilinear patches
-- Bicubic Bezier patches
+- Bicubic bezier patches
 - Spherical light sources
-- Focal Blur / DoF
+- Focal blur / DoF
 - Camera motion blur
 - Deformation motion blur
+
+Features Currently In-Progress
+------------------------------
+- Transforms and transform motion blur
+- Instancing
+
 
 
 PsychoBlend
@@ -44,6 +50,6 @@ Features Supported
 ------------------
 - Quad mesh export (exported as bilinear patches, so only flat shading)
 - Point lights exported as spherical lights (point lights have a "radius" setting)
-- Focal Blur / DoF
+- Focal blur / DoF
 - Camera motion blur
 - Deformation motion blur
