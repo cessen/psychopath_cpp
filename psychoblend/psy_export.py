@@ -82,6 +82,7 @@ def export_psy(scene, export_path, render_image_path):
     res_y = int(scene.render.resolution_y * (scene.render.resolution_percentage / 100))
     w.write('Resolution [%d %d]\n' % (res_x, res_y))
     w.write("SamplesPerPixel [%d]\n" % scene.psychopath.spp)
+    w.write("DicingRate [%f]\n" % scene.psychopath.dicing_rate)
     w.write('Seed [%d]\n' % fr)
 
     # RenderSettings section end

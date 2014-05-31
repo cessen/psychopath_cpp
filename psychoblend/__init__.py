@@ -42,7 +42,7 @@ class RenderPsychopathSettingsScene(PropertyGroup):
 
     dicing_rate = FloatProperty(
         name="Dicing Rate", description="The target microgeometry width in pixels",
-        min=0.0001, max=100.0, soft_min=0.125, soft_max=1.0, default=0.5
+        min=0.0001, max=100.0, soft_min=0.125, soft_max=1.0, default=0.25
         )
 
     motion_blur_segments = IntProperty(

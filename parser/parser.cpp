@@ -7,6 +7,8 @@
 #include <memory>
 #include <boost/regex.hpp>
 
+#include "config.hpp"
+
 #include "color.hpp"
 #include "vector.hpp"
 #include "matrix.hpp"
@@ -103,6 +105,12 @@ std::unique_ptr<Renderer> Parser::parse_next_frame()
 					}
 				} else if (child.type == "Filter") {
 					// TODO
+				} else if (child.type == "DicingRate") {
+					// Get aperture size
+					boost::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
+					if (matches != boost::sregex_iterator()) {
+						Config::dice_rate = std::stof(matches->str());
+					}
 				} else if (child.type == "Seed") {
 					// Get the seed for the frame
 					boost::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_int);
