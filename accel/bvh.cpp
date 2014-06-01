@@ -48,6 +48,12 @@ void BVH::build(const Assembly& _assembly)
 
 	recursive_build(0, 0, bag.size()-1);
 	bag.resize(0);
+
+	// Calculate total bounds
+	auto bbbegin = bboxes.begin() + nodes[0].bbox_index;
+	auto bbend = bbbegin + nodes[0].ts;
+	_bounds.clear();
+	_bounds.insert(_bounds.begin(), bbbegin, bbend);
 }
 
 bool BVH::finalize()

@@ -17,5 +17,6 @@ void LightTree::build(const Assembly& assembly)
 		}
 	}
 
-	recursive_build(build_nodes.begin(), build_nodes.end());
+	if (build_nodes.size() > 0)
+		recursive_build(build_nodes.begin(), build_nodes.end());
 }

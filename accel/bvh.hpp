@@ -26,13 +26,13 @@
  */
 class BVH: public Accel
 {
-	std::vector<BBox> bbs {BBox()}; // TODO: build this properly
+	std::vector<BBox> _bounds {BBox()}; // TODO: build this properly
 
 public:
 	virtual ~BVH() {};
 	virtual void build(const Assembly& assembly);
 	virtual const std::vector<BBox>& bounds() const {
-		return bbs;
+		return _bounds;
 	};
 
 	// Traversers need access to private data

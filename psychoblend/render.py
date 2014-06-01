@@ -39,7 +39,8 @@ class PsychopathRender(bpy.types.RenderEngine):
         return ""
 
     def _export(self, scene, export_path, render_image_path):
-        psy_export.export_psy(scene, export_path, render_image_path)
+        exporter = psy_export.PsychoExporter(scene)
+        exporter.export_psy(export_path, render_image_path)
 
     def _render(self, scene, psy_filepath):
         psy_binary = PsychopathRender._locate_binary()
