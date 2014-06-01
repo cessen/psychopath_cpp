@@ -40,7 +40,7 @@ uint32_t Tracer::trace(const Slice<WorldRay> w_rays_, Slice<Intersection> inters
 	traverser.init_accel(scene->root->object_accel);
 	traverser.init_rays(w_rays.begin(), w_rays.end());
 
-	// Trace potential intersections
+	// Trace rays
 	std::tuple<Ray*, Ray*, size_t> hits = traverser.next_object();
 	while (std::get<0>(hits) != std::get<1>(hits)) {
 		const auto& instance = scene->root->instances[std::get<2>(hits)]; // Short-hand for the current instance
