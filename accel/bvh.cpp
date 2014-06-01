@@ -318,8 +318,8 @@ size_t BVH::recursive_build(size_t parent, size_t first_prim, size_t last_prim)
 		auto bbs = assembly->instance_bounds(bag[first_prim].instance_index);
 		nodes[me].bbox_index = bboxes.size();
 		nodes[me].ts = bbs.size();
-		for (auto bb: bbs)
-			bboxes.push_back(bb);
+		// Append bbs to bboxes
+		bboxes.insert(bboxes.end(), bbs.begin(), bbs.end());
 	} else {
 		// Not a leaf node
 

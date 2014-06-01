@@ -52,7 +52,7 @@ public:
 	struct Node {
 		size_t bbox_index = 0;
 		union {
-			size_t child_index;
+			size_t child_index = 0;
 			size_t data_index;
 		};
 		size_t parent_index = 0;
