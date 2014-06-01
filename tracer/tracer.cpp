@@ -43,6 +43,7 @@ uint32_t Tracer::trace(const Slice<WorldRay> w_rays_, Slice<Intersection> inters
 	intersections.init_from(intersections_);
 	std::fill(intersections.begin(), intersections.end(), Intersection());
 
+	// Start tracing!
 	std::vector<Transform> xforms(0);
 	trace_assembly(scene->root.get(), xforms, &(*rays.begin()), &(*rays.end()));
 
@@ -64,7 +65,16 @@ void Tracer::trace_assembly(Assembly* assembly, const std::vector<Transform>& pa
 	while (std::get<0>(hits) != std::get<1>(hits)) {
 		const auto& instance = assembly->instances[std::get<2>(hits)]; // Short-hand for the current instance
 
-		// Object or Assembly?
+		// Transform rays if necessary
+		if (instance.transform_count > 0) {
+			auto xbegin = assembly->xforms.begin() + instance.transform_index;
+			auto xend = xbegin + instance.transform_count;
+			for (auto ray = std::get<0>(hits); ray != std::get<1>(hits); ++ray) {
+				*ray = w_rays[ray->id].to_ray(lerp_seq<Transform, decltype(xbegin)>(ray->time, xbegin, xend));
+			}
+		}
+
+		// Trace against the object or assembly
 		if (instance.type == Instance::OBJECT) {
 			Object* obj = assembly->objects[instance.data_index].get(); // Short-hand for the current object
 
@@ -80,12 +90,32 @@ void Tracer::trace_assembly(Assembly* assembly, const std::vector<Transform>& pa
 					std::cout << "WARNING: unknown object type, skipping." << std::endl;
 					break;
 			}
+
+			Global::Stats::object_ray_tests += std::distance(std::get<0>(hits), std::get<1>(hits));
 		} else { /* Instance::ASSEMBLY */
-			// Do nothing
+			// TODO: actually calculate xforms if needed
+			std::vector<Transform> xforms(0);
+
+			Assembly* asmb = assembly->assemblies[instance.data_index].get(); // Short-hand for the current object
+			trace_assembly(asmb, xforms, std::get<0>(hits), std::get<1>(hits));
 		}
 
-		Global::Stats::object_ray_tests += std::distance(std::get<0>(hits), std::get<1>(hits));
+		// Un-transform rays if we transformed them earlier
+		if (instance.transform_count > 0) {
+			if (parent_xforms.size() > 0) {
+				auto xbegin = parent_xforms.cbegin();
+				auto xend = parent_xforms.cend();
+				for (auto ray = std::get<0>(hits); ray != std::get<1>(hits); ++ray) {
+					*ray = w_rays[ray->id].to_ray(lerp_seq<Transform, decltype(xbegin)>(ray->time, xbegin, xend));
+				}
+			} else {
+				for (auto ray = std::get<0>(hits); ray != std::get<1>(hits); ++ray) {
+					*ray = w_rays[ray->id].to_ray();
+				}
+			}
+		}
 
+		// Get next object to test against
 		hits = traverser.next_object();
 	}
 }
