@@ -1,5 +1,6 @@
 #include "tracer.hpp"
 
+#include <iostream>
 #include <limits>
 #include <cmath>
 #include <vector>
@@ -70,7 +71,9 @@ void Tracer::trace_assembly(Assembly* assembly, const std::vector<Transform>& pa
 			auto xbegin = assembly->xforms.begin() + instance.transform_index;
 			auto xend = xbegin + instance.transform_count;
 			for (auto ray = std::get<0>(hits); ray != std::get<1>(hits); ++ray) {
+				auto id = ray->id;
 				*ray = w_rays[ray->id].to_ray(lerp_seq<Transform, decltype(xbegin)>(ray->time, xbegin, xend));
+				ray->id = id;
 			}
 		}
 
@@ -106,11 +109,15 @@ void Tracer::trace_assembly(Assembly* assembly, const std::vector<Transform>& pa
 				auto xbegin = parent_xforms.cbegin();
 				auto xend = parent_xforms.cend();
 				for (auto ray = std::get<0>(hits); ray != std::get<1>(hits); ++ray) {
+					auto id = ray->id;
 					*ray = w_rays[ray->id].to_ray(lerp_seq<Transform, decltype(xbegin)>(ray->time, xbegin, xend));
+					ray->id = id;
 				}
 			} else {
 				for (auto ray = std::get<0>(hits); ray != std::get<1>(hits); ++ray) {
+					auto id = ray->id;
 					*ray = w_rays[ray->id].to_ray();
+					ray->id = id;
 				}
 			}
 		}

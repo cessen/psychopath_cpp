@@ -1,6 +1,7 @@
 #ifndef ASSEMBLY_HPP
 #define ASSEMBLY_HPP
 
+#include <string>
 #include <vector>
 #include <unordered_map>
 #include <memory>
@@ -30,6 +31,31 @@ struct Instance {
 
 	size_t transform_index; // Index of the first transform for this instance in the transforms array
 	size_t transform_count; // The number of transforms, for transformation motion blur. If zero, no transforms.
+
+	std::string to_string() const {
+		std::string s;
+		s.append("Type: ");
+		switch (type) {
+			case OBJECT:
+				s.append("OBJECT");
+				break;
+			case ASSEMBLY:
+				s.append("OBJECT");
+				break;
+			default:
+				s.append("Unknown");
+				break;
+		}
+		s.append("\nData Index: ");
+		s.append(std::to_string(data_index));
+		s.append("\nTransform Index: ");
+		s.append(std::to_string(transform_index));
+		s.append("\nTransform Count: ");
+		s.append(std::to_string(transform_count));
+		s.append("\n");
+
+		return s;
+	}
 };
 
 

@@ -3,6 +3,8 @@
 
 #include "numtype.h"
 
+#include <string>
+
 #include "vector.hpp"
 #include "matrix.hpp"
 
@@ -161,6 +163,48 @@ public:
 	}
 
 
+
+	std::string to_string() const {
+		std::string s;
+		s.append("[");
+		s.append(std::to_string(to[0][0]));
+		s.append(" ");
+		s.append(std::to_string(to[1][0]));
+		s.append(" ");
+		s.append(std::to_string(to[2][0]));
+		s.append(" ");
+		s.append(std::to_string(to[3][0]));
+		s.append("\n ");
+
+		s.append(std::to_string(to[0][1]));
+		s.append(" ");
+		s.append(std::to_string(to[1][1]));
+		s.append(" ");
+		s.append(std::to_string(to[2][1]));
+		s.append(" ");
+		s.append(std::to_string(to[3][1]));
+		s.append("\n ");
+
+		s.append(std::to_string(to[0][2]));
+		s.append(" ");
+		s.append(std::to_string(to[1][2]));
+		s.append(" ");
+		s.append(std::to_string(to[2][2]));
+		s.append(" ");
+		s.append(std::to_string(to[3][2]));
+		s.append("\n ");
+
+		s.append(std::to_string(to[0][3]));
+		s.append(" ");
+		s.append(std::to_string(to[1][3]));
+		s.append(" ");
+		s.append(std::to_string(to[2][3]));
+		s.append(" ");
+		s.append(std::to_string(to[3][3]));
+
+		s.append("]");
+		return s;
+	}
 
 
 };
