@@ -45,9 +45,9 @@ class Tracer
 {
 public:
 	Scene *scene;
-	BVHStreamTraverser traverser;
 	Slice<const WorldRay> w_rays; // Rays to trace
 	Slice<Intersection> intersections; // Resulting intersections
+	std::vector<Ray> rays;
 
 	Tracer(Scene *scene_): scene {scene_} {
 	}
@@ -63,6 +63,7 @@ public:
 
 private:
 	// Various methods for tracing different object types
+	void trace_assembly(Assembly* assembly, const std::vector<Transform>& parent_xforms, Ray* rays, Ray* rays_end);
 	void trace_surface(Surface* surface, Ray* rays, Ray* end);
 	void trace_diceable_surface(DiceableSurface* prim, Ray* rays, Ray* end);
 };

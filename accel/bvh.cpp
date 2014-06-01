@@ -365,7 +365,7 @@ std::tuple<Ray*, Ray*, size_t> BVHStreamTraverser::next_object()
 {
 	// If there aren't any objects in the scene, return finished
 	if (bvh->nodes.size() == 0)
-		return std::make_tuple(&(*rays.end()), &(*rays.end()), 0);
+		return std::make_tuple(rays_end, rays_end, 0);
 
 	float near_t, far_t;
 
@@ -417,5 +417,5 @@ std::tuple<Ray*, Ray*, size_t> BVHStreamTraverser::next_object()
 	}
 
 	// Finished traversal
-	return std::make_tuple(&(*rays.end()), &(*rays.end()), 0);
+	return std::make_tuple(rays_end, rays_end, 0);
 }

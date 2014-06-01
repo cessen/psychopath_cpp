@@ -32,22 +32,41 @@ uint32_t Tracer::trace(const Slice<WorldRay> w_rays_, Slice<Intersection> inters
 	// Get rays
 	w_rays.init_from(w_rays_);
 
+	// Create initial rays
+	rays.resize(w_rays.size());
+	for (size_t i = 0; i < rays.size(); ++i) {
+		rays[i] = w_rays[i].to_ray();
+		rays[i].id = i;
+	}
+
 	// Get and initialize intersections
 	intersections.init_from(intersections_);
 	std::fill(intersections.begin(), intersections.end(), Intersection());
 
+	std::vector<Transform> xforms(0);
+	trace_assembly(scene->root.get(), xforms, &(*rays.begin()), &(*rays.end()));
+
+	return w_rays.size();
+}
+
+
+
+void Tracer::trace_assembly(Assembly* assembly, const std::vector<Transform>& parent_xforms, Ray* rays, Ray* rays_end)
+{
+	BVHStreamTraverser traverser;
+
 	// Initialize traverser
-	traverser.init_accel(scene->root->object_accel);
-	traverser.init_rays(w_rays.begin(), w_rays.end());
+	traverser.init_accel(assembly->object_accel);
+	traverser.init_rays(rays, rays_end);
 
 	// Trace rays
 	std::tuple<Ray*, Ray*, size_t> hits = traverser.next_object();
 	while (std::get<0>(hits) != std::get<1>(hits)) {
-		const auto& instance = scene->root->instances[std::get<2>(hits)]; // Short-hand for the current instance
+		const auto& instance = assembly->instances[std::get<2>(hits)]; // Short-hand for the current instance
 
 		// Object or Assembly?
 		if (instance.type == Instance::OBJECT) {
-			Object* obj = scene->root->objects[instance.data_index].get(); // Short-hand for the current object
+			Object* obj = assembly->objects[instance.data_index].get(); // Short-hand for the current object
 
 			// Branch to different code path based on object type
 			switch (obj->get_type()) {
@@ -69,8 +88,6 @@ uint32_t Tracer::trace(const Slice<WorldRay> w_rays_, Slice<Intersection> inters
 
 		hits = traverser.next_object();
 	}
-
-	return w_rays.size();
 }
 
 

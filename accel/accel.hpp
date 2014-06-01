@@ -63,7 +63,7 @@ public:
 	 *
 	 * This resets any traversal already in progress.
 	 */
-	virtual void init_rays(const WorldRay* begin, const WorldRay* end) = 0;
+	virtual void init_rays(Ray* begin, Ray* end) = 0;
 
 	/**
 	 * @brief Traverses to the next relevant object.

@@ -149,36 +149,29 @@ public:
 		bvh = &accel;
 	}
 
-	virtual void init_rays(const WorldRay* begin, const WorldRay* end) {
-		w_rays = begin;
-		w_rays_end = end;
-		rays.resize(std::distance(begin, end));
-
-		for (size_t i = 0; i < rays.size(); ++i) {
-			rays[i] = w_rays[i].to_ray();
-			rays[i].id = i;
-		}
+	virtual void init_rays(Ray* begin, Ray* end) {
+		rays = begin;
+		rays_end = end;
 
 		// Initialize stack
 		stack_ptr = 0;
 		node_stack[0] = 0;
-		ray_stack[0].first = rays.begin();
-		ray_stack[0].second = rays.end();
+		ray_stack[0].first = rays;
+		ray_stack[0].second = rays_end;
 	}
 
 	virtual std::tuple<Ray*, Ray*, size_t> next_object();
 
 private:
 	const BVH* bvh = nullptr;
-	const WorldRay* w_rays = nullptr;
-	const WorldRay* w_rays_end = nullptr;
-	std::vector<Ray> rays;
+	Ray* rays = nullptr;
+	Ray* rays_end = nullptr;
 
 	// Stack data
 #define BVHST_STACK_SIZE 64
 	int stack_ptr;
 	size_t node_stack[BVHST_STACK_SIZE];
-	std::pair<std::vector<Ray>::iterator, std::vector<Ray>::iterator> ray_stack[BVHST_STACK_SIZE];
+	std::pair<Ray*, Ray*> ray_stack[BVHST_STACK_SIZE];
 
 };
 
