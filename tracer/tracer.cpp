@@ -152,17 +152,20 @@ void Tracer::trace_surface(Surface* surface, Ray* rays, Ray* end)
 
 void Tracer::trace_diceable_surface(DiceableSurface* prim, Ray* rays, Ray* end)
 {
-#define STACK_SIZE 32
+#define STACK_SIZE 64
 
 	using namespace MicroSurfaceCache;
 	int split_count = 0;
 
 	const size_t max_subdivs = intlog2(Config::max_grid_size);
 
+#define USE_MICROGEO_CACHE
+#ifdef USE_MICROGEO_CACHE
 	// UID's
 	const size_t uid1 = prim->uid; // Main UID
 	size_t uid2_stack[STACK_SIZE]; // Sub-UID
 	uid2_stack[0] = 1;
+#endif
 
 	// Stack
 	std::unique_ptr<DiceableSurface> primitive_stack[STACK_SIZE];
@@ -180,9 +183,13 @@ void Tracer::trace_diceable_surface(DiceableSurface* prim, Ray* rays, Ray* end)
 	while (stack_i >= 0) {
 		DiceableSurface& primitive = *(primitive_stack[stack_i]); // Shorthand reference to potint's primitive
 
+#ifdef USE_MICROGEO_CACHE
 		// Fetch the current primitive's microgeo cache if it exists
 		std::shared_ptr<MicroSurface> micro_surface = cache.get(Key(uid1, uid2_stack[stack_i]));
 		bool rediced = false;
+#else
+		std::shared_ptr<MicroSurface> micro_surface;
+#endif
 
 		// Get the number of subdivisions of the cached microsurface if it exists
 		size_t current_subdivs = 0;
@@ -214,8 +221,11 @@ void Tracer::trace_diceable_surface(DiceableSurface* prim, Ray* rays, Ray* end)
 					if (micro_surface == nullptr || subdivs > current_subdivs) {
 						micro_surface = primitive.dice(subdivs);
 						current_subdivs = subdivs;
+#ifdef USE_MICROGEO_CACHE
 						rediced = true;
+#endif
 					}
+
 
 					// Test against the ray
 					if (micro_surface->intersect_ray(ray, width, &inter)) {
@@ -235,9 +245,11 @@ void Tracer::trace_diceable_surface(DiceableSurface* prim, Ray* rays, Ray* end)
 			}
 		} // End test potints
 
+#ifdef USE_MICROGEO_CACHE
 		// If we re-diced the microsurface, store it in the cache
 		if (rediced)
 			cache.put(micro_surface, Key(uid1, uid2_stack[stack_i]));
+#endif
 
 		// Filter potints based on whether they need deeper traversal
 		ray_starts[stack_i] = std::partition(ray_starts[stack_i], ray_ends[stack_i], [this](const Ray& r) {
@@ -252,7 +264,9 @@ void Tracer::trace_diceable_surface(DiceableSurface* prim, Ray* rays, Ray* end)
 			// Split the primitive
 			const int new_count = primitive.split(new_prims);
 
+#ifdef USE_MICROGEO_CACHE
 			const auto parent_uid2 = uid2_stack[stack_i];
+#endif
 			for (int i = 0; i < new_count; ++i) {
 				const int ii = stack_i + i;
 
@@ -262,9 +276,10 @@ void Tracer::trace_diceable_surface(DiceableSurface* prim, Ray* rays, Ray* end)
 
 				// Update primitive stack
 				std::swap(primitive_stack[ii], new_prims[i]);
-
+#ifdef USE_MICROGEO_CACHE
 				// Update uid stack
 				uid2_stack[ii] = (parent_uid2 << 2) | i;
+#endif
 			}
 
 			// Update stack index_potint
@@ -278,6 +293,3 @@ void Tracer::trace_diceable_surface(DiceableSurface* prim, Ray* rays, Ray* end)
 
 	Global::Stats::split_count += split_count;
 }
-
-
-
