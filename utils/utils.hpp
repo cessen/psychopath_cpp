@@ -7,7 +7,7 @@
 
 #include <iterator>
 #include <cmath>
-#include <assert.h>
+#include <cassert>
 
 /*
    linear interpolation
@@ -18,6 +18,7 @@
 template <class T>
 static inline T lerp(const float &alpha, const T &a, const T &b)
 {
+	assert(alpha >= 0 && alpha <= 1);
 	return (a * (1.0-alpha)) + (b * alpha);
 }
 
@@ -26,9 +27,38 @@ template <class T>
 static inline T lerp2d(float alpha_u, float alpha_v,
                        T s00, T s10, T s01, T s11)
 {
-	const T temp1 = (s00 * (1.0-alpha_u)) + (s10 * alpha_u);
-	const T temp2 = (s01 * (1.0-alpha_u)) + (s11 * alpha_u);
-	return (temp1 * (1.0-alpha_v)) + (temp2 * alpha_v);
+	const T temp1 = lerp(alpha_u, s00, s10);
+	const T temp2 = lerp(alpha_u, s01, s11);
+	return lerp(alpha_v, temp1, temp2);
+}
+
+
+/**
+ * Performs a linear interpolation across a sequence of elements,
+ * treating the sequence as a series of equally spaced linear
+ * segments.  The sequence to interpolate is specified by a pair
+ * of random-access iterators.
+ *
+ * alpha = 0.0 means the first element in the sequence
+ * alpha = 1.0 means the last element in the sequence
+ */
+template<typename RandIt, typename T = typename std::iterator_traits<RandIt>::value_type>
+T lerp_seq(float alpha, const RandIt& begin, const RandIt& end)
+{
+	assert(alpha >= 0 && alpha <= 1);
+
+	const auto seq_length = std::distance(begin, end);
+
+	if (seq_length == 1) {
+		return begin[0];
+	} else if (alpha < 1.0) {
+		const float temp = alpha * (seq_length - 1);
+		const auto index = static_cast<decltype(seq_length)>(temp);
+		const float nalpha = temp - index;
+		return lerp(nalpha, begin[index], begin[index+1]);
+	} else {
+		return begin[seq_length-1];
+	}
 }
 
 
@@ -54,28 +84,6 @@ static inline bool calc_time_interp(const uint8_t& time_count, const float &time
 	return true;
 }
 
-template <class T, class iterator>
-static inline const T lerp_seq(const float &alpha, const iterator &seq, const size_t &seq_length)
-{
-	if (seq_length == 1)
-		return seq[0];
-	else if (seq_length == 2)
-		return lerp(alpha, seq[0], seq[1]);
-	else if (alpha < 1.0) {
-		const float temp = alpha * (seq_length - 1);
-		const size_t index = static_cast<size_t>(temp);
-		const float nalpha = temp - index;
-		return lerp(nalpha, seq[index], seq[index+1]);
-	}
-
-	return seq[seq_length-1];
-}
-
-template <class T, class iterator>
-static inline const T lerp_seq(const float &alpha, const iterator &seq_begin, const iterator &seq_end)
-{
-	return lerp_seq<T,iterator>(alpha, seq_begin, std::distance(seq_begin, seq_end));
-}
 
 #define QPI (3.1415926535897932384626433 / 4)
 

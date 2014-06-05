@@ -222,12 +222,12 @@ public:
 		} else if (bbs.size() > tcount) {
 			const float s = bbs.size() - 1;
 			for (size_t i = 0; i < bbs.size(); ++i)
-				bbs[i] = bbs[i].inverse_transformed(lerp_seq<Transform, decltype(&(xforms[tb]))>(i/s, &(xforms[tb]), &(xforms[te])));
+				bbs[i] = bbs[i].inverse_transformed(lerp_seq(i/s, &(xforms[tb]), &(xforms[te])));
 		} else if (bbs.size() < tcount) {
 			const float s = tcount - 1;
 			std::vector<BBox> tbbs;
 			for (size_t i = 0; i < tcount; ++i)
-				tbbs.push_back(lerp_seq<BBox, std::vector<BBox>::const_iterator>(i/s, bbs.cbegin(), bbs.cend()).inverse_transformed(xforms[tb+i]));
+				tbbs.push_back(lerp_seq(i/s, bbs.cbegin(), bbs.cend()).inverse_transformed(xforms[tb+i]));
 			bbs = std::move(tbbs);
 		}
 
@@ -251,7 +251,7 @@ public:
 			const auto& bbs = assemblies[instances[index].data_index]->object_accel.bounds();
 			auto begin = bbs.begin();
 			auto end = bbs.end();
-			bb = lerp_seq<BBox, decltype(begin)>(t, begin, end);
+			bb = lerp_seq(t, begin, end);
 		}
 
 		// Transform bounds if necessary
@@ -259,7 +259,7 @@ public:
 			// Get bounds and center at time t
 			auto tb = xforms.begin() + instances[index].transform_index;
 			auto te = tb + instances[index].transform_count;
-			bb = bb.inverse_transformed(lerp_seq<Transform, decltype(tb)>(t, tb, te));
+			bb = bb.inverse_transformed(lerp_seq(t, tb, te));
 		}
 
 		return bb;
