@@ -39,7 +39,6 @@
 	  used correctly.
 
 - Cleanup:
-	- Get rid of TimeBox class -- it's totally unnecessary
 	- Add NaN and Inf catching to key places in code
 	- Surface Primitives should calculate their own pre-displacement surface normals
 

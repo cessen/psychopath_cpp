@@ -13,10 +13,10 @@ class PointLight: public Light
 {
 	Vec3 pos;
 	Color col;
-	BBoxT bounds_;
+	std::vector<BBox> bounds_;
 
 public:
-	PointLight(Vec3 pos_, Color col_): pos {pos_}, col {col_}, bounds_ {pos_, pos_}
+	PointLight(Vec3 pos_, Color col_): pos {pos_}, col {col_}, bounds_ {BBox(pos_, pos_)}
 	{}
 
 	virtual Color sample(const Vec3 &arr, float u, float v, float time,
@@ -45,7 +45,7 @@ public:
 		return col.energy();
 	}
 
-	virtual BBoxT &bounds() {
+	virtual std::vector<BBox> &bounds() {
 		return bounds_;
 	}
 };

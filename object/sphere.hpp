@@ -6,7 +6,6 @@
 #include <vector>
 #include "vector.hpp"
 #include "object.hpp"
-#include "timebox.hpp"
 
 /**
  * @brief A sphere primitive.
@@ -16,10 +15,10 @@
 class Sphere: public Surface
 {
 public:
-	TimeBox<Vec3> center;
-	TimeBox<float> radius;
+	std::vector<Vec3> center;
+	std::vector<float> radius;
 
-	BBoxT bbox;
+	std::vector<BBox> bbox;
 	bool has_bounds;
 
 
@@ -30,7 +29,7 @@ public:
 	void add_time_sample(int samp, Vec3 center_, float radius_);
 
 	virtual bool intersect_ray(const Ray &ray, Intersection *intersection=nullptr);
-	virtual BBoxT &bounds();
+	virtual std::vector<BBox> &bounds();
 };
 
 #endif

@@ -90,14 +90,11 @@ struct CompareDim {
 
 
 
-#if 1
 /*
  * Determines the split of the primitives in bag starting
  * at first and ending at last.  May reorder that section of the
  * list.  Used in recursive_build for BVH construction.
  * Returns the split index (last index of the first group).
- *
- * TODO: SAH splitting seems to be very buggy.  Fix.
  */
 size_t BVH::split_primitives(size_t first_prim, size_t last_prim)
 {
@@ -135,170 +132,6 @@ size_t BVH::split_primitives(size_t first_prim, size_t last_prim)
 	return split;
 }
 
-#else
-
-/* SAH-based split */
-size_t BVH::split_primitives(size_t first_prim, size_t last_prim)
-{
-	uint32_t split;
-
-	// Find the minimum and maximum centroid values on each axis
-	Vec3 min, max;
-	min = bag[first_prim].c;
-	max = bag[first_prim].c;
-	for (uint32_t i = first_prim+1; i <= last_prim; i++) {
-		for (int32_t d = 0; d < 3; d++) {
-			min[d] = min[d] < bag[i].c[d] ? min[d] : bag[i].c[d];
-			max[d] = max[d] > bag[i].c[d] ? max[d] : bag[i].c[d];
-		}
-	}
-
-	const int32_t nBuckets = 12;
-	if ((last_prim - first_prim) <= 4) {
-		// No need to do SAH-based split
-
-		// Find the axis with the maximum extent
-		int32_t max_axis = 0;
-		if ((max.y - min.y) > (max.x - min.x))
-			max_axis = 1;
-		if ((max.z - min.z) > (max.y - min.y))
-			max_axis = 2;
-
-		split = (first_prim + last_prim) / 2;
-
-		std::partial_sort(&bag[first_prim],
-		                  (&bag[split])+1,
-		                  (&bag[last_prim])+1, CompareDim(max_axis));
-	} else {
-		// SAH-based split
-
-		// Initialize buckets
-		BucketInfo buckets_x[nBuckets];
-		BucketInfo buckets_y[nBuckets];
-		BucketInfo buckets_z[nBuckets];
-		for (uint32_t i = first_prim; i <= last_prim; i++) {
-			int32_t b_x = 0;
-			int32_t b_y = 0;
-			int32_t b_z = 0;
-
-			if (max[0] > min[0])
-				b_x = nBuckets * ((bag[i].c[0] - min[0]) / (max[0] - min[0]));
-			if (max[1] > min[1])
-				b_y = nBuckets * ((bag[i].c[1] - min[1]) / (max[1] - min[1]));
-			if (max[2] > min[2])
-				b_z = nBuckets * ((bag[i].c[2] - min[2]) / (max[2] - min[2]));
-
-			if (b_x == nBuckets)
-				b_x = nBuckets-1;
-			if (b_y == nBuckets)
-				b_y = nBuckets-1;
-			if (b_z == nBuckets)
-				b_z = nBuckets-1;
-
-			// Increment count on the bucket, and merge bounds
-			buckets_x[b_x].count++;
-			buckets_y[b_y].count++;
-			buckets_z[b_z].count++;
-			for (int32_t j=0; j < 3; j++) {
-				buckets_x[b_x].bb[0].min[j] = bag[i].bmin[j] < buckets_x[b_x].bb[0].min[j] ? bag[i].bmin[j] : buckets_x[b_x].bb[0].min[j];
-				buckets_x[b_x].bb[0].max[j] = bag[i].bmax[j] > buckets_x[b_x].bb[0].max[j] ? bag[i].bmax[j] : buckets_x[b_x].bb[0].max[j];
-
-				buckets_y[b_y].bb[0].min[j] = bag[i].bmin[j] < buckets_y[b_y].bb[0].min[j] ? bag[i].bmin[j] : buckets_y[b_y].bb[0].min[j];
-				buckets_y[b_y].bb[0].max[j] = bag[i].bmax[j] > buckets_y[b_y].bb[0].max[j] ? bag[i].bmax[j] : buckets_y[b_y].bb[0].max[j];
-
-				buckets_z[b_z].bb[0].min[j] = bag[i].bmin[j] < buckets_z[b_z].bb[0].min[j] ? bag[i].bmin[j] : buckets_z[b_z].bb[0].min[j];
-				buckets_z[b_z].bb[0].max[j] = bag[i].bmax[j] > buckets_z[b_z].bb[0].max[j] ? bag[i].bmax[j] : buckets_z[b_z].bb[0].max[j];
-			}
-		}
-
-		// Calculate the cost of each split
-		float cost_x[nBuckets-1];
-		float cost_y[nBuckets-1];
-		float cost_z[nBuckets-1];
-		for (int32_t i = 0; i < nBuckets-1; ++i) {
-			BBoxT b0_x, b1_x;
-			BBoxT b0_y, b1_y;
-			BBoxT b0_z, b1_z;
-			int32_t count0_x = 0, count1_x = 0;
-			int32_t count0_y = 0, count1_y = 0;
-			int32_t count0_z = 0, count1_z = 0;
-
-			b0_x.copy(buckets_x[0].bb);
-			b0_y.copy(buckets_y[0].bb);
-			b0_z.copy(buckets_z[0].bb);
-			for (int32_t j = 0; j <= i; ++j) {
-				b0_x.merge_with(buckets_x[j].bb);
-				count0_x += buckets_x[j].count;
-
-				b0_y.merge_with(buckets_y[j].bb);
-				count0_y += buckets_y[j].count;
-
-				b0_z.merge_with(buckets_z[j].bb);
-				count0_z += buckets_z[j].count;
-			}
-
-			b1_x.copy(buckets_x[i+1].bb);
-			b1_y.copy(buckets_y[i+1].bb);
-			b1_z.copy(buckets_z[i+1].bb);
-			for (int32_t j = i+1; j < nBuckets; ++j) {
-				b1_x.merge_with(buckets_x[j].bb);
-				count1_x += buckets_x[j].count;
-
-				b1_y.merge_with(buckets_y[j].bb);
-				count1_y += buckets_y[j].count;
-
-				b1_z.merge_with(buckets_z[j].bb);
-				count1_z += buckets_z[j].count;
-			}
-
-
-			cost_x[i] = (b0_x.surface_area() / fastlog2(count0_x)) + (b1_x.surface_area() / fastlog2(count1_x));
-			cost_y[i] = (b0_y.surface_area() / fastlog2(count0_y)) + (b1_y.surface_area() / fastlog2(count1_y));
-			cost_z[i] = (b0_z.surface_area() / fastlog2(count0_z)) + (b1_z.surface_area() / fastlog2(count1_z));
-		}
-
-		// Find the most efficient split
-		float minCost = cost_x[0];
-		int32_t split_axis = 0;
-		uint32_t minCostSplit = 0;
-		// X
-		for (int32_t i = 1; i < nBuckets-1; ++i) {
-			if (cost_x[i] < minCost) {
-				minCost = cost_x[i];
-				minCostSplit = i;
-				split_axis = 0;
-			}
-
-			if (cost_y[i] < minCost) {
-				minCost = cost_y[i];
-				minCostSplit = i;
-				split_axis = 1;
-			}
-
-			if (cost_z[i] < minCost) {
-				minCost = cost_z[i];
-				minCostSplit = i;
-				split_axis = 2;
-			}
-		}
-
-		float pmid = min[split_axis] + (((max[split_axis] - min[split_axis]) / nBuckets) * (minCostSplit+1));
-		BVHPrimitive *mid_ptr = std::partition(&bag[first_prim],
-		                                       (&bag[last_prim])+1,
-		                                       CompareToMid(split_axis, pmid));
-
-		split = (mid_ptr - &bag.front());
-	}
-
-	if (split > 0)
-		split--;
-
-	if (split < first_prim)
-		split = first_prim;
-
-	return split;
-}
-#endif
 
 
 /*

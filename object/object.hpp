@@ -52,7 +52,7 @@ public:
 	 *
 	 * IMPORTANT: these should be the post-transform bounds.
 	 */
-	virtual BBoxT &bounds() = 0;
+	virtual std::vector<BBox> &bounds() = 0;
 };
 
 

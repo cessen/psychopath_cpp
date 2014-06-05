@@ -60,14 +60,6 @@ public:
 		uint16_t flags = 0;
 	};
 
-	struct BucketInfo {
-		BucketInfo() {
-			count = 0;
-		}
-		size_t count;
-		BBoxT bb;
-	};
-
 	/*
 	 * Used to store objects that have yet to be
 	 * inserted into the hierarchy.
@@ -80,7 +72,7 @@ public:
 
 private:
 	const Assembly* assembly; // Set during build()
-	BBoxT bbox;
+	//std::vector<BBox> bbox;
 	std::vector<Node> nodes;
 	std::vector<BBox> bboxes;
 	std::vector<BVHPrimitive> bag;  // Temporary holding spot for objects not yet added to the hierarchy

@@ -12,7 +12,6 @@
 
 #include "simd.hpp"
 #include "global.hpp"
-#include "timebox.hpp"
 #include "vector.hpp"
 #include "ray.hpp"
 #include "transform.hpp"
@@ -78,7 +77,7 @@ struct BBox {
 	/**
 	 * @brief Union of two BBoxes.
 	 */
-	BBox operator|(const BBox& b) {
+	BBox operator|(const BBox& b) const {
 		BBox temp;
 		for (size_t i = 0; i < 3; i++) {
 			temp.min[i] = min[i] < b.min[i] ? min[i] : b.min[i];
@@ -90,7 +89,7 @@ struct BBox {
 	/**
 	 * @brief Intersection of two BBoxes.
 	 */
-	BBox operator&(const BBox& b) {
+	BBox operator&(const BBox& b) const {
 		BBox temp;
 		for (size_t i = 0; i < 3; i++) {
 			temp.min[i] = min[i] > b.min[i] ? min[i] : b.min[i];
@@ -604,116 +603,34 @@ struct BBox4 {
 
 
 /**
- * @brief Axis-aligned bounding box with multiple time samples.
+ * Merges two vectors of BBoxes, interpreting the vectors as
+ * being the BBoxes over time.  The result is a vector that
+ * is the union of the two vectors of BBoxes.
  */
-struct BBoxT {
-public:
-	TimeBox<BBox> bbox;
+static inline std::vector<BBox> merge(const std::vector<BBox>& a, const std::vector<BBox>& b)
+{
+	std::vector<BBox> c;
 
-	BBoxT(const int32_t &res_time=1);
-	BBoxT(const Vec3 &bmin_, const Vec3 &bmax_);
-
-	void init(const uint8_t &state_count_) {
-		bbox.init(state_count_);
+	if (a.size() == 0) {
+		c = b;
+	} else if (b.size() == 0) {
+		c = a;
+	} else if (a.size() == b.size()) {
+		for (size_t i = 0; i < a.size(); ++i)
+			c.emplace_back(a[i] | b[i]);
+	} else if (a.size() > b.size()) {
+		const float s = a.size() - 1;
+		for (size_t i = 0; i < a.size(); ++i)
+			c.emplace_back(a[i] | lerp_seq(i/s, b.cbegin(), b.cend()));
+	} else if (a.size() < b.size()) {
+		const float s = b.size() - 1;
+		for (size_t i = 0; i < b.size(); ++i)
+			c.emplace_back(b[i] | lerp_seq(i/s, a.cbegin(), a.cend()));
 	}
 
-	void add_time_sample(const int32_t &samp, const Vec3 &bmin_, const Vec3 &bmax_) {
-		bbox[samp].min = bmin_;
-		bbox[samp].max = bmax_;
-	}
+	return c;
+}
 
-	/**
-	 * @brief Fetches the BBox at time t.
-	 */
-	BBox at_time(const float t) {
-		int32_t ia=0, ib=0;
-		float alpha=0.0;
-		bool motion;
-
-		motion = bbox.query_time(t, &ia, &ib, &alpha);
-
-		if (motion) {
-			return lerp(alpha, bbox[ia], bbox[ib]);
-		} else {
-			return bbox[0];
-		}
-	}
-
-	/**
-	 * @brief Number of time samples.
-	 */
-	size_t size() {
-		return bbox.size();
-	}
-
-	BBox &operator[](const int32_t &i) {
-		return bbox.states[i];
-	}
-
-	const BBox &operator[](const int32_t &i) const {
-		return bbox.states[i];
-	}
-
-	/**
-	 * @brief Copies another BBox into this one.
-	 *
-	 * Overwrites any bounds that were already there.
-	 */
-	void copy(const BBoxT &b);
-
-	/**
-	 * @brief Merges another BBox into this one.
-	 *
-	 * Results in a new minimal BBox that contains both the originals.
-	 */
-	void merge_with(const BBoxT &b) {
-		// BBoxes have the same state count, so we
-		// can just merge each corresponding state.
-		if (bbox.size() == b.bbox.size()) {
-			for (size_t i=0; i < bbox.size(); i++) {
-				bbox[i].merge_with(b.bbox[i]);
-			}
-		}
-		// BBoxes have differing state count, so we
-		// merge into a single-state bbox.
-		// TODO: something more sophisticated.
-		else {
-			BBox bb = bbox[0];
-			for (size_t i=1; i < bbox.size(); i++)
-				bb.merge_with(bbox[i]);
-			for (size_t i=0; i < b.bbox.size(); i++)
-				bb.merge_with(b.bbox[i]);
-			init(1);
-			bbox[0] = bb;
-		}
-	}
-
-	/**
-	 * @brief Returns the surface area of the BBoxT.
-	 * For now just takes the first time sample.
-	 */
-	float surface_area() const {
-		return bbox[0].surface_area();
-	}
-
-	/**
-	 * @brief Intersects a ray with the BBoxT.
-	 *
-	 * @param[out] hitt0 Near hit is placed here if there is a hit.
-	 * @param[out] hitt1 Far hit is placed here if there is a hit.
-	 */
-	inline bool intersect_ray(const Ray &ray, float *hitt0, float *hitt1, float t=std::numeric_limits<float>::infinity()) {
-		return at_time(ray.time).intersect_ray(ray, hitt0, hitt1, t);
-	}
-
-	/**
-	 * @brief Intersects a ray with the BBoxT.
-	 */
-	inline bool intersect_ray(const Ray &ray) {
-		float hitt0, hitt1;
-		return at_time(ray.time).intersect_ray(ray, &hitt0, &hitt1);
-	}
-};
 
 #endif // BBOX_HPP
 

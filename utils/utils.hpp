@@ -61,6 +61,13 @@ T lerp_seq(float alpha, const RandIt& begin, const RandIt& end)
 	}
 }
 
+// Version of lerp_seq for containers with begin() and end() methods that return iterators.
+template<typename RandContainer, typename T = typename RandContainer::value_type>
+T lerp_seq(float alpha, const RandContainer& c)
+{
+	return lerp_seq(alpha, c.cbegin(), c.cend());
+}
+
 
 /*
  * Quick lookup of what indices and alpha we should use to interpolate

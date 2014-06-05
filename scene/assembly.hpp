@@ -245,7 +245,7 @@ public:
 		// Calculate bounds at time t
 		if (instances[index].type == Instance::OBJECT) {
 			// Get BBox at time t
-			bb = objects[instances[index].data_index]->bounds().at_time(t);
+			bb = lerp_seq(t, objects[instances[index].data_index]->bounds());
 		} else { /* Instance::ASSEMBLY */
 			// Get BBox at time t
 			const auto& bbs = assemblies[instances[index].data_index]->object_accel.bounds();

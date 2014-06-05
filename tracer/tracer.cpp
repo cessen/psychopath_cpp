@@ -206,7 +206,7 @@ void Tracer::trace_diceable_surface(DiceableSurface* prim, Ray* rays, Ray* end)
 
 			// If the potint intersects with the primitive's bbox
 			float tnear, tfar;
-			if (primitive.bounds().intersect_ray(ray, &tnear, &tfar, ray.max_t)) {
+			if (lerp_seq(ray.time, primitive.bounds()).intersect_ray(ray, &tnear, &tfar, ray.max_t)) {
 				// Calculate the width of the ray within the bounding box
 				const float width = ray.min_width(tnear, tfar);
 

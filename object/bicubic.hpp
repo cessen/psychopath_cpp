@@ -31,7 +31,7 @@ public:
 	float longest_u, longest_v;
 	float log_widest = 0.0f;  // Log base 2 of the widest part of the patch, for fast subdivision rate estimates
 
-	BBoxT bbox;
+	std::vector<BBox> bbox;
 
 	Bicubic() {};
 	Bicubic(Vec3 v1,  Vec3 v2,  Vec3 v3,  Vec3 v4,
@@ -47,7 +47,7 @@ public:
 	void finalize();
 	Grid *grid_dice(const int ru, const int rv);
 
-	virtual BBoxT &bounds();
+	virtual std::vector<BBox> &bounds();
 
 	virtual int split(std::unique_ptr<DiceableSurface> objects[]);
 	virtual std::unique_ptr<DiceableSurface> copy();

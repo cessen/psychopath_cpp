@@ -96,7 +96,7 @@ void Bicubic::finalize()
 	log_widest = fastlog2(std::max(longest_u, longest_v));
 
 	// Calculate bounds
-	bbox.init(verts.size());
+	bbox.resize(verts.size());
 	for (size_t time = 0; time < verts.size(); time++) {
 		for (int i = 0; i < 16; i++) {
 			bbox[time].min = min(bbox[time].min, verts[time][i]);
@@ -125,7 +125,7 @@ size_t Bicubic::subdiv_estimate(float width) const
 }
 
 
-BBoxT &Bicubic::bounds()
+std::vector<BBox> &Bicubic::bounds()
 {
 	return bbox;
 }

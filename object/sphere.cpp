@@ -15,8 +15,8 @@
 Sphere::Sphere(Vec3 center_, float radius_)
 {
 	has_bounds = false;
-	center.init(1);
-	radius.init(1);
+	center.resize(1);
+	radius.resize(1);
 
 	center[0] = center_;
 	radius[0] = radius_;
@@ -34,8 +34,8 @@ Sphere::Sphere(Vec3 center_, float radius_)
 Sphere::Sphere(uint8_t res_time_)
 {
 	has_bounds = false;
-	center.init(res_time_);
-	radius.init(res_time_);
+	center.resize(res_time_);
+	radius.resize(res_time_);
 }
 
 
@@ -58,17 +58,8 @@ void Sphere::add_time_sample(int samp, Vec3 center_, float radius_)
 bool Sphere::intersect_ray(const Ray &ray, Intersection *intersection)
 {
 	// Get the center and radius of the sphere at the ray's time
-	int ia, ib;
-	float alpha;
-	Vec3 cent; // Center of the sphere
-	float radi; // Radius of the sphere
-	if (center.query_time(ray.time, &ia, &ib, &alpha)) {
-		cent = lerp(alpha, center[ia], center[ib]);
-		radi = lerp(alpha, radius[ia], radius[ib]);
-	} else {
-		cent = center[0];
-		radi = radius[0];
-	}
+	const Vec3 cent = lerp_seq(ray.time, center); // Center of the sphere
+	const float radi = lerp_seq(ray.time, radius); // Radius of the sphere
 
 	// Calculate the relevant parts of the ray for the intersection
 	Vec3 o = ray.o - cent; // Ray origin relative to sphere center
@@ -152,10 +143,10 @@ bool Sphere::intersect_ray(const Ray &ray, Intersection *intersection)
 }
 
 
-BBoxT &Sphere::bounds()
+std::vector<BBox> &Sphere::bounds()
 {
 	if (!has_bounds) {
-		bbox.init(center.size());
+		bbox.resize(center.size());
 
 		for (size_t time = 0; time < center.size(); time++) {
 			bbox[time].min.x = center[time].x - radius[time];

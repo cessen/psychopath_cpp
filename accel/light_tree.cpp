@@ -11,7 +11,7 @@ void LightTree::build(const Assembly& assembly)
 
 			build_nodes.push_back(BuildNode());
 			build_nodes.back().light = light;
-			build_nodes.back().bbox = light->bounds()[0]; // TODO: use full BBoxT
+			build_nodes.back().bbox = light->bounds()[0]; // TODO: use full std::vector<BBox> for time
 			build_nodes.back().center = build_nodes.back().bbox.center();
 			build_nodes.back().energy = light->total_energy();
 		}

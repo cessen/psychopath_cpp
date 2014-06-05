@@ -115,7 +115,6 @@ int main(int argc, char **argv)
 	std::cout << "\tBVH::Node: " << sizeof(BVH::Node) << std::endl;
 	std::cout << "\tMicroSurface: " << sizeof(MicroSurface) << std::endl;
 	std::cout << "\tMicroNode: " << sizeof(MicroNode) << std::endl;
-	std::cout << "\tTimeBox<int32_t>: " << sizeof(std::vector<int32_t>) << std::endl;
 #endif
 
 

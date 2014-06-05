@@ -125,7 +125,7 @@ include_directories ("${PROJECT_BINARY_DIR}",
 # Build
 #--------------------------------------
 add_subdirectory(accel)
-add_subdirectory(basics)
+#add_subdirectory(basics)
 add_subdirectory(micro_surface)
 add_subdirectory(integrator)
 add_subdirectory(math)
@@ -148,7 +148,7 @@ set (PSYCHO_LIB
     sampling
     parser
     object
-    basics
+#    basics
     micro_surface
     accel
     config

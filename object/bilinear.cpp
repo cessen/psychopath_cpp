@@ -24,7 +24,7 @@ void Bilinear::finalize()
 	log_widest = fastlog2(std::max(longest_u, longest_v));
 
 	// Calculate bounds
-	bbox.init(verts.size());
+	bbox.resize(verts.size());
 	for (size_t time = 0; time < verts.size(); time++) {
 		bbox[time].min.x = verts[time][0].x;
 		bbox[time].max.x = verts[time][0].x;
@@ -74,7 +74,7 @@ size_t Bilinear::subdiv_estimate(float width) const
 }
 
 
-BBoxT &Bilinear::bounds()
+std::vector<BBox> &Bilinear::bounds()
 {
 	return bbox;
 }

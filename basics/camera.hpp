@@ -9,7 +9,6 @@
 
 #include "config.hpp"
 #include "utils.hpp"
-#include "timebox.hpp"
 #include "vector.hpp"
 #include "matrix.hpp"
 #include "transform.hpp"
@@ -21,12 +20,12 @@
 class Camera
 {
 public:
-	TimeBox<Transform> transforms;
+	std::vector<Transform> transforms;
 	float fov, tfov;
 	float aperture_radius, focus_distance;
 
 	Camera(std::vector<Transform> &trans, float fov_, float aperture_radius_, float focus_distance_) {
-		transforms.init(trans.size());
+		transforms.resize(trans.size());
 		for (uint32_t i=0; i < trans.size(); i++)
 			transforms[i] = trans[i];
 
@@ -72,17 +71,8 @@ public:
 		wray.ddx = Vec3(dx*tfov, 0.0f, 0.0f);
 		wray.ddy = Vec3(0.0f, dy*tfov, 0.0f);
 
-		// Get transform matrix
-		uint32_t ia;
-		float alpha;
-		if (calc_time_interp(transforms.size(), time, &ia, &alpha)) {
-			Transform trans;
-			trans = lerp(alpha, transforms[ia], transforms[ia+1]);
-
-			return wray.transformed(trans);
-		} else {
-			return wray.transformed(transforms[0]);
-		}
+		// Transform the ray
+		return wray.transformed(lerp_seq(time, transforms));
 	}
 };
 
