@@ -11,8 +11,6 @@
 
 #include "rng.hpp"
 #include "integrator.hpp"
-#include "vis_integrator.hpp"
-#include "direct_lighting_integrator.hpp"
 #include "path_trace_integrator.hpp"
 #include "tracer.hpp"
 #include "scene.hpp"
@@ -69,9 +67,7 @@ bool Renderer::render(int thread_count)
 	std::function<void()> image_writer = std::bind(write_png_from_film, image.get(), output_path, 10.0);
 
 	PathTraceIntegrator integrator(scene.get(), image.get(), spp, spp_max, variance_max, seed, thread_count, image_writer);
-	//PathTraceIntegrator integrator(scene, &tracer, image.get(), spp, seed, thread_count);
-	//DirectLightingIntegrator integrator(scene, &tracer, image.get(), spp, seed, thread_count, image_writer);
-	//VisIntegrator integrator(scene, &tracer, image.get(), spp, thread_count, seed, image_writer);
+
 	std::cout << "Preparation time (seconds): " << timer.time() << std::endl;
 	timer.reset();
 
