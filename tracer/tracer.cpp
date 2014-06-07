@@ -11,8 +11,6 @@
 #include <assert.h>
 
 #include "global.hpp"
-#include "array.hpp"
-#include "slice.hpp"
 #include "counting_sort.hpp"
 #include "utils.hpp"
 #include "low_level.hpp"
@@ -26,12 +24,11 @@
 #include "scene.hpp"
 
 
-uint32_t Tracer::trace(const Slice<WorldRay> w_rays_, Slice<Intersection> intersections_)
+uint32_t Tracer::trace(const WorldRay* w_rays_begin, const WorldRay* w_rays_end, Intersection* intersections_begin, Intersection* intersections_end)
 {
-	Global::Stats::rays_shot += w_rays_.size();
-
 	// Get rays
-	w_rays.init_from(w_rays_);
+	w_rays = make_range(w_rays_begin, w_rays_end);
+	Global::Stats::rays_shot += w_rays.size();
 
 	// Create initial rays
 	rays.resize(w_rays.size());
@@ -41,7 +38,7 @@ uint32_t Tracer::trace(const Slice<WorldRay> w_rays_, Slice<Intersection> inters
 	}
 
 	// Get and initialize intersections
-	intersections.init_from(intersections_);
+	intersections = make_range(intersections_begin, intersections_end);
 	std::fill(intersections.begin(), intersections.end(), Intersection());
 
 	// Start tracing!

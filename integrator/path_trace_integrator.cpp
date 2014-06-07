@@ -4,6 +4,8 @@
 #include <limits>
 #include <assert.h>
 #include <cmath>
+#include <vector>
+
 #include "image_sampler.hpp"
 #include "film.hpp"
 #include "intersection.hpp"
@@ -11,7 +13,6 @@
 #include "config.hpp"
 
 #include "job_queue.hpp"
-#include "array.hpp"
 
 #include "light.hpp"
 
@@ -287,14 +288,14 @@ void PathTraceIntegrator::render_blocks()
 	const size_t samp_dim = 5 + (path_length * 5);
 
 	// Sample array
-	Array<float> samps;
+	std::vector<float> samps;
 
 	// Light path array
-	Array<PTState> paths;
+	std::vector<PTState> paths;
 
 	// Ray and Intersection arrays
-	Array<WorldRay> rays;
-	Array<Intersection> intersections;
+	std::vector<WorldRay> rays;
+	std::vector<Intersection> intersections;
 
 	// Keep rendering blocks as long as they exist in the queue
 	while (blocks.pop_blocking(&pb)) {
@@ -315,8 +316,8 @@ void PathTraceIntegrator::render_blocks()
 			for (int x = pb.x; x < (pb.x + pb.w); ++x) {
 				for (int y = pb.y; y < (pb.y + pb.h); ++y) {
 					for (int s = samp_it; s < (samp_it + spp); ++s) {
-						image_sampler.get_sample(x, y, s, samp_dim, &(samps[samp_i*samp_dim]));
-						init_path(paths.begin() + samp_i, samps.begin() + (samp_i*samp_dim), x, y);
+						image_sampler.get_sample(x, y, s, samp_dim, &samps[samp_i*samp_dim]);
+						init_path(&paths[samp_i], &samps[samp_i*samp_dim], x, y);
 						++samp_i;
 					}
 				}
@@ -325,8 +326,8 @@ void PathTraceIntegrator::render_blocks()
 
 			uint32_t samp_size = samps.size() / samp_dim;
 
-			auto p_begin = paths.begin();
-			auto p_end = paths.end();
+			auto p_begin = &(*paths.begin());
+			auto p_end = &(*paths.end());
 
 			// Path tracing loop for the paths we have
 			while (p_begin != p_end) {
@@ -342,7 +343,7 @@ void PathTraceIntegrator::render_blocks()
 				}
 
 				// Trace rays
-				tracer.trace(Slice<WorldRay>(rays), Slice<Intersection>(intersections));
+				tracer.trace(&(*rays.begin()), &(*rays.end()), &(*intersections.begin()), &(*intersections.end()));
 
 				// Update paths based on result
 				for (int i = 0; i < path_count; ++i) {

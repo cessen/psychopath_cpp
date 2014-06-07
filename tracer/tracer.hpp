@@ -8,8 +8,7 @@
 #include <vector>
 
 #include "numtype.h"
-#include "array.hpp"
-#include "slice.hpp"
+#include "range.hpp"
 
 
 
@@ -45,8 +44,8 @@ class Tracer
 {
 public:
 	Scene *scene;
-	Slice<const WorldRay> w_rays; // Rays to trace
-	Slice<Intersection> intersections; // Resulting intersections
+	Range<const WorldRay*> w_rays; // Rays to trace
+	Range<Intersection*> intersections; // Resulting intersections
 	std::vector<Ray> rays;
 
 	Tracer(Scene *scene_): scene {scene_} {
@@ -59,7 +58,7 @@ public:
 	 * @param [in] rays_ The rays to be traced.
 	 * @param [out] intersections_ The resulting intersections.
 	 */
-	uint32_t trace(const Slice<WorldRay> w_rays_, Slice<Intersection> intersections_);
+	uint32_t trace(const WorldRay* w_rays_begin, const WorldRay* w_rays_end, Intersection* intersections_begin, Intersection* intersections_end);
 
 private:
 	// Various methods for tracing different object types

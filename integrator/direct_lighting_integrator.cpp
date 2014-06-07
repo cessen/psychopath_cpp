@@ -2,7 +2,8 @@
 
 #include <iostream>
 #include <assert.h>
-#include "array.hpp"
+#include <vector>
+
 #include "image_sampler.hpp"
 #include "intersection.hpp"
 #include "tracer.hpp"
@@ -22,20 +23,20 @@ void DirectLightingIntegrator::integrate()
 	ImageSampler image_sampler(spp, image->width, image->height);
 
 	// Sample array
-	Array<float> samps(RAYS_AT_A_TIME * samp_dim);
+	std::vector<float> samps(RAYS_AT_A_TIME * samp_dim);
 
 	// Sample pixel coordinate array
-	Array<uint16_t> coords(RAYS_AT_A_TIME * 2);
+	std::vector<uint16_t> coords(RAYS_AT_A_TIME * 2);
 
 	// Light path array
-	Array<DLPath> paths(RAYS_AT_A_TIME);
+	std::vector<DLPath> paths(RAYS_AT_A_TIME);
 
 	// Ray and Intersection arrays
-	Array<Ray> rays(RAYS_AT_A_TIME);
-	Array<Intersection> intersections(RAYS_AT_A_TIME);
+	std::vector<Ray> rays(RAYS_AT_A_TIME);
+	std::vector<Intersection> intersections(RAYS_AT_A_TIME);
 
 	// ids corresponding to the rays
-	Array<uint32_t> ids(RAYS_AT_A_TIME);
+	std::vector<uint32_t> ids(RAYS_AT_A_TIME);
 
 	bool last = false;
 	while (true) {
@@ -76,7 +77,7 @@ void DirectLightingIntegrator::integrate()
 		// Trace the camera rays
 		std::cout << "\tTracing camera rays" << std::endl;
 		std::cout.flush();
-		tracer->trace(rays, &intersections);
+		tracer->trace(&(*rays.begin()), &(*rays.end()), &(*intersections.begin()), &(*intersections.end()));
 
 
 		// Update paths
@@ -134,7 +135,7 @@ void DirectLightingIntegrator::integrate()
 		// Trace the shadow rays
 		std::cout << "\tTracing shadow rays" << std::endl;
 		std::cout.flush();
-		tracer->trace(rays, &intersections);
+		tracer->trace(&(*rays.begin()), &(*rays.end()), &(*intersections.begin()), &(*intersections.end()));
 
 
 		// Calculate sample colors
