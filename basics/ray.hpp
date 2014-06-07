@@ -232,7 +232,7 @@ struct WorldRay {
 	 */
 	void update_ray(Ray* ray) const {
 		Ray& r = *ray;
-		
+
 		// Origin, direction, and time
 		r.o = o;
 		r.d = d;
@@ -252,7 +252,7 @@ struct WorldRay {
 		// Finalize ray
 		r.finalize();
 	}
-	
+
 	void update_ray(Ray* ray, const Transform& t) const {
 		Ray& r = *ray;
 
@@ -281,7 +281,7 @@ struct WorldRay {
 		// Finalize ray
 		r.finalize();
 	}
-	
+
 	/**
 	 * Creates a Ray from the WorldRay.
 	 */
@@ -290,15 +290,15 @@ struct WorldRay {
 		update_ray(&r);
 		return r;
 	}
-	
+
 	Ray to_ray(const Transform& t) const {
 		Ray r;
 		update_ray(&r, t);
 		return r;
 	}
 
-	
-	
+
+
 };
 
 

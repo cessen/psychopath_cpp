@@ -49,7 +49,7 @@ public:
 	std::vector<Ray> rays;
 
 	Tracer() {}
-	
+
 	Tracer(Scene *scene_): scene {scene_} {
 	}
 
