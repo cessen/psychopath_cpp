@@ -232,26 +232,26 @@ std::tuple<Ray*, Ray*, size_t> BVHStreamTraverser::next_object()
 					return ((r.flags & Ray::TRAV_HIT) == 0) || ((r.flags & Ray::DONE) != 0);
 				});
 			}
-		}
 
+			// If it's a leaf
+			if (bvh->is_leaf(node_stack[stack_ptr])) {
+				auto rv = std::make_tuple(&(*ray_stack[stack_ptr].first), &(*ray_stack[stack_ptr].second), bvh->nodes[node_stack[stack_ptr]].data_index);
+				--stack_ptr;
+				return rv;
+			}
+			// If not, traverse deeper
+			else {
+				ray_stack[stack_ptr+1] = ray_stack[stack_ptr];
+
+				node_stack[stack_ptr+1] = bvh->child1(node_stack[stack_ptr]);
+				node_stack[stack_ptr] = bvh->child2(node_stack[stack_ptr]);
+
+				stack_ptr++;
+			}
+		}
 		// If none of the rays hit
-		if (hit_count == 0) {
-			--stack_ptr;
-		}
-		// If it's a leaf
-		else if (bvh->is_leaf(node_stack[stack_ptr])) {
-			auto rv = std::make_tuple(&(*ray_stack[stack_ptr].first), &(*ray_stack[stack_ptr].second), bvh->nodes[node_stack[stack_ptr]].data_index);
-			--stack_ptr;
-			return rv;
-		}
-		// Traverse deeper
 		else {
-			ray_stack[stack_ptr+1] = ray_stack[stack_ptr];
-
-			node_stack[stack_ptr+1] = bvh->child1(node_stack[stack_ptr]);
-			node_stack[stack_ptr] = bvh->child2(node_stack[stack_ptr]);
-
-			stack_ptr++;
+			--stack_ptr;
 		}
 	}
 
