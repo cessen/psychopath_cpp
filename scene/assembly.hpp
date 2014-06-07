@@ -141,8 +141,8 @@ public:
 
 
 	/**
-	* Creates an instance of an already added assembly.
-	*/
+	 * Creates an instance of an already added assembly.
+	 */
 	bool create_assembly_instance(const std::string& name, const std::vector<Transform>& transforms) {
 		// Add the instance
 		instances.emplace_back(Instance {Instance::ASSEMBLY, assembly_map[name], xforms.size(), transforms.size()});
@@ -157,13 +157,36 @@ public:
 
 
 	/**
+	 * Optimizes the contents of an assembly for maximum ray tracing
+	 * performance and memory usage.
+	 *
+	 * This is not required to be run at all, but if it is run it needs
+	 * to be run _before_ finalize().
+	 */
+	void optimize() {
+	}
+
+	/**
 	 * Prepares the assembly to be used for rendering.
 	 */
 	bool finalize() {
+		// Finalize all sub-assemblies
+		for (auto& ass: assemblies) {
+			ass->finalize();
+		}
+
 		// Clear maps (no longer needed)
 		object_map.clear();
 		assembly_map.clear();
 		//shader_map.clear();
+
+		// Shrink storage to minimum
+		instances.shrink_to_fit();
+		xforms.shrink_to_fit();
+		objects.shrink_to_fit();
+		object_map.rehash(0);
+		assemblies.shrink_to_fit();
+		assembly_map.rehash(0);
 
 		// Build object accel
 		object_accel.build(*this);

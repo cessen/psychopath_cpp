@@ -46,6 +46,7 @@ struct Scene {
 
 	// Finalizes the scene for rendering
 	void finalize() {
+		root->finalize();
 	}
 };
 

@@ -276,7 +276,8 @@ std::unique_ptr<Assembly> Parser::parse_assembly(const DataTree::Node& node)
 		}
 	}
 
-	assembly->finalize();
+	assembly->optimize();
+
 	return assembly;
 }
 
