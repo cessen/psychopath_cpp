@@ -5,6 +5,8 @@
 
 #include <string>
 
+#include "utils.hpp"
+#include "range.hpp"
 #include "vector.hpp"
 #include "matrix.hpp"
 
@@ -208,5 +210,44 @@ public:
 
 
 };
+
+
+
+/**
+ * Merges two vectors of Transforms, interpreting the vectors as
+ * being the Transforms over time.  The result is a vector that
+ * is the multiplication of the two vectors of Transforms.
+ */
+static inline std::vector<Transform> merge(const std::vector<Transform>::const_iterator& a_begin, const std::vector<Transform>::const_iterator& a_end,
+        const std::vector<Transform>::const_iterator& b_begin, const std::vector<Transform>::const_iterator& b_end)
+{
+	auto a = make_range(a_begin, a_end);
+	auto b = make_range(b_begin, b_end);
+	std::vector<Transform> c;
+
+	if (a.size() == 0) {
+		c.insert(c.begin(), b.begin(), b.end());
+	} else if (b.size() == 0) {
+		c.insert(c.begin(), a.begin(), a.end());
+	} else if (a.size() == b.size()) {
+		for (size_t i = 0; i < a.size(); ++i)
+			c.emplace_back(a[i] * b[i]);
+	} else if (a.size() > b.size()) {
+		const float s = a.size() - 1;
+		for (size_t i = 0; i < a.size(); ++i)
+			c.emplace_back(a[i] * lerp_seq(i/s, b.begin(), b.end()));
+	} else if (a.size() < b.size()) {
+		const float s = b.size() - 1;
+		for (size_t i = 0; i < b.size(); ++i)
+			c.emplace_back(b[i] * lerp_seq(i/s, a.begin(), a.end()));
+	}
+
+	return c;
+}
+
+static inline std::vector<Transform> merge(const std::vector<Transform>& a, const std::vector<Transform>& b)
+{
+	return merge(a.cbegin(), a.cend(), b.cbegin(), b.cend());
+}
 
 #endif // TRANSFORM_HPP

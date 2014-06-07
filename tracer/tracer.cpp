@@ -58,18 +58,21 @@ void Tracer::trace_assembly(Assembly* assembly, const std::vector<Transform>& pa
 	traverser.init_accel(assembly->object_accel);
 	traverser.init_rays(rays, rays_end);
 
-	// Trace rays
+	// Trace rays one object at a time
 	std::tuple<Ray*, Ray*, size_t> hits = traverser.next_object();
 	while (std::get<0>(hits) != std::get<1>(hits)) {
 		const auto& instance = assembly->instances[std::get<2>(hits)]; // Short-hand for the current instance
 
+		// Propagate transforms
+		const auto xbegin = assembly->xforms.begin() + instance.transform_index;
+		const auto xend = xbegin + instance.transform_count;
+		std::vector<Transform> xforms {merge(parent_xforms.begin(), parent_xforms.end(), xbegin, xend)};
+
 		// Transform rays if necessary
 		if (instance.transform_count > 0) {
-			auto xbegin = assembly->xforms.begin() + instance.transform_index;
-			auto xend = xbegin + instance.transform_count;
 			for (auto ray = std::get<0>(hits); ray != std::get<1>(hits); ++ray) {
 				auto id = ray->id;
-				*ray = w_rays[ray->id].to_ray(lerp_seq(ray->time, xbegin, xend));
+				*ray = w_rays[ray->id].to_ray(lerp_seq(ray->time, xforms.begin(), xforms.end()));
 				ray->id = id;
 			}
 		}
@@ -81,10 +84,10 @@ void Tracer::trace_assembly(Assembly* assembly, const std::vector<Transform>& pa
 			// Branch to different code path based on object type
 			switch (obj->get_type()) {
 				case Object::SURFACE:
-					trace_surface(reinterpret_cast<Surface*>(obj), std::get<0>(hits), std::get<1>(hits));
+					trace_surface(reinterpret_cast<Surface*>(obj), xforms, std::get<0>(hits), std::get<1>(hits));
 					break;
 				case Object::DICEABLE_SURFACE:
-					trace_diceable_surface(reinterpret_cast<DiceableSurface*>(obj), std::get<0>(hits), std::get<1>(hits));
+					trace_diceable_surface(reinterpret_cast<DiceableSurface*>(obj), xforms, std::get<0>(hits), std::get<1>(hits));
 					break;
 				default:
 					std::cout << "WARNING: unknown object type, skipping." << std::endl;
@@ -93,9 +96,6 @@ void Tracer::trace_assembly(Assembly* assembly, const std::vector<Transform>& pa
 
 			Global::Stats::object_ray_tests += std::distance(std::get<0>(hits), std::get<1>(hits));
 		} else { /* Instance::ASSEMBLY */
-			// TODO: actually calculate xforms if needed
-			std::vector<Transform> xforms(0);
-
 			Assembly* asmb = assembly->assemblies[instance.data_index].get(); // Short-hand for the current object
 			trace_assembly(asmb, xforms, std::get<0>(hits), std::get<1>(hits));
 		}
@@ -126,7 +126,7 @@ void Tracer::trace_assembly(Assembly* assembly, const std::vector<Transform>& pa
 
 
 
-void Tracer::trace_surface(Surface* surface, Ray* rays, Ray* end)
+void Tracer::trace_surface(Surface* surface, const std::vector<Transform>& parent_xforms, Ray* rays, Ray* end)
 {
 	for (auto ritr = rays; ritr != end; ++ritr) {
 		Ray& ray = *ritr;  // Shorthand reference to the ray
@@ -140,6 +140,7 @@ void Tracer::trace_surface(Surface* surface, Ray* rays, Ray* end)
 				ray.flags |= Ray::DONE; // Early out for shadow rays
 			} else {
 				ray.max_t = inter.t;
+				inter.space = parent_xforms.size() > 0 ? lerp_seq(ray.time, parent_xforms) : Transform();
 			}
 		}
 	}
@@ -147,7 +148,7 @@ void Tracer::trace_surface(Surface* surface, Ray* rays, Ray* end)
 
 
 
-void Tracer::trace_diceable_surface(DiceableSurface* prim, Ray* rays, Ray* end)
+void Tracer::trace_diceable_surface(DiceableSurface* prim, const std::vector<Transform>& parent_xforms, Ray* rays, Ray* end)
 {
 #define STACK_SIZE 64
 
@@ -232,6 +233,7 @@ void Tracer::trace_diceable_surface(DiceableSurface* prim, Ray* rays, Ray* end)
 							ray.flags |= Ray::DONE; // Early out for shadow rays
 						} else {
 							ray.max_t = inter.t;
+							inter.space = parent_xforms.size() > 0 ? lerp_seq(ray.time, parent_xforms) : Transform();
 						}
 					}
 				}

@@ -36,7 +36,12 @@ public:
 
 	void sample(const WorldRay &in, const Intersection &inter, const float &su, const float &sv,
 	            WorldRay *out, Color *filter, float *pdf) {
-		const Vec3 nn = inter.n.normalized();
+
+		// Transform important values into world space
+		const Vec3 nn = inter.space.nor_from(inter.n).normalized();
+		Vec3 pos = inter.space.pos_from(inter.p);
+		Vec3 pos_offset = inter.space.nor_from(inter.offset);
+
 		const Vec3 nns = (!inter.backfacing) ? nn : (nn * -1.0f); // Shading normal, flip for backfacing
 
 		// Generate a random ray direction in the hemisphere
@@ -51,9 +56,9 @@ public:
 		*filter = col * lambert(dir, nns);
 
 		if (dot(nn, dir.normalized()) >= 0.0f)
-			out->o = inter.p + inter.offset;
+			out->o = pos + pos_offset;
 		else
-			out->o = inter.p + (inter.offset * -1.0f);
+			out->o = pos + (pos_offset * -1.0f);
 		out->d = dir;
 		out->time = in.time;
 		out->type = Ray::R_DIFFUSE;
@@ -92,9 +97,9 @@ public:
 		Color lam;
 
 		if (inter.backfacing) {
-			lam = col * lambert(out, inter.n * -1.0f);
+			lam = col * lambert(out, inter.space.nor_from(inter.n) * -1.0f);
 		} else {
-			lam = col * lambert(out, inter.n);
+			lam = col * lambert(out, inter.space.nor_from(inter.n));
 		}
 
 		return lam;
@@ -189,9 +194,14 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 	} else if (path.step % 2) {
 		// Shadow ray
 
+		// Transform important values into world space
+		Vec3 nor = path.inter.space.nor_from(path.inter.n).normalized();
+		Vec3 in = path.inter.space.dir_from(path.inter.in).normalized();
+		Vec3 pos = path.inter.space.pos_from(path.inter.p);
+		Vec3 pos_offset = path.inter.space.nor_from(path.inter.offset);
+
 		// Calculate the surface normal facing in the direction of where the ray hit came from
-		Vec3 nor = path.inter.n;
-		if (dot(nor, path.inter.in.normalized()) > 0.0f) {
+		if (dot(nor, in) > 0.0f) {
 			nor *= -1.0f;
 		}
 
@@ -202,13 +212,13 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 
 		// Sample the light source
 		Vec3 ld;
-		path.lcol = lighty->sample(path.inter.p, path.samples[1], path.samples[2], path.time, &ld) * inv_probability;
+		path.lcol = lighty->sample(pos, path.samples[1], path.samples[2], path.time, &ld) * inv_probability;
 
 		// Create a shadow ray for this path
-		if (dot(path.inter.n.normalized(), ld.normalized()) >= 0.0f)
-			ray.o = path.inter.p + path.inter.offset;
+		if (dot(nor, ld.normalized()) >= 0.0f)
+			ray.o = pos + pos_offset;
 		else
-			ray.o = path.inter.p + (path.inter.offset * -1.0f);
+			ray.o = pos + (pos_offset * -1.0f);
 		ray.d = ld;
 		ray.time = path.time;
 		ray.type = Ray::OCCLUSION;

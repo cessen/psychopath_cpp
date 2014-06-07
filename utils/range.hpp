@@ -12,8 +12,8 @@ template<typename Iterator>
 class Range
 {
 private:
-	Iterator iter_begin = nullptr;
-	Iterator iter_end = nullptr;
+	Iterator iter_begin;
+	Iterator iter_end;
 
 public:
 	// types

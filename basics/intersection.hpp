@@ -5,6 +5,7 @@
 
 #include <limits>
 
+#include "transform.hpp"
 #include "vector.hpp"
 #include "color.hpp"
 
@@ -18,10 +19,12 @@ struct Intersection {
 	bool hit {false};
 	bool backfacing {false};
 
+	// The space that the intersection took place in, relative to world space.
+	Transform space;
+
 	// Information about the intersection point
 	float t {std::numeric_limits<float>::infinity()}; // T-parameter along the ray at the intersection
 	Vec3 p {0.0f, 0.0f, 0.0f};  // Intersection postion
-
 
 	// Information about the ray that caused the intersection
 	Vec3 in {0.0f, 0.0f, 0.0f}; // The incoming ray direction
