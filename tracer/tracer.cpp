@@ -71,9 +71,7 @@ void Tracer::trace_assembly(Assembly* assembly, const std::vector<Transform>& pa
 		// Transform rays if necessary
 		if (instance.transform_count > 0) {
 			for (auto ray = std::get<0>(hits); ray != std::get<1>(hits); ++ray) {
-				auto id = ray->id;
-				*ray = w_rays[ray->id].to_ray(lerp_seq(ray->time, xforms.begin(), xforms.end()));
-				ray->id = id;
+				w_rays[ray->id].update_ray(ray, lerp_seq(ray->time, xforms.begin(), xforms.end()));
 			}
 		}
 
@@ -106,15 +104,11 @@ void Tracer::trace_assembly(Assembly* assembly, const std::vector<Transform>& pa
 				auto xbegin = parent_xforms.cbegin();
 				auto xend = parent_xforms.cend();
 				for (auto ray = std::get<0>(hits); ray != std::get<1>(hits); ++ray) {
-					auto id = ray->id;
-					*ray = w_rays[ray->id].to_ray(lerp_seq(ray->time, xbegin, xend));
-					ray->id = id;
+					w_rays[ray->id].update_ray(ray, lerp_seq(ray->time, xbegin, xend));
 				}
 			} else {
 				for (auto ray = std::get<0>(hits); ray != std::get<1>(hits); ++ray) {
-					auto id = ray->id;
-					*ray = w_rays[ray->id].to_ray();
-					ray->id = id;
+					w_rays[ray->id].update_ray(ray);
 				}
 			}
 		}

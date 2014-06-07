@@ -48,6 +48,8 @@ public:
 	Range<Intersection*> intersections; // Resulting intersections
 	std::vector<Ray> rays;
 
+	Tracer() {}
+	
 	Tracer(Scene *scene_): scene {scene_} {
 	}
 
