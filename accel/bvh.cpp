@@ -233,6 +233,10 @@ std::tuple<Ray*, Ray*, size_t> BVHStreamTraverser::next_object()
 				});
 			}
 
+			hit_count = std::distance(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second);
+		}
+
+		if (hit_count > 0) {
 			// If it's a leaf
 			if (bvh->is_leaf(node_stack[stack_ptr])) {
 				auto rv = std::make_tuple(&(*ray_stack[stack_ptr].first), &(*ray_stack[stack_ptr].second), bvh->nodes[node_stack[stack_ptr]].data_index);
