@@ -55,7 +55,7 @@ public:
 
 		*filter = col * lambert(dir, nns);
 
-		if (dot(nn, dir.normalized()) >= 0.0f)
+		if (!inter.backfacing)
 			out->o = pos + pos_offset;
 		else
 			out->o = pos + (pos_offset * -1.0f);
@@ -196,12 +196,11 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 
 		// Transform important values into world space
 		Vec3 nor = path.inter.space.nor_from(path.inter.n).normalized();
-		Vec3 in = path.inter.space.dir_from(path.inter.in).normalized();
 		Vec3 pos = path.inter.space.pos_from(path.inter.p);
 		Vec3 pos_offset = path.inter.space.nor_from(path.inter.offset);
 
 		// Calculate the surface normal facing in the direction of where the ray hit came from
-		if (dot(nor, in) > 0.0f) {
+		if (!path.inter.backfacing) {
 			nor *= -1.0f;
 		}
 
@@ -215,7 +214,7 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		path.lcol = lighty->sample(pos, path.samples[1], path.samples[2], path.time, &ld) * inv_probability;
 
 		// Create a shadow ray for this path
-		if (dot(nor, ld.normalized()) >= 0.0f)
+		if (!path.inter.backfacing)
 			ray.o = pos + pos_offset;
 		else
 			ray.o = pos + (pos_offset * -1.0f);
@@ -398,4 +397,3 @@ void PathTraceIntegrator::render_blocks()
 		progress_lock.unlock();
 	}
 }
-
