@@ -14,6 +14,46 @@ def mat2str(m):
     return s[1:]
 
 
+def needs_def_mb(ob):
+    """ Determines if the given object needs to be exported with
+        deformation motion blur or not.
+    """
+    for mod in ob.modifiers:
+        if mod.type == 'SUBSURF':
+            pass
+        elif mod.type == 'MIRROR':
+            if mod.mirror_object == None:
+                pass
+            else:
+                return True
+        else:
+            return True
+
+    if ob.type == 'MESH':
+        if ob.data.shape_keys == None:
+            pass
+        else:
+            return True
+
+    return False
+
+
+def needs_xform_mb(ob):
+    """ Determines if the given object needs to be exported with
+        transformation motion blur or not.
+    """
+    if ob.animation_data != None:
+        return True
+
+    if len(ob.constraints) > 0:
+        return True
+
+    if ob.parent != None:
+        return needs_xform_mb(ob.parent)
+
+    return False
+
+
 class IndentedWriter:
     def __init__(self, file_handle):
         self.f = file_handle
@@ -223,19 +263,24 @@ class PsychoExporter:
 
         # Determine if and how to export the mesh data
         has_modifiers = len(ob.modifiers) > 0
-        if has_modifiers:
+        deform_mb = needs_def_mb(ob)
+        if has_modifiers or deform_mb:
             mesh_name = ob.name + "__" + ob.data.name
         else:
             mesh_name = ob.data.name
-        export_mesh = (mesh_name not in self.mesh_names) or has_modifiers
+        export_mesh = (mesh_name not in self.mesh_names) or has_modifiers or deform_mb
+
+        # Determine how to export transforms
+        xform_mb = needs_xform_mb(ob)
 
         # Collect time samples
         time_meshes = []
         time_mats = []
         for i in range(self.time_samples):
             self.set_frame(self.fr, self.shutter_start + (self.shutter_diff*i))
-            time_mats += [ob.matrix_world.copy()]
-            if export_mesh and (has_modifiers or i == 0):
+            if xform_mb or i == 0:
+                time_mats += [ob.matrix_world.copy()]
+            if export_mesh and (deform_mb or i == 0):
                 time_meshes += [ob.to_mesh(self.scene, True, 'RENDER')]
 
         # Export mesh data if necessary
