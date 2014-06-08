@@ -148,6 +148,14 @@ class PsychoExporter:
         self.w.indent()
 
         for ob in self.scene.objects:
+            # Check if the object is visible for rendering
+            vis_layer = False
+            for i in range(len(ob.layers)):
+                vis_layer = vis_layer or (ob.layers[i] and self.scene.layers[i])
+            if ob.hide_render or not vis_layer:
+                continue
+
+            # Export object
             if ob.type == 'MESH':
                 self.export_mesh_object(ob)
             elif ob.type == 'SURFACE':
