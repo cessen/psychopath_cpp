@@ -238,7 +238,7 @@ Grid *Bilinear::grid_dice(const int ru, const int rv)
 			// Walk along v
 			for (y=0; y < rv; y++) {
 				// Set grid vertex coordinates
-				i = (ru*y+x) * grid->time_count + time;
+				i = (ru*rv*time) + (ru*y+x);
 				grid->verts[i] = p3;
 
 				// Update point

@@ -415,7 +415,7 @@ Grid *Bicubic::grid_dice(const int ru, const int rv)
 		//i = (ru*y+x) * grid->time_count + time;
 		// Dice along u-rows
 		for (int v = 0; v < rv; ++v) {
-			eval_cubic_bezier_curve(ru, grid->time_count, grid->verts.data()+(ru*v*grid->time_count)+time,
+			eval_cubic_bezier_curve(ru, 1, grid->verts.data()+(ru*v)+(time*ru*rv),
 			                        vs[(v*4)],
 			                        vs[(v*4)+1],
 			                        vs[(v*4)+2],

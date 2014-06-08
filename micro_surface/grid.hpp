@@ -16,7 +16,7 @@ struct Grid {
 	uint16_t time_count;
 
 	// Data
-	std::vector<Vec3> verts; // v1_t1, v1_t2, v1_t3, v2_t1, v2_t2, v2_t3...
+	std::vector<Vec3> verts; // v1_t1, v2_t1, v3_t1, v1_t2, v2_t2, v3_t2...
 	float u1, v1,
 	      u2, v2,
 	      u3, v3,

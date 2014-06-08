@@ -167,19 +167,20 @@ bool MicroSurface::intersect_ray(const Ray &ray, float ray_width, Intersection *
 
 		// Surface normal
 		// TODO: differentials
-		const Vec3 n1t1 = normals[rd_index*time_count+t_i];
-		const Vec3 n2t1 = normals[(rd_index+1)*time_count+t_i];
-		const Vec3 n3t1 = normals[(rd_index+res_u)*time_count+t_i];
-		const Vec3 n4t1 = normals[(rd_index+res_u+1)*time_count+t_i];
+		const int tot_v = res_u * res_v;
+		const Vec3 n1t1 = normals[rd_index+(t_i*tot_v)];
+		const Vec3 n2t1 = normals[(rd_index+1)+(t_i*tot_v)];
+		const Vec3 n3t1 = normals[(rd_index+res_u)+(t_i*tot_v)];
+		const Vec3 n4t1 = normals[(rd_index+res_u+1)+(t_i*tot_v)];
 		//const Vec3 nt1 = lerp2d<Vec3>(rng.next_float(), rng.next_float(), n1t1, n2t1, n3t1, n4t1);
 		const Vec3 nt1 = lerp2d<Vec3>(0.5f, 0.5f, n1t1, n2t1, n3t1, n4t1);
 
 
 		if (time_count > 1) {
-			const Vec3 n1t2 = normals[rd_index*time_count+t_i+1];
-			const Vec3 n2t2 = normals[(rd_index+1)*time_count+t_i+1];
-			const Vec3 n3t2 = normals[(rd_index+res_u)*time_count+t_i+1];
-			const Vec3 n4t2 = normals[(rd_index+res_u+1)*time_count+t_i+1];
+			const Vec3 n1t2 = normals[rd_index+((t_i+1)*tot_v)];
+			const Vec3 n2t2 = normals[(rd_index+1)+((t_i+1)*tot_v)];
+			const Vec3 n3t2 = normals[(rd_index+res_u)+((t_i+1)*tot_v)];
+			const Vec3 n4t2 = normals[(rd_index+res_u+1)+((t_i+1)*tot_v)];
 			//const Vec3 nt2 = lerp2d<Vec3>(rng.next_float(), rng.next_float(), n1t2, n2t2, n3t2, n4t2);
 			const Vec3 nt2 = lerp2d<Vec3>(0.5f, 0.5f, n1t2, n2t2, n3t2, n4t2);
 
@@ -293,25 +294,26 @@ void MicroSurface::init_from_grid(Grid *grid)
 				// Build bboxes
 				const size_t u = todo[i].u_start;
 				const size_t v = todo[i].v_start;
-				const size_t vert1_i = (v * grid->res_u + u) * time_count;
-				const size_t vert2_i = (v * grid->res_u + u + 1) * time_count;
-				const size_t vert3_i = ((v+1) * grid->res_u + u) * time_count;
-				const size_t vert4_i = ((v+1) * grid->res_u + u + 1) * time_count;
+				const size_t total_verts = grid->res_u * grid->res_v;
+				const size_t vert1_i = v * grid->res_u + u;
+				const size_t vert2_i = v * grid->res_u + u + 1;
+				const size_t vert3_i = (v+1) * grid->res_u + u;
+				const size_t vert4_i = (v+1) * grid->res_u + u + 1;
 
 				for (size_t ti = 0; ti < time_count; ti++) {
 					BBox bb;
 
 					// Min
-					bb.min =             grid->verts[vert1_i+ti];
-					bb.min = min(bb.min, grid->verts[vert2_i+ti]);
-					bb.min = min(bb.min, grid->verts[vert3_i+ti]);
-					bb.min = min(bb.min, grid->verts[vert4_i+ti]);
+					bb.min =             grid->verts[vert1_i+(ti*total_verts)];
+					bb.min = min(bb.min, grid->verts[vert2_i+(ti*total_verts)]);
+					bb.min = min(bb.min, grid->verts[vert3_i+(ti*total_verts)]);
+					bb.min = min(bb.min, grid->verts[vert4_i+(ti*total_verts)]);
 
 					// Max
-					bb.max =             grid->verts[vert1_i+ti];
-					bb.max = max(bb.max, grid->verts[vert2_i+ti]);
-					bb.max = max(bb.max, grid->verts[vert3_i+ti]);
-					bb.max = max(bb.max, grid->verts[vert4_i+ti]);
+					bb.max =             grid->verts[vert1_i+(ti*total_verts)];
+					bb.max = max(bb.max, grid->verts[vert2_i+(ti*total_verts)]);
+					bb.max = max(bb.max, grid->verts[vert3_i+(ti*total_verts)]);
+					bb.max = max(bb.max, grid->verts[vert4_i+(ti*total_verts)]);
 
 					nodes[todo[i].i+ti].bounds = bb;
 				}
@@ -413,4 +415,3 @@ void MicroSurface::init_from_grid(Grid *grid)
 	//std::cout << res_u*res_v << ": " << trav_count << ", " << trav_count / (float)(res_u*res_v) << std::endl;
 
 }
-

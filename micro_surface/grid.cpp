@@ -14,32 +14,32 @@ bool Grid::calc_normals(Vec3 *normals)
 	size_t upoly_i;
 	size_t i2, n_count = 0;
 
-	for (int32_t v=0; v < res_v; v++) {
-		for (int32_t u=0; u < res_u; u++) {
-			for (size_t time=0; time < time_count; time++) {
+	for (size_t time=0; time < time_count; time++) {
+		for (int32_t v=0; v < res_v; v++) {
+			for (int32_t u=0; u < res_u; u++) {
 				upoly_i = (v * res_u) + u;
 
 				// Get the center point
-				p = verts[(upoly_i)*time_count+time];
+				p = verts[(time*res_u*res_v)+upoly_i];
 
 				// Get the four vectors out from it (or whatever subset exist)
 				if (u < (res_u-1)) {
-					vec[0] = verts[(upoly_i + 1)*time_count+time] - p;
+					vec[0] = verts[upoly_i + 1] - p;
 					v_avail[0] = true;
 				}
 
 				if (v < (res_v-1)) {
-					vec[1] = verts[(upoly_i + res_u)*time_count+time] - p;
+					vec[1] = verts[upoly_i + res_u] - p;
 					v_avail[1] = true;
 				}
 
 				if (u > 0) {
-					vec[2] = verts[(upoly_i - 1)*time_count+time] - p;
+					vec[2] = verts[upoly_i - 1] - p;
 					v_avail[2] = true;
 				}
 
 				if (v > 0) {
-					vec[3] = verts[(upoly_i - res_u)*time_count+time] - p;
+					vec[3] = verts[upoly_i - res_u] - p;
 					v_avail[3] = true;
 				}
 
@@ -55,14 +55,14 @@ bool Grid::calc_normals(Vec3 *normals)
 				}
 
 				// Average the normals
-				normals[upoly_i*time_count+time] = Vec3(0,0,0);
+				normals[(time*res_u*res_v)+upoly_i] = Vec3(0,0,0);
 				for (size_t i=0; i < 4; i++) {
 					if (n_avail[i])
-						normals[upoly_i*time_count+time] = normals[upoly_i*time_count+time] + n[i];
+						normals[(time*res_u*res_v)+upoly_i] = normals[(time*res_u*res_v)+upoly_i] + n[i];
 				}
 
 				// Approximately normalize the normal
-				normals[upoly_i*time_count+time].normalize();
+				normals[(time*res_u*res_v)+upoly_i].normalize();
 			}
 		}
 	}
