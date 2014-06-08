@@ -31,11 +31,13 @@ class IndentedWriter:
     def write(self, text):
         self.f.write(' '*self.indent_level + text)
 
-        
+
 class PsychoExporter:
     def __init__(self, scene):
         self.scene = scene
-        
+
+        self.mesh_names = {}
+
         # Motion blur segments are rounded down to a power of two
         if scene.psychopath.motion_blur_segments > 0:
             self.time_samples = (2**int(log(scene.psychopath.motion_blur_segments, 2))) + 1
@@ -45,9 +47,9 @@ class PsychoExporter:
         # pre-calculate useful values for exporting motion blur
         self.shutter_start = scene.psychopath.shutter_start
         self.shutter_diff = (scene.psychopath.shutter_end - scene.psychopath.shutter_start) / max(1, (self.time_samples-1))
-        
+
         self.fr = scene.frame_current
-        
+
 
     def set_frame(self, frame, fraction):
         if fraction >= 0:
@@ -211,52 +213,64 @@ class PsychoExporter:
     def export_mesh_object(self, ob):
         self.w.write("# Mesh object: %s\n" % ob.name)
 
+        # Determine if and how to export the mesh data
+        has_modifiers = len(ob.modifiers) > 0
+        if has_modifiers:
+            mesh_name = ob.name + "__" + ob.data.name
+        else:
+            mesh_name = ob.data.name
+        export_mesh = (mesh_name not in self.mesh_names) or has_modifiers
+
         # Collect time samples
         time_meshes = []
         time_mats = []
         for i in range(self.time_samples):
             self.set_frame(self.fr, self.shutter_start + (self.shutter_diff*i))
-            time_meshes += [ob.to_mesh(self.scene, True, 'RENDER')]
             time_mats += [ob.matrix_world.copy()]
+            if export_mesh and (has_modifiers or i == 0):
+                time_meshes += [ob.to_mesh(self.scene, True, 'RENDER')]
 
-        self.w.write("Assembly $%s {\n" % ob.name)
-        self.w.indent()
+        # Export mesh data if necessary
+        if export_mesh:
+            self.mesh_names[mesh_name] = True
+            self.w.write("Assembly $%s {\n" % mesh_name)
+            self.w.indent()
 
-        # Write patches
-        polys = time_meshes[0].polygons
-        face_count = 0
-        for poly in polys:
-            face_count += 1
-            if len(poly.vertices) == 4:
-                # Object
-                self.w.write("BilinearPatch $%s.%d {\n" % (ob.name, face_count))
-                self.w.indent()
-                for i in range(self.time_samples):
-                    verts = time_meshes[i].vertices
-                    vstr = ""
-                    for vi in poly.vertices:
-                        v = verts[vi].co
-                        vstr += ("%f %f %f " % (v[0], v[1], v[2]))
-                    self.w.write("Vertices [%s]\n" % vstr[:-1])
-                self.w.unindent()
-                self.w.write("}\n")
-                # Instance
-                self.w.write("Instance {\n")
-                self.w.indent()
-                self.w.write("Data [$%s.%d]\n" % (ob.name, face_count))
-                self.w.unindent()
-                self.w.write("}\n")
-        for m in time_meshes:
-            bpy.data.meshes.remove(m)
+            # Write patches
+            polys = time_meshes[0].polygons
+            face_count = 0
+            for poly in polys:
+                face_count += 1
+                if len(poly.vertices) == 4:
+                    # Object
+                    self.w.write("BilinearPatch $%s.%d {\n" % (mesh_name, face_count))
+                    self.w.indent()
+                    for i in range(len(time_meshes)):
+                        verts = time_meshes[i].vertices
+                        vstr = ""
+                        for vi in poly.vertices:
+                            v = verts[vi].co
+                            vstr += ("%f %f %f " % (v[0], v[1], v[2]))
+                        self.w.write("Vertices [%s]\n" % vstr[:-1])
+                    self.w.unindent()
+                    self.w.write("}\n")
+                    # Instance
+                    self.w.write("Instance {\n")
+                    self.w.indent()
+                    self.w.write("Data [$%s.%d]\n" % (mesh_name, face_count))
+                    self.w.unindent()
+                    self.w.write("}\n")
+            for m in time_meshes:
+                bpy.data.meshes.remove(m)
 
-        # Assembly section end
-        self.w.unindent()
-        self.w.write("}\n")
+            # Assembly section end
+            self.w.unindent()
+            self.w.write("}\n")
 
         self.w.write("Instance {\n")
         self.w.indent()
-        self.w.write("Data [$%s]\n" % ob.name)
-        for i in range(self.time_samples):
+        self.w.write("Data [$%s]\n" % mesh_name)
+        for i in range(len(time_mats)):
             self.set_frame(self.fr, self.shutter_start + (self.shutter_diff*i))
             mat = time_mats[i].inverted()
             self.w.write("Transform [%s]\n" % mat2str(mat))

@@ -5,11 +5,18 @@
 - Infinite lights (e.g. sun lights) will be considered part of the background,
   along with e.g. HDRI lighting backgrounds.
 
+- Parsing:
+	- Give useful error messages...
+
 - Implement transforms and instancing:
-	// - Implement relevant data structures and scene import code
-	- Make BVH use instances instead of raw objects
-	- Implement ray transforms during scene traversal
-	- Implement recursive calls of traversers for assemblies
+	- Make LightTree use instances instead of objects
+	- Make LightTree take into account transforms
+
+- PsychoBlend:
+	- Intelligently decide what to export with motion blur or not
+	- Intelligently export instanced geometry only once
+	- Export Group instances as assemblies
+	- Allow per-object motion blur segment specification
 
 - Implement a shading system
 	- Proper ray differentials
