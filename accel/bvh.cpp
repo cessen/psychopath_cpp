@@ -250,6 +250,18 @@ std::tuple<Ray*, Ray*, size_t> BVHStreamTraverser::next_object()
 				node_stack[stack_ptr+1] = bvh->child1(node_stack[stack_ptr]);
 				node_stack[stack_ptr] = bvh->child2(node_stack[stack_ptr]);
 
+				// Test nodes against first ray, and traverse into the nearer hit first
+				float near_t1, far_t1;
+				float near_t2, far_t2;
+				const bool hit1 = bvh->intersect_node(node_stack[stack_ptr], *ray_stack[stack_ptr].first, &near_t1, &far_t1);
+				const bool hit2 = bvh->intersect_node(node_stack[stack_ptr+1], *ray_stack[stack_ptr].first, &near_t2, &far_t2);
+				if (hit1 && hit2) {
+					if (near_t1 < near_t2)
+						std::swap(node_stack[stack_ptr], node_stack[stack_ptr+1]);
+				} else if (hit1) {
+					std::swap(node_stack[stack_ptr], node_stack[stack_ptr+1]);
+				}
+
 				stack_ptr++;
 			}
 		}
