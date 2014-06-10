@@ -37,6 +37,16 @@ def needs_def_mb(ob):
 
     return False
 
+def escape_name(name):
+    name = name.replace("\\", "\\\\")
+    name = name.replace(" ", "\\ ")
+    name = name.replace("$", "\\$")
+    name = name.replace("[", "\\[")
+    name = name.replace("]", "\\]")
+    name = name.replace("{", "\\{")
+    name = name.replace("}", "\\}")
+    return name
+
 
 def needs_xform_mb(ob):
     """ Determines if the given object needs to be exported with
@@ -106,7 +116,7 @@ class PsychoExporter:
         self.w.write("# Exported from Blender 2.7x\n")
 
         # Scene begin
-        self.w.write("\n\nScene $%s_fr%d {\n" % (self.scene.name, self.fr))
+        self.w.write("\n\nScene $%s_fr%d {\n" % (escape_name(self.scene.name), self.fr))
         self.w.indent()
 
         #######################
@@ -211,7 +221,7 @@ class PsychoExporter:
                     time_mats += [ob.matrix_world.copy()]
 
                 # Write patch
-                self.w.write("BicubicPatch $" + ob.name + " {\n")
+                self.w.write("BicubicPatch $" + escape_name(ob.name) + " {\n")
                 self.w.indent()
                 for i in range(self.time_samples):
                     mat = time_mats[i]
@@ -229,7 +239,7 @@ class PsychoExporter:
                 # Write patch instance
                 self.w.write("Instance {\n")
                 self.w.indent()
-                self.w.write("Data [$%s]\n" % ob.name)
+                self.w.write("Data [$%s]\n" % escape_name(ob.name))
                 self.w.unindent()
                 self.w.write("}\n")
             elif ob.type == 'LAMP' and ob.data.type == 'POINT':
@@ -237,7 +247,7 @@ class PsychoExporter:
                 loc = mat.to_translation()
                 coldata = ob.data.color
                 energy = ob.data.energy
-                self.w.write("SphereLight $%s {\n" % ob.name)
+                self.w.write("SphereLight $%s {\n" % escape_name(ob.name))
                 self.w.indent()
                 self.w.write("Location [%f %f %f]\n" % (loc[0], loc[1], loc[2]))
                 self.w.write("Radius [%f]\n" % ob.data.shadow_soft_size)
@@ -249,7 +259,7 @@ class PsychoExporter:
                 # Write patch instance
                 self.w.write("Instance {\n")
                 self.w.indent()
-                self.w.write("Data [$%s]\n" % ob.name)
+                self.w.write("Data [$%s]\n" % escape_name(ob.name))
                 self.w.unindent()
                 self.w.write("}\n")
 
@@ -286,7 +296,7 @@ class PsychoExporter:
         # Export mesh data if necessary
         if export_mesh:
             self.mesh_names[mesh_name] = True
-            self.w.write("Assembly $%s {\n" % mesh_name)
+            self.w.write("Assembly $%s {\n" % escape_name(mesh_name))
             self.w.indent()
 
             # Write patches
@@ -296,7 +306,7 @@ class PsychoExporter:
                 face_count += 1
                 if len(poly.vertices) == 4:
                     # Object
-                    self.w.write("BilinearPatch $%s.%d {\n" % (mesh_name, face_count))
+                    self.w.write("BilinearPatch $%s.%d {\n" % (escape_name(mesh_name), face_count))
                     self.w.indent()
                     for i in range(len(time_meshes)):
                         verts = time_meshes[i].vertices
@@ -310,7 +320,7 @@ class PsychoExporter:
                     # Instance
                     self.w.write("Instance {\n")
                     self.w.indent()
-                    self.w.write("Data [$%s.%d]\n" % (mesh_name, face_count))
+                    self.w.write("Data [$%s.%d]\n" % (escape_name(mesh_name), face_count))
                     self.w.unindent()
                     self.w.write("}\n")
             for m in time_meshes:
@@ -322,7 +332,7 @@ class PsychoExporter:
 
         self.w.write("Instance {\n")
         self.w.indent()
-        self.w.write("Data [$%s]\n" % mesh_name)
+        self.w.write("Data [$%s]\n" % escape_name(mesh_name))
         for i in range(len(time_mats)):
             self.set_frame(self.fr, self.shutter_start + (self.shutter_diff*i))
             mat = time_mats[i].inverted()
