@@ -200,12 +200,14 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		Vec3 pos_offset = path.inter.space.nor_from(path.inter.offset);
 
 		// Calculate the surface normal facing in the direction of where the ray hit came from
-		if (!path.inter.backfacing) {
+		if (path.inter.backfacing) {
 			nor *= -1.0f;
+			pos_offset *= -1.0f;
 		}
+		pos += pos_offset;
 
 		// Select a light and store the normalization factor for it's output
-		std::tuple<Light*, float> light_select = scene->root->light_accel.sample(path.inter.p, nor, path.samples[0]);
+		std::tuple<Light*, float> light_select = scene->root->light_accel.sample(pos, nor, path.samples[0]);
 		Light* lighty = std::get<0>(light_select);
 		const float inv_probability = 1.0f / std::get<1>(light_select);
 
@@ -214,10 +216,7 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		path.lcol = lighty->sample(pos, path.samples[1], path.samples[2], path.time, &ld) * inv_probability;
 
 		// Create a shadow ray for this path
-		if (!path.inter.backfacing)
-			ray.o = pos + pos_offset;
-		else
-			ray.o = pos + (pos_offset * -1.0f);
+		ray.o = pos;
 		ray.d = ld;
 		ray.time = path.time;
 		ray.type = Ray::OCCLUSION;
