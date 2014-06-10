@@ -189,7 +189,7 @@ void Tracer::trace_diceable_surface(DiceableSurface* prim, const std::vector<Tra
 
 	const size_t max_subdivs = intlog2(Config::max_grid_size);
 
-#define USE_MICROGEO_CACHE
+//#define USE_MICROGEO_CACHE
 #ifdef USE_MICROGEO_CACHE
 	// UID's
 	const size_t uid1 = prim->uid; // Main UID
