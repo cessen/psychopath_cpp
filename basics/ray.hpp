@@ -13,6 +13,7 @@
 #include "vector.hpp"
 #include "matrix.hpp"
 #include "transform.hpp"
+#include "bit_stack.hpp"
 #include "config.hpp"
 
 
@@ -94,6 +95,7 @@ struct Ray {
 	Type type;
 	uint16_t flags; // Misc bit flags, can be used for whatever
 	uint32_t id;
+	BitStack<128> trav_stack;  // Bit stack used during BVH traversal
 
 
 
