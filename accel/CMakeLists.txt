@@ -1,2 +1,2 @@
 add_library(accel
-    bvh light_array light_tree)
+    bvh bvh2 light_array light_tree)

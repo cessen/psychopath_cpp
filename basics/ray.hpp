@@ -116,7 +116,8 @@ struct Ray {
 	  max_t {std::numeric_limits<float>::infinity()},
 	  type {NONE},
 	  flags {0},
-	  id {0}
+	  id {0},
+	  trav_stack {1}
 	{}
 
 	Vec3 get_d_inverse() const {

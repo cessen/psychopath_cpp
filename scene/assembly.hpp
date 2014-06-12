@@ -12,6 +12,7 @@
 #include "bbox.hpp"
 #include "transform.hpp"
 #include "bvh.hpp"
+#include "bvh2.hpp"
 #include "light_tree.hpp"
 
 

@@ -16,6 +16,9 @@ class BitStack
 	std::bitset<SIZE> bits {0};
 
 public:
+	BitStack() {}
+	BitStack(uint32_t init): bits {init} {}
+
 	bool operator[](size_t pos) const {
 		return bits[pos];
 	}

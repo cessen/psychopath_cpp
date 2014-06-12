@@ -1,23 +1,20 @@
 #ifndef BVH_HPP
 #define BVH_HPP
 
-#include "numtype.h"
-#include "global.hpp"
-
-#include "object.hpp"
-#include "accel.hpp"
-#include "ray.hpp"
-#include "bbox.hpp"
-#include "utils.hpp"
-#include "vector.hpp"
-#include "chunked_array.hpp"
-#include "scene_graph.hpp"
-
 #include <stdlib.h>
 #include <iostream>
 #include <vector>
 #include <memory>
 
+#include "numtype.h"
+#include "global.hpp"
+
+#include "accel.hpp"
+#include "object.hpp"
+#include "ray.hpp"
+#include "bbox.hpp"
+#include "utils.hpp"
+#include "vector.hpp"
 
 
 
@@ -37,6 +34,9 @@ public:
 
 	// Traversers need access to private data
 	friend class BVHStreamTraverser;
+
+	// BVH2 builds based on BVH
+	friend class BVH2;
 
 
 	enum {

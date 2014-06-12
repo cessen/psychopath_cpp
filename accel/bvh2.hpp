@@ -1,9 +1,6 @@
 #ifndef BVH2_HPP
 #define BVH2_HPP
 
-#include "numtype.h"
-#include "global.hpp"
-
 #include <stdlib.h>
 #include <iostream>
 #include <vector>
@@ -11,14 +8,16 @@
 #include <memory>
 #include <tuple>
 
+#include "numtype.h"
+#include "global.hpp"
+
 #include "accel.hpp"
+#include "bvh.hpp"
 #include "object.hpp"
 #include "ray.hpp"
 #include "bbox.hpp"
 #include "utils.hpp"
 #include "vector.hpp"
-#include "chunked_array.hpp"
-#include "scene_graph.hpp"
 
 
 
@@ -29,107 +28,59 @@
 class BVH2: public Accel
 {
 public:
+	virtual void build(const Assembly& assembly);
+	virtual const std::vector<BBox>& bounds() const {
+		return _bounds;
+	};
 	virtual ~BVH2() {};
 
-	virtual void build(const Assembly& assembly);
+	// Traversers need access to private data
+	friend class BVH2StreamTraverser;
 
-	struct Node {
-		uint64_t parent_index_and_ts = 0;  // Stores both the parent index and the number of time samples.
-		size_t child_index = 0; // When zero, indicates that this is a leaf node
-		union {
-			// If the node is a leaf, we don't need the bounds.
-			// If the node is not a leaf, it doesn't have Primitive data.
-			BBox2 bounds {BBox(), BBox()};
-			Primitive *data;
-		};
+	struct alignas(64) Node {
+	    union {
+	        // If the node is a leaf, we don't need the bounds.
+	        // If the node is not a leaf, it doesn't have Primitive data.
+	        BBox2 bounds {BBox(), BBox()};
+	        size_t data_index;
+	    };
+	    size_t child_index = 0; // When zero, indicates that this is a leaf node
+	    uint32_t ts = 0;  // Number of time samples.
 
-		Node() {}
+	Node() {}
 
-		Node(const Node& n): parent_index_and_ts {n.parent_index_and_ts}, child_index {n.child_index} {
-			bounds = n.bounds;
-		}
+	Node(const Node& n): child_index {n.child_index}, ts {n.ts} {
+		bounds = n.bounds;
+	}
 
-		void set_time_samples(const size_t ts) {
-			parent_index_and_ts &= 0x0000FFFFFFFFFFFF;
-			parent_index_and_ts |= (ts << 48);
-		}
+	// Operators to allow node bounds to be interpolated conveniently
+	Node operator+(const Node& b) const {
+		Node n;
+		n.bounds = bounds + b.bounds;
+		return n;
+	}
 
-		void set_parent_index(const size_t par_i) {
-			parent_index_and_ts &= 0xFFFF000000000000;
-			parent_index_and_ts |= (par_i & 0x0000FFFFFFFFFFFF);
-		}
-	};
-
-	/*
-	 * A node for building the bounding volume hierarchy.
-	 * Contains a bounding box, a flag for whether
-	 * it's a leaf or not, a pointer to its first
-	 * child, and it's data if it's a leaf.
-	 */
-	struct BuildNode {
-		size_t bbox_index = 0;
-		union {
-			size_t child_index;
-			Primitive *data = nullptr;
-		};
-		size_t parent_index = 0;
-		uint16_t ts = 0; // Time sample count
-		uint16_t flags = 0;
-	};
-
-	/*
-	 * Used to store primitives that have yet to be
-	 * inserted into the hierarchy.
-	 * Contains the time 0.5 bounds of the primitive and it's centroid.
-	 */
-	class BuildPrimitive
-	{
-	public:
-		Primitive *data;
-		Vec3 bmin, bmax, c;
-
-		BuildPrimitive() {
-			data = nullptr;
-		}
-
-		BuildPrimitive(Primitive *prim) {
-			init(prim);
-		}
-
-		void init(Primitive *prim) {
-			data = prim;
-
-			// Get bounds at time 0.5
-			BBox mid_bb = data->bounds().at_time(0.5);
-			bmin = mid_bb.min;
-			bmax = mid_bb.max;
-
-			// Get centroid
-			c = (bmin * 0.5) + (bmax * 0.5);
-		}
-	};
-
-	struct BucketInfo {
-		BucketInfo() {
-			count = 0;
-		}
-		size_t count;
-		BBoxT bb;
+	Node operator*(float f) const {
+		Node n;
+		n.bounds = bounds * f;
+		return n;
+	}
 	};
 
 private:
-	BBoxT bbox;
 	std::vector<Node> nodes;
-	std::deque<BuildNode> build_nodes;
-	std::deque<BBox> build_bboxes;
-	std::deque<BuildPrimitive> prim_bag;  // Temporary holding spot for primitives not yet added to the hierarchy
+	std::vector<BBox> _bounds {BBox()};
+
+	enum {
+	    IS_RIGHT = 1 << 1
+	};
 
 	/**
 	 * @brief Returns the index of the first child
 	 * of the node with the given index.
 	 */
 	inline size_t child1(const size_t node_i) const {
-		return node_i + time_samples(node_i);
+		return node_i + nodes[node_i].ts;
 	}
 
 	/**
@@ -141,41 +92,56 @@ private:
 	}
 
 	/**
-	 * @brief Returns the index of the parent
-	 * of the node with the given index.
-	 */
-	inline size_t parent(const size_t node_i) const {
-		return nodes[node_i].parent_index_and_ts & 0x0000FFFFFFFFFFFF;
-	}
-
-	/**
 	 * @brief Returns the number of time samples
 	 * of the node with the given index.
 	 */
 	inline uint32_t time_samples(const size_t node_i) const {
-		return (nodes[node_i].parent_index_and_ts >> 48) & 0x000000000000FFFF;
+		return nodes[node_i].ts;
 	}
 
-	/**
-	 * @brief Returns the index of the sibling
-	 * of the node with the given index.
-	 */
-	inline size_t sibling(const size_t node_i) const {
-		const size_t par_i = parent(node_i);
-		if (node_i == child2(par_i))
-			return child1(par_i);
-		else
-			return child2(par_i);
+	inline bool is_leaf(const size_t node_i) const {
+		return nodes[node_i].child_index == 0;
 	}
-
-
-
-	size_t split_primitives(size_t first_prim, size_t last_prim);
-	size_t recursive_build(size_t parent, size_t first_prim, size_t last_prim);
-	void pack();
 };
 
 
 
+/**
+ * @brief A breadth-first traverser for BVH2.
+ */
+class BVH2StreamTraverser: public AccelStreamTraverser<BVH2>
+{
+public:
+	virtual ~BVH2StreamTraverser() {}
+
+	virtual void init_accel(const BVH2& accel) {
+		bvh = &accel;
+	}
+
+	virtual void init_rays(Ray* begin, Ray* end) {
+		rays = begin;
+		rays_end = end;
+
+		// Initialize stack
+		stack_ptr = 0;
+		node_stack[0] = 0;
+		ray_stack[0].first = rays;
+		ray_stack[0].second = rays_end;
+	}
+
+	virtual std::tuple<Ray*, Ray*, size_t> next_object();
+
+private:
+	const BVH2* bvh = nullptr;
+	Ray* rays = nullptr;
+	Ray* rays_end = nullptr;
+
+	// Stack data
+#define BVH2_STACK_SIZE 64
+	int stack_ptr;
+	size_t node_stack[BVH2_STACK_SIZE];
+	std::pair<Ray*, Ray*> ray_stack[BVH2_STACK_SIZE];
+
+};
 
 #endif // BVH2_HPP
