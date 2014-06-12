@@ -209,32 +209,13 @@ std::tuple<Ray*, Ray*, size_t> BVHStreamTraverser::next_object()
 	float near_t, far_t;
 
 	while (stack_ptr >= 0) {
-		// Test rays against current node
-		int hit_count = 0;
-		for (auto itr = ray_stack[stack_ptr].first; itr < ray_stack[stack_ptr].second; ++itr) {
-			const bool hit = bvh->intersect_node(node_stack[stack_ptr], *itr, &near_t, &far_t);
+		// Test rays against current node, partitioning as we go
+		ray_stack[stack_ptr].first = std::partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [this, &near_t, &far_t](const Ray& ray) {
+			const bool hit = bvh->intersect_node(node_stack[stack_ptr], ray, &near_t, &far_t);
+			return !hit || ((ray.flags & Ray::DONE) != 0);
+		});
 
-			if (hit) {
-				++hit_count;
-				itr->flags |= Ray::TRAV_HIT;
-			} else {
-				itr->flags &= ~Ray::TRAV_HIT;
-			}
-		}
-
-		if (hit_count > 0) {
-			// Calculate what percentage of the rays hit the node
-			const float hit_ratio = static_cast<float>(hit_count) / static_cast<float>(std::distance(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second));
-
-			// If it's worth it, partition rays into rays that hit and didn't hit
-			if (hit_ratio < 0.9f) {
-				ray_stack[stack_ptr].first = std::partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [this](const Ray& r) {
-					return ((r.flags & Ray::TRAV_HIT) == 0) || ((r.flags & Ray::DONE) != 0);
-				});
-			}
-
-			hit_count = std::distance(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second);
-		}
+		const auto hit_count = std::distance(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second);
 
 		if (hit_count > 0) {
 			// If it's a leaf
