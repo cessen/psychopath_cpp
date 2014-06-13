@@ -128,23 +128,14 @@ std::tuple<Ray*, Ray*, size_t> BVH2StreamTraverser::next_object()
 			// Test rays against current node's children
 			ray_stack[stack_ptr].first = mutable_partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [this](Ray& ray) {
 				if ((first_call || ray.trav_stack.pop()) && (ray.flags & Ray::DONE) == 0) {
-
-					// Load ray origin, inverse direction, and max_t into simd layouts for intersection testing
-					const SIMD::float4 ray_o[3] = {ray.o[0], ray.o[1], ray.o[2]};
-					const SIMD::float4 inv_d[3] = {ray.d_inv[0], ray.d_inv[1], ray.d_inv[2]};
-					const SIMD::float4 max_t {
-						ray.max_t
-					};
-
-					SIMD::float4 near_hits;
-
 					// Get the time-interpolated bounding box
 					const auto cbegin = bvh->nodes.cbegin() + node_stack[stack_ptr];
 					const auto cend = cbegin + bvh->nodes[node_stack[stack_ptr]].ts;
 					const BBox2 b = lerp_seq(ray.time, cbegin, cend).bounds;
 
 					// Ray test
-					const auto hit_mask = b.intersect_ray(ray_o, inv_d, max_t, ray.d_sign, &near_hits);
+					SIMD::float4 near_hits;
+					const auto hit_mask = b.intersect_ray(ray, &near_hits);
 
 					if (hit_mask != 0)
 						ray.trav_stack.push(hit_mask, 2);
