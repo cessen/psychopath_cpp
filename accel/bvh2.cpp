@@ -13,6 +13,7 @@
 #include "ray.hpp"
 #include "bvh2.hpp"
 #include "assembly.hpp"
+#include "utils.hpp"
 
 
 
@@ -87,6 +88,12 @@ void BVH2::build(const Assembly& assembly)
 			}
 		}
 	}
+
+	// Store top-level bounds
+	auto begin = bvh.bboxes.begin() + bvh.nodes[0].bbox_index;
+	auto end = begin + bvh.nodes[0].ts;
+	_bounds.clear();
+	_bounds.insert(_bounds.begin(), begin, end);
 }
 
 
@@ -99,19 +106,29 @@ std::tuple<Ray*, Ray*, size_t> BVH2StreamTraverser::next_object()
 
 	while (stack_ptr >= 0) {
 		if (bvh->is_leaf(node_stack[stack_ptr])) {
-			ray_stack[stack_ptr].first = std::partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [this](Ray& ray) {
-				return !ray.trav_stack.pop();
+			ray_stack[stack_ptr].first = mutable_partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [this](Ray& ray) {
+				if (!first_call)
+					return !(ray.trav_stack.pop() && (ray.flags & Ray::DONE) == 0);
+				else {
+					return !(true && (ray.flags & Ray::DONE) == 0);
+				}
 			});
+
+			if (first_call)
+				first_call = false;
 
 			if (std::distance(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second) > 0) {
 				auto rv = std::make_tuple(&(*ray_stack[stack_ptr].first), &(*ray_stack[stack_ptr].second), bvh->nodes[node_stack[stack_ptr]].data_index);
 				--stack_ptr;
 				return rv;
+			} else {
+				--stack_ptr;
 			}
 		} else {
 			// Test rays against current node's children
-			ray_stack[stack_ptr].first = std::partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [this](Ray& ray) {
-				if (ray.trav_stack.pop() && (ray.flags & Ray::DONE) == 0) {
+			ray_stack[stack_ptr].first = mutable_partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [this](Ray& ray) {
+				if ((first_call || ray.trav_stack.pop()) && (ray.flags & Ray::DONE) == 0) {
+
 					// Load ray origin, inverse direction, and max_t into simd layouts for intersection testing
 					const SIMD::float4 ray_o[3] = {ray.o[0], ray.o[1], ray.o[2]};
 					const SIMD::float4 inv_d[3] = {ray.d_inv[0], ray.d_inv[1], ray.d_inv[2]};
@@ -119,7 +136,6 @@ std::tuple<Ray*, Ray*, size_t> BVH2StreamTraverser::next_object()
 						ray.max_t
 					};
 
-					uint64_t hit_mask;
 					SIMD::float4 near_hits;
 
 					// Get the time-interpolated bounding box
@@ -128,7 +144,7 @@ std::tuple<Ray*, Ray*, size_t> BVH2StreamTraverser::next_object()
 					const BBox2 b = lerp_seq(ray.time, cbegin, cend).bounds;
 
 					// Ray test
-					hit_mask = b.intersect_ray(ray_o, inv_d, max_t, ray.d_sign, &near_hits);
+					const auto hit_mask = b.intersect_ray(ray_o, inv_d, max_t, ray.d_sign, &near_hits);
 
 					if (hit_mask != 0)
 						ray.trav_stack.push(hit_mask, 2);
@@ -138,6 +154,9 @@ std::tuple<Ray*, Ray*, size_t> BVH2StreamTraverser::next_object()
 					return true;
 				}
 			});
+
+			if (first_call)
+				first_call = false;
 
 			// If any rays hit, traverse deeper
 			if (std::distance(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second) > 0) {

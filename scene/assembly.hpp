@@ -86,7 +86,7 @@ public:
 	//std::unordered_map<std::string, size_t> shader_map; // map Name -> Index
 
 	// Object accel
-	BVH object_accel;
+	BVH2 object_accel;
 
 	// Light accel
 	LightTree light_accel;

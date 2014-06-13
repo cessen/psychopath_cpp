@@ -69,6 +69,45 @@ T lerp_seq(float alpha, const RandContainer& c)
 }
 
 
+/**
+ * Partitions a range of elements based on a unary predicate function.
+ *
+ * This is function applies the predicate precisely once to every element
+ * in the range, which means it is safe and predictable for the predicate
+ * to modify the elements of the list.
+ *
+ * By contrast, the predicate passed to std::partition is explicitly not
+ * supposed to modify the elements.  In practice it works fine, but it
+ * seems best to provide an implementation designed for that use in case
+ * some platform's STL does weird things based on the assumption that the
+ * predicate doesn't modify anything.
+ *
+ * This implementation is based on the implementation in libc++, which is
+ * under the MIT open source license.
+ */
+template <typename Predicate, typename BidirIt>
+BidirIt mutable_partition(BidirIt begin, BidirIt end, Predicate pred)
+{
+	while (true) {
+		while (true) {
+			if (begin == end)
+				return begin;
+			if (!pred(*begin))
+				break;
+			++begin;
+		}
+
+		do {
+			if (begin == --end)
+				return begin;
+		} while (!pred(*end));
+
+		std::swap(*begin, *end);
+		++begin;
+	}
+}
+
+
 /*
  * Quick lookup of what indices and alpha we should use to interpolate
  * time samples.

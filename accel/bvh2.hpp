@@ -121,6 +121,7 @@ public:
 	virtual void init_rays(Ray* begin, Ray* end) {
 		rays = begin;
 		rays_end = end;
+		first_call = true;
 
 		// Initialize stack
 		stack_ptr = 0;
@@ -135,6 +136,7 @@ private:
 	const BVH2* bvh = nullptr;
 	Ray* rays = nullptr;
 	Ray* rays_end = nullptr;
+	bool first_call = true;
 
 	// Stack data
 #define BVH2_STACK_SIZE 64

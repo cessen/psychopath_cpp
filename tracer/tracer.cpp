@@ -90,7 +90,7 @@ uint32_t Tracer::trace(const WorldRay* w_rays_begin, const WorldRay* w_rays_end,
 
 void Tracer::trace_assembly(Assembly* assembly, const std::vector<Transform>& parent_xforms, Ray* rays, Ray* rays_end)
 {
-	BVHStreamTraverser traverser;
+	BVH2StreamTraverser traverser;
 
 	// Initialize traverser
 	traverser.init_accel(assembly->object_accel);
