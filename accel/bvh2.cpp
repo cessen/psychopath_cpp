@@ -106,11 +106,11 @@ std::tuple<Ray*, Ray*, size_t> BVH2StreamTraverser::next_object()
 
 	while (stack_ptr >= 0) {
 		if (bvh->is_leaf(node_stack[stack_ptr])) {
-			ray_stack[stack_ptr].first = mutable_partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [this](Ray& ray) {
+			ray_stack[stack_ptr].second = mutable_partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [this](Ray& ray) {
 				if (!first_call)
-					return !(ray.trav_stack.pop() && (ray.flags & Ray::DONE) == 0);
+					return ray.trav_stack.pop() && (ray.flags & Ray::DONE) == 0;
 				else {
-					return !(true && (ray.flags & Ray::DONE) == 0);
+					return (ray.flags & Ray::DONE) == 0;
 				}
 			});
 
@@ -126,7 +126,7 @@ std::tuple<Ray*, Ray*, size_t> BVH2StreamTraverser::next_object()
 			}
 		} else {
 			// Test rays against current node's children
-			ray_stack[stack_ptr].first = mutable_partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [this](Ray& ray) {
+			ray_stack[stack_ptr].second = mutable_partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [this](Ray& ray) {
 				if ((first_call || ray.trav_stack.pop()) && (ray.flags & Ray::DONE) == 0) {
 					// Get the time-interpolated bounding box
 					const auto cbegin = bvh->nodes.cbegin() + node_stack[stack_ptr];
@@ -140,9 +140,9 @@ std::tuple<Ray*, Ray*, size_t> BVH2StreamTraverser::next_object()
 					if (hit_mask != 0)
 						ray.trav_stack.push(hit_mask, 2);
 
-					return hit_mask == 0;
+					return hit_mask != 0;
 				} else {
-					return true;
+					return false;
 				}
 			});
 
