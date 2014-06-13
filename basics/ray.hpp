@@ -117,7 +117,7 @@ struct Ray {
 	  type {NONE},
 	  flags {0},
 	  id {0},
-	  trav_stack {1}
+	  trav_stack {0}
 	{}
 
 	Vec3 get_d_inverse() const {
