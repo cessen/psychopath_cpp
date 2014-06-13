@@ -126,7 +126,9 @@ std::tuple<Ray*, Ray*, size_t> BVH2StreamTraverser::next_object()
 			}
 		} else {
 			// Test rays against current node's children
-			ray_stack[stack_ptr].second = mutable_partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [this](Ray& ray) {
+			bool flip_set = false;
+			bool flip = false;
+			ray_stack[stack_ptr].second = mutable_partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [this, &flip_set, &flip](Ray& ray) {
 				if ((first_call || ray.trav_stack.pop()) && (ray.flags & Ray::DONE) == 0) {
 					// Get the time-interpolated bounding box
 					const auto cbegin = bvh->nodes.cbegin() + node_stack[stack_ptr];
@@ -137,8 +139,17 @@ std::tuple<Ray*, Ray*, size_t> BVH2StreamTraverser::next_object()
 					SIMD::float4 near_hits;
 					const auto hit_mask = b.intersect_ray(ray, &near_hits);
 
-					if (hit_mask != 0)
-						ray.trav_stack.push(hit_mask, 2);
+					if (hit_mask != 0) {
+						if (!flip_set) {
+							flip_set = true;
+							flip = near_hits[0] > near_hits[1];
+						}
+
+						if (flip)
+							ray.trav_stack.push((hit_mask >> 1) | (hit_mask << 1), 2);
+						else
+							ray.trav_stack.push(hit_mask, 2);
+					}
 
 					return hit_mask != 0;
 				} else {
@@ -153,8 +164,13 @@ std::tuple<Ray*, Ray*, size_t> BVH2StreamTraverser::next_object()
 			if (std::distance(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second) > 0) {
 				ray_stack[stack_ptr+1] = ray_stack[stack_ptr];
 
-				node_stack[stack_ptr+1] = bvh->child1(node_stack[stack_ptr]);
-				node_stack[stack_ptr] = bvh->child2(node_stack[stack_ptr]);
+				if (flip) {
+					node_stack[stack_ptr+1] = bvh->child2(node_stack[stack_ptr]);
+					node_stack[stack_ptr] = bvh->child1(node_stack[stack_ptr]);
+				} else {
+					node_stack[stack_ptr+1] = bvh->child1(node_stack[stack_ptr]);
+					node_stack[stack_ptr] = bvh->child2(node_stack[stack_ptr]);
+				}
 
 				++stack_ptr;
 			}
