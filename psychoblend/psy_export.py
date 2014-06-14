@@ -160,13 +160,12 @@ class PsychoExporter:
             dof_distance = 0.0
             print("WARNING: DoF object tracking not yet implemented.")
 
-        self.w.write("Fov [%f]\n" % degrees(cam.data.angle))
-        self.w.write("FocalDistance [%f]\n" % dof_distance)
-        self.w.write("ApertureRadius [%f]\n" % (cam.data.psychopath.aperture_radius))
-
         matz = Matrix()
         matz[2][2] = -1
         for i in range(self.time_samples):
+            self.w.write("Fov [%f]\n" % degrees(cam.data.angle))
+            self.w.write("FocalDistance [%f]\n" % dof_distance)
+            self.w.write("ApertureRadius [%f]\n" % (cam.data.psychopath.aperture_radius))
             self.set_frame(self.fr, self.shutter_start + (self.shutter_diff*i))
             mat = cam.matrix_world.copy()
             mat = mat * matz

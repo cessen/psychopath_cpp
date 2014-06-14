@@ -21,26 +21,48 @@ class Camera
 {
 public:
 	std::vector<Transform> transforms;
-	float fov, tfov;
-	float aperture_radius, focus_distance;
+	std::vector<float> fovs;
+	std::vector<float> tfovs;
+	std::vector<float> aperture_radii;
+	std::vector<float> focus_distances;
 
-	Camera(std::vector<Transform> &trans, float fov_, float aperture_radius_, float focus_distance_) {
-		transforms.resize(trans.size());
-		for (uint32_t i=0; i < trans.size(); i++)
-			transforms[i] = trans[i];
+	Camera(std::vector<Transform> &transforms_, std::vector<float> &fovs_, std::vector<float> &aperture_radii_, std::vector<float> &focus_distances_) {
+		transforms = transforms_;
+		fovs = fovs_;
+		aperture_radii = aperture_radii_;
+		focus_distances = focus_distances_;
 
-		fov = fov_;
-		tfov = sin(fov/2) / cos(fov/2);
+		// Make sure we have needed values for everything
+		if (transforms.size() == 0)
+			std::cout << "WARNING: camera has no transform(s)!\n";
 
-		aperture_radius = aperture_radius_;
-		focus_distance = focus_distance_;
+		if (fovs.size() == 0)
+			std::cout << "WARNING: camera has no fov(s)!\n";
+
+		if (aperture_radii.size() == 0 || focus_distances.size() == 0) {
+			aperture_radii = {0.0f};
+			focus_distances = {1.0f};
+
+			if (aperture_radii.size() == 0 && focus_distances.size() != 0)
+				std::cout << "WARNING: camera has aperture radius but no focus distance.  Disabling focal blur.\n";
+			else if (aperture_radii.size() != 0 && focus_distances.size() == 0)
+				std::cout << "WARNING: camera has focus distance but no aperture radius.  Disabling focal blur.\n";
+		}
+
+		// Convert angle fov into linear fov
+		tfovs.clear();
+		for (auto&& i: fovs)
+			tfovs.emplace_back(sin(i/2) / cos(i/2));
+		fovs.clear();
 
 		// Can't have focus distance of zero
-		// TODO: emit error
-		if (focus_distance <= 0.0f) {
-			std::cout << "WARNING: camera focal distance is zero.  Disabling focal blur.\n";
-			aperture_radius = 0.0f;
-			focus_distance = 1.0f;
+		for (auto&& f: focus_distances) {
+			if (f <= 0.0f) {
+				std::cout << "WARNING: camera focal distance is zero or less.  Disabling focal blur.\n";
+				aperture_radii = {0.0f};
+				focus_distances = {1.0f};
+				break;
+			}
 		}
 	}
 
@@ -52,6 +74,12 @@ public:
 
 		wray.type = Ray::CAMERA;
 		wray.time = time;
+
+		// Get time-interpolated camera settings
+		const Transform transform = lerp_seq(time, transforms);
+		const float tfov = lerp_seq(time, tfovs);
+		const float aperture_radius = lerp_seq(time, aperture_radii);
+		const float focus_distance = lerp_seq(time, focus_distances);
 
 		// Ray origin
 		wray.o.x = aperture_radius * ((u * 2) - 1);
@@ -72,7 +100,7 @@ public:
 		wray.ddy = Vec3(0.0f, dy*tfov, 0.0f);
 
 		// Transform the ray
-		return wray.transformed(lerp_seq(time, transforms));
+		return wray.transformed(transform);
 	}
 };
 

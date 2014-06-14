@@ -178,9 +178,9 @@ Matrix44 Parser::parse_matrix(const std::string line)
 std::unique_ptr<Camera> Parser::parse_camera(const DataTree::Node& node)
 {
 	std::vector<Matrix44> mats;
-	float fov = 90.0f;
-	float focus_distance = 10.0f;
-	float aperture_size = 0.0f;
+	std::vector<float> fovs;
+	std::vector<float> focus_distances;
+	std::vector<float> aperture_radii;
 
 	// Parse
 	for (const auto& child: node.children) {
@@ -188,19 +188,19 @@ std::unique_ptr<Camera> Parser::parse_camera(const DataTree::Node& node)
 			// Get FOV
 			boost::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
 			if (matches != boost::sregex_iterator()) {
-				fov = std::stof(matches->str());
+				fovs.emplace_back((3.1415926536f/180.0f) * std::stof(matches->str()));
 			}
 		} else if (child.type == "FocalDistance") {
 			// Get focal distance
 			boost::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
 			if (matches != boost::sregex_iterator()) {
-				focus_distance = std::stof(matches->str());
+				focus_distances.emplace_back(std::stof(matches->str()));
 			}
 		} else if (child.type == "ApertureRadius") {
 			// Get aperture size
 			boost::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
 			if (matches != boost::sregex_iterator()) {
-				aperture_size = std::stof(matches->str());
+				aperture_radii.emplace_back(std::stof(matches->str()));
 			}
 		} else if (child.type == "Transform") {
 			// Get transform matrix
@@ -215,7 +215,7 @@ std::unique_ptr<Camera> Parser::parse_camera(const DataTree::Node& node)
 		cam_transforms[i] = mats[i];
 
 	// Construct camera
-	std::unique_ptr<Camera> camera(new Camera(cam_transforms, (3.14159/180.0)*fov, aperture_size, focus_distance));
+	std::unique_ptr<Camera> camera(new Camera(cam_transforms, fovs, aperture_radii, focus_distances));
 
 	return camera;
 }
