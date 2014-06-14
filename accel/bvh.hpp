@@ -23,8 +23,7 @@
  */
 class BVH: public Accel
 {
-	std::vector<BBox> _bounds {BBox()}; // TODO: build this properly
-
+	std::vector<BBox> _bounds {BBox()};
 public:
 	virtual ~BVH() {};
 	virtual void build(const Assembly& assembly);
@@ -34,10 +33,6 @@ public:
 
 	// Traversers need access to private data
 	friend class BVHStreamTraverser;
-
-	// BVH2 builds based on BVH
-	friend class BVH2;
-
 
 	enum {
 	    IS_LEAF = 1 << 0
@@ -70,26 +65,12 @@ public:
 		Vec3 bmin, bmax, c;
 	};
 
-private:
-	const Assembly* assembly; // Set during build()
-	//std::vector<BBox> bbox;
+public:
+	// This stuff is public because BVH is used as the basis
+	// for building other BVH's like BVH2 and BVH4, and they need
+	// direct access.
 	std::vector<Node> nodes;
 	std::vector<BBox> bboxes;
-	std::vector<BVHPrimitive> bag;  // Temporary holding spot for objects not yet added to the hierarchy
-
-	bool finalize();
-
-	/**
-	 * @brief Tests whether a ray intersects a node or not.
-	 */
-	inline bool intersect_node(const uint64_t node_i, const Ray& ray, float *near_t, float *far_t) const {
-#ifdef GLOBAL_STATS_TOP_LEVEL_BVH_NODE_TESTS
-		Global::Stats::top_level_bvh_node_tests++;
-#endif
-		const Node& node = nodes[node_i];
-		const BBox b = lerp_seq(ray.time, bboxes.cbegin() + node.bbox_index, bboxes.cbegin() + node.bbox_index + node.ts);
-		return b.intersect_ray(ray, near_t, far_t, ray.max_t);
-	}
 
 	/**
 	 * @brief Returns the index of the first child
@@ -121,6 +102,25 @@ private:
 
 	inline bool is_leaf(const size_t node_i) const {
 		return nodes[node_i].flags & IS_LEAF;
+	}
+
+private:
+	const Assembly* assembly; // Set during build()
+	//std::vector<BBox> bbox;
+	std::vector<BVHPrimitive> bag;  // Temporary holding spot for objects not yet added to the hierarchy
+
+	bool finalize();
+
+	/**
+	 * @brief Tests whether a ray intersects a node or not.
+	 */
+	inline bool intersect_node(const uint64_t node_i, const Ray& ray, float *near_t, float *far_t) const {
+#ifdef GLOBAL_STATS_TOP_LEVEL_BVH_NODE_TESTS
+		Global::Stats::top_level_bvh_node_tests++;
+#endif
+		const Node& node = nodes[node_i];
+		const BBox b = lerp_seq(ray.time, bboxes.cbegin() + node.bbox_index, bboxes.cbegin() + node.bbox_index + node.ts);
+		return b.intersect_ray(ray, near_t, far_t, ray.max_t);
 	}
 
 	size_t split_primitives(size_t first_prim, size_t last_prim);

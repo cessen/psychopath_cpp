@@ -1,5 +1,3 @@
-#include "numtype.h"
-
 #include <iostream>
 #include <algorithm>
 #include <memory>
@@ -8,10 +6,10 @@
 #include <cmath>
 
 #include "numtype.h"
+#include "bvh2.hpp"
 
 #include "simd.hpp"
 #include "ray.hpp"
-#include "bvh2.hpp"
 #include "assembly.hpp"
 #include "utils.hpp"
 

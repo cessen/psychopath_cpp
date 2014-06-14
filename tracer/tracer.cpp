@@ -22,6 +22,9 @@
 #include "intersection.hpp"
 #include "assembly.hpp"
 #include "scene.hpp"
+#include "bvh.hpp"
+#include "bvh2.hpp"
+#include "bvh4.hpp"
 
 
 uint32_t Tracer::trace(const WorldRay* w_rays_begin, const WorldRay* w_rays_end, Intersection* intersections_begin, Intersection* intersections_end)
@@ -90,7 +93,7 @@ uint32_t Tracer::trace(const WorldRay* w_rays_begin, const WorldRay* w_rays_end,
 
 void Tracer::trace_assembly(Assembly* assembly, const std::vector<Transform>& parent_xforms, Ray* rays, Ray* rays_end)
 {
-	BVH2StreamTraverser traverser;
+	BVH4StreamTraverser traverser;
 
 	// Initialize traverser
 	traverser.init_accel(assembly->object_accel);

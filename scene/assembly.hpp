@@ -13,6 +13,7 @@
 #include "transform.hpp"
 #include "bvh.hpp"
 #include "bvh2.hpp"
+#include "bvh4.hpp"
 #include "light_tree.hpp"
 
 
@@ -86,7 +87,7 @@ public:
 	//std::unordered_map<std::string, size_t> shader_map; // map Name -> Index
 
 	// Object accel
-	BVH2 object_accel;
+	BVH4 object_accel;
 
 	// Light accel
 	LightTree light_accel;

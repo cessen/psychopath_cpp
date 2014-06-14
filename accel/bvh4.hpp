@@ -1,23 +1,23 @@
 #ifndef BVH4_HPP
 #define BVH4_HPP
 
-#include "numtype.h"
-#include "global.hpp"
-
 #include <stdlib.h>
 #include <iostream>
 #include <vector>
 #include <deque>
 #include <memory>
 #include <tuple>
-#include <x86intrin.h>
-#include "primitive.hpp"
-#include "collection.hpp"
+
+#include "numtype.h"
+#include "global.hpp"
+
+#include "accel.hpp"
+#include "bvh.hpp"
+#include "object.hpp"
 #include "ray.hpp"
 #include "bbox.hpp"
 #include "utils.hpp"
 #include "vector.hpp"
-#include "chunked_array.hpp"
 
 
 
@@ -25,121 +25,62 @@
 /*
  * A bounding volume hierarchy.
  */
-class BVH4: public Collection
+class BVH4: public Accel
 {
 public:
+	virtual void build(const Assembly& assembly);
+	virtual const std::vector<BBox>& bounds() const {
+		return _bounds;
+	};
 	virtual ~BVH4() {};
 
-	virtual void add_primitives(std::vector<std::unique_ptr<Primitive>>* primitives);
-	virtual bool finalize();
-	virtual size_t max_primitive_id() const;
-	virtual Primitive &get_primitive(size_t id);
-	virtual uint get_potential_intersections(const Ray &ray, float tmax, uint max_potential, size_t *ids, void *state);
-	virtual size_t ray_state_size() {
-		return 16;
+	// Traversers need access to private data
+	friend class BVH4StreamTraverser;
+
+	struct alignas(16) Node {
+	    union {
+	        // If the node is a leaf, we don't need the bounds.
+	        // If the node is not a leaf, it doesn't have Primitive data.
+	        BBox4 bounds {BBox(), BBox(), BBox(), BBox()};
+	        size_t data_index;
+	    };
+	    size_t child_indices[3] = {0,0,0}; // Indices of children 2, 3, and 4. (Child 1's index is implicit.)
+	    // When first element is 0, indicates that this is a leaf node,
+	    // because a non-leaf node needs at least two children.  When the
+	    // second and/or third elements are zero, indicates there is no
+	    // third or fourth child, respectively.
+	    uint32_t ts = 0;  // Number of time samples.
+
+	Node() {}
+
+//		Node(const Node& n): child_indices {n.child_indices}, ts {n.ts} {
+//			bounds = n.bounds;
+//		}
+
+	// Operators to allow node bounds to be interpolated conveniently
+	Node operator+(const Node& b) const {
+		Node n;
+		n.bounds = bounds + b.bounds;
+		return n;
 	}
 
-	struct Node {
-		uint64_t parent_index_and_misc = 0;  // Stores the parent index, and also the time sample count and which sibling the node is
-		size_t child_indices[3] = {0,0,0}; // When first element is 0, indicates that this is a leaf node,
-		// because a non-leaf node needs at least two children.  When the
-		// second and/or third elements are zero, indicates there is no
-		// third or fourth child, respectively.
-		union {
-			// If the node is a leaf, we don't need the bounds.
-			// If the node is not a leaf, it doesn't have Primitive data.
-			BBox4 bounds {BBox(), BBox(), BBox(), BBox()};
-			Primitive *data;
-		};
-
-		Node() {}
-
-		Node(const Node& n): parent_index_and_misc {n.parent_index_and_misc} {
-			for (int i = 0; i < 3; ++i)
-				child_indices[i] = n.child_indices[i];
-			bounds = n.bounds;
-		}
-
-		void set_time_samples(const uint64_t ts) {
-			parent_index_and_misc &= 0xF000FFFFFFFFFFFF;
-			parent_index_and_misc |= (ts << 48) & 0x0FFF000000000000;
-		}
-
-		void set_parent_index(const uint64_t par_i) {
-			parent_index_and_misc &= 0xFFFF000000000000;
-			parent_index_and_misc |= par_i & 0x0000FFFFFFFFFFFF;
-		}
-
-		// Record whether this node is the first, second, third, or fourth sibling (as 0-3).
-		void set_which_sibling(const uint64_t sibling_id) {
-			parent_index_and_misc &= 0x0FFFFFFFFFFFFFFF;
-			parent_index_and_misc |= (sibling_id << 60) & 0xF000000000000000;
-		}
-	};
-
-	/*
-	 * A node for building the bounding volume hierarchy.
-	 * Contains a bounding box, a flag for whether
-	 * it's a leaf or not, a pointer to its first
-	 * child, and it's data if it's a leaf.
-	 */
-	struct BuildNode {
-		size_t bbox_index = 0;
-		union {
-			size_t child_index;
-			Primitive *data = nullptr;
-		};
-		size_t parent_index = 0;
-		uint16_t ts = 0; // Time sample count
-		uint16_t flags = 0;
-	};
-
-	/*
-	 * Used to store primitives that have yet to be
-	 * inserted into the hierarchy.
-	 * Contains the time 0.5 bounds of the primitive and it's centroid.
-	 */
-	class BuildPrimitive
-	{
-	public:
-		Primitive *data;
-		Vec3 bmin, bmax, c;
-
-		BuildPrimitive() {
-			data = nullptr;
-		}
-
-		BuildPrimitive(Primitive *prim) {
-			init(prim);
-		}
-
-		void init(Primitive *prim) {
-			data = prim;
-
-			// Get bounds at time 0.5
-			BBox mid_bb = data->bounds().at_time(0.5);
-			bmin = mid_bb.min;
-			bmax = mid_bb.max;
-
-			// Get centroid
-			c = (bmin * 0.5) + (bmax * 0.5);
-		}
-	};
-
-	struct BucketInfo {
-		BucketInfo() {
-			count = 0;
-		}
-		size_t count;
-		BBoxT bb;
+	Node operator*(float f) const {
+		Node n;
+		n.bounds = bounds * f;
+		return n;
+	}
 	};
 
 private:
-	BBoxT bbox;
 	std::vector<Node> nodes;
-	std::deque<BuildNode> build_nodes;
-	std::deque<BBox> build_bboxes;
-	std::deque<BuildPrimitive> prim_bag;  // Temporary holding spot for primitives not yet added to the hierarchy
+	std::vector<BBox> _bounds;
+
+	enum {
+	    IS_SKIP = 1 << 8,
+	    IS_2ND  = 1 << 9,
+	    IS_3RD  = 1 << 10,
+	    IS_4TH  = 1 << 11
+	};
 
 	/**
 	 * @brief Returns the index of the nth (0-3) child
@@ -147,17 +88,9 @@ private:
 	 */
 	inline size_t child(const size_t node_i, const int n) const {
 		if (n == 0)
-			return node_i + time_samples(node_i);
+			return node_i + nodes[node_i].ts;
 		else
 			return nodes[node_i].child_indices[n-1];
-	}
-
-	/**
-	 * @brief Returns the index of the parent
-	 * of the node with the given index.
-	 */
-	inline size_t parent(const size_t node_i) const {
-		return nodes[node_i].parent_index_and_misc & 0x0000FFFFFFFFFFFF;
 	}
 
 	/**
@@ -165,30 +98,7 @@ private:
 	 * of the node with the given index.
 	 */
 	inline uint32_t time_samples(const size_t node_i) const {
-		return (nodes[node_i].parent_index_and_misc >> 48) & 0x0000000000000FFF;
-	}
-
-	/**
-	 * @brief Returns which sibling the node with the given index is.
-	 */
-	inline uint32_t which_sibling(const size_t node_i) const {
-		return (nodes[node_i].parent_index_and_misc >> 60) & 0x000000000000000F;
-	}
-
-
-	/**
-	 * @brief Returns the index of the nth (0-3) sibling
-	 * of the node with the given index.  "n" is absolute,
-	 * not relative.  So passing n=0 will return the index
-	 * of the first child of the parent, regardless of the
-	 * node index passed in.
-	 */
-	inline size_t sibling(const size_t node_i, const int n) const {
-		return child(parent(node_i), n);
-	}
-
-	inline size_t next_sibling(const size_t node_i, const int offset) const {
-		return sibling(node_i, (which_sibling(node_i) + offset) % 4);
+		return nodes[node_i].ts;
 	}
 
 	/**
@@ -199,23 +109,59 @@ private:
 		return (nodes[node_i].child_indices[0] == 0);
 	}
 
-	inline uint64_t skip_code(uint64_t mask, int pos) const {
-		return ((mask >> (pos+1)) | (mask << (3-pos))) & 7;
+	inline int child_count(const size_t node_i) const {
+		if (nodes[node_i].child_indices[1] == 0) {
+			return 2;
+		} else if (nodes[node_i].child_indices[2] == 0) {
+			return 3;
+		} else {
+			return 4;
+		}
 	}
-
-	static constexpr int code_table[8] = {0, 1, 2, 1, 3, 1, 2, 1};
-	inline uint64_t skip_code_next(uint64_t code) const {
-		return (code & 7) >> (code_table[code]);
-	}
-
-
-
-	size_t split_primitives(size_t first_prim, size_t last_prim);
-	size_t recursive_build(size_t parent, size_t first_prim, size_t last_prim);
-	void pack();
 };
 
 
+
+
+/**
+ * @brief A breadth-first traverser for BVH4.
+ */
+class BVH4StreamTraverser: public AccelStreamTraverser<BVH4>
+{
+public:
+	virtual ~BVH4StreamTraverser() {}
+
+	virtual void init_accel(const BVH4& accel) {
+		bvh = &accel;
+	}
+
+	virtual void init_rays(Ray* begin, Ray* end) {
+		rays = begin;
+		rays_end = end;
+		first_call = true;
+
+		// Initialize stack
+		stack_ptr = 0;
+		node_stack[0] = 0;
+		ray_stack[0].first = rays;
+		ray_stack[0].second = rays_end;
+	}
+
+	virtual std::tuple<Ray*, Ray*, size_t> next_object();
+
+private:
+	const BVH4* bvh = nullptr;
+	Ray* rays = nullptr;
+	Ray* rays_end = nullptr;
+	bool first_call = true;
+
+	// Stack data
+#define BVH4_STACK_SIZE 64
+	int stack_ptr;
+	size_t node_stack[BVH4_STACK_SIZE];
+	std::pair<Ray*, Ray*> ray_stack[BVH4_STACK_SIZE];
+
+};
 
 
 #endif // BVH4_HPP

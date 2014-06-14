@@ -37,7 +37,7 @@ public:
 	// Traversers need access to private data
 	friend class BVH2StreamTraverser;
 
-	struct alignas(64) Node {
+	struct alignas(16) Node {
 	    union {
 	        // If the node is a leaf, we don't need the bounds.
 	        // If the node is not a leaf, it doesn't have Primitive data.
