@@ -1,3 +1,10 @@
+- Bugs:
+	- The "huge_plane" scene segfaults, running off the end of the
+	  split primitive stack with a single ray.  If you apply
+	  scale, then it stops segfaulting.  Also, if you increase the
+	  dicing rate (even just to 0.5) it stops segfaulting.
+	- Very small sphere lights introduce severe banding in light attentuation.
+
 - Ray stream tracing:
 	- Optimizations...
 
@@ -38,9 +45,6 @@
 	- "Population Monte Carlo"
 
 - Film class:
-	- Change Film class to allow locks on "buckets" of pixels, so that
-	  threads can concurrently write to the Film instead of blocking
-	  each other.
 	- Make film class more data-type agnostic.  It should be the responsibility
 	  of the Renderer and Integrator to make sure pixel data is interpretted and
 	  used correctly.
