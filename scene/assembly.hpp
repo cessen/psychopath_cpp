@@ -226,7 +226,7 @@ public:
 		// Get bounding boxes
 		if (instances[index].type == Instance::OBJECT) {
 			auto obj = objects[instances[index].data_index].get();
-			for (int i = 0; i < obj->bounds().size(); ++i) {
+			for (unsigned int i = 0; i < obj->bounds().size(); ++i) {
 				bbs.push_back(obj->bounds()[i]);
 			}
 		} else { /* Instance::ASSEMBLY */

@@ -230,15 +230,15 @@ static inline std::vector<Transform> merge(const std::vector<Transform>::const_i
 	} else if (b.size() == 0) {
 		c.insert(c.begin(), a.begin(), a.end());
 	} else if (a.size() == b.size()) {
-		for (size_t i = 0; i < a.size(); ++i)
+		for (int i = 0; i < a.size(); ++i)
 			c.emplace_back(a[i] * b[i]);
 	} else if (a.size() > b.size()) {
 		const float s = a.size() - 1;
-		for (size_t i = 0; i < a.size(); ++i)
+		for (int i = 0; i < a.size(); ++i)
 			c.emplace_back(a[i] * lerp_seq(i/s, b.begin(), b.end()));
 	} else if (a.size() < b.size()) {
 		const float s = b.size() - 1;
-		for (size_t i = 0; i < b.size(); ++i)
+		for (int i = 0; i < b.size(); ++i)
 			c.emplace_back(b[i] * lerp_seq(i/s, a.begin(), a.end()));
 	}
 
