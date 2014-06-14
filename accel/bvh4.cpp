@@ -189,7 +189,8 @@ std::tuple<Ray*, Ray*, size_t> BVH4StreamTraverser::next_object()
 			}
 		} else {
 			const int num_children = bvh->child_count(node_stack[stack_ptr]);
-
+			bool rot_set = false;
+			int rot = 0;
 			// Test rays against current node's children
 			ray_stack[stack_ptr].second = mutable_partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [&](Ray& ray) {
 				if ((first_call || ray.trav_stack.pop()) && (ray.flags & Ray::DONE) == 0) {
@@ -203,7 +204,14 @@ std::tuple<Ray*, Ray*, size_t> BVH4StreamTraverser::next_object()
 					const auto hit_mask = b.intersect_ray(ray, &near_hits);
 
 					if (hit_mask != 0) {
-						ray.trav_stack.push(hit_mask, num_children);
+						if (!rot_set) {
+							rot_set = true;
+							for (int i = 1; i < num_children; ++i) {
+								if (near_hits[i] < near_hits[rot])
+									rot = i;
+							}
+						}
+						ray.trav_stack.push((hit_mask >> rot) | (hit_mask << (num_children-rot)), num_children);
 					}
 
 					return hit_mask != 0;
@@ -221,7 +229,7 @@ std::tuple<Ray*, Ray*, size_t> BVH4StreamTraverser::next_object()
 
 				for (int i = 0; i < num_children; ++i) {
 					ray_stack[stack_ptr+i] = ray_stack[stack_ptr];
-					node_stack[stack_ptr+i] = bvh->child(node_i, num_children-1-i);
+					node_stack[stack_ptr+i] = bvh->child(node_i, num_children-1-((i+num_children-rot)%num_children));
 				}
 
 				stack_ptr += num_children - 1;
