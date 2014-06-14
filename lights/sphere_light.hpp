@@ -41,8 +41,8 @@ public:
 		// point and the center of the light
 		Vec3 x, y, z;
 		z = pos - arr;
-		const float d2 = z.length2();  // Distance from center of sphere squared
-		const float d = std::sqrt(d2); // Distance from center of sphere
+		const double d2 = z.length2();  // Distance from center of sphere squared
+		const double d = std::sqrt(d2); // Distance from center of sphere
 		coordinate_system_from_vec3(z, &x, &y);
 		x.normalize();
 		y.normalize();
@@ -52,26 +52,26 @@ public:
 		// the angle it subtends from the point being lit.
 		if (d > radius) {
 			// Calculate the portion of the sphere visible from the point
-			const float sin_theta_max2 = std::min(1.0f, (radius * radius) / d2);
-			const float cos_theta_max2 = 1.0f - sin_theta_max2;
-			const float sin_theta_max = std::sqrt(sin_theta_max2);
-			const float cos_theta_max = std::sqrt(cos_theta_max2);
+			const double sin_theta_max2 = std::min(1.0, (static_cast<double>(radius) * static_cast<double>(radius)) / d2);
+			const double cos_theta_max2 = 1.0 - sin_theta_max2;
+			const double sin_theta_max = std::sqrt(sin_theta_max2);
+			const double cos_theta_max = std::sqrt(cos_theta_max2);
 
 			// Calculate the solid angle the sphere takes up from the point
-			const float solid_angle = 2 * M_PI * (1.0f - cos_theta_max);
+			const double solid_angle = 2 * M_PI * (1.0 - cos_theta_max);
 
 			// Calculate the length that the shadow ray should be.
 			// TODO: make the length end exactly on the surface of
 			// the sphere.
-			const float disc_radius = cos_theta_max * radius;
-			const float disc_dist = d - (sin_theta_max * radius);
-			const float length = std::sqrt((disc_dist * disc_dist) + (disc_radius * disc_radius));
+			const double disc_radius = cos_theta_max * radius;
+			const double disc_dist = d - (sin_theta_max * radius);
+			const double length = std::sqrt((disc_dist * disc_dist) + (disc_radius * disc_radius));
 
 			// Sample the cone subtended by the sphere
 			Vec3 sample = uniform_sample_cone(u, v, cos_theta_max);
 			*shadow_vec = ((x * sample[0]) + (y * sample[1]) + (z * sample[2])).normalized() * length;
 
-			return col * solid_angle * surface_area_inv * (0.5f / M_PI);
+			return col * static_cast<float>(solid_angle * surface_area_inv * (0.5 / M_PI));
 		} else {
 			// If we're inside the sphere, there's light from every direction.
 			*shadow_vec = uniform_sample_sphere(u, v);
