@@ -242,16 +242,30 @@ class PsychoExporter:
                 self.w.unindent()
                 self.w.write("}\n")
             elif ob.type == 'LAMP' and ob.data.type == 'POINT':
-                mat = ob.matrix_world
-                loc = mat.to_translation()
-                coldata = ob.data.color
-                energy = ob.data.energy
+                # Collect data over time
+                time_mats = []
+                time_col = []
+                time_loc = []
+                time_rad = []
+                for i in range(self.time_samples):
+                    self.set_frame(self.fr, self.shutter_start + (self.shutter_diff*i))
+                    time_col += [ob.data.color * ob.data.energy]
+                    time_mats += [ob.matrix_world.copy()]
+                    time_loc += [ob.matrix_world.to_translation()]
+                    time_rad += [ob.data.shadow_soft_size]
+                
+                # Write out sphere
                 self.w.write("SphereLight $%s {\n" % escape_name(ob.name))
                 self.w.indent()
-                self.w.write("Location [%f %f %f]\n" % (loc[0], loc[1], loc[2]))
-                self.w.write("Radius [%f]\n" % ob.data.shadow_soft_size)
-                self.w.write("Color [%f %f %f]\n" % (coldata[0], coldata[1], coldata[2]))
-                self.w.write("Energy [%f]\n" % energy)
+                for col in time_col:
+                    self.w.write("Color [%f %f %f]\n" % (col[0], col[1], col[2]))
+                for mat in time_mats:
+                    self.w.write("Transform [%s]\n" % mat2str(mat))
+                for loc in time_loc:
+                    self.w.write("Location [%f %f %f]\n" % (loc[0], loc[1], loc[2]))
+                for rad in time_rad:
+                    self.w.write("Radius [%f]\n" % rad)
+                    
                 self.w.unindent()
                 self.w.write("}\n")
 

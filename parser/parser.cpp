@@ -372,46 +372,43 @@ std::unique_ptr<Bicubic> Parser::parse_bicubic_patch(const DataTree::Node& node)
 
 std::unique_ptr<SphereLight> Parser::parse_sphere_light(const DataTree::Node& node)
 {
-	Vec3 location {0,0,0};
-	Color color {0,0,0};
-	float energy {1.0f};
-	float radius {0.5f};
+	std::vector<Color> colors;
+	std::vector<Vec3> locations;
+	std::vector<float> radii;
 
 	// Parse
 	for (const auto& child: node.children) {
-		if (child.type == "Energy") {
-			// Get energy
-			boost::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
-			if (matches != boost::sregex_iterator()) {
-				energy = std::stof(matches->str());
-			}
-		} else if (child.type == "Color") {
+		if (child.type == "Color") {
 			// Get color
 			boost::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
+			Color col;
 			for (int i = 0; matches != boost::sregex_iterator() && i < 3; ++matches) {
-				color[i] = std::stof(matches->str());
+				col[i] = std::stof(matches->str());
 				++i;
 			}
+			colors.push_back(col);
 		} else if (child.type == "Radius") {
 			// Get radius
 			boost::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
 			if (matches != boost::sregex_iterator()) {
-				radius = std::stof(matches->str());
+				radii.emplace_back(std::stof(matches->str()));
 			}
 		} else if (child.type == "Location") {
 			// Get location
 			boost::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
+			Vec3 loc;
 			for (int i = 0; matches != boost::sregex_iterator() && i < 3; ++matches) {
-				location[i] = std::stof(matches->str());
+				loc[i] = std::stof(matches->str());
 				++i;
 			}
+			locations.push_back(loc);
 		}
 	}
 
 	// Build light
-	std::unique_ptr<SphereLight> sl(new SphereLight(location,
-	                                radius,
-	                                color * energy));
+	std::unique_ptr<SphereLight> sl(new SphereLight(locations,
+	                                radii,
+	                                colors));
 
 	return sl;
 }

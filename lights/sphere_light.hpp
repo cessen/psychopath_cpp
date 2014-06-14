@@ -13,15 +13,46 @@
  */
 class SphereLight: public Light
 {
-	Vec3 pos;
-	float radius;
-	Color col;
+	std::vector<Vec3> positions;
+	std::vector<float> radii;
+	std::vector<Color> colors;
 	std::vector<BBox> bounds_;
-	float surface_area_inv;
 
 public:
-	SphereLight(Vec3 pos_, float radius_, Color col_): pos {pos_}, radius {radius_}, col {col_}, bounds_ {BBox(pos - Vec3(radius), pos + Vec3(radius))} {
-		surface_area_inv = 1.0f / (4 * M_PI * radius * radius);
+	SphereLight(std::vector<Vec3>& positions_, std::vector<float>& radii_, std::vector<Color>& colors_): positions {positions_}, radii {radii_}, colors {colors_} {
+		// Check for missing info
+		if (positions.size() == 0)
+			positions = {Vec3(0,0,0)};
+		if (radii.size() == 0)
+			std::cout << "WARNING: SphereLight has no radius(s)!\n";
+		if (colors.size() == 0)
+			std::cout << "WARNING: SphereLight has no color(s)!\n";
+
+
+		std::cout << "Light colors: " << colors.size() << std::endl;
+		// Fill in bounds
+		bounds_.clear();
+		if (positions.size() >= radii.size()) {
+			const float s = positions.size() - 1;
+			for (int i = 0; i < positions.size(); ++i) {
+				const Vec3& pos = positions[i];
+				const Vec3 rad3 {
+					lerp_seq(i/s, radii)
+				};
+				bounds_.emplace_back(pos - rad3, pos + rad3);
+			}
+		} else {
+			const float s = radii.size() - 1;
+			for (int i = 0; i < radii.size(); ++i) {
+				const Vec3 pos {
+					lerp_seq(i/s, positions)
+				};
+				const Vec3 rad3 {
+					radii[i], radii[i], radii[i]
+				};
+				bounds_.emplace_back(pos - rad3, pos + rad3);
+			}
+		}
 	}
 
 	/**
@@ -37,6 +68,13 @@ public:
 	 * light embedded inside a volume.
 	 */
 	virtual Color sample(const Vec3 &arr, float u, float v, float time, Vec3 *shadow_vec) const {
+		// Calculate time interpolated values
+		Vec3 pos = lerp_seq(time, positions);
+		double radius = lerp_seq(time, radii);
+		Color col = lerp_seq(time, colors);
+		double surface_area_inv = 1.0 / (4.0 * M_PI * radius * radius);
+
+
 		// Create a coordinate system from the vector between the
 		// point and the center of the light
 		Vec3 x, y, z;
@@ -81,6 +119,7 @@ public:
 	}
 
 	virtual Color outgoing(const Vec3 &dir, float u, float v, float time) const {
+		Color col = lerp_seq(time, colors);
 		return col;
 	}
 
@@ -93,6 +132,7 @@ public:
 	}
 
 	virtual float total_energy() const {
+		Color col = lerp_seq(0, colors);
 		return col.energy();
 	}
 
