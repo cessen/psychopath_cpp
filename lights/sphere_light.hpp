@@ -132,9 +132,9 @@ public:
 		return false;
 	}
 
-	virtual float total_energy() const {
+	virtual Color total_emitted_color() const {
 		Color col = lerp_seq(0, colors);
-		return col.energy();
+		return col;
 	}
 
 	virtual std::vector<BBox>& bounds() {

@@ -46,11 +46,11 @@ public:
 
 	virtual void sample(LightQuery* query) = 0;
 
-	//virtual const std::vector<BBox>& bounds() const = 0;
+	virtual const std::vector<BBox>& bounds() const = 0;
 
 	virtual size_t light_count() const = 0;
 
-	//virtual Color total_emitted_color(float time) const = 0;
+	virtual Color total_emitted_color() const = 0;
 };
 
 

@@ -8,16 +8,30 @@ void LightArray::build(const Assembly& assembly_)
 
 	for (size_t i = 0; i < assembly->instances.size(); ++i) {
 		const auto& instance = assembly->instances[i]; // Shorthand
+
+		// If it's an object
 		if (instance.type == Instance::OBJECT) {
-			if (assembly->objects[instance.data_index]->get_type() == Object::LIGHT)
+			if (assembly->objects[instance.data_index]->get_type() == Object::LIGHT) {
 				light_indices.push_back(i);
-		} else if (instance.type == Instance::ASSEMBLY) {
+				const Light* light = dynamic_cast<const Light*>(assembly->objects[instance.data_index].get());
+				total_color += light->total_emitted_color();
+			}
+		}
+		// If it's an assembly
+		else if (instance.type == Instance::ASSEMBLY) {
 			const auto count = assembly->assemblies[instance.data_index]->light_accel.light_count();
 			if (count > 0) {
 				assembly_lights.emplace_back(total_assembly_lights, count, i);
 				total_assembly_lights += count;
+				const Assembly* child_assembly = dynamic_cast<const Assembly*>(assembly->assemblies[instance.data_index].get());
+				total_color += child_assembly->light_accel.total_emitted_color();
 			}
 		}
+
+		// Merge bounds
+		auto instance_bounds = assembly->instance_bounds(i);
+		for (const auto& bbox: instance_bounds)
+			bounds_[0].merge_with(bbox);
 	}
 }
 

@@ -80,7 +80,7 @@ public:
 	 */
 	virtual bool is_delta() const = 0;
 
-	virtual float total_energy() const = 0;
+	virtual Color total_emitted_color() const = 0;
 
 	/**
 	 * @brief Tests a ray against the light.

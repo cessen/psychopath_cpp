@@ -42,8 +42,8 @@ public:
 		return false;
 	}
 
-	virtual float total_energy() const {
-		return col.energy();
+	virtual Color total_emitted_color() const {
+		return col;
 	}
 
 	virtual std::vector<BBox> &bounds() {
