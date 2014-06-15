@@ -208,8 +208,10 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 
 		// Get a sample from lights in the scene
 		LightQuery lq {path.samples[0], path.samples[1], path.samples[2], 0.0f,
-		               pos, nor, path.time
+		               pos, nor, path.time,
+		               Transform()
 		              };
+		lq.pdf = 1.0f;
 		scene->root->light_accel.sample(&lq);
 
 		// Set light color

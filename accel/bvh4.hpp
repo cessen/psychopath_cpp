@@ -73,7 +73,7 @@ public:
 
 private:
 	std::vector<Node> nodes;
-	std::vector<BBox> _bounds;
+	std::vector<BBox> _bounds {BBox()};
 
 	enum {
 	    IS_SKIP = 1 << 8,

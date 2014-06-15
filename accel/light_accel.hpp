@@ -1,13 +1,15 @@
 #ifndef LIGHT_ACCEL_HPP
 #define LIGHT_ACCEL_HPP
 
-#include "numtype.h"
-#include "ray.hpp"
-#include "light.hpp"
-
 #include <vector>
 #include <tuple>
 #include <memory>
+
+#include "numtype.h"
+#include "ray.hpp"
+#include "light.hpp"
+#include "transform.hpp"
+
 
 // Forward declaration of Assembly from scene/assembly.hpp
 class Assembly;
@@ -22,6 +24,9 @@ struct LightQuery {
 	Vec3 pos;
 	Vec3 nor;
 	float time;
+
+	// Intermediate
+	Transform xform;
 
 	// Out
 	Vec3 to_light;
