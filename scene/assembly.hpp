@@ -14,6 +14,7 @@
 #include "bvh.hpp"
 #include "bvh2.hpp"
 #include "bvh4.hpp"
+#include "light_array.hpp"
 #include "light_tree.hpp"
 
 
@@ -42,7 +43,7 @@ struct Instance {
 				s.append("OBJECT");
 				break;
 			case ASSEMBLY:
-				s.append("OBJECT");
+				s.append("ASSEMBLY");
 				break;
 			default:
 				s.append("Unknown");
@@ -90,7 +91,7 @@ public:
 	BVH4 object_accel;
 
 	// Light accel
-	LightTree light_accel;
+	LightArray light_accel;
 
 	/*****************************************************/
 

@@ -36,7 +36,7 @@ public:
 	 * @returns The light arriving at the point arr.
 	 */
 	virtual Color sample(const Vec3 &arr, float u, float v, float time,
-	                     Vec3 *shadow_vec) const = 0;
+	                     Vec3 *shadow_vec, float* pdf) const = 0;
 
 
 	/**
@@ -66,7 +66,8 @@ public:
 	virtual Color arriving(const Vec3 &arr, float u, float v, float time) const {
 		// Default implementation
 		Vec3 temp;
-		return sample(arr, u, v, time, &temp);
+		float pdf;
+		return sample(arr, u, v, time, &temp, &pdf);
 	}
 
 

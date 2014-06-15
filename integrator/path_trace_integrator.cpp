@@ -206,18 +206,18 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		}
 		pos += pos_offset;
 
-		// Select a light and store the normalization factor for it's output
-		std::tuple<Light*, float> light_select = scene->root->light_accel.sample(pos, nor, path.samples[0]);
-		Light* lighty = std::get<0>(light_select);
-		const float inv_probability = 1.0f / std::get<1>(light_select);
+		// Get a sample from lights in the scene
+		LightQuery lq {path.samples[0], path.samples[1], path.samples[2], 0.0f,
+		               pos, nor, path.time
+		              };
+		scene->root->light_accel.sample(&lq);
 
-		// Sample the light source
-		Vec3 ld;
-		path.lcol = lighty->sample(pos, path.samples[1], path.samples[2], path.time, &ld) * inv_probability;
+		// Set light color
+		path.lcol = lq.color / lq.pdf;
 
 		// Create a shadow ray for this path
 		ray.o = pos;
-		ray.d = ld;
+		ray.d = lq.to_light;
 		ray.time = path.time;
 		ray.type = Ray::OCCLUSION;
 

@@ -20,7 +20,8 @@ public:
 	{}
 
 	virtual Color sample(const Vec3 &arr, float u, float v, float time,
-	                     Vec3 *shadow_vec) const {
+	                     Vec3 *shadow_vec, float* pdf) const {
+		*pdf = 1.0f;
 		*shadow_vec = pos - arr;
 		float d2 = shadow_vec->length2();
 		if (d2 > 0)

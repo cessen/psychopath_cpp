@@ -12,6 +12,23 @@
 // Forward declaration of Assembly from scene/assembly.hpp
 class Assembly;
 
+
+/**
+ * Data structure used to query for a light sample.
+ */
+struct LightQuery {
+	// In
+	float n, u, v, w;
+	Vec3 pos;
+	Vec3 nor;
+	float time;
+
+	// Out
+	Vec3 to_light;
+	Color color;
+	float pdf;
+};
+
 /**
  * @brief An acceleration structure for sampling a collection of light sources.
  */
@@ -22,7 +39,13 @@ public:
 
 	virtual void build(const Assembly& assembly) = 0;
 
-	virtual std::tuple<Light*, float> sample(Vec3 pos, Vec3 nor, float n) = 0;
+	virtual void sample(LightQuery* query) = 0;
+
+	//virtual const std::vector<BBox>& bounds() const = 0;
+
+	virtual size_t light_count() const = 0;
+
+	//virtual Color total_emitted_color(float time) const = 0;
 };
 
 

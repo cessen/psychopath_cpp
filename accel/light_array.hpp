@@ -5,18 +5,20 @@
 
 class LightArray: public LightAccel
 {
-	std::vector<Light*> lights;
+	const Assembly* assembly;
+	std::vector<size_t> light_indices;
+	std::vector<std::tuple<size_t, size_t, size_t>> assembly_lights;  // 1: accumulated total lights, 2: number of light, 3: assembly instance index
+	size_t total_assembly_lights;
 
 public:
 	~LightArray() {}
 
 	virtual void build(const Assembly& assembly);
 
-	virtual std::tuple<Light*, float> sample(Vec3 pos, Vec3 nor, float n) {
-		Light* light = lights[static_cast<uint32_t>(n * lights.size()) % lights.size()];
-		float p = 1.0f / lights.size();
+	virtual void sample(LightQuery* query);
 
-		return std::make_tuple(light, p);
+	virtual size_t light_count() const {
+		return total_assembly_lights + light_indices.size();
 	}
 };
 

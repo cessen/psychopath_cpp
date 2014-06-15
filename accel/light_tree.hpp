@@ -139,41 +139,46 @@ public:
 
 	virtual void build(const Assembly& assembly);
 
-	virtual std::tuple<Light*, float> sample(Vec3 pos, Vec3 nor, float n) {
-		Node* node = &(nodes[0]);
+	virtual void sample(LightQuery* query) {
+//		Node* node = &(nodes[0]);
+//
+//		float tot_prob = 1.0f;
+//
+//		// Traverse down the tree, keeping track of the relative probabilities
+//		while (true) {
+//			if (node->is_leaf)
+//				break;
+//
+//			// Calculate the relative probabilities of the two children
+//			float p1 = node_prob(pos, nor, node->index1);
+//			float p2 = node_prob(pos, nor, node->index2);
+//			const float total = p1 + p2;
+//			if (total <= 0.0f) {
+//				p1 = 0.5f;
+//				p2 = 0.5f;
+//			} else {
+//				p1 /= total;
+//				p2 /= total;
+//			}
+//
+//			if (n <= p1) {
+//				tot_prob *= p1;
+//				node = &(nodes[node->index1]);
+//				n /= p1;
+//			} else {
+//				tot_prob *= p2;
+//				node = &(nodes[node->index2]);
+//				n = (n - p1) / p2;
+//			}
+//		}
+//
+//		// Return the selected light and it's probability
+//		return std::make_tuple(node->light, tot_prob);
+	}
 
-		float tot_prob = 1.0f;
-
-		// Traverse down the tree, keeping track of the relative probabilities
-		while (true) {
-			if (node->is_leaf)
-				break;
-
-			// Calculate the relative probabilities of the two children
-			float p1 = node_prob(pos, nor, node->index1);
-			float p2 = node_prob(pos, nor, node->index2);
-			const float total = p1 + p2;
-			if (total <= 0.0f) {
-				p1 = 0.5f;
-				p2 = 0.5f;
-			} else {
-				p1 /= total;
-				p2 /= total;
-			}
-
-			if (n <= p1) {
-				tot_prob *= p1;
-				node = &(nodes[node->index1]);
-				n /= p1;
-			} else {
-				tot_prob *= p2;
-				node = &(nodes[node->index2]);
-				n = (n - p1) / p2;
-			}
-		}
-
-		// Return the selected light and it's probability
-		return std::make_tuple(node->light, tot_prob);
+	// TODO
+	virtual size_t light_count() const {
+		return 1;
 	}
 };
 

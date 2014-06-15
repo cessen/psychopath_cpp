@@ -3,7 +3,8 @@
 
 #include "light.hpp"
 #include "utils.hpp"
-#include <math.h>
+#include <cmath>
+#include <algorithm>
 
 /**
  * @brief A point light source.
@@ -28,12 +29,10 @@ public:
 		if (colors.size() == 0)
 			std::cout << "WARNING: SphereLight has no color(s)!\n";
 
-
-		std::cout << "Light colors: " << colors.size() << std::endl;
 		// Fill in bounds
 		bounds_.clear();
 		if (positions.size() >= radii.size()) {
-			const float s = positions.size() - 1;
+			const float s = std::max(positions.size() - 1, 1UL);
 			for (int i = 0; i < positions.size(); ++i) {
 				const Vec3& pos = positions[i];
 				const Vec3 rad3 {
@@ -42,7 +41,7 @@ public:
 				bounds_.emplace_back(pos - rad3, pos + rad3);
 			}
 		} else {
-			const float s = radii.size() - 1;
+			const float s = std::max(radii.size() - 1, 1UL);
 			for (int i = 0; i < radii.size(); ++i) {
 				const Vec3 pos {
 					lerp_seq(i/s, positions)
@@ -67,7 +66,7 @@ public:
 	 * rendering, as it may meaningfully impact lighting effects from a sphere
 	 * light embedded inside a volume.
 	 */
-	virtual Color sample(const Vec3 &arr, float u, float v, float time, Vec3 *shadow_vec) const {
+	virtual Color sample(const Vec3 &arr, float u, float v, float time, Vec3 *shadow_vec, float* pdf) const {
 		// Calculate time interpolated values
 		Vec3 pos = lerp_seq(time, positions);
 		double radius = lerp_seq(time, radii);
@@ -109,10 +108,12 @@ public:
 			Vec3 sample = uniform_sample_cone(u, v, cos_theta_max);
 			*shadow_vec = ((x * sample[0]) + (y * sample[1]) + (z * sample[2])).normalized() * length;
 
+			*pdf = 1.0f;
 			return col * static_cast<float>(solid_angle * surface_area_inv * (0.5 / M_PI));
 		} else {
 			// If we're inside the sphere, there's light from every direction.
 			*shadow_vec = uniform_sample_sphere(u, v);
+			*pdf = 1.0f;
 			return col * surface_area_inv;
 		}
 
@@ -124,7 +125,7 @@ public:
 	}
 
 	virtual bool is_delta() const {
-		return true;
+		return false;
 	}
 
 	virtual bool is_infinite() const {
