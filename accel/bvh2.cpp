@@ -104,7 +104,7 @@ std::tuple<Ray*, Ray*, size_t> BVH2StreamTraverser::next_object()
 
 	while (stack_ptr >= 0) {
 		if (bvh->is_leaf(node_stack[stack_ptr])) {
-			ray_stack[stack_ptr].second = mutable_partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [this](Ray& ray) {
+			ray_stack[stack_ptr].second = mutable_partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [&](Ray& ray) {
 				if (!first_call)
 					return ray.trav_stack.pop() && (ray.flags & Ray::DONE) == 0;
 				else {
@@ -123,18 +123,20 @@ std::tuple<Ray*, Ray*, size_t> BVH2StreamTraverser::next_object()
 				--stack_ptr;
 			}
 		} else {
-			// Test rays against current node's children
+			const auto cbegin = bvh->nodes.cbegin() + node_stack[stack_ptr];
+			const auto cend = cbegin + bvh->nodes[node_stack[stack_ptr]].ts;
+
+			SIMD::float4 near_hits;
 			bool flip_set = false;
 			bool flip = false;
-			ray_stack[stack_ptr].second = mutable_partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [this, &flip_set, &flip](Ray& ray) {
+
+			// Test rays against current node's children
+			ray_stack[stack_ptr].second = mutable_partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [&](Ray& ray) {
 				if ((first_call || ray.trav_stack.pop()) && (ray.flags & Ray::DONE) == 0) {
 					// Get the time-interpolated bounding box
-					const auto cbegin = bvh->nodes.cbegin() + node_stack[stack_ptr];
-					const auto cend = cbegin + bvh->nodes[node_stack[stack_ptr]].ts;
 					const BBox2 b = lerp_seq(ray.time, cbegin, cend).bounds;
 
 					// Ray test
-					SIMD::float4 near_hits;
 					const auto hit_mask = b.intersect_ray(ray, &near_hits);
 
 					if (hit_mask != 0) {
