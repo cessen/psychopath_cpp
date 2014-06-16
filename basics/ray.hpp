@@ -95,7 +95,7 @@ struct Ray {
 	Type type;
 	uint16_t flags; // Misc bit flags, can be used for whatever
 	uint32_t id;
-	BitStack<128> trav_stack;  // Bit stack used during BVH traversal
+	BitStack2<uint64_t> trav_stack;  // Bit stack used during BVH traversal
 
 
 
@@ -116,8 +116,7 @@ struct Ray {
 	  max_t {std::numeric_limits<float>::infinity()},
 	  type {NONE},
 	  flags {0},
-	  id {0},
-	  trav_stack {0}
+	  id {0}
 	{}
 
 	Vec3 get_d_inverse() const {
