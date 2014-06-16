@@ -169,7 +169,7 @@ std::tuple<Ray*, Ray*, size_t> BVH4StreamTraverser::next_object()
 
 	while (stack_ptr >= 0) {
 		if (bvh->is_leaf(node_stack[stack_ptr])) {
-			ray_stack[stack_ptr].second = mutable_partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [this](Ray& ray) {
+			ray_stack[stack_ptr].second = mutable_partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [&](Ray& ray) {
 				if (!first_call)
 					return ray.trav_stack.pop() && (ray.flags & Ray::DONE) == 0;
 				else {
@@ -189,20 +189,23 @@ std::tuple<Ray*, Ray*, size_t> BVH4StreamTraverser::next_object()
 			}
 		} else {
 			const int num_children = bvh->child_count(node_stack[stack_ptr]);
+			const auto node_begin = bvh->nodes.cbegin() + node_stack[stack_ptr];
+			const auto node_end = node_begin + bvh->nodes[node_stack[stack_ptr]].ts;
+
+			SIMD::float4 near_hits; // For storing near-hit data in the ray-test loop below
 			bool rot_set = false;
 			int rot = 0;
+
 			// Test rays against current node's children
 			ray_stack[stack_ptr].second = mutable_partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [&](Ray& ray) {
 				if ((first_call || ray.trav_stack.pop()) && (ray.flags & Ray::DONE) == 0) {
 					// Get the time-interpolated bounding box
-					const auto cbegin = bvh->nodes.cbegin() + node_stack[stack_ptr];
-					const auto cend = cbegin + bvh->nodes[node_stack[stack_ptr]].ts;
-					const BBox4 b = lerp_seq(ray.time, cbegin, cend).bounds;
+					const BBox4 b = lerp_seq(ray.time, node_begin, node_end).bounds;
 
 					// Ray test
-					SIMD::float4 near_hits;
 					const auto hit_mask = b.intersect_ray(ray, &near_hits);
 
+					// Push results to the bit stack
 					if (hit_mask != 0) {
 						if (!rot_set) {
 							rot_set = true;
@@ -214,6 +217,7 @@ std::tuple<Ray*, Ray*, size_t> BVH4StreamTraverser::next_object()
 						ray.trav_stack.push((hit_mask >> rot) | (hit_mask << (num_children-rot)), num_children);
 					}
 
+					// Return whether the ray hit any of the child nodes
 					return hit_mask != 0;
 				} else {
 					return false;
