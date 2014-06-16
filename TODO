@@ -5,6 +5,10 @@
 	  dicing rate (even just to 0.5) it stops segfaulting.
 	- Very small sphere lights introduce severe banding in light attentuation.
 
+- Unit tests:
+	- BitStack
+	- BitStack2
+
 - Ray stream tracing:
 	- Optimizations...
 
