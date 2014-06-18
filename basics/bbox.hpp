@@ -145,13 +145,15 @@ struct BBox {
 #endif
 		const Vec3 *bounds = &min;
 
+		const auto d_sign = ray.get_d_sign();
+
 		// Find slab intersections
-		const float txmin = (bounds[ray.d_sign[0]].x - ray.o.x) * ray.d_inv.x;
-		const float txmax = (bounds[1-ray.d_sign[0]].x - ray.o.x) * ray.d_inv.x;
-		const float tymin = (bounds[ray.d_sign[1]].y - ray.o.y) * ray.d_inv.y;
-		const float tymax = (bounds[1-ray.d_sign[1]].y - ray.o.y) * ray.d_inv.y;
-		const float tzmin = (bounds[ray.d_sign[2]].z - ray.o.z) * ray.d_inv.z;
-		const float tzmax = (bounds[1-ray.d_sign[2]].z - ray.o.z) * ray.d_inv.z;
+		const float txmin = (bounds[d_sign[0]].x - ray.o.x) * ray.d_inv.x;
+		const float txmax = (bounds[1-d_sign[0]].x - ray.o.x) * ray.d_inv.x;
+		const float tymin = (bounds[d_sign[1]].y - ray.o.y) * ray.d_inv.y;
+		const float tymax = (bounds[1-d_sign[1]].y - ray.o.y) * ray.d_inv.y;
+		const float tzmin = (bounds[d_sign[2]].z - ray.o.z) * ray.d_inv.z;
+		const float tzmax = (bounds[1-d_sign[2]].z - ray.o.z) * ray.d_inv.z;
 
 		// Calculate tmin
 		const float tmin1 = txmin > tymin ? txmin : tymin;
