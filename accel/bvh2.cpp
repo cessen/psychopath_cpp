@@ -104,9 +104,6 @@ std::tuple<Ray*, Ray*, size_t> BVH2StreamTraverser::next_object()
 				return (ray.flags & Ray::DONE) == 0 && (first_call || ray.trav_stack.pop());
 			});
 
-			if (first_call)
-				first_call = false;
-
 			if (std::distance(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second) > 0) {
 				auto rv = std::make_tuple(&(*ray_stack[stack_ptr].first), &(*ray_stack[stack_ptr].second), bvh->nodes[node_stack[stack_ptr]].data_index);
 				--stack_ptr;
