@@ -124,7 +124,7 @@ bool Sphere::intersect_ray(const Ray &ray, Intersection *intersection)
 		return false;
 	}
 
-	if (intersection && !(ray.type == Ray::OCCLUSION)) {
+	if (intersection && (ray.flags() & Ray::IS_OCCLUSION) == 0) {
 		intersection->p = ray.o + (ray.d * t);
 		intersection->t = t;
 		intersection->n = intersection->p - cent;

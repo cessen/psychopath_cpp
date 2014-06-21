@@ -166,7 +166,7 @@ std::tuple<Ray*, Ray*, size_t> BVH4StreamTraverser::next_object()
 	while (stack_ptr >= 0) {
 		if (bvh->is_leaf(node_stack[stack_ptr])) {
 			ray_stack[stack_ptr].second = mutable_partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [&](Ray& ray) {
-				return (ray.flags & Ray::DONE) == 0 && (first_call || ray.trav_stack.pop());
+				return (ray.flags() & Ray::DONE) == 0 && (first_call || ray.trav_stack.pop());
 			});
 
 			if (std::distance(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second) > 0) {
@@ -187,7 +187,7 @@ std::tuple<Ray*, Ray*, size_t> BVH4StreamTraverser::next_object()
 
 			// Test rays against current node's children
 			ray_stack[stack_ptr].second = mutable_partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [&](Ray& ray) {
-				if ((ray.flags & Ray::DONE) == 0 && (first_call || ray.trav_stack.pop())) {
+				if ((ray.flags() & Ray::DONE) == 0 && (first_call || ray.trav_stack.pop())) {
 					// Get the time-interpolated bounding box
 					const BBox4 b = lerp_seq(ray.time, node_begin, node_end).bounds;
 

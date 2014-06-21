@@ -61,7 +61,7 @@ public:
 			out->o = pos + (pos_offset * -1.0f);
 		out->d = dir;
 		out->time = in.time;
-		out->type = Ray::R_DIFFUSE;
+		out->type = WorldRay::R_DIFFUSE;
 
 		// Ray differentials
 		// TODO: do this correctly
@@ -221,7 +221,7 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		ray.o = pos;
 		ray.d = lq.to_light;
 		ray.time = path.time;
-		ray.type = Ray::OCCLUSION;
+		ray.type = WorldRay::OCCLUSION;
 
 		// Propagate ray differentials
 		Lambert bsdf;

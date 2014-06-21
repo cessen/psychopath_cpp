@@ -212,7 +212,7 @@ std::tuple<Ray*, Ray*, size_t> BVHStreamTraverser::next_object()
 		// Test rays against current node, partitioning as we go
 		ray_stack[stack_ptr].first = mutable_partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [this, &near_t, &far_t](const Ray& ray) {
 			const bool hit = bvh->intersect_node(node_stack[stack_ptr], ray, &near_t, &far_t);
-			return !hit || ((ray.flags & Ray::DONE) != 0);
+			return !hit || ((ray.flags() & Ray::DONE) != 0);
 		});
 
 		const auto hit_count = std::distance(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second);

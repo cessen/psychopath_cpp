@@ -72,7 +72,7 @@ public:
 	WorldRay generate_ray(float x, float y, float dx, float dy, float time, float u, float v) const {
 		WorldRay wray;
 
-		wray.type = Ray::CAMERA;
+		wray.type = WorldRay::CAMERA;
 		wray.time = time;
 
 		// Get time-interpolated camera settings
