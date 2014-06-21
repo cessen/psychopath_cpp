@@ -141,7 +141,11 @@ public:
 		first_call = true;
 
 		// Initialize stack
-		stack_ptr = 0;
+		if (bvh == nullptr || bvh->nodes.size() == 0) {
+			stack_ptr = -1;
+		} else {
+			stack_ptr = 0;
+		}
 		node_stack[0] = 0;
 		ray_stack[0].first = rays;
 		ray_stack[0].second = rays_end;

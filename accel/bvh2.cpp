@@ -98,18 +98,10 @@ void BVH2::build(const Assembly& assembly)
 
 std::tuple<Ray*, Ray*, size_t> BVH2StreamTraverser::next_object()
 {
-	// If there aren't any objects in the scene, return finished
-	if (bvh->nodes.size() == 0)
-		return std::make_tuple(rays_end, rays_end, 0);
-
 	while (stack_ptr >= 0) {
 		if (bvh->is_leaf(node_stack[stack_ptr])) {
 			ray_stack[stack_ptr].second = mutable_partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [&](Ray& ray) {
-				if (!first_call)
-					return ray.trav_stack.pop() && (ray.flags & Ray::DONE) == 0;
-				else {
-					return (ray.flags & Ray::DONE) == 0;
-				}
+				return (ray.flags & Ray::DONE) == 0 && (first_call || ray.trav_stack.pop());
 			});
 
 			if (first_call)
@@ -132,7 +124,7 @@ std::tuple<Ray*, Ray*, size_t> BVH2StreamTraverser::next_object()
 
 			// Test rays against current node's children
 			ray_stack[stack_ptr].second = mutable_partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [&](Ray& ray) {
-				if ((first_call || ray.trav_stack.pop()) && (ray.flags & Ray::DONE) == 0) {
+				if ((ray.flags & Ray::DONE) == 0 && (first_call || ray.trav_stack.pop())) {
 					// Get the time-interpolated bounding box
 					const BBox2 b = lerp_seq(ray.time, cbegin, cend).bounds;
 
