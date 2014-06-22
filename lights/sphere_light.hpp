@@ -33,7 +33,7 @@ public:
 		bounds_.clear();
 		if (positions.size() >= radii.size()) {
 			const float s = std::max(positions.size() - 1, 1UL);
-			for (int i = 0; i < positions.size(); ++i) {
+			for (unsigned int i = 0; i < positions.size(); ++i) {
 				const Vec3& pos = positions[i];
 				const Vec3 rad3 {
 					lerp_seq(i/s, radii)
@@ -42,7 +42,7 @@ public:
 			}
 		} else {
 			const float s = std::max(radii.size() - 1, 1UL);
-			for (int i = 0; i < radii.size(); ++i) {
+			for (unsigned int i = 0; i < radii.size(); ++i) {
 				const Vec3 pos {
 					lerp_seq(i/s, positions)
 				};
