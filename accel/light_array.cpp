@@ -70,8 +70,8 @@ void LightArray::sample(LightQuery* query)
 
 		// Sample the light
 		float p;
-		query->color = light->sample(query->xform.pos_from(query->pos), query->u, query->v, query->time, &(query->to_light), &p);
-		query->to_light = query->xform.dir_to(query->to_light);
+		query->color = light->sample(query->xform.pos_to(query->pos), query->u, query->v, query->time, &(query->to_light), &p);
+		query->to_light = query->xform.dir_from(query->to_light);
 		query->pdf *= p;
 	}
 	// If we're sampling a light in a child assembly

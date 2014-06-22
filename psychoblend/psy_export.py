@@ -268,7 +268,7 @@ class PsychoExporter:
                 self.w.indent()
                 self.w.write("Data [$%s]\n" % escape_name(ob.name))
                 for mat in time_mats:
-                    self.w.write("Transform [%s]\n" % mat2str(mat))
+                    self.w.write("Transform [%s]\n" % mat2str(mat.inverted()))
                 self.w.unindent()
                 self.w.write("}\n")
 

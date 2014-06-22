@@ -91,7 +91,7 @@ public:
 	BVH4 object_accel;
 
 	// Light accel
-	LightArray light_accel;
+	LightTree light_accel;
 
 	/*****************************************************/
 
