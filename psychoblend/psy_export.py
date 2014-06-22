@@ -87,6 +87,7 @@ class PsychoExporter:
         self.scene = scene
 
         self.mesh_names = {}
+        self.group_names = {}
 
         # Motion blur segments are rounded down to a power of two
         if scene.psychopath.motion_blur_segments > 0:
@@ -177,7 +178,11 @@ class PsychoExporter:
 
         #######################
         # Export objects and materials
-        self.export_scene_objects()
+        self.w.write("Assembly {\n")
+        self.w.indent()
+        self.export_objects(self.scene.objects, self.scene.layers)
+        self.w.unindent()
+        self.w.write("}\n")
 
         # Scene end
         self.w.unindent()
@@ -190,115 +195,78 @@ class PsychoExporter:
 
 
 
-    def export_scene_objects(self):
-        #######################
-        # Assembly section begin
-        self.w.write("Assembly {\n")
-        self.w.indent()
-
-        for ob in self.scene.objects:
+    def export_objects(self, objects, visible_layers, group_prefix="", translation_offset=(0,0,0)):
+        for ob in objects:
             # Check if the object is visible for rendering
             vis_layer = False
             for i in range(len(ob.layers)):
-                vis_layer = vis_layer or (ob.layers[i] and self.scene.layers[i])
+                vis_layer = vis_layer or (ob.layers[i] and visible_layers[i])
             if ob.hide_render or not vis_layer:
                 continue
 
-            # Export object
-            if ob.type == 'MESH':
-                self.export_mesh_object(ob)
+            name = None
+            
+            # Write object data
+            if ob.type == 'EMPTY':
+                name = group_prefix + "__" + escape_name(ob.dupli_group.name)
+                if ob.dupli_type == 'GROUP':
+                    if name not in self.group_names:
+                        self.group_names[name] = True
+                        self.w.write("Assembly $%s {\n" % name)
+                        self.w.indent()
+                        self.export_objects(ob.dupli_group.objects, ob.dupli_group.layers, name, ob.dupli_group.dupli_offset*-1)
+                        self.w.unindent()
+                        self.w.write("}\n")
+            elif ob.type == 'MESH':
+                name = self.export_mesh_object(ob, group_prefix)
             elif ob.type == 'SURFACE':
-
-                self.w.write("# Surface object: %s\n" % ob.name)
-
-                # Collect time samples
-                time_surfaces = []
-                time_mats = []
-                for i in range(self.time_samples):
-                    self.set_frame(self.fr, self.shutter_start + (self.shutter_diff*i))
-                    time_surfaces += [ob.data.copy()]
-                    time_mats += [ob.matrix_world.copy()]
-
-                # Write patch
-                self.w.write("BicubicPatch $" + escape_name(ob.name) + " {\n")
-                self.w.indent()
-                for i in range(self.time_samples):
-                    mat = time_mats[i]
-                    verts = time_surfaces[i].splines[0].points
-                    vstr = ""
-                    for v in verts:
-                        vt = mat * v.co
-                        vstr += ("%f %f %f " % (vt[0], vt[1], vt[2]))
-                    self.w.write("Vertices [%s]\n" % vstr[:-1])
-                for s in time_surfaces:
-                    bpy.data.curves.remove(s)
-                self.w.unindent()
-                self.w.write("}\n")
-
-                # Write patch instance
-                self.w.write("Instance {\n")
-                self.w.indent()
-                self.w.write("Data [$%s]\n" % escape_name(ob.name))
-                self.w.unindent()
-                self.w.write("}\n")
+                name = self.export_surface_object(ob, group_prefix)
             elif ob.type == 'LAMP' and ob.data.type == 'POINT':
-                # Collect data over time
+                name = self.export_sphere_lamp(ob, group_prefix)
+            
+            # Write object instance, with transforms
+            if name != None:
                 time_mats = []
-                time_col = []
-                time_rad = []
-                for i in range(self.time_samples):
-                    self.set_frame(self.fr, self.shutter_start + (self.shutter_diff*i))
-                    time_col += [ob.data.color * ob.data.energy]
-                    time_mats += [ob.matrix_world.copy()]
-                    time_rad += [ob.data.shadow_soft_size]
                 
-                # Write out sphere light
-                self.w.write("SphereLight $%s {\n" % escape_name(ob.name))
-                self.w.indent()
-                for col in time_col:
-                    self.w.write("Color [%f %f %f]\n" % (col[0], col[1], col[2]))
-                for rad in time_rad:
-                    self.w.write("Radius [%f]\n" % rad)
-                    
-                self.w.unindent()
-                self.w.write("}\n")
-
-                # Write sphere light instance
+                if needs_xform_mb(ob):
+                    for i in range(self.time_samples):
+                        self.set_frame(self.fr, self.shutter_start + (self.shutter_diff*i))
+                        mat = ob.matrix_world.copy()
+                        mat[0][3] += translation_offset[0]
+                        mat[1][3] += translation_offset[1]
+                        mat[2][3] += translation_offset[2]
+                        time_mats += [mat]
+                else:
+                    mat = ob.matrix_world.copy()
+                    mat[0][3] += translation_offset[0]
+                    mat[1][3] += translation_offset[1]
+                    mat[2][3] += translation_offset[2]
+                    time_mats += [mat]
+                
                 self.w.write("Instance {\n")
                 self.w.indent()
-                self.w.write("Data [$%s]\n" % escape_name(ob.name))
-                for mat in time_mats:
-                    self.w.write("Transform [%s]\n" % mat2str(mat.inverted()))
+                self.w.write("Data [$%s]\n" % name)
+                for i in range(len(time_mats)):
+                    mat = time_mats[i].inverted()
+                    self.w.write("Transform [%s]\n" % mat2str(mat))
                 self.w.unindent()
                 self.w.write("}\n")
 
-        # Assembly section end
-        self.w.unindent()
-        self.w.write("}\n")
-
-
-    def export_mesh_object(self, ob):
-        self.w.write("# Mesh object: %s\n" % ob.name)
-
+                
+    def export_mesh_object(self, ob, group_prefix):
         # Determine if and how to export the mesh data
         has_modifiers = len(ob.modifiers) > 0
         deform_mb = needs_def_mb(ob)
         if has_modifiers or deform_mb:
-            mesh_name = ob.name + "__" + ob.data.name
+            mesh_name = group_prefix + "__" + ob.name + "__" + ob.data.name + "_"
         else:
-            mesh_name = ob.data.name
+            mesh_name = group_prefix + "__" + ob.data.name + "_"
         export_mesh = (mesh_name not in self.mesh_names) or has_modifiers or deform_mb
-
-        # Determine how to export transforms
-        xform_mb = needs_xform_mb(ob)
 
         # Collect time samples
         time_meshes = []
-        time_mats = []
         for i in range(self.time_samples):
             self.set_frame(self.fr, self.shutter_start + (self.shutter_diff*i))
-            if xform_mb or i == 0:
-                time_mats += [ob.matrix_world.copy()]
             if export_mesh and (deform_mb or i == 0):
                 time_meshes += [ob.to_mesh(self.scene, True, 'RENDER')]
 
@@ -338,13 +306,57 @@ class PsychoExporter:
             # Assembly section end
             self.w.unindent()
             self.w.write("}\n")
+            
+        return mesh_name
 
-        self.w.write("Instance {\n")
-        self.w.indent()
-        self.w.write("Data [$%s]\n" % escape_name(mesh_name))
-        for i in range(len(time_mats)):
+            
+    def export_surface_object(self, ob, group_prefix):
+        name = group_prefix + "__" + escape_name(ob.name)
+        
+        # Collect time samples
+        time_surfaces = []
+        for i in range(self.time_samples):
             self.set_frame(self.fr, self.shutter_start + (self.shutter_diff*i))
-            mat = time_mats[i].inverted()
-            self.w.write("Transform [%s]\n" % mat2str(mat))
+            time_surfaces += [ob.data.copy()]
+
+        # Write patch
+        self.w.write("BicubicPatch $" + name + " {\n")
+        self.w.indent()
+        for i in range(self.time_samples):
+            verts = time_surfaces[i].splines[0].points
+            vstr = ""
+            for v in verts:
+                vstr += ("%f %f %f " % (v.co[0], v.co[1], v.co[2]))
+            self.w.write("Vertices [%s]\n" % vstr[:-1])
+        for s in time_surfaces:
+            bpy.data.curves.remove(s)
         self.w.unindent()
         self.w.write("}\n")
+        
+        return name
+    
+    
+    def export_sphere_lamp(self, ob, group_prefix):
+        name = group_prefix + "__" + escape_name(ob.name)
+        
+        # Collect data over time
+        time_col = []
+        time_rad = []
+        for i in range(self.time_samples):
+            self.set_frame(self.fr, self.shutter_start + (self.shutter_diff*i))
+            time_col += [ob.data.color * ob.data.energy]
+            time_rad += [ob.data.shadow_soft_size]
+
+        # Write out sphere light
+        self.w.write("SphereLight $%s {\n" % name)
+        self.w.indent()
+        for col in time_col:
+            self.w.write("Color [%f %f %f]\n" % (col[0], col[1], col[2]))
+        for rad in time_rad:
+            self.w.write("Radius [%f]\n" % rad)
+
+        self.w.unindent()
+        self.w.write("}\n")
+        
+        return name
+    

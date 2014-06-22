@@ -55,4 +55,5 @@ Features Supported
 - Camera motion blur
 - Transform motion blur
 - Deformation motion blur
-- Limited auto-detected instancing
+- Exports dupligroups with full hierarchical instancing
+- Limited auto-detected instancing of meshes
