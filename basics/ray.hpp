@@ -97,11 +97,12 @@ struct Ray {
 		o {o_},
 	  max_t {std::numeric_limits<float>::infinity()},
 	  d {d_},
-	  d_sign_and_flags {{0,0,0,0}},
-	  time {time_},
-	  id {0}
+	d_sign_and_flags {{0,0,0,0}},
+	time {time_},
+	id {0}
 	{}
 
+	// Access to flags
 	uint8_t& flags() {
 		return d_sign_and_flags[3];
 	}
@@ -110,12 +111,18 @@ struct Ray {
 		return d_sign_and_flags[3];
 	}
 
-	Vec3 get_d_inverse() const {
-		return d_inv;
+	// Access to direction signs
+	Signs& d_sign() {
+		return d_sign_and_flags;
 	}
 
-	Signs get_d_sign() const {
+	const Signs& d_sign() const {
 		return d_sign_and_flags;
+	}
+
+	// Access to inverse direction
+	Vec3 get_d_inverse() const {
+		return d_inv;
 	}
 
 	/**

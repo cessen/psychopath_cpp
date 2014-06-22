@@ -145,7 +145,7 @@ struct BBox {
 #endif
 		const Vec3 *bounds = &min;
 
-		const auto d_sign = ray.get_d_sign();
+		const auto d_sign = ray.d_sign();
 
 		// Find slab intersections
 		const float txmin = (bounds[d_sign[0]].x - ray.o.x) * ray.d_inv.x;
@@ -427,7 +427,7 @@ struct BBox2 {
 	inline unsigned int intersect_ray(const Ray& ray, SIMD::float4 *hit_ts) const {
 		using namespace SIMD;
 		const Vec3 d_inv_f = ray.get_d_inverse();
-		const Ray::Signs d_sign = ray.get_d_sign();
+		const Ray::Signs d_sign = ray.d_sign();
 
 		// Load ray origin, inverse direction, and max_t into simd layouts for intersection testing
 		const float4 ray_o[3] = {ray.o[0], ray.o[1], ray.o[2]};
@@ -589,7 +589,7 @@ struct BBox4 {
 	inline unsigned int intersect_ray(const Ray& ray, SIMD::float4 *hit_ts) const {
 		using namespace SIMD;
 		const Vec3 d_inv_f = ray.get_d_inverse();
-		const Ray::Signs d_sign = ray.get_d_sign();
+		const Ray::Signs d_sign = ray.d_sign();
 
 		// Load ray origin, inverse direction, and max_t into simd layouts for intersection testing
 		const float4 ray_o[3] = {ray.o[0], ray.o[1], ray.o[2]};
