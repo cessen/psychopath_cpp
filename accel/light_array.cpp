@@ -37,7 +37,7 @@ void LightArray::build(const Assembly& assembly_)
 
 
 
-void LightArray::sample(LightQuery* query)
+void LightArray::sample(LightQuery* query) const
 {
 	// Handle empty light accel
 	if (light_indices.size() == 0 && assembly_lights.size() == 0) {
@@ -61,16 +61,18 @@ void LightArray::sample(LightQuery* query)
 		// Get light data
 		Light* light = dynamic_cast<Light*>(assembly->objects[instance.data_index].get());
 
-		// Get transforms if any
+		/// Get transforms if any
 		if (instance.transform_count > 0) {
 			auto cbegin = assembly->xforms.cbegin() + instance.transform_index;
 			auto cend = cbegin + instance.transform_count;
-			query->xform *= lerp_seq(query->time, cbegin, cend);
+			auto instance_xform = lerp_seq(query->time, cbegin, cend);
+			query->pos = instance_xform.pos_to(query->pos);
+			query->xform *= instance_xform;
 		}
 
 		// Sample the light
 		float p;
-		query->color = light->sample(query->xform.pos_to(query->pos), query->u, query->v, query->time, &(query->to_light), &p);
+		query->color = light->sample(query->pos, query->u, query->v, query->time, &(query->to_light), &p);
 		query->to_light = query->xform.dir_from(query->to_light);
 		query->pdf *= p;
 	}
@@ -102,7 +104,9 @@ void LightArray::sample(LightQuery* query)
 		if (instance.transform_count > 0) {
 			auto cbegin = assembly->xforms.cbegin() + instance.transform_index;
 			auto cend = cbegin + instance.transform_count;
-			query->xform *= lerp_seq(query->time, cbegin, cend);
+			auto instance_xform = lerp_seq(query->time, cbegin, cend);
+			query->pos = instance_xform.pos_to(query->pos);
+			query->xform *= instance_xform;
 		}
 
 		// Traverse into child assembly

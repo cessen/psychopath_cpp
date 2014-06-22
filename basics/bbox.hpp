@@ -634,5 +634,33 @@ static inline std::vector<BBox> merge(const std::vector<BBox>& a, const std::vec
 }
 
 
+static inline std::vector<BBox> transform_from(const std::vector<BBox>& bbs_in, std::vector<Transform>::const_iterator xstart, std::vector<Transform>::const_iterator xend)
+{
+	std::vector<BBox> bbs = bbs_in;
+
+	// Transform the bounding boxes
+	auto tcount = std::distance(xstart, xend);
+
+	if (tcount == 0) {
+		// Do nothing
+	} else if (bbs.size() == tcount) {
+		for (size_t i = 0; i < bbs.size(); ++i)
+			bbs[i] = bbs[i].inverse_transformed(xstart[i]);
+	} else if (bbs.size() > tcount) {
+		const float s = bbs.size() - 1;
+		for (size_t i = 0; i < bbs.size(); ++i)
+			bbs[i] = bbs[i].inverse_transformed(lerp_seq(i/s, xstart, xend));
+	} else if (bbs.size() < tcount) {
+		const float s = tcount - 1;
+		std::vector<BBox> tbbs;
+		for (size_t i = 0; i < tcount; ++i)
+			tbbs.push_back(lerp_seq(i/s, bbs.cbegin(), bbs.cend()).inverse_transformed(xstart[i]));
+		bbs = std::move(tbbs);
+	}
+
+	return bbs;
+}
+
+
 #endif // BBOX_HPP
 

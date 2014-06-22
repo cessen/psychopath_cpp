@@ -28,6 +28,8 @@ class LightTree: public LightAccel
 	std::vector<BuildNode> build_nodes;
 	std::vector<Node> nodes;
 	std::vector<BBox> bounds_;
+	float total_energy {0.0f};
+	size_t total_lights {0};
 
 	std::vector<BuildNode>::iterator split_lights(std::vector<BuildNode>::iterator start, std::vector<BuildNode>::iterator end);
 	size_t recursive_build(std::vector<BuildNode>::iterator start, std::vector<BuildNode>::iterator end);
@@ -40,7 +42,7 @@ public:
 
 	virtual void build(const Assembly& assembly) override;
 
-	virtual void sample(LightQuery* query) override;
+	virtual void sample(LightQuery* query) const override;
 
 
 	virtual const std::vector<BBox>& bounds() const override {
@@ -50,13 +52,12 @@ public:
 
 	// TODO
 	virtual size_t light_count() const override {
-		return 1;
+		return total_lights;
 	}
 
 
-	// TODO
 	virtual Color total_emitted_color() const override {
-		return Color(1.0f);
+		return Color(total_energy);
 	}
 };
 

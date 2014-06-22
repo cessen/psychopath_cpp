@@ -102,6 +102,19 @@ public:
 	}
 
 
+	/*
+	 * Methods to calculate or get information about the transform.
+	 */
+	// Calculates and returns the inverse scale factors of the matrix
+	Vec3 get_inv_scale() const {
+		Vec3 scale;
+		scale[0] = std::sqrt((to[0][0]*to[0][0]) + (to[0][1]*to[0][1]) + (to[0][2]*to[0][2]));
+		scale[1] = std::sqrt((to[1][0]*to[1][0]) + (to[1][1]*to[1][1]) + (to[1][2]*to[1][2]));
+		scale[2] = std::sqrt((to[2][0]*to[2][0]) + (to[2][1]*to[2][1]) + (to[2][2]*to[2][2]));
+		return scale;
+	}
+
+
 
 	/*
 	 * Transforming vectors.

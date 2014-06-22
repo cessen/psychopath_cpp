@@ -44,7 +44,7 @@ public:
 
 	virtual void build(const Assembly& assembly) = 0;
 
-	virtual void sample(LightQuery* query) = 0;
+	virtual void sample(LightQuery* query) const = 0;
 
 	virtual const std::vector<BBox>& bounds() const = 0;
 

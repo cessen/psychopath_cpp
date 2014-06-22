@@ -236,26 +236,9 @@ public:
 		}
 
 		// Transform the bounding boxes
-		auto tb = instances[index].transform_index;
-		auto te = instances[index].transform_index + instances[index].transform_count;
-		auto tcount = instances[index].transform_count;
-
-		if (tcount == 0) {
-			// Do nothing
-		} else if (bbs.size() == tcount) {
-			for (size_t i = 0; i < bbs.size(); ++i)
-				bbs[i] = bbs[i].inverse_transformed(xforms[tb+i]);
-		} else if (bbs.size() > tcount) {
-			const float s = bbs.size() - 1;
-			for (size_t i = 0; i < bbs.size(); ++i)
-				bbs[i] = bbs[i].inverse_transformed(lerp_seq(i/s, &(xforms[tb]), &(xforms[te])));
-		} else if (bbs.size() < tcount) {
-			const float s = tcount - 1;
-			std::vector<BBox> tbbs;
-			for (size_t i = 0; i < tcount; ++i)
-				tbbs.push_back(lerp_seq(i/s, bbs.cbegin(), bbs.cend()).inverse_transformed(xforms[tb+i]));
-			bbs = std::move(tbbs);
-		}
+		auto xstart = xforms.cbegin() + instances[index].transform_index;
+		auto xend = xstart + instances[index].transform_count;
+		bbs = transform_from(bbs, xstart, xend);
 
 		return bbs;
 	}
@@ -283,12 +266,29 @@ public:
 		// Transform bounds if necessary
 		if (instances[index].transform_count > 0) {
 			// Get bounds and center at time t
-			auto tb = xforms.begin() + instances[index].transform_index;
-			auto te = tb + instances[index].transform_count;
-			bb = bb.inverse_transformed(lerp_seq(t, tb, te));
+			auto xstart = xforms.begin() + instances[index].transform_index;
+			auto xend = xstart + instances[index].transform_count;
+			bb = bb.inverse_transformed(lerp_seq(t, xstart, xend));
 		}
 
 		return bb;
+	}
+
+
+	/**
+	 * Calculates and returns the transforms of an instance at a particular moment
+	 * in time.
+	 */
+	Transform instance_xform_at(float t, size_t index) const {
+		// Transform bounds if necessary
+		if (instances[index].transform_count > 0) {
+			// Get bounds and center at time t
+			const auto tb = xforms.begin() + instances[index].transform_index;
+			const auto te = tb + instances[index].transform_count;
+			return lerp_seq(t, tb, te);
+		} else {
+			return Transform();
+		}
 	}
 };
 

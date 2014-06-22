@@ -30,9 +30,9 @@ float LightTree::node_prob(const LightQuery& lq, uint32_t index) const
 }
 
 
-void LightTree::sample(LightQuery* query)
+void LightTree::sample(LightQuery* query) const
 {
-	Node* node = &(nodes[0]);
+	const Node* node = &(nodes[0]);
 
 	float tot_prob = 1.0f;
 
@@ -64,20 +64,34 @@ void LightTree::sample(LightQuery* query)
 	// Instance shorthand
 	const Instance& instance = assembly->instances[node->instance_index];
 
-	// Get light data
-	const Light* light = dynamic_cast<const Light*>(assembly->objects[instance.data_index].get());
-
 	// Get transforms if any
 	if (instance.transform_count > 0) {
 		auto cbegin = assembly->xforms.cbegin() + instance.transform_index;
 		auto cend = cbegin + instance.transform_count;
-		query->xform *= lerp_seq(query->time, cbegin, cend);
+		auto instance_xform = lerp_seq(query->time, cbegin, cend);
+		query->pos = instance_xform.pos_to(query->pos);
+		query->xform *= instance_xform;
 	}
 
-	float p = 1.0f;
-	query->color = light->sample(query->xform.pos_to(query->pos), query->u, query->v, query->time, &(query->to_light), &p);
-	query->to_light = query->xform.dir_from(query->to_light);
-	query->pdf *= tot_prob * p;
+	// Do light sampling
+	if (instance.type == Instance::OBJECT) {
+		const Object* obj = assembly->objects[instance.data_index].get(); // Shorthand
+
+		if (obj->get_type() == Object::LIGHT) {
+			const Light* light = dynamic_cast<const Light*>(obj);
+
+			float p = 1.0f;
+			query->color = light->sample(query->pos, query->u, query->v, query->time, &(query->to_light), &p);
+			query->to_light = query->xform.dir_from(query->to_light);
+			query->pdf *= tot_prob * p;
+		}
+		// TODO: handle non-light objects that emit light
+	} else if (instance.type == Instance::ASSEMBLY) {
+		const Assembly* asmb = assembly->assemblies[instance.data_index].get(); // Shorthand
+
+		query->pdf *= tot_prob;
+		asmb->light_accel.sample(query);
+	}
 }
 
 
@@ -100,27 +114,47 @@ void LightTree::build(const Assembly& assembly_)
 				build_nodes.back().instance_index = i;
 				build_nodes.back().bbox = assembly->instance_bounds_at(0.5f, i);
 				build_nodes.back().center = build_nodes.back().bbox.center();
-				// TODO: account for transforms in the energy
-				build_nodes.back().energy = light->total_emitted_color().energy();
+				const Vec3 scale = assembly->instance_xform_at(0.5f, i).get_inv_scale();
+				const float surface_scale = ((scale[0]*scale[1]) + (scale[0]*scale[2]) + (scale[1]*scale[2])) * 0.33333333f;
+				build_nodes.back().energy = light->total_emitted_color().energy() / surface_scale;
+
+				++total_lights;
 			}
 		}
 		// If it's an assembly
 		else if (instance.type == Instance::ASSEMBLY) {
-//			const auto count = assembly->assemblies[instance.data_index]->light_accel.light_count();
-//			if (count > 0) {
-//				assembly_lights.emplace_back(total_assembly_lights, count, i);
-//				total_assembly_lights += count;
-//				const Assembly* child_assembly = dynamic_cast<const Assembly*>(assembly->assemblies[instance.data_index].get());
-//				total_color += child_assembly->light_accel.total_emitted_color();
-//			}
+			const Assembly* asmb = assembly->assemblies[instance.data_index].get(); // Shorthand
+			const auto count = asmb->light_accel.light_count();
+			const float energy = asmb->light_accel.total_emitted_color().energy();
+
+			if (count > 0 && energy > 0.0f) {
+				build_nodes.push_back(BuildNode());
+				build_nodes.back().instance_index = i;
+				if (instance.transform_count > 0) {
+					auto xstart = assembly->xforms.cbegin() + instance.transform_index;
+					auto xend = xstart + instance.transform_count;
+					build_nodes.back().bbox = lerp_seq(0.5f, asmb->light_accel.bounds()).inverse_transformed(lerp_seq(0.5f, xstart, xend));
+				} else {
+					build_nodes.back().bbox = lerp_seq(0.5f, asmb->light_accel.bounds());
+				}
+				build_nodes.back().center = build_nodes.back().bbox.center();
+				const Vec3 scale = assembly->instance_xform_at(0.5f, i).get_inv_scale();
+				const float surface_scale = ((scale[0]*scale[1]) + (scale[0]*scale[2]) + (scale[1]*scale[2])) * 0.33333333f;
+				build_nodes.back().energy = energy / surface_scale;
+
+				total_lights += count;
+			}
 		}
-
-
-
 	}
 
-	if (build_nodes.size() > 0)
+	if (build_nodes.size() > 0) {
 		recursive_build(build_nodes.begin(), build_nodes.end());
+		bounds_ = nodes[0].bounds;
+		total_energy = nodes[0].energy;
+	} else {
+		bounds_.clear();
+		bounds_.emplace_back(BBox());
+	}
 }
 
 
@@ -165,12 +199,24 @@ size_t LightTree::recursive_build(std::vector<LightTree::BuildNode>::iterator st
 
 	if ((start + 1) == end) {
 		// Leaf node
+		const Instance& instance = assembly->instances[start->instance_index];
 
 		nodes[me].is_leaf = true;
 		nodes[me].instance_index = start->instance_index;
 
 		// Get bounds
-		nodes[me].bounds = assembly->instance_bounds(start->instance_index);
+		if (instance.type == Instance::OBJECT) {
+			nodes[me].bounds = assembly->instance_bounds(start->instance_index);
+		} else if (instance.type == Instance::ASSEMBLY) {
+			const Assembly* assmb = assembly->assemblies[instance.data_index].get();
+			if (instance.transform_count > 0) {
+				auto xstart = assembly->xforms.cbegin() + instance.transform_index;
+				auto xend = xstart + instance.transform_count;
+				nodes[me].bounds = transform_from(assmb->light_accel.bounds(), xstart, xend);
+			} else {
+				nodes[me].bounds = assmb->light_accel.bounds();
+			}
+		}
 
 		// Copy energy
 		nodes[me].energy = start->energy;

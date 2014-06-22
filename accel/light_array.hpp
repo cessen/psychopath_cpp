@@ -17,7 +17,7 @@ public:
 
 	virtual void build(const Assembly& assembly);
 
-	virtual void sample(LightQuery* query);
+	virtual void sample(LightQuery* query) const;
 
 	virtual const std::vector<BBox>& bounds() const {
 		return bounds_;
