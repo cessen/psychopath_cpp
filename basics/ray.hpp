@@ -75,10 +75,11 @@ struct Ray {
 	SignsAndFlags d_sign_and_flags; // Sign of the components of d in [0..2] and flags in [3]
 	Vec3 d_inv; // 1.0 / d
 	float time; // Time coordinate
-	BitStack2<uint64_t> trav_stack;  // Bit stack used during BVH traversal
 	float ow; // Origin width
 	float dw; // Width delta
+	float fw; // Width floor
 	uint32_t id;  // Ray id, used for indexing into other related structures
+	BitStack2<uint64_t> trav_stack;  // Bit stack used during BVH traversal
 
 
 
