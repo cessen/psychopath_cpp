@@ -97,7 +97,7 @@ struct Ray {
 		o {o_},
 	  max_t {std::numeric_limits<float>::infinity()},
 	  d {d_},
-	  d_sign_and_flags {0,0,0,0},
+	  d_sign_and_flags {{0,0,0,0}},
 	  time {time_},
 	  id {0}
 	{}
