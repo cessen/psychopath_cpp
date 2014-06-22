@@ -31,11 +31,12 @@ Current Features
 - Focal blur / DoF
 - Camera motion blur
 - Deformation motion blur
+- Transforms and transform motion blur
+- Full hierarchical instancing
 
 Features Currently In-Progress
 ------------------------------
-- Transforms and transform motion blur
-- Instancing
+- Multiple importance sampling
 
 
 
@@ -52,4 +53,6 @@ Features Supported
 - Point lights exported as spherical lights (point lights have a "radius" setting)
 - Focal blur / DoF
 - Camera motion blur
+- Transform motion blur
 - Deformation motion blur
+- Limited auto-detected instancing

@@ -12,6 +12,7 @@
 - Ray stream tracing:
 	- Optimizations...
 
+- Multiple importance sampling
 
 - Infinite lights (e.g. sun lights) will be considered part of the background,
   along with e.g. HDRI lighting backgrounds.
@@ -19,13 +20,7 @@
 - Parsing:
 	- Give useful error messages...
 
-- Implement transforms and instancing:
-	- Make LightTree use instances instead of objects
-	- Make LightTree take into account transforms
-
 - PsychoBlend:
-	- Intelligently decide what to export with motion blur or not
-	- Intelligently export instanced geometry only once
 	- Export Group instances as assemblies
 	- Allow per-object motion blur segment specification
 
