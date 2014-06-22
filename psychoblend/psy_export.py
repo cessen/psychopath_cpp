@@ -208,8 +208,8 @@ class PsychoExporter:
             
             # Write object data
             if ob.type == 'EMPTY':
-                name = group_prefix + "__" + escape_name(ob.dupli_group.name)
                 if ob.dupli_type == 'GROUP':
+                    name = group_prefix + "__" + escape_name(ob.dupli_group.name)
                     if name not in self.group_names:
                         self.group_names[name] = True
                         self.w.write("Assembly $%s {\n" % name)
