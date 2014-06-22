@@ -70,6 +70,7 @@ void LightTree::sample(LightQuery* query) const
 		auto cend = cbegin + instance.transform_count;
 		auto instance_xform = lerp_seq(query->time, cbegin, cend);
 		query->pos = instance_xform.pos_to(query->pos);
+		query->nor = instance_xform.nor_to(query->nor).normalized();
 		query->xform *= instance_xform;
 	}
 
