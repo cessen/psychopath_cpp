@@ -25,9 +25,9 @@ bool MicroSurface::intersect_ray(const Ray &ray, float ray_width, Intersection *
 	// Calculate the max depth the ray should traverse into the tree
 	const uint32_t rdepth = 2 * std::max(0.0f, fasterlog2(root_width) - fasterlog2(ray_width*Config::dice_rate));
 
-	assert(ray.d_sign[0] < 2);
-	assert(ray.d_sign[1] < 2);
-	assert(ray.d_sign[2] < 2);
+	assert(ray.d_sign()[0] < 2);
+	assert(ray.d_sign()[1] < 2);
+	assert(ray.d_sign()[2] < 2);
 
 // Switch between simple traversal vs fast traversal (simple = 1, fast = 0)
 #if 0
