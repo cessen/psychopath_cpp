@@ -40,7 +40,7 @@ public:
 		// Transform important values into world space
 		const Vec3 nn = inter.space.nor_from(inter.n).normalized();
 		Vec3 pos = inter.space.pos_from(inter.p);
-		Vec3 pos_offset = inter.space.nor_from(inter.offset);
+		Vec3 pos_offset = inter.space.dir_from(inter.offset);
 
 		const Vec3 nns = (!inter.backfacing) ? nn : (nn * -1.0f); // Shading normal, flip for backfacing
 
@@ -197,7 +197,7 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		// Transform important values into world space
 		Vec3 nor = path.inter.space.nor_from(path.inter.n).normalized();
 		Vec3 pos = path.inter.space.pos_from(path.inter.p);
-		Vec3 pos_offset = path.inter.space.nor_from(path.inter.offset);
+		Vec3 pos_offset = path.inter.space.dir_from(path.inter.offset);
 
 		// Calculate the surface normal facing in the direction of where the ray hit came from
 		if (path.inter.backfacing) {
