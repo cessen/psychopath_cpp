@@ -65,8 +65,9 @@ public:
 
 		// Ray differentials
 		// TODO: do this correctly
-		out->odx = Vec3(1,0,0) * inter.owp();
-		out->ody = Vec3(0,1,0) * inter.owp();
+		const float width = in.to_ray().width(inter.t);
+		out->odx = Vec3(1,0,0) * width;
+		out->ody = Vec3(0,1,0) * width;
 		out->ddx = Vec3(1,0,0) * 0.15;
 		out->ddy = Vec3(0,1,0) * 0.15;
 		/*
@@ -81,8 +82,9 @@ public:
 		const float len = out->d.length();
 
 		// TODO: do this correctly
-		out->odx = Vec3(1,0,0) * inter.owp();
-		out->ody = Vec3(0,1,0) * inter.owp();
+		const float width = in.to_ray().width(inter.t);
+		out->odx = Vec3(1,0,0) * width;
+		out->ody = Vec3(0,1,0) * width;
 		out->ddx = Vec3(1,0,0) * (inter.dw / len);
 		out->ddy = Vec3(0,1,0) * (inter.dw / len);
 		/*
