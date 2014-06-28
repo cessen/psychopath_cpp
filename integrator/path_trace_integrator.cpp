@@ -10,6 +10,7 @@
 #include "film.hpp"
 #include "intersection.hpp"
 #include "tracer.hpp"
+#include "mis.hpp"
 #include "config.hpp"
 
 #include "job_queue.hpp"
@@ -106,6 +107,18 @@ public:
 
 		return lam;
 	}
+	
+	float pdf(const Vec3& in, const Vec3& out, const Intersection& inter) {
+		float lam;
+		
+		if (inter.backfacing) {
+			lam = lambert(out, inter.space.nor_from(inter.n) * -1.0f);
+		} else {
+			lam = lambert(out, inter.space.nor_from(inter.n));
+		}
+
+		return lam * 2;
+	}
 };
 
 
@@ -195,6 +208,9 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		path.samples += 5;
 	} else if (path.step % 2) {
 		// Shadow ray
+		
+		// BSDF
+		Lambert bsdf;
 
 		// Transform important values into world space
 		Vec3 nor = path.inter.space.nor_from(path.inter.n).normalized();
@@ -214,9 +230,13 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		              };
 		lq.pdf = 1.0f;
 		scene->root->light_accel.sample(&lq);
+		
+		// Get the pdf of sampling this light vector from the bsdf
+		const float bsdf_pdf = bsdf.pdf(Vec3(), lq.to_light, path.inter);
 
 		// Set light color
-		path.lcol = lq.color / lq.pdf;
+		//path.lcol = (lq.color * power_heuristic(lq.pdf, bsdf_pdf) / lq.pdf) * scene->root->light_accel.light_count();
+		path.lcol = (lq.color / lq.pdf) * scene->root->light_accel.light_count();
 
 		// Create a shadow ray for this path
 		ray.o = pos + pos_offset;
@@ -225,7 +245,6 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		ray.type = WorldRay::OCCLUSION;
 
 		// Propagate ray differentials
-		Lambert bsdf;
 		bsdf.propagate_differentials(prev_ray, path.inter, &ray);
 
 		// Increment the sample pointer

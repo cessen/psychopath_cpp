@@ -84,13 +84,13 @@ void LightTree::sample(LightQuery* query) const
 			float p = 1.0f;
 			query->color = light->sample(query->pos, query->u, query->v, query->time, &(query->to_light), &p);
 			query->to_light = query->xform.dir_from(query->to_light);
-			query->pdf *= tot_prob * p;
+			query->pdf *= (tot_prob * light_count()) * p;
 		}
 		// TODO: handle non-light objects that emit light
 	} else if (instance.type == Instance::ASSEMBLY) {
 		const Assembly* asmb = assembly->assemblies[instance.data_index].get(); // Shorthand
 
-		query->pdf *= tot_prob;
+		query->pdf *= (tot_prob * light_count()) / asmb->light_accel.light_count();
 		asmb->light_accel.sample(query);
 	}
 }

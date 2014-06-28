@@ -25,6 +25,7 @@ struct Intersection {
 	// Information about the intersection point
 	float t {std::numeric_limits<float>::infinity()}; // T-parameter along the ray at the intersection
 	Vec3 p {0.0f, 0.0f, 0.0f};  // Intersection postion
+	float light_pdf {1.0f};  // Pdf of selecting this hit point and ray via light sampling
 
 	// Information about the ray that caused the intersection
 	Vec3 in {0.0f, 0.0f, 0.0f}; // The incoming ray direction
