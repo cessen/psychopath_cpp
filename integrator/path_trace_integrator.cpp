@@ -206,7 +206,6 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 			nor *= -1.0f;
 			pos_offset *= -1.0f;
 		}
-		pos += pos_offset;
 
 		// Get a sample from lights in the scene
 		LightQuery lq {path.samples[0], path.samples[1], path.samples[2], 0.0f,
@@ -220,8 +219,8 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		path.lcol = lq.color / lq.pdf;
 
 		// Create a shadow ray for this path
-		ray.o = pos;
-		ray.d = lq.to_light;
+		ray.o = pos + pos_offset;
+		ray.d = lq.to_light - pos_offset;
 		ray.time = path.time;
 		ray.type = WorldRay::OCCLUSION;
 
