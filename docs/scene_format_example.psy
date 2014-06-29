@@ -17,7 +17,8 @@
 #   TypeName [<contents>]
 #
 # Note the square brackets instead of curly braces.
-# The contents of a leaf property can be any utf8 text.
+# The contents of a leaf property can be any utf8 text
+# that is properly escaped (see below).
 
 # Backslashes (\) are used for escaping characters inside property names and
 # leaf property contents.  Escaping is not allowed anywhere else.
@@ -40,6 +41,8 @@ Scene $yar_0001 {
 	# Render settings... fairly self explanatory
 	RenderSettings {
 		Resolution [1280 720]
+		SamplesPerPixel [16]
+		DicingRate [0.25]
 		PixelAspect [1.0]
 		Filter [gaussian 1.5]
 		Seed [1]
@@ -95,7 +98,7 @@ Scene $yar_0001 {
 		OSLShader $mirror ["/home/cessen/shaders/mirror.osl"]
 
 		SphereLight $light.001 {
-			Position [20 20 20]
+			Location [20 20 20]
 			Radius [1.0]
 			Color [1.0 1.0 1.0]
 		}
