@@ -46,6 +46,7 @@ class MicroSurface
 	size_t res_u, res_v;
 
 	// Important geometry information
+	std::vector<Vec3> verts;
 	std::vector<Vec3> normals;
 	std::vector<float> uvs;
 	size_t face_id;

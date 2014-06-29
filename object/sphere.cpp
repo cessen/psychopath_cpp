@@ -138,18 +138,16 @@ bool Sphere::intersect_ray(const Ray &ray, Intersection *intersection)
 	}
 
 	if (intersection && (ray.flags() & Ray::IS_OCCLUSION) == 0) {
-		intersection->p = ray.o + (ray.d * t);
 		intersection->t = t;
-		intersection->n = intersection->p - cent;
-		intersection->n.normalize();
-		intersection->backfacing = dot(intersection->n, ray.d.normalized()) > 0.0f;
-		intersection->in = ray.d;
-		intersection->ow = ray.ow;
-		intersection->dw = ray.dw;
+		intersection->backfacing = dot(intersection->geo.n, ray.d.normalized()) > 0.0f;
 
-		intersection->offset = Vec3(0.0f, 0.0f, 0.0f);
+		intersection->geo.p = ray.o + (ray.d * t);
+		intersection->geo.n = intersection->geo.p - cent;
+		intersection->geo.n.normalize();
 
-		intersection->col = Color(0.8, 0.8, 0.8);
+		// TODO: differential geometry
+
+		intersection->offset = intersection->geo.n * 0.000001f;
 	}
 
 	return true;

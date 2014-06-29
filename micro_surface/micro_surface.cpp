@@ -148,6 +148,10 @@ bool MicroSurface::intersect_ray(const Ray &ray, float ray_width, Intersection *
 		float t_alpha = 0.0f;
 		calc_time_interp(time_count, ray.time, &t_i, &t_alpha);
 
+		// Information about the intersection point
+		inter->t = hit_near;
+
+
 		// Calculate data indices
 		// TODO: something better than dividing by two.  We want to get a distributed
 		// sampling over the uv space of the node.
@@ -156,48 +160,104 @@ bool MicroSurface::intersect_ray(const Ray &ray, float ray_width, Intersection *
 		const size_t d_index = nodes[hit_node].data_index; // Standard
 		const size_t rd_index = d_index + (d_iv * res_u) + d_iu; // Random within range
 
-		// Information about the intersection point
-		inter->t = hit_near;
-		inter->p = ray.o + (ray.d * hit_near);
+		// Indices into the microgrid
+		const uint i1 = rd_index;        // Main
+		const uint i2 = rd_index+1;      // Right
+		const uint i3 = rd_index+res_u;   // Down
+		const uint i4 = rd_index+res_u+1; // Right+Down
 
-		// Data about the ray that caused the intersection
-		inter->in = ray.d;
-		inter->ow = ray.ow;
-		inter->dw = ray.dw;
+		// Interpolation coordinates for everything that comes after this
+		const float t_u = 0.5f;
+		const float t_v = 0.5f;
+		//const float t_u = rng.next_float();
+		//const float t_v = rng.next_float();
 
-		// Surface normal
-		// TODO: differentials
+		// UV's
+		const float u1 = uvs[i1*2];
+		const float v1 = uvs[i1*2+1];
+		const float u2 = uvs[i2*2];
+		const float v2 = uvs[i2*2+1];
+		const float u3 = uvs[i3*2];
+		const float v3 = uvs[i3*2+1];
+		const float u4 = uvs[i4*2];
+		const float v4 = uvs[i4*2+1];
+
+		inter->geo.u = lerp2d(t_u, t_v, u1, u2, u3, u4);
+		inter->geo.v = lerp2d(t_u, t_v, v1, v2, v3, v4);
+		const float u_delta = std::abs(lerp2d(1.0f, t_v, u1, u2, u3, u4) - inter->geo.u);
+		const float v_delta = std::abs(lerp2d(t_u, 1.0f, u1, u2, u3, u4) - inter->geo.v);
+
 		const int tot_v = res_u * res_v;
-		const Vec3 n1t1 = normals[rd_index+(t_i*tot_v)];
-		const Vec3 n2t1 = normals[(rd_index+1)+(t_i*tot_v)];
-		const Vec3 n3t1 = normals[(rd_index+res_u)+(t_i*tot_v)];
-		const Vec3 n4t1 = normals[(rd_index+res_u+1)+(t_i*tot_v)];
-		//const Vec3 nt1 = lerp2d<Vec3>(rng.next_float(), rng.next_float(), n1t1, n2t1, n3t1, n4t1);
-		const Vec3 nt1 = lerp2d<Vec3>(0.5f, 0.5f, n1t1, n2t1, n3t1, n4t1);
 
+
+		// Position
+		const Vec3 p1t1 = verts[i1+(t_i*tot_v)];
+		const Vec3 p2t1 = verts[i2+(t_i*tot_v)];
+		const Vec3 p3t1 = verts[i3+(t_i*tot_v)];
+		const Vec3 p4t1 = verts[i4+(t_i*tot_v)];
+		const Vec3 pt1 = lerp2d<Vec3>(t_u, t_v, p1t1, p2t1, p3t1, p4t1);
+		const Vec3 ptu1 = lerp2d<Vec3>(1.0f, t_v, p1t1, p2t1, p3t1, p4t1);
+		const Vec3 ptv1 = lerp2d<Vec3>(t_u, 1.0f, p1t1, p2t1, p3t1, p4t1);
 
 		if (time_count > 1) {
-			const Vec3 n1t2 = normals[rd_index+((t_i+1)*tot_v)];
-			const Vec3 n2t2 = normals[(rd_index+1)+((t_i+1)*tot_v)];
-			const Vec3 n3t2 = normals[(rd_index+res_u)+((t_i+1)*tot_v)];
-			const Vec3 n4t2 = normals[(rd_index+res_u+1)+((t_i+1)*tot_v)];
-			//const Vec3 nt2 = lerp2d<Vec3>(rng.next_float(), rng.next_float(), n1t2, n2t2, n3t2, n4t2);
-			const Vec3 nt2 = lerp2d<Vec3>(0.5f, 0.5f, n1t2, n2t2, n3t2, n4t2);
+			const Vec3 p1t2 = verts[i1+((t_i+1)*tot_v)];
+			const Vec3 p2t2 = verts[i2+((t_i+1)*tot_v)];
+			const Vec3 p3t2 = verts[i3+((t_i+1)*tot_v)];
+			const Vec3 p4t2 = verts[i4+((t_i+1)*tot_v)];
 
+			const Vec3 pt2 = lerp2d<Vec3>(t_u, t_v, p1t2, p2t2, p3t2, p4t2);
+			const Vec3 ptu2 = lerp2d<Vec3>(1.0f, t_v, p1t2, p2t2, p3t2, p4t2);
+			const Vec3 ptv2 = lerp2d<Vec3>(t_u, 1.0f, p1t2, p2t2, p3t2, p4t2);
 
-			inter->n = lerp<Vec3>(t_alpha, nt1, nt2).normalized();
+			const Vec3 p = lerp<Vec3>(t_alpha, pt1, pt2);
+			const Vec3 pu = lerp<Vec3>(t_alpha, ptu1, ptu2);
+			const Vec3 pv = lerp<Vec3>(t_alpha, ptv1, ptv2);
+			inter->geo.p = p;
+			inter->geo.dpdu = (pu - p) / u_delta;
+			inter->geo.dpdv = (pv - p) / v_delta;
 		} else {
-			inter->n = nt1.normalized();
+			inter->geo.p = pt1;
+			inter->geo.dpdu = (ptu1 - pt1) / u_delta;
+			inter->geo.dpdv = (ptv1 - pt1) / v_delta;
+		}
+
+
+		// Surface normal
+		const Vec3 n1t1 = normals[i1+(t_i*tot_v)];
+		const Vec3 n2t1 = normals[i2+(t_i*tot_v)];
+		const Vec3 n3t1 = normals[i3+(t_i*tot_v)];
+		const Vec3 n4t1 = normals[i4+(t_i*tot_v)];
+		const Vec3 nt1 = lerp2d<Vec3>(t_u, t_v, n1t1, n2t1, n3t1, n4t1);
+		const Vec3 ntu1 = lerp2d<Vec3>(1.0f, t_v, n1t1, n2t1, n3t1, n4t1);
+		const Vec3 ntv1 = lerp2d<Vec3>(t_u, 1.0f, n1t1, n2t1, n3t1, n4t1);
+
+		if (time_count > 1) {
+			const Vec3 n1t2 = normals[i1+((t_i+1)*tot_v)];
+			const Vec3 n2t2 = normals[i2+((t_i+1)*tot_v)];
+			const Vec3 n3t2 = normals[i3+((t_i+1)*tot_v)];
+			const Vec3 n4t2 = normals[i4+((t_i+1)*tot_v)];
+
+			const Vec3 nt2 = lerp2d<Vec3>(t_u, t_v, n1t2, n2t2, n3t2, n4t2);
+			const Vec3 ntu2 = lerp2d<Vec3>(1.0f, t_v, n1t2, n2t2, n3t2, n4t2);
+			const Vec3 ntv2 = lerp2d<Vec3>(t_u, 1.0f, n1t2, n2t2, n3t2, n4t2);
+
+			const Vec3 n = lerp<Vec3>(t_alpha, nt1, nt2).normalized();
+			const Vec3 nu = lerp<Vec3>(t_alpha, ntu1, ntu2).normalized();
+			const Vec3 nv = lerp<Vec3>(t_alpha, ntv1, ntv2).normalized();
+			inter->geo.n = n;
+			inter->geo.dndu = (nu - n) / u_delta;
+			inter->geo.dndv = (nv - n) / v_delta;
+		} else {
+			inter->geo.n = nt1.normalized();
+			inter->geo.dndu = (ntu1 - nt1) / u_delta;
+			inter->geo.dndv = (ntv1 - nt1) / v_delta;
 		}
 
 
 		const float dl = std::max(ray.width(t) * Config::dice_rate * 1.5f, nodes[hit_node].bounds.diagonal());
-		inter->offset = inter->n * dl * 1.0f; // Origin offset for next ray
-		inter->backfacing = dot(inter->n, ray.d.normalized()) > 0.0f; // Whether the hit was on the back of the surface
-		// UVs
-		// TODO: differentials and correct coordinates for texturing
-		inter->u = uvs[d_index*2];
-		inter->v = uvs[d_index*2+1];
+		inter->offset = inter->geo.n * dl * 1.0f; // Origin offset for next ray
+		inter->backfacing = dot(inter->geo.n, ray.d.normalized()) > 0.0f; // Whether the hit was on the back of the surface
+
 
 		// Color
 		//inter->col = Color(inter->u, inter->v, 0.2f);
@@ -233,6 +293,9 @@ void MicroSurface::init_from_grid(Grid *grid)
 
 	// Store face ID
 	face_id = grid->face_id;
+
+	// Copy verts
+	verts = grid->verts;
 
 	// Calculate uvs
 	uvs.resize(grid->res_u * grid->res_v * 2);

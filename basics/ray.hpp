@@ -17,31 +17,6 @@
 #include "config.hpp"
 
 
-/*
- * Transfer's a ray differential onto a surface intersection.
- * This assumes that both normal and d are normalized.
- *
- * normal is the surface normal at the intersection
- * d is the primary ray's direction
- * t is the distance along the primary ray to the intersection
- * od is the ray origin differential
- * dd is the ray direction differential
- *
- * Returns the origin differential transfered onto the surface intersection.
- */
-/*static inline Vec3 transfer_ray_origin_differential(const Vec3 normal, const Vec3 d, const float t,
-        const Vec3 od, const Vec3 dd)
-{
-	const Vec3 temp = od + (dd * t);
-	const float td = dot(temp, normal) / dot(d, normal);
-
-	return temp + (d * td);
-}*/
-
-
-
-
-
 /**
  * @brief A ray in 3d space.
  */

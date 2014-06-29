@@ -13,113 +13,13 @@
 #include "mis.hpp"
 #include "config.hpp"
 
+#include "surface_closure.hpp"
+
 #include "job_queue.hpp"
 
 #include "light.hpp"
 
 #include "hilbert.hpp"
-
-
-float lambert(Vec3 v1, Vec3 v2)
-{
-	v1.normalize();
-	v2.normalize();
-	float f = dot(v1, v2);
-	if (f < 0.0f)
-		f = 0.0f;
-	return f;
-}
-
-class Lambert
-{
-public:
-	Color col {1.0f};
-
-	void sample(const WorldRay &in, const Intersection &inter, const float &su, const float &sv,
-	            WorldRay *out, Color *filter, float *pdf) {
-
-		// Transform important values into world space
-		const Vec3 nn = inter.space.nor_from(inter.n).normalized();
-		Vec3 pos = inter.space.pos_from(inter.p);
-		Vec3 pos_offset = inter.space.dir_from(inter.offset);
-
-		const Vec3 nns = (!inter.backfacing) ? nn : (nn * -1.0f); // Shading normal, flip for backfacing
-
-		// Generate a random ray direction in the hemisphere
-		// of the surface.
-		Vec3 dir = cosine_sample_hemisphere(su, sv);
-		*pdf = dir.z * 2;
-
-		if (*pdf < 0.001)
-			*pdf = 0.001;
-		dir = zup_to_vec(dir, nns);
-
-		*filter = col * lambert(dir, nns);
-
-		if (!inter.backfacing)
-			out->o = pos + pos_offset;
-		else
-			out->o = pos + (pos_offset * -1.0f);
-		out->d = dir;
-		out->time = in.time;
-		out->type = WorldRay::R_DIFFUSE;
-
-		// Ray differentials
-		// TODO: do this correctly
-		const float width = in.to_ray().width(inter.t);
-		out->odx = Vec3(1,0,0) * width;
-		out->ody = Vec3(0,1,0) * width;
-		out->ddx = Vec3(1,0,0) * 0.15;
-		out->ddy = Vec3(0,1,0) * 0.15;
-		/*
-		ray.odx = inter.pdx();
-		ray.ddx = ray.odx.normalized() * inter.ddx.length();
-		ray.ody = inter.pdy();
-		ray.ddy = ray.ody.normalized() * inter.ddy.length();
-		*/
-	}
-
-	void propagate_differentials(const WorldRay& in, const Intersection& inter, WorldRay* out) {
-		const float len = out->d.length();
-
-		// TODO: do this correctly
-		const float width = in.to_ray().width(inter.t);
-		out->odx = Vec3(1,0,0) * width;
-		out->ody = Vec3(0,1,0) * width;
-		out->ddx = Vec3(1,0,0) * (inter.dw / len);
-		out->ddy = Vec3(0,1,0) * (inter.dw / len);
-		/*
-		ray.odx = path.inter.pdx();
-		ray.ddx = ray.odx.normalized() * path.inter.ddx.length();
-		ray.ody = path.inter.pdy();
-		ray.ddy = ray.ody.normalized() * path.inter.ddy.length();
-		*/
-	}
-
-	Color evaluate(const Vec3& in, const Vec3& out, const Intersection& inter) {
-		Color lam;
-
-		if (inter.backfacing) {
-			lam = col * lambert(out, inter.space.nor_from(inter.n) * -1.0f);
-		} else {
-			lam = col * lambert(out, inter.space.nor_from(inter.n));
-		}
-
-		return lam;
-	}
-
-	float pdf(const Vec3& in, const Vec3& out, const Intersection& inter) {
-		float lam;
-
-		if (inter.backfacing) {
-			lam = lambert(out, inter.space.nor_from(inter.n) * -1.0f);
-		} else {
-			lam = lambert(out, inter.space.nor_from(inter.n));
-		}
-
-		return lam * 2;
-	}
-};
 
 
 void PathTraceIntegrator::integrate()
@@ -210,11 +110,12 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		// Shadow ray
 
 		// BSDF
-		Lambert bsdf;
+		LambertClosure bsdf;
 
 		// Transform important values into world space
-		Vec3 nor = path.inter.space.nor_from(path.inter.n).normalized();
-		Vec3 pos = path.inter.space.pos_from(path.inter.p);
+		const DifferentialGeometry geo = path.inter.geo.transformed_from(path.inter.space);
+		Vec3 pos = geo.p;
+		Vec3 nor = geo.n;
 		Vec3 pos_offset = path.inter.space.dir_from(path.inter.offset);
 
 		// Calculate the surface normal facing in the direction of where the ray hit came from
@@ -245,18 +146,37 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		ray.type = WorldRay::OCCLUSION;
 
 		// Propagate ray differentials
-		bsdf.propagate_differentials(prev_ray, path.inter, &ray);
+		bsdf.propagate_differentials(path.inter.t, prev_ray, geo, &ray);
 
 		// Increment the sample pointer
 		path.samples += 3;
 	} else {
 		// Bounce ray
 
-		Lambert bsdf;
+		LambertClosure bsdf;
+
+		// Transform important values into world space
+		const DifferentialGeometry geo = path.inter.geo.transformed_from(path.inter.space);
+		Vec3 pos = geo.p;
+		Vec3 pos_offset = path.inter.space.dir_from(path.inter.offset);
+
+		// Flip the offset for backfacing
+		if (path.inter.backfacing) {
+			pos_offset *= -1.0f;
+		}
+
+		Vec3 out;
 		Color filter;
 		float pdf;
 
-		bsdf.sample(prev_ray, path.inter, path.samples[0], path.samples[1], &ray, &filter, &pdf);
+		bsdf.sample(prev_ray.d, geo, path.samples[0], path.samples[1], &out, &filter, &pdf);
+
+		ray.o = pos + pos_offset;
+		ray.d = out;
+		ray.type = WorldRay::R_DIFFUSE;
+
+		// Propagate ray differentials
+		bsdf.propagate_differentials(path.inter.t, prev_ray, geo, &ray);
 
 		// Calculate the color filtering effect that the
 		// bounce from the current intersection will create.
@@ -282,9 +202,11 @@ void PathTraceIntegrator::update_path(PTState* pstate, const WorldRay& ray, cons
 		// Result of shadow ray
 		if (!inter.hit) {
 			// Sample was lit
-			Lambert bsdf;
+			LambertClosure bsdf;
 
-			Color lam = bsdf.evaluate(Vec3(), ray.d, path.inter);
+			const DifferentialGeometry geo = inter.geo.transformed_from(inter.space);
+
+			Color lam = bsdf.evaluate(Vec3(), ray.d, geo);
 
 			path.col += path.fcol * path.lcol * lam;
 		}
