@@ -3,7 +3,7 @@
 
 #include "light_accel.hpp"
 
-class LightArray: public LightAccel
+class LightArray final: public LightAccel
 {
 	const Assembly* assembly;
 	std::vector<size_t> light_indices;

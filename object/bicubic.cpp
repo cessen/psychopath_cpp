@@ -125,7 +125,7 @@ size_t Bicubic::subdiv_estimate(float width) const
 }
 
 
-std::vector<BBox> &Bicubic::bounds()
+const std::vector<BBox> &Bicubic::bounds() const
 {
 	return bbox;
 }
@@ -297,7 +297,7 @@ int Bicubic::split(std::unique_ptr<DiceableSurface> objects[])
 	return 2;
 }
 
-std::unique_ptr<DiceableSurface> Bicubic::copy()
+std::unique_ptr<DiceableSurface> Bicubic::copy() const
 {
 	auto patch = new Bicubic();
 
@@ -320,7 +320,7 @@ std::unique_ptr<DiceableSurface> Bicubic::copy()
 }
 
 
-std::shared_ptr<MicroSurface> Bicubic::dice(size_t subdivisions)
+std::shared_ptr<MicroSurface> Bicubic::dice(size_t subdivisions) const
 {
 	// Get dicing rate
 	size_t u_rate = 1 << subdivisions;
@@ -386,7 +386,7 @@ inline void eval_cubic_bezier_curve(int vert_count, int stride, Vec3 output[], V
  * ru and rv are the resolution of the grid in vertices
  * in the u and v directions.
  */
-Grid *Bicubic::grid_dice(const int ru, const int rv)
+Grid *Bicubic::grid_dice(const int ru, const int rv) const
 {
 	// Initialize grid and fill in the basics
 	Grid *grid = new Grid(ru, rv, verts.size());

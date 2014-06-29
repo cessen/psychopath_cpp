@@ -52,26 +52,6 @@ public:
 
 
 	/**
-	 * @brief Returns the color that will arrive at the given point from the
-	 * given parameters of the light source.
-	 *
-	 * This does _not_ account for shadowing at all.  It presumes the point
-	 * is fully visible to the light source.
-	 *
-	 * @param arr The point that the light is arriving at.
-	 * @param u Random parameter U.
-	 * @param v Random parameter V.
-	 * @param time The time to sample at.
-	 */
-	virtual Color arriving(const Vec3 &arr, float u, float v, float time) const {
-		// Default implementation
-		Vec3 temp;
-		float pdf;
-		return sample(arr, u, v, time, &temp, &pdf);
-	}
-
-
-	/**
 	 * @brief Returns whether the light has a delta distribution.
 	 *
 	 * If a light has no chance of a ray hitting it through random process
@@ -80,12 +60,11 @@ public:
 	 */
 	virtual bool is_delta() const = 0;
 
-	virtual Color total_emitted_color() const = 0;
 
 	/**
 	 * @brief Tests a ray against the light.
 	 */
-	//virtual bool intersect_ray(const Ray &ray, Intersection *intersection=nullptr) = 0;
+	virtual bool intersect_ray(const Ray &ray, Intersection *intersection=nullptr) const = 0;
 };
 
 #endif // LIGHT_HPP

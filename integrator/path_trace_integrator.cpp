@@ -107,10 +107,10 @@ public:
 
 		return lam;
 	}
-	
+
 	float pdf(const Vec3& in, const Vec3& out, const Intersection& inter) {
 		float lam;
-		
+
 		if (inter.backfacing) {
 			lam = lambert(out, inter.space.nor_from(inter.n) * -1.0f);
 		} else {
@@ -208,7 +208,7 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		path.samples += 5;
 	} else if (path.step % 2) {
 		// Shadow ray
-		
+
 		// BSDF
 		Lambert bsdf;
 
@@ -230,9 +230,9 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		              };
 		lq.pdf = 1.0f;
 		scene->root->light_accel.sample(&lq);
-		
+
 		// Get the pdf of sampling this light vector from the bsdf
-		const float bsdf_pdf = bsdf.pdf(Vec3(), lq.to_light, path.inter);
+		//const float bsdf_pdf = bsdf.pdf(Vec3(), lq.to_light, path.inter);
 
 		// Set light color
 		//path.lcol = (lq.color * power_heuristic(lq.pdf, bsdf_pdf) / lq.pdf) * scene->root->light_accel.light_count();

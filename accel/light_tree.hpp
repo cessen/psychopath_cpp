@@ -4,7 +4,7 @@
 #include "light_accel.hpp"
 #include <iostream>
 
-class LightTree: public LightAccel
+class LightTree final: public LightAccel
 {
 	struct BuildNode {
 		size_t instance_index;

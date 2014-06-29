@@ -14,7 +14,6 @@
  */
 Sphere::Sphere(Vec3 center_, float radius_)
 {
-	has_bounds = false;
 	center.resize(1);
 	radius.resize(1);
 
@@ -33,7 +32,6 @@ Sphere::Sphere(Vec3 center_, float radius_)
  */
 Sphere::Sphere(uint8_t res_time_)
 {
-	has_bounds = false;
 	center.resize(res_time_);
 	radius.resize(res_time_);
 }
@@ -50,6 +48,21 @@ void Sphere::add_time_sample(int samp, Vec3 center_, float radius_)
 {
 	center[samp] = center_;
 	radius[samp] = radius_;
+}
+
+
+void Sphere::finalize()
+{
+	bbox.resize(center.size());
+
+	for (size_t time = 0; time < center.size(); time++) {
+		bbox[time].min.x = center[time].x - radius[time];
+		bbox[time].max.x = center[time].x + radius[time];
+		bbox[time].min.y = center[time].y - radius[time];
+		bbox[time].max.y = center[time].y + radius[time];
+		bbox[time].min.z = center[time].z - radius[time];
+		bbox[time].max.z = center[time].z + radius[time];
+	}
 }
 
 
@@ -143,22 +156,8 @@ bool Sphere::intersect_ray(const Ray &ray, Intersection *intersection)
 }
 
 
-std::vector<BBox> &Sphere::bounds()
+const std::vector<BBox> &Sphere::bounds() const
 {
-	if (!has_bounds) {
-		bbox.resize(center.size());
-
-		for (size_t time = 0; time < center.size(); time++) {
-			bbox[time].min.x = center[time].x - radius[time];
-			bbox[time].max.x = center[time].x + radius[time];
-			bbox[time].min.y = center[time].y - radius[time];
-			bbox[time].max.y = center[time].y + radius[time];
-			bbox[time].min.z = center[time].z - radius[time];
-			bbox[time].max.z = center[time].z + radius[time];
-		}
-		has_bounds = true;
-	}
-
 	return bbox;
 }
 

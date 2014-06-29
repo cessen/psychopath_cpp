@@ -1,8 +1,4 @@
 - Bugs:
-	- The "huge_plane" scene segfaults, running off the end of the
-	  split primitive stack with a single ray.  If you apply
-	  scale, then it stops segfaulting.  Also, if you increase the
-	  dicing rate (even just to 0.5) it stops segfaulting.
 	- Very small sphere lights introduce severe banding in light attentuation.
 
 - Unit tests:

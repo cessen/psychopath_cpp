@@ -441,5 +441,7 @@ std::unique_ptr<Sphere> Parser::parse_sphere(const DataTree::Node& node)
 	// Build sphere
 	std::unique_ptr<Sphere> s(new Sphere(location, radius));
 
+	s->finalize();
+
 	return s;
 }

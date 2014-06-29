@@ -12,7 +12,7 @@
  * Super simple point light source.  Practically an example of how
  * to write a finite light source.
  */
-class SphereLight: public Light
+class SphereLight final: public Light
 {
 	std::vector<Vec3> positions;
 	std::vector<float> radii;
@@ -66,7 +66,7 @@ public:
 	 * rendering, as it may meaningfully impact lighting effects from a sphere
 	 * light embedded inside a volume.
 	 */
-	virtual Color sample(const Vec3 &arr, float u, float v, float time, Vec3 *shadow_vec, float* pdf) const {
+	virtual Color sample(const Vec3 &arr, float u, float v, float time, Vec3 *shadow_vec, float* pdf) const override {
 		// Calculate time interpolated values
 		Vec3 pos = lerp_seq(time, positions);
 		double radius = lerp_seq(time, radii);
@@ -119,25 +119,25 @@ public:
 
 	}
 
-	virtual Color outgoing(const Vec3 &dir, float u, float v, float time) const {
+	virtual Color outgoing(const Vec3 &dir, float u, float v, float time) const override {
 		Color col = lerp_seq(time, colors);
 		return col;
 	}
 
-	virtual bool is_delta() const {
+	virtual bool is_delta() const override {
 		return false;
 	}
 
-	virtual bool is_infinite() const {
-		return false;
-	}
-
-	virtual Color total_emitted_color() const {
+	virtual Color total_emitted_color() const override {
 		Color col = lerp_seq(0, colors);
 		return col;
 	}
 
-	virtual std::vector<BBox>& bounds() {
+	virtual bool intersect_ray(const Ray &ray, Intersection *intersection=nullptr) const override {
+		return false;
+	}
+
+	virtual const std::vector<BBox>& bounds() const override {
 		return bounds_;
 	}
 };

@@ -74,7 +74,7 @@ size_t Bilinear::subdiv_estimate(float width) const
 }
 
 
-std::vector<BBox> &Bilinear::bounds()
+const std::vector<BBox> &Bilinear::bounds() const
 {
 	return bbox;
 }
@@ -147,7 +147,7 @@ int Bilinear::split(std::unique_ptr<DiceableSurface> objects[])
 	return 2;
 }
 
-std::unique_ptr<DiceableSurface> Bilinear::copy()
+std::unique_ptr<DiceableSurface> Bilinear::copy() const
 {
 	auto patch = new Bilinear();
 
@@ -170,7 +170,7 @@ std::unique_ptr<DiceableSurface> Bilinear::copy()
 }
 
 
-std::shared_ptr<MicroSurface> Bilinear::dice(size_t subdivisions)
+std::shared_ptr<MicroSurface> Bilinear::dice(size_t subdivisions) const
 {
 	// Get dicing rate
 	const size_t rate = (1 << subdivisions) + 1;
@@ -188,7 +188,7 @@ std::shared_ptr<MicroSurface> Bilinear::dice(size_t subdivisions)
  * ru and rv are the resolution of the grid in vertices
  * in the u and v directions.
  */
-Grid *Bilinear::grid_dice(const int ru, const int rv)
+Grid *Bilinear::grid_dice(const int ru, const int rv) const
 {
 	// Initialize grid and fill in the basics
 	Grid *grid = new Grid(ru, rv, verts.size());

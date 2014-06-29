@@ -639,7 +639,7 @@ static inline std::vector<BBox> transform_from(const std::vector<BBox>& bbs_in, 
 	std::vector<BBox> bbs = bbs_in;
 
 	// Transform the bounding boxes
-	auto tcount = std::distance(xstart, xend);
+	size_t tcount = std::distance(xstart, xend);
 
 	if (tcount == 0) {
 		// Do nothing

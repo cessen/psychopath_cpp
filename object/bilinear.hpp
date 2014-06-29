@@ -18,7 +18,7 @@
  * | v4----v3
  * \/
  */
-class Bilinear: public DiceableSurface
+class Bilinear final: public DiceableSurface
 {
 public:
 	std::vector<std::array<Vec3, 4>> verts;
@@ -36,14 +36,17 @@ public:
 	void finalize();
 
 	void add_time_sample(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4);
-	Grid *grid_dice(const int ru, const int rv);
+	Grid *grid_dice(const int ru, const int rv) const;
 
-	virtual std::vector<BBox> &bounds();
+	virtual const std::vector<BBox> &bounds() const override;
+	virtual Color total_emitted_color() const override {
+		return Color(0.0f);
+	}
 
-	virtual int split(std::unique_ptr<DiceableSurface> objects[]);
-	virtual std::unique_ptr<DiceableSurface> copy();
-	virtual size_t subdiv_estimate(float width) const;
-	virtual std::shared_ptr<MicroSurface> dice(size_t subdivisions);
+	virtual int split(std::unique_ptr<DiceableSurface> objects[]) override;
+	virtual std::unique_ptr<DiceableSurface> copy() const override;
+	virtual size_t subdiv_estimate(float width) const override;
+	virtual std::shared_ptr<MicroSurface> dice(size_t subdivisions) const override;
 };
 
 #endif

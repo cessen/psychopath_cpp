@@ -21,14 +21,6 @@ void BVH::build(const Assembly& _assembly)
 	// Create BVHPrimitive bag
 	bag.reserve(instances.size());
 	for (size_t i = 0; i < instances.size(); ++i) {
-		// Skip if it's a light
-		// TODO: lights should be included too, with MIS
-		if (assembly->instances[i].type == Instance::OBJECT) {
-			Object* obj = assembly->objects[assembly->instances[i].data_index].get();
-			if (obj->get_type() == Object::LIGHT)
-				continue;
-		}
-
 		// Get instance bounds at time 0.5
 		BBox bb = assembly->instance_bounds_at(0.5f, i);
 

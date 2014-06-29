@@ -49,10 +49,17 @@ public:
 
 	/**
 	 * @brief Returns the bounds of the object.
-	 *
-	 * IMPORTANT: these should be the post-transform bounds.
 	 */
-	virtual std::vector<BBox> &bounds() = 0;
+	virtual const std::vector<BBox> &bounds() const = 0;
+
+	/**
+	 * Returns the total amount of energy emitted by the object.
+	 *
+	 * This does not need to be 100% accurate, as it is only used
+	 * for sampling decisions.  But it should be approximately
+	 * correct.
+	 */
+	virtual Color total_emitted_color() const = 0;
 };
 
 
@@ -96,7 +103,7 @@ public:
 	/**
 	 * @brief Returns a pointer to a heap-allocated duplicate of the surface.
 	 */
-	virtual std::unique_ptr<DiceableSurface> copy() = 0;
+	virtual std::unique_ptr<DiceableSurface> copy() const = 0;
 
 	/**
 	 * @brief Splits a diceable surface into two or more sub-surfaces.
@@ -121,7 +128,7 @@ public:
 	 *        subdivision schemes, the amount of geometry quadruples every
 	 *        subdivision iteration.
 	 */
-	virtual std::shared_ptr<MicroSurface> dice(size_t subdivisions) = 0;
+	virtual std::shared_ptr<MicroSurface> dice(size_t subdivisions) const = 0;
 };
 
 #endif // OBJECT_HPP

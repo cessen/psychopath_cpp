@@ -108,16 +108,14 @@ void LightTree::build(const Assembly& assembly_)
 		if (instance.type == Instance::OBJECT) {
 			const Object* obj = assembly->objects[instance.data_index].get(); // Shorthand
 
-			if (obj->get_type() == Object::LIGHT) {
-				const Light* light = dynamic_cast<const Light*>(obj);
-
+			if (obj->total_emitted_color().energy() > 0.0f) {
 				build_nodes.push_back(BuildNode());
 				build_nodes.back().instance_index = i;
 				build_nodes.back().bbox = assembly->instance_bounds_at(0.5f, i);
 				build_nodes.back().center = build_nodes.back().bbox.center();
 				const Vec3 scale = assembly->instance_xform_at(0.5f, i).get_inv_scale();
 				const float surface_scale = ((scale[0]*scale[1]) + (scale[0]*scale[2]) + (scale[1]*scale[2])) * 0.33333333f;
-				build_nodes.back().energy = light->total_emitted_color().energy() / surface_scale;
+				build_nodes.back().energy = obj->total_emitted_color().energy() / surface_scale;
 
 				++total_lights;
 			}

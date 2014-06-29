@@ -35,7 +35,7 @@
  * Although markov chain algorithms may play poorly with the Tracer, which is
  * designed to trace rays in bulk.
  */
-class PathTraceIntegrator: Integrator
+class PathTraceIntegrator final: Integrator
 {
 	struct PixelBlock {
 		int x, y;
@@ -114,7 +114,7 @@ public:
 	/**
 	 * @brief Begins integration.
 	 */
-	virtual void integrate();
+	virtual void integrate() override;
 
 	/**
 	 * Watches the block queue for blocks of pixels to render.
