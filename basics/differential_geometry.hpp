@@ -53,6 +53,13 @@ struct DifferentialGeometry {
 
 		return geo;
 	}
+
+
+	void flip_normal() {
+		n *= -1.0f;
+		dndu *= -1.0f;
+		dndv *= -1.0f;
+	}
 };
 
 /*

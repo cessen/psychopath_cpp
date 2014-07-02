@@ -113,7 +113,7 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		LambertClosure bsdf;
 
 		// Transform important values into world space
-		const DifferentialGeometry geo = path.inter.geo.transformed_from(path.inter.space);
+		DifferentialGeometry geo = path.inter.geo.transformed_from(path.inter.space);
 		Vec3 pos = geo.p;
 		Vec3 nor = geo.n;
 		Vec3 pos_offset = path.inter.space.dir_from(path.inter.offset);
@@ -122,6 +122,7 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		if (path.inter.backfacing) {
 			nor *= -1.0f;
 			pos_offset *= -1.0f;
+			geo.flip_normal();
 		}
 
 		// Get a sample from lights in the scene
@@ -146,7 +147,7 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		ray.type = WorldRay::OCCLUSION;
 
 		// Propagate ray differentials
-		bsdf.propagate_differentials(path.inter.t, prev_ray, geo, &ray);
+		bsdf.propagate_differentials(path.inter.t, path.prev_ray, geo, &ray);
 
 		// Increment the sample pointer
 		path.samples += 3;
@@ -156,27 +157,28 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		LambertClosure bsdf;
 
 		// Transform important values into world space
-		const DifferentialGeometry geo = path.inter.geo.transformed_from(path.inter.space);
+		DifferentialGeometry geo = path.inter.geo.transformed_from(path.inter.space);
 		Vec3 pos = geo.p;
 		Vec3 pos_offset = path.inter.space.dir_from(path.inter.offset);
 
 		// Flip the offset for backfacing
 		if (path.inter.backfacing) {
 			pos_offset *= -1.0f;
+			geo.flip_normal();
 		}
 
 		Vec3 out;
 		Color filter;
 		float pdf;
 
-		bsdf.sample(prev_ray.d, geo, path.samples[0], path.samples[1], &out, &filter, &pdf);
+		bsdf.sample(path.prev_ray.d, geo, path.samples[0], path.samples[1], &out, &filter, &pdf);
 
 		ray.o = pos + pos_offset;
 		ray.d = out;
 		ray.type = WorldRay::R_DIFFUSE;
 
 		// Propagate ray differentials
-		bsdf.propagate_differentials(path.inter.t, prev_ray, geo, &ray);
+		bsdf.propagate_differentials(path.inter.t, path.prev_ray, geo, &ray);
 
 		// Calculate the color filtering effect that the
 		// bounce from the current intersection will create.
@@ -204,9 +206,9 @@ void PathTraceIntegrator::update_path(PTState* pstate, const WorldRay& ray, cons
 			// Sample was lit
 			LambertClosure bsdf;
 
-			const DifferentialGeometry geo = inter.geo.transformed_from(inter.space);
+			const DifferentialGeometry geo = path.inter.geo.transformed_from(inter.space);
 
-			Color lam = bsdf.evaluate(Vec3(), ray.d, geo);
+			Color lam = bsdf.evaluate(path.prev_ray.d, ray.d, geo);
 
 			path.col += path.fcol * path.lcol * lam;
 		}
@@ -215,6 +217,7 @@ void PathTraceIntegrator::update_path(PTState* pstate, const WorldRay& ray, cons
 		if (inter.hit) {
 			// Ray hit something!
 			path.inter = inter; // Store intersection data for creating shadow ray
+			path.prev_ray = ray;  // Store incoming ray direction for use in shading calculations
 		} else {
 			// Ray didn't hit anything
 			path.done = true;

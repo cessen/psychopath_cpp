@@ -120,10 +120,10 @@ public:
 		const Vec3 nn = geo.n.normalized();
 		const Vec3 v = out.normalized();
 
-		if (dot(nn, in) > 0.0f)
+		if (dot(nn, in.normalized()) > 0.0f)
 			return Color(0.0f);
 		else
-			return std::max(dot(nn, v), 0.0f);
+			return col * std::max(dot(nn, v), 0.0f);
 	}
 
 

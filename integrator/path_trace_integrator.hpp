@@ -51,7 +51,8 @@ class PathTraceIntegrator final: Integrator
 		float time;
 		int step = 0;
 		short pix_x, pix_y;  // Pixel coordinates of the path
-		Intersection inter = Intersection();
+		Intersection inter {};
+		WorldRay prev_ray {};
 		Color col {0.0f}; // Color of the sample collected so far
 		Color fcol {1.0f}; // Accumulated filter color from light path
 		Color lcol {0.0f}; // Temporary storage for incoming light color
