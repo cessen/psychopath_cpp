@@ -129,7 +129,7 @@ void Tracer::trace_assembly(Assembly* assembly, const std::vector<Transform>& pa
 					trace_diceable_surface(reinterpret_cast<DiceableSurface*>(obj), xforms, std::get<0>(hits), std::get<1>(hits));
 					break;
 				default:
-					std::cout << "WARNING: unknown object type, skipping." << std::endl;
+					//std::cout << "WARNING: unknown object type, skipping." << std::endl;
 					break;
 			}
 
