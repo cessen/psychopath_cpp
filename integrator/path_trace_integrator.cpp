@@ -112,22 +112,25 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		// BSDF
 		LambertClosure bsdf;
 
-		// Transform important values into world space
-		DifferentialGeometry geo = path.inter.geo.transformed_from(path.inter.space);
-		Vec3 pos = geo.p;
-		Vec3 nor = geo.n;
-		Vec3 pos_offset = path.inter.space.dir_from(path.inter.offset);
+		// Get differential geometry of hit point in world space
+		const DifferentialGeometry geo = path.inter.geo.transformed_from(path.inter.space);
 
-		// Calculate the surface normal facing in the direction of where the ray hit came from
-		if (path.inter.backfacing) {
-			nor *= -1.0f;
+		// Get the ray origin offset
+		// TODO: this needs to take into account the BSDF (e.g. transmittance vs reflectance)
+		Vec3 pos_offset = path.inter.space.dir_from(path.inter.offset);
+		if (path.inter.backfacing)
 			pos_offset *= -1.0f;
-			geo.flip_normal();
-		}
+
+		// TEMPORARY
+		// TODO: the surface normal passed to the light query should be
+		// determined based on the BSDF
+		Vec3 lq_nor = geo.n;
+		if (path.inter.backfacing)
+			lq_nor *= -1.0f;
 
 		// Get a sample from lights in the scene
 		LightQuery lq {path.samples[0], path.samples[1], path.samples[2], 0.0f,
-		               pos, nor, path.time,
+		               geo.p, lq_nor, path.time,
 		               Transform()
 		              };
 		lq.pdf = 1.0f;
@@ -141,7 +144,7 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		path.lcol = (lq.color / lq.pdf) * scene->root->light_accel.light_count();
 
 		// Create a shadow ray for this path
-		ray.o = pos + pos_offset;
+		ray.o = geo.p + pos_offset;
 		ray.d = lq.to_light - pos_offset;
 		ray.time = path.time;
 		ray.type = WorldRay::OCCLUSION;
@@ -156,16 +159,14 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 
 		LambertClosure bsdf;
 
-		// Transform important values into world space
-		DifferentialGeometry geo = path.inter.geo.transformed_from(path.inter.space);
-		Vec3 pos = geo.p;
-		Vec3 pos_offset = path.inter.space.dir_from(path.inter.offset);
+		// Get differential geometry of hit point in world space
+		const DifferentialGeometry geo = path.inter.geo.transformed_from(path.inter.space);
 
-		// Flip the offset for backfacing
-		if (path.inter.backfacing) {
+		// Get the ray origin offset
+		// TODO: this needs to take into account the BSDF (e.g. transmittance vs reflectance)
+		Vec3 pos_offset = path.inter.space.dir_from(path.inter.offset);
+		if (path.inter.backfacing)
 			pos_offset *= -1.0f;
-			geo.flip_normal();
-		}
 
 		Vec3 out;
 		Color filter;
@@ -173,8 +174,9 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 
 		bsdf.sample(path.prev_ray.d, geo, path.samples[0], path.samples[1], &out, &filter, &pdf);
 
-		ray.o = pos + pos_offset;
+		ray.o = geo.p + pos_offset;
 		ray.d = out;
+		ray.time = path.time;
 		ray.type = WorldRay::R_DIFFUSE;
 
 		// Propagate ray differentials
@@ -206,7 +208,7 @@ void PathTraceIntegrator::update_path(PTState* pstate, const WorldRay& ray, cons
 			// Sample was lit
 			LambertClosure bsdf;
 
-			const DifferentialGeometry geo = path.inter.geo.transformed_from(inter.space);
+			const DifferentialGeometry geo = path.inter.geo.transformed_from(path.inter.space);
 
 			Color lam = bsdf.evaluate(path.prev_ray.d, ray.d, geo);
 

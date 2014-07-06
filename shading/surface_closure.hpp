@@ -96,13 +96,11 @@ public:
 	virtual void sample(const Vec3 &in, const DifferentialGeometry &geo, const float &si, const float &sj,
 	                    Vec3 *out, Color *filter, float *pdf) const override {
 		// Get normalized surface normal
-		const Vec3 nn = geo.n.normalized();
+		Vec3 nn = geo.n.normalized();
 
-		// If back-facing, darkness
+		// If back-facing, flip normal
 		if (dot(nn, in) > 0.0f) {
-			*out = Vec3(0.0f, 0.0f, 0.0f);
-			*filter = Color(0.0f);
-			*pdf = 1.0f;
+			nn *= -1.0f;
 		}
 
 		// Generate a random ray direction in the hemisphere
@@ -117,13 +115,13 @@ public:
 
 
 	Color evaluate(const Vec3 &in, const Vec3 &out, const DifferentialGeometry &geo) const override {
-		const Vec3 nn = geo.n.normalized();
+		Vec3 nn = geo.n.normalized();
 		const Vec3 v = out.normalized();
 
-		if (dot(nn, in.normalized()) > 0.0f)
-			return Color(0.0f);
-		else
-			return col * std::max(dot(nn, v), 0.0f);
+		if (dot(nn, in) > 0.0f)
+			nn *= -1.0f;
+
+		return col * std::max(dot(nn, v), 0.0f);
 	}
 
 
@@ -145,13 +143,13 @@ public:
 
 
 	float pdf(const Vec3& in, const Vec3& out, const DifferentialGeometry &geo) const override {
-		const Vec3 nn = geo.n.normalized();
+		Vec3 nn = geo.n.normalized();
 		const Vec3 v = out.normalized();
 
-		if (dot(nn, in) > 0.0f)
-			return 0.0f;
-		else
-			return std::max(dot(nn, v)*2, 0.0f);
+		if (dot(nn, in.normalized()) > 0.0f)
+			nn *= -1.0f;
+
+		return std::max(dot(nn, v)*2, 0.0f);
 	}
 };
 
