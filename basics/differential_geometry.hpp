@@ -80,7 +80,10 @@ static inline Vec3 transfer_ray_origin_differential(const float t, const Vec3 no
 	const Vec3 temp = od + (dd * t);
 	const float td = dot(temp, normal) / dot(d, normal);
 
-	return temp + (d * td);
+	const Vec3 real_projected = temp + (d * td); // Real projected origin differential
+
+	// Scaled for dicing rates
+	return real_projected.normalized() * temp.length();
 }
 
 #endif // DIFFERENTIAL_GEOMETRY_HPP
