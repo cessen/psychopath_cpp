@@ -254,9 +254,9 @@ bool MicroSurface::intersect_ray(const Ray &ray, float ray_width, Intersection *
 		}
 
 
-		const float dl = std::max(ray.width(t) * Config::dice_rate * 1.5f, nodes[hit_node].bounds.diagonal());
-		inter->offset = inter->geo.n * dl * 1.0f; // Origin offset for next ray
-		inter->backfacing = dot(inter->geo.n, ray.d.normalized()) > 0.0f; // Whether the hit was on the back of the surface
+		const float dl = std::max(ray.width(t) * Config::dice_rate * 1.41421f, nodes[hit_node].bounds.diagonal());
+		inter->offset = inter->geo.n * dl * 0.5f; // Origin offset for next ray
+		inter->backfacing = dot(inter->geo.n, ray.d) > 0.0f; // Whether the hit was on the back of the surface
 
 
 		// Color
