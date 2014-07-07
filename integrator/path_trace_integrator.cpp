@@ -110,7 +110,7 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		// Shadow ray
 
 		// BSDF
-		LambertClosure bsdf;
+		GTRClosure bsdf;
 
 		// Get differential geometry of hit point in world space
 		const DifferentialGeometry geo = path.inter.geo.transformed_from(path.inter.space);
@@ -157,7 +157,7 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 	} else {
 		// Bounce ray
 
-		LambertClosure bsdf;
+		GTRClosure bsdf;
 
 		// Get differential geometry of hit point in world space
 		const DifferentialGeometry geo = path.inter.geo.transformed_from(path.inter.space);
@@ -206,13 +206,13 @@ void PathTraceIntegrator::update_path(PTState* pstate, const WorldRay& ray, cons
 		// Result of shadow ray
 		if (!inter.hit) {
 			// Sample was lit
-			LambertClosure bsdf;
+			GTRClosure bsdf;
 
 			const DifferentialGeometry geo = path.inter.geo.transformed_from(path.inter.space);
 
-			Color lam = bsdf.evaluate(path.prev_ray.d, ray.d, geo);
+			Color fac = bsdf.evaluate(path.prev_ray.d, ray.d, geo);
 
-			path.col += path.fcol * path.lcol * lam;
+			path.col += path.fcol * path.lcol * fac;
 		}
 	} else {
 		// Result of bounce or camera ray
@@ -223,7 +223,7 @@ void PathTraceIntegrator::update_path(PTState* pstate, const WorldRay& ray, cons
 		} else {
 			// Ray didn't hit anything
 			path.done = true;
-			path.col += path.fcol * Color(0.0f); // Background color
+			path.col += path.fcol * Color(0.8f); // Background color
 		}
 	}
 
