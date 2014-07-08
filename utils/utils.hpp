@@ -9,12 +9,19 @@
 #include <cmath>
 #include <cassert>
 
+
+// Returns value clamped to within the range [a,b]
+template <class T>
+static inline T clamp(const T& value, const T& a, const T& b)
+{
+	return std::min(b, std::max(a, value));
+}
+
 /*
    linear interpolation
    alpha = 0.0 means full a
    alpha = 1.0 means full b
  */
-
 template <class T>
 static inline T lerp(const float &alpha, const T &a, const T &b)
 {

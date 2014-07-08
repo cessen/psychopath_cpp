@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "numtype.h"
+#include "utils.hpp"
 
 #include "vector.hpp"
 #include "color.hpp"
@@ -284,7 +285,7 @@ public:
 		const float D = d(nn, half);
 
 		// Calculate F - Fresnel
-		const float theta_cos = std::max(0.0f, dot(half, out));
+		const float theta_cos = clamp(dot(half, v1), 0.0f, 1.0f);
 		const float F = fresnel + ((1.0f-fresnel) * std::pow((1.0f - theta_cos), 5.0f));
 
 		// Calculate G - Geometric microfacet shadowing
