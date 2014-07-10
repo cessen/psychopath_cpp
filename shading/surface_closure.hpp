@@ -167,10 +167,10 @@ class GTRClosure final: public SurfaceClosure
 {
 private:
 	Color col {0.903f};
-	float roughness {0.2f};
+	float roughness {0.04f};
 	float tail_shape {2.0f};
 	float fresnel {1.0f};
-	float normalization_factor = normalization(roughness*roughness, tail_shape);
+	float normalization_factor = normalization(roughness, tail_shape);
 
 
 
@@ -190,7 +190,7 @@ private:
 		if (std::abs(tail_shape - 1.0f) < TAIL_EPSILON)
 			tail_shape += TAIL_EPSILON;
 
-		normalization_factor = normalization(roughness*roughness, tail_shape);
+		normalization_factor = normalization(roughness, tail_shape);
 	}
 
 	// Returns the normalization factor for the distribution function
@@ -206,13 +206,12 @@ private:
 	// a random variable in [0,1]
 	float half_theta_sample(float u) const {
 		const float roughness2 = roughness * roughness;
-		const float roughness4 = roughness2 * roughness2;
 
 		// Calculate top half of equation
-		const float top = 1.0f - std::pow((std::pow(roughness4, 1.0f - tail_shape) * (1.0f - u)) + u, 1.0f / (1.0f-tail_shape));
+		const float top = 1.0f - std::pow((std::pow(roughness2, 1.0f - tail_shape) * (1.0f - u)) + u, 1.0f / (1.0f-tail_shape));
 
 		// Calculate bottom half of equation
-		const float bottom = (1.0f - roughness4);
+		const float bottom = (1.0f - roughness2);
 
 		return std::sqrt(top / bottom);
 	}
@@ -276,7 +275,6 @@ public:
 
 		// Other useful numbers
 		const float roughness2 = roughness * roughness;
-		const float roughness4 = roughness2 * roughness2;
 
 		// Components of the bsdf, to be filled in below
 		float D = 1.0f;
@@ -288,14 +286,14 @@ public:
 			// Calculate D - Distribution
 			if (nh > 0.0f) {
 				const float nh2 = nh * nh;
-				D = normalization_factor / std::pow(1 + ((roughness4 - 1) * nh2), tail_shape);
+				D = normalization_factor / std::pow(1 + ((roughness2 - 1) * nh2), tail_shape);
 			}
 
 			// Calculate G1 - Geometric microfacet shadowing
 			const float na2 = na * na;
 			const float tan_na = std::sqrt((1.0f - na2) / na2);
 			const float g1_pos_char = (ha*na) > 0.0f ? 1.0f : 0.0f;
-			const float g1_a = roughness4 * tan_na;
+			const float g1_a = roughness2 * tan_na;
 			const float g1_b = (std::sqrt(1.0f + g1_a*g1_a) - 1.0f) * 0.5f;
 			G1 = g1_pos_char / (1.0f + g1_b);
 
@@ -303,7 +301,7 @@ public:
 			const float nb2 = nb * nb;
 			const float tan_nb = std::sqrt((1.0f - nb2) / nb2);
 			const float g2_pos_char = (hb*nb) > 0.0f ? 1.0f : 0.0f;
-			const float g2_a = roughness4 * tan_nb;
+			const float g2_a = roughness2 * tan_nb;
 			const float g2_b = (std::sqrt(1.0f + g2_a*g2_a) - 1.0f) * 0.5f;
 			G2 = g2_pos_char / (1.0f + g2_b);
 		}
@@ -332,13 +330,12 @@ public:
 
 		// Other useful numbers
 		const float roughness2 = roughness * roughness;
-		const float roughness4 = roughness2 * roughness2;
 
 		// Calculate D - Distribution
 		float D = 0.0f;
 		if (nh > 0.0f) {
 			const float nh2 = nh * nh;
-			D = normalization_factor / std::pow(1 + ((roughness4 - 1) * nh2), tail_shape);
+			D = normalization_factor / std::pow(1 + ((roughness2 - 1) * nh2), tail_shape);
 		}
 
 		return D;
