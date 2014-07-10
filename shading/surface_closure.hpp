@@ -166,11 +166,32 @@ public:
 class GTRClosure final: public SurfaceClosure
 {
 private:
-	Color col {1.0f};
+	Color col {0.903f};
 	float roughness {0.2f};
-	float tail_strength {2.0f};
-	float fresnel {0.2f};
-	float normalization_factor = normalization(roughness*roughness, tail_strength);
+	float tail_shape {2.0f};
+	float fresnel {1.0f};
+	float normalization_factor = normalization(roughness*roughness, tail_shape);
+
+
+
+	// Makes sure values are in a valid range
+	void validate() {
+		// Clamp values to valid ranges
+		roughness = std::max(0.0f, std::min(0.9999f, roughness));
+		tail_shape = std::max(0.0001f, std::min(8.0f, tail_shape));
+
+		// If tail_shape is too near 1.0, push it away a tiny bit.
+		// This avoids having to have a special form of various equations
+		// due to a singularity at tail_shape = 1.0
+		// That in turn avoids some branches in the code, and the effect of
+		// tail_shape is sufficiently subtle that there is no visible
+		// difference in renders.
+		const float TAIL_EPSILON = 0.0001f;
+		if (std::abs(tail_shape - 1.0f) < TAIL_EPSILON)
+			tail_shape += TAIL_EPSILON;
+
+		normalization_factor = normalization(roughness*roughness, tail_shape);
+	}
 
 	// Returns the normalization factor for the distribution function
 	// of the BRDF.
@@ -181,68 +202,33 @@ private:
 		return top / bottom;
 	}
 
-	// Calculate D - Distribution
-	float d(const Vec3 n, const Vec3 m) const {
-		const float roughness2 = roughness * roughness;
-		const float roughness4 = roughness2 * roughness2;
-
-		const float theta_cos = dot(n, m);
-		const float theta_cos2 = theta_cos * theta_cos;
-		const float theta_sin2 = 1.0f - theta_cos2;
-
-		float d1 = 0.0f;
-		if (theta_cos > 0.0f) {
-			d1 = normalization_factor / std::pow(((roughness4*theta_cos2) + theta_sin2), tail_strength);
-		}
-
-		return d1;
-	}
-
-	// Calculate G - Geometric microfacet shadowing
-	float g(const Vec3 n, const Vec3 m, const Vec3 v) const {
-		//const float g_roughness = (1.0 + roughness) * 0.5f;
-		const float g_roughness = roughness;
-		const float g_roughness2 = g_roughness * g_roughness;
-
-		const float cos_hv = dot(m, v);
-		const float cos_nv = dot(n, v);
-		const float cos_nv2 = cos_nv * cos_nv;
-		const float tan_nv2 = (1.0f - cos_nv2) / cos_nv2;
-		const float tan_nv = std::sqrt(tan_nv2);
-
-		const float pos_char = (cos_hv*cos_nv) > 0.0f ? 1.0f : 0.0f;
-
-		const float a = g_roughness2 * tan_nv;
-		const float f1 = (std::sqrt(1.0f + a*a) - 1.0f) * 0.5f;
-		return pos_char / (1.0f + f1);
-	}
-
 	// Returns the cosine of the half-angle that should be sampled, given
 	// a random variable in [0,1]
 	float half_theta_sample(float u) const {
 		const float roughness2 = roughness * roughness;
 		const float roughness4 = roughness2 * roughness2;
 
-		const float f1 = std::pow((std::pow(roughness4, 1.0f - tail_strength) * (1.0f - u)) + u, 1.0f / (1.0f-tail_strength));
-		const float f2 = std::sqrt((1.0f - f1) / (1.0f-roughness4));
+		// Calculate top half of equation
+		const float top = 1.0f - std::pow((std::pow(roughness4, 1.0f - tail_shape) * (1.0f - u)) + u, 1.0f / (1.0f-tail_shape));
 
-		return f2;
+		// Calculate bottom half of equation
+		const float bottom = (1.0f - roughness4);
+
+		return std::sqrt(top / bottom);
 	}
 
-public:
-	GTRClosure() = default;
-	GTRClosure(Color col, float roughness, float tail_strength, float fresnel):
-		col {col}, roughness {roughness}, tail_strength {tail_strength}, fresnel {fresnel} {
-		// Clamp values to valid ranges
-		roughness = std::max(0.0f, std::min(1.0f, roughness));
-		tail_strength = std::max(1.0f, tail_strength);
 
-		normalization_factor = normalization(roughness*roughness, tail_strength);
+public:
+	GTRClosure() {
+		validate();
+	}
+	GTRClosure(Color col, float roughness, float tail_shape, float fresnel): col {col}, roughness {roughness}, tail_shape {tail_shape}, fresnel {fresnel} {
+		validate();
 	}
 
 
 	virtual bool is_delta() const override {
-		return roughness <= 0.0f;
+		return roughness == 0.0f;
 	}
 
 
@@ -271,55 +257,91 @@ public:
 
 
 	Color evaluate(const Vec3 &in, const Vec3 &out, const DifferentialGeometry &geo) const override {
-		Vec3 nn = geo.n.normalized();
-		const Vec3 v1 = out.normalized();
-		const Vec3 v2 = in.normalized() * -1.0f;
+		// Calculate needed vectors, normalized
+		Vec3 nn = geo.n.normalized();  // SUrface normal
+		const Vec3 aa = in.normalized() * -1.0f;  // Vector pointing to where "in" came from
+		const Vec3 bb = out.normalized(); // Out
+		const Vec3 hh = ((aa + bb) * 0.5f).normalized(); // Half-way between aa and bb
 
 		// If back-facing, flip normal
-		if (dot(nn, v2) < 0.0f)
+		if (dot(nn, hh) < 0.0f)
 			nn *= -1.0f;
 
-		const Vec3 half = ((v1 + v2) * 0.5f).normalized();
+		// Calculate needed dot products
+		const float na = clamp(dot(nn, aa), -1.0f, 1.0f);
+		const float nb = clamp(dot(nn, bb), -1.0f, 1.0f);
+		const float ha = clamp(dot(hh, aa), -1.0f, 1.0f);
+		const float hb = clamp(dot(hh, bb), -1.0f, 1.0f);
+		const float nh = clamp(dot(nn, hh), -1.0f, 1.0f);
 
-		// Calculate D - Distribution
-		const float D = d(nn, half);
+		// Other useful numbers
+		const float roughness2 = roughness * roughness;
+		const float roughness4 = roughness2 * roughness2;
+
+		// Components of the bsdf, to be filled in below
+		float D = 1.0f;
+		float G1 = 1.0f;
+		float G2 = 1.0f;
+		float F = 1.0f;
+
+		if (roughness != 0.0f) {
+			// Calculate D - Distribution
+			if (nh > 0.0f) {
+				const float nh2 = nh * nh;
+				D = normalization_factor / std::pow(1 + ((roughness4 - 1) * nh2), tail_shape);
+			}
+
+			// Calculate G1 - Geometric microfacet shadowing
+			const float na2 = na * na;
+			const float tan_na = std::sqrt((1.0f - na2) / na2);
+			const float g1_pos_char = (ha*na) > 0.0f ? 1.0f : 0.0f;
+			const float g1_a = roughness4 * tan_na;
+			const float g1_b = (std::sqrt(1.0f + g1_a*g1_a) - 1.0f) * 0.5f;
+			G1 = g1_pos_char / (1.0f + g1_b);
+
+			// Calculate G2 - Geometric microfacet shadowing
+			const float nb2 = nb * nb;
+			const float tan_nb = std::sqrt((1.0f - nb2) / nb2);
+			const float g2_pos_char = (hb*nb) > 0.0f ? 1.0f : 0.0f;
+			const float g2_a = roughness4 * tan_nb;
+			const float g2_b = (std::sqrt(1.0f + g2_a*g2_a) - 1.0f) * 0.5f;
+			G2 = g2_pos_char / (1.0f + g2_b);
+		}
 
 		// Calculate F - Fresnel
-		const float theta_cos = clamp(dot(half, v1), 0.0f, 1.0f);
-		const float F = fresnel + ((1.0f-fresnel) * std::pow((1.0f - theta_cos), 5.0f));
+		F = fresnel + ((1.0f-fresnel) * std::pow((1.0f - hb), 5.0f));
 
-		// Calculate G - Geometric microfacet shadowing
-		const float G1 = g(nn, half, v1);
-		const float G2 = g(nn, half, v2);
-
-
-		const float cos_hv = dot(half, v1);
-		const float cos_nv = dot(nn, v1);
+		// Final result
 		return col * (D * F * G1 * G2);
 	}
 
 
 	float pdf(const Vec3& in, const Vec3& out, const DifferentialGeometry &geo) const override {
-		Vec3 nn = geo.n.normalized();
-		const Vec3 v1 = out.normalized();
-		const Vec3 v2 = in.normalized() * -1.0f;
+		// Calculate needed vectors, normalized
+		Vec3 nn = geo.n.normalized();  // SUrface normal
+		const Vec3 aa = in.normalized() * -1.0f;  // Vector pointing to where "in" came from
+		const Vec3 bb = out.normalized(); // Out
+		const Vec3 hh = ((aa + bb) * 0.5f).normalized(); // Half-way between aa and bb
 
 		// If back-facing, flip normal
-		if (dot(nn, v2) < 0.0f)
+		if (dot(nn, hh) < 0.0f)
 			nn *= -1.0f;
 
-		const Vec3 half = ((v1 + v2) * 0.5f).normalized();
+		// Calculate needed dot products
+		const float nh = clamp(dot(nn, hh), -1.0f, 1.0f);
+
+		// Other useful numbers
 		const float roughness2 = roughness * roughness;
 		const float roughness4 = roughness2 * roughness2;
-		const float theta_cos = std::max(dot(nn, half), 0.0f);
-		const float theta_cos2 = theta_cos * theta_cos;
-		const float theta_sin2 = 1.0f - theta_cos2;
 
-		// Calculate d - Distribution
-		// roughness4 is used here for more intuitive parameter behavior
-		const float d = normalization_factor / std::pow(((roughness4*theta_cos2) + theta_sin2), tail_strength);
+		// Calculate D - Distribution
+		float D = 0.0f;
+		if (nh > 0.0f) {
+			const float nh2 = nh * nh;
+			D = normalization_factor / std::pow(1 + ((roughness4 - 1) * nh2), tail_shape);
+		}
 
-		return d;
+		return D;
 	}
 
 

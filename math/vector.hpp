@@ -154,6 +154,15 @@ static inline float dot(const T &a, const T &b)
 	return a.dot(b);
 }
 
+// Normalized dot product (i.e. the cosine of the angle between two vectors
+template <class T>
+static inline float dot_norm(const T& a, const T& b)
+{
+	const float length_product = a.length() * b.length();
+	assert(length_product > 0.0f);
+	return ((a.x * b.x) + (a.y * b.y) + (a.z * b.z)) / length_product;
+}
+
 template <class T>
 static inline T cross(const T &a, const T &b)
 {

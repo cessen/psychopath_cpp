@@ -112,45 +112,49 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		// BSDF
 		GTRClosure bsdf;
 
-		// Get differential geometry of hit point in world space
-		const DifferentialGeometry geo = path.inter.geo.transformed_from(path.inter.space);
+		if (!bsdf.is_delta()) {
+			// Get differential geometry of hit point in world space
+			const DifferentialGeometry geo = path.inter.geo.transformed_from(path.inter.space);
 
-		// Get the ray origin offset
-		// TODO: this needs to take into account the BSDF (e.g. transmittance vs reflectance)
-		Vec3 pos_offset = path.inter.space.dir_from(path.inter.offset);
-		if (path.inter.backfacing)
-			pos_offset *= -1.0f;
+			// Get the ray origin offset
+			// TODO: this needs to take into account the BSDF (e.g. transmittance vs reflectance)
+			Vec3 pos_offset = path.inter.space.dir_from(path.inter.offset);
+			if (path.inter.backfacing)
+				pos_offset *= -1.0f;
 
-		// TEMPORARY
-		// TODO: the surface normal passed to the light query should be
-		// determined based on the BSDF
-		Vec3 lq_nor = geo.n;
-		if (path.inter.backfacing)
-			lq_nor *= -1.0f;
+			// TEMPORARY
+			// TODO: the surface normal passed to the light query should be
+			// determined based on the BSDF
+			Vec3 lq_nor = geo.n;
+			if (path.inter.backfacing)
+				lq_nor *= -1.0f;
 
-		// Get a sample from lights in the scene
-		LightQuery lq {path.samples[0], path.samples[1], path.samples[2], 0.0f,
-		               geo.p, lq_nor, path.time,
-		               Transform()
-		              };
-		lq.pdf = 1.0f;
-		scene->root->light_accel.sample(&lq);
+			// Get a sample from lights in the scene
+			LightQuery lq {path.samples[0], path.samples[1], path.samples[2], 0.0f,
+			               geo.p, lq_nor, path.time,
+			               Transform()
+			              };
+			lq.pdf = 1.0f;
+			scene->root->light_accel.sample(&lq);
 
-		// Get the pdf of sampling this light vector from the bsdf
-		//const float bsdf_pdf = bsdf.pdf(Vec3(), lq.to_light, path.inter);
+			// Get the pdf of sampling this light vector from the bsdf
+			//const float bsdf_pdf = bsdf.pdf(Vec3(), lq.to_light, path.inter);
 
-		// Set light color
-		//path.lcol = (lq.color * power_heuristic(lq.pdf, bsdf_pdf) / lq.pdf) * scene->root->light_accel.light_count();
-		path.lcol = (lq.color / lq.pdf) * scene->root->light_accel.light_count();
+			// Set light color
+			//path.lcol = (lq.color * power_heuristic(lq.pdf, bsdf_pdf) / lq.pdf) * scene->root->light_accel.light_count();
+			path.lcol = (lq.color / lq.pdf) * scene->root->light_accel.light_count();
 
-		// Create a shadow ray for this path
-		ray.o = geo.p + pos_offset;
-		ray.d = lq.to_light - pos_offset;
-		ray.time = path.time;
-		ray.type = WorldRay::OCCLUSION;
+			// Create a shadow ray for this path
+			ray.o = geo.p + pos_offset;
+			ray.d = lq.to_light - pos_offset;
+			ray.time = path.time;
+			ray.type = WorldRay::OCCLUSION;
 
-		// Propagate ray differentials
-		bsdf.propagate_differentials(path.inter.t, path.prev_ray, geo, &ray);
+			// Propagate ray differentials
+			bsdf.propagate_differentials(path.inter.t, path.prev_ray, geo, &ray);
+		} else {
+			path.lcol = Color(0.0f);
+		}
 
 		// Increment the sample pointer
 		path.samples += 3;
@@ -184,8 +188,10 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 
 		// Calculate the color filtering effect that the
 		// bounce from the current intersection will create.
-		// TODO: use actual shaders here.
-		path.fcol *= filter / pdf;
+		if (!bsdf.is_delta())
+			path.fcol *= filter / pdf;
+		else
+			path.fcol *= filter;
 
 		// Increment the sample pointer
 		path.samples += 2;
@@ -208,11 +214,13 @@ void PathTraceIntegrator::update_path(PTState* pstate, const WorldRay& ray, cons
 			// Sample was lit
 			GTRClosure bsdf;
 
-			const DifferentialGeometry geo = path.inter.geo.transformed_from(path.inter.space);
+			if (!bsdf.is_delta()) {
+				const DifferentialGeometry geo = path.inter.geo.transformed_from(path.inter.space);
 
-			Color fac = bsdf.evaluate(path.prev_ray.d, ray.d, geo);
+				Color fac = bsdf.evaluate(path.prev_ray.d, ray.d, geo);
 
-			path.col += path.fcol * path.lcol * fac;
+				path.col += path.fcol * path.lcol * fac;
+			}
 		}
 	} else {
 		// Result of bounce or camera ray
