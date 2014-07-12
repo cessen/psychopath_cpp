@@ -11,7 +11,7 @@
 #include "ray.hpp"
 #include "intersection.hpp"
 #include "utils.hpp"
-//#include "rng.hpp"
+#include "rng.hpp"
 
 
 /**
@@ -56,9 +56,6 @@ class MicroSurface
 
 	// Max width of the surface at the root node
 	float root_width;
-
-	// Random number generator
-	//RNG rng;
 
 	/**
 	 * @brief Calculates ray-bbox intersection with a node in the
@@ -110,7 +107,7 @@ public:
 	 *
 	 * @return True on a hit, false on a miss.
 	 */
-	bool intersect_ray(const Ray &ray, float width, Intersection *inter);
+	bool intersect_ray(const Ray &ray, float width, Intersection *inter, RNG* rng=nullptr);
 
 
 	/**
