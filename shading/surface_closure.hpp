@@ -390,6 +390,9 @@ public:
 		// Convert back to differentials
 		out->ddx -= out->d;
 		out->ddy -= out->d;
+
+		// Clamp ray direction differentials
+		clamp_dd(out);
 	}
 };
 

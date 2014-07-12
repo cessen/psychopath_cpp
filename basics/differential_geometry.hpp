@@ -86,4 +86,23 @@ static inline Vec3 transfer_ray_origin_differential(const float t, const Vec3 no
 	return real_projected.normalized() * temp.length();
 }
 
+
+/**
+ * Clamps the direction differentials of a ray to not have slopes
+ * exceeding 1.0.  This is important to prevent self-intersections with
+ * micro-geometry.
+ */
+static inline void clamp_dd(WorldRay* ray)
+{
+	const float len_d = ray->d.length();
+	const float len_dx = ray->ddx.length();
+	const float len_dy = ray->ddy.length();
+
+	if ((len_dx / len_d) > 0.9f)
+		ray->ddx *= 0.9f * len_d / len_dx;
+
+	if ((len_dy / len_d) > 0.9f)
+		ray->ddy *= 0.9f * len_d / len_dy;
+}
+
 #endif // DIFFERENTIAL_GEOMETRY_HPP
