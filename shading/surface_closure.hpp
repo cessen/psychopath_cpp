@@ -167,9 +167,9 @@ class GTRClosure final: public SurfaceClosure
 {
 private:
 	Color col {0.903f};
-	float roughness {0.04f};
+	float roughness {0.0f};
 	float tail_shape {2.0f};
-	float fresnel {1.0f};
+	float fresnel {0.25f};
 	float normalization_factor = normalization(roughness, tail_shape);
 
 
@@ -343,19 +343,53 @@ public:
 
 
 	void propagate_differentials(const float t, const WorldRay& in, const DifferentialGeometry &geo, WorldRay* out) const override {
-		const float len = out->d.length();
+		const float len_i = out->d.length();
+		const float len_o = out->d.length();
 		const Vec3 nn = geo.n.normalized();
+		const Vec3 hh = ((in.d * -1.0f).normalized() + out->d.normalized()).normalized();
 		const Vec3 dn = in.d.normalized();
 
-		Vec3 x, y;
-		coordinate_system_from_vec3(out->d, &x, &y);
-		x.normalize();
-		y.normalize();
-
+		// Project origin differentials
 		out->odx = transfer_ray_origin_differential(t, nn, dn, in.odx, in.ddx);
 		out->ody = transfer_ray_origin_differential(t, nn, dn, in.ody, in.ddy);
-		out->ddx = x * 0.01f / len;
-		out->ddy = y * 0.01f / len;
+
+		// Calculate du and dv
+		const float dudx = dot(out->odx, geo.dpdu);
+		const float dvdx = dot(out->odx, geo.dpdv);
+		const float dudy = dot(out->ody, geo.dpdu);
+		const float dvdy = dot(out->ody, geo.dpdv);
+
+		// Calculate normal differentials for this ray
+		Vec3 dndx = (geo.dndu * dudx) + (geo.dndv * dvdx);
+		Vec3 dndy = (geo.dndu * dudy) + (geo.dndv * dvdy);
+
+		// Calculate normals
+		// TODO: do this based on the half vector rather than the normal
+		Vec3 n = geo.n.normalized();
+		Vec3 nx = (geo.n + dndx).normalized();
+		Vec3 ny = (geo.n + dndy).normalized();
+		if (dot(nn, hh) < 0.0f) {
+			n *= -1.0f;
+			nx *= -1.0f;
+			ny *= -1.0f;
+		}
+
+		// Calculate differential rays
+		const Vec3 in_dx = in.d + in.ddx;
+		const Vec3 in_dy = in.d + in.ddy;
+
+		// Reflect differential rays
+		out->ddx = in_dx - (nx * 2 * dot(in_dx, nx));
+		out->ddy = in_dy - (ny * 2 * dot(in_dy, ny));
+
+		// Adjust differential ray lengths
+		const float len_fac = len_o / len_i;
+		out->ddx *= len_fac;
+		out->ddy *= len_fac;
+
+		// Convert back to differentials
+		out->ddx -= out->d;
+		out->ddy -= out->d;
 	}
 };
 
