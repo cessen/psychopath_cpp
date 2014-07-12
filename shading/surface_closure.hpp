@@ -167,7 +167,7 @@ class GTRClosure final: public SurfaceClosure
 {
 private:
 	Color col {0.903f};
-	float roughness {0.0f};
+	float roughness {0.05f};
 	float tail_shape {2.0f};
 	float fresnel {0.25f};
 	float normalization_factor = normalization(roughness, tail_shape);
@@ -345,7 +345,7 @@ public:
 	void propagate_differentials(const float t, const WorldRay& in, const DifferentialGeometry &geo, WorldRay* out) const override {
 		const float len_i = out->d.length();
 		const float len_o = out->d.length();
-		const Vec3 nn = geo.n.normalized();
+		Vec3 nn = geo.n.normalized();
 		const Vec3 hh = ((in.d * -1.0f).normalized() + out->d.normalized()).normalized();
 		const Vec3 dn = in.d.normalized();
 
@@ -363,15 +363,22 @@ public:
 		Vec3 dndx = (geo.dndu * dudx) + (geo.dndv * dvdx);
 		Vec3 dndy = (geo.dndu * dudy) + (geo.dndv * dvdy);
 
-		// Calculate normals
-		// TODO: do this based on the half vector rather than the normal
-		Vec3 n = geo.n.normalized();
-		Vec3 nx = (geo.n + dndx).normalized();
-		Vec3 ny = (geo.n + dndy).normalized();
-		if (dot(nn, hh) < 0.0f) {
-			n *= -1.0f;
-			nx *= -1.0f;
-			ny *= -1.0f;
+		// Calculate Transform between nn and hh
+		if (dot(nn, hh) < 0.0f)
+			nn *= -1.0f;
+		const Vec3 axis = cross(nn, hh).normalized();
+		const float angle = std::acos(clamp(dot(nn, hh), 0.0f, 1.0f));
+		Transform xform = make_axis_angle_transform(axis, angle);
+
+		// Calculate normals, transformed onto the half-vector
+		Vec3 nx;
+		Vec3 ny;
+		if (dot(nn, hh) >= 0.0f) {
+			nx = (hh + xform.dir_to(dndx)).normalized();
+			ny = (hh + xform.dir_to(dndy)).normalized();
+		} else {
+			nx = (hh - xform.dir_to(dndx)).normalized();
+			ny = (hh - xform.dir_to(dndy)).normalized();
 		}
 
 		// Calculate differential rays
@@ -390,6 +397,10 @@ public:
 		// Convert back to differentials
 		out->ddx -= out->d;
 		out->ddy -= out->d;
+
+		// Scale differentials for bluriness
+		out->ddx *= 1.0f + (roughness * 8);
+		out->ddy *= 1.0f + (roughness * 8);
 
 		// Clamp ray direction differentials
 		clamp_dd(out);

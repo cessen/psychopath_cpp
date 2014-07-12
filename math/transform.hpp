@@ -225,6 +225,13 @@ public:
 };
 
 
+static inline Transform make_axis_angle_transform(Vec3 axis, float angle)
+{
+	Transform xform;
+	xform.to.setAxisAngle(axis, angle);
+	return xform;
+}
+
 
 /**
  * Merges two vectors of Transforms, interpreting the vectors as
