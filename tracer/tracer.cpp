@@ -261,7 +261,7 @@ void Tracer::trace_diceable_surface(DiceableSurface* prim, const std::vector<Tra
 
 
 					// Test against the ray
-					if (micro_surface->intersect_ray(ray, width, &inter)) {
+					if (micro_surface->intersect_ray(ray, width, &inter, &rng)) {
 						inter.hit = true;
 
 						if ((ray.flags() & Ray::IS_OCCLUSION) != 0) {

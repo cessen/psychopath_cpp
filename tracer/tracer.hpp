@@ -9,7 +9,7 @@
 
 #include "numtype.h"
 #include "range.hpp"
-
+#include "rng.hpp"
 
 
 #include "ray.hpp"
@@ -47,6 +47,7 @@ public:
 	Range<const WorldRay*> w_rays; // Rays to trace
 	Range<Intersection*> intersections; // Resulting intersections
 	std::vector<Ray> rays;
+	RNG rng;
 
 	Tracer() {}
 

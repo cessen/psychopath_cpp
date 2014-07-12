@@ -159,8 +159,8 @@ bool MicroSurface::intersect_ray(const Ray &ray, float ray_width, Intersection *
 			ru = rng->next_float();
 			rv = rng->next_float();
 		}
-		ru = ru == 1.0f ? 0.0f : 1.0f;
-		rv = rv == 1.0f ? 0.0f : 1.0f;
+		ru = ru == 1.0f ? 0.0f : ru;
+		rv = rv == 1.0f ? 0.0f : ru;
 
 		// Calculate data indices, and normalize rv and ru for selecting within
 		// the selected indices.
