@@ -264,6 +264,9 @@ void PathTraceIntegrator::render_blocks()
 
 	// Keep rendering blocks as long as they exist in the queue
 	while (blocks.pop_blocking(&pb)) {
+		// Seed tracer for random numbers
+		tracer.set_seed(seed + (pb.x ^ (pb.y << 16 | pb.y >> 16) ^ pb.w ^ (pb.h << 16 | pb.h >> 16)));
+
 		Color max_variance = Color(9999999999.0f);
 		float samp_it = 0;
 

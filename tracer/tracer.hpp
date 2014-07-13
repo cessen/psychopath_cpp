@@ -54,6 +54,10 @@ public:
 	Tracer(Scene *scene_): scene {scene_} {
 	}
 
+	void set_seed(uint32_t seed) {
+		rng.seed(seed);
+	}
+
 
 	/**
 	 * Traces the provided rays, filling in the corresponding intersections.
