@@ -145,7 +145,28 @@ bool Sphere::intersect_ray(const Ray &ray, Intersection *intersection)
 		intersection->geo.n = intersection->geo.p - cent;
 		intersection->geo.n.normalize();
 
-		// TODO: differential geometry
+		// Calculate the latitude and longitude of the hit point on the sphere
+		const Vec3 unit_p = intersection->geo.n;
+		float latitude = M_PI - std::acos(unit_p.z);
+		float longitude = 0.0f;
+		if (unit_p.x != 0.0f || unit_p.y != 0.0f) {
+			longitude = std::acos(unit_p.x/std::sqrt(unit_p.x*unit_p.x+unit_p.y*unit_p.y));
+			if (unit_p.y < 0.0f)
+				longitude = (2.0f * M_PI) - longitude;
+		}
+
+		// UV
+		intersection->geo.u = longitude / (2.0f * M_PI);
+		intersection->geo.v = latitude / M_PI;
+
+		// Differential position
+		intersection->geo.dpdu = Vec3(unit_p.y, unit_p.x, 0.0f);
+		intersection->geo.dpdv = Vec3(unit_p.z * unit_p.x, unit_p.z * unit_p.y, std::sin(latitude));
+
+		// Differential normal
+		// TODO
+		intersection->geo.dndu = Vec3(0.0f);
+		intersection->geo.dndv = Vec3(0.0f);
 
 		intersection->offset = intersection->geo.n * 0.000001f;
 	}

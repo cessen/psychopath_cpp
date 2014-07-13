@@ -178,6 +178,8 @@ void Tracer::trace_surface(Surface* surface, const std::vector<Transform>& paren
 			} else {
 				ray.max_t = inter.t;
 				inter.space = parent_xforms.size() > 0 ? lerp_seq(ray.time, parent_xforms) : Transform();
+				//inter.surface_closure = std::shared_ptr<SurfaceClosure>(new GTRClosure(Color(0.9, 0.9, 0.9), 0.02f, 1.2f, 0.25f));
+				inter.surface_closure = std::shared_ptr<SurfaceClosure>(new LambertClosure(Color(inter.geo.u*0.9f, inter.geo.v*0.9f, 0.2f)));
 			}
 		}
 	}
