@@ -4,10 +4,12 @@
 #include "numtype.h"
 
 #include <limits>
+#include <memory>
 
 #include "transform.hpp"
 #include "vector.hpp"
 #include "color.hpp"
+#include "surface_closure.hpp"
 #include "differential_geometry.hpp"
 
 #define DIFFERENTIAL_DOT_EPSILON 0.0000f
@@ -34,7 +36,7 @@ struct Intersection {
 	// Should be added for reflection, subtracted for transmission
 	Vec3 offset {0.0f, 0.0f, 0.0f};
 
-	Color col {0.0f};
+	std::shared_ptr<SurfaceClosure> surface_closure;
 };
 
 #endif

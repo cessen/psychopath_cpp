@@ -9,6 +9,7 @@
 #include "vector.hpp"
 #include "color.hpp"
 #include "ray.hpp"
+#include "differential_geometry.hpp"
 
 class SurfaceClosure
 {
@@ -180,6 +181,10 @@ private:
 		roughness = std::max(0.0f, std::min(0.9999f, roughness));
 		tail_shape = std::max(0.0001f, std::min(8.0f, tail_shape));
 
+		// When roughness is too small, but not zero, there are floating point accuracy issues
+		if (roughness < 0.000244140625f) // (2^-12)
+			roughness = 0.0f;
+
 		// If tail_shape is too near 1.0, push it away a tiny bit.
 		// This avoids having to have a special form of various equations
 		// due to a singularity at tail_shape = 1.0
@@ -190,6 +195,7 @@ private:
 		if (std::abs(tail_shape - 1.0f) < TAIL_EPSILON)
 			tail_shape += TAIL_EPSILON;
 
+		// Precalculate normalization factor
 		normalization_factor = normalization(roughness, tail_shape);
 	}
 

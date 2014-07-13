@@ -26,6 +26,8 @@
 #include "bvh2.hpp"
 #include "bvh4.hpp"
 
+#include "surface_closure.hpp"
+
 
 uint32_t Tracer::trace(const WorldRay* w_rays_begin, const WorldRay* w_rays_end, Intersection* intersections_begin, Intersection* intersections_end)
 {
@@ -269,6 +271,7 @@ void Tracer::trace_diceable_surface(DiceableSurface* prim, const std::vector<Tra
 						} else {
 							ray.max_t = inter.t;
 							inter.space = parent_xforms.size() > 0 ? lerp_seq(ray.time, parent_xforms) : Transform();
+							inter.surface_closure = std::shared_ptr<SurfaceClosure>(new GTRClosure(Color(0.9, 0.9, 0.9), 0.02f, 1.2f, 0.25f));
 						}
 					}
 				}

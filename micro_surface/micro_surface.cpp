@@ -185,6 +185,12 @@ bool MicroSurface::intersect_ray(const Ray &ray, float ray_width, Intersection *
 		const float u_delta = lerp(rv, (uvs[i3] - uvs[i1]), (uvs[i4] - uvs[i2]));
 		const float v_delta = lerp(ru, (uvs[i2] - uvs[i1]), (uvs[i4] - uvs[i3]));
 
+
+		//// UV coords ////
+		inter->geo.u = lerp2d(ru, rv, uvs[i1*2], uvs[i2*2], uvs[i3*2], uvs[i4*2]);
+		inter->geo.v = lerp2d(ru, rv, uvs[i1*2+1], uvs[i2*2+1], uvs[i3*2+1], uvs[i4*2+1]);
+
+
 		//// Position ////
 		const Vec3 p1t1 = verts[i1+(t_i*tot_v)];
 		const Vec3 p2t1 = verts[i2+(t_i*tot_v)];
@@ -272,11 +278,6 @@ bool MicroSurface::intersect_ray(const Ray &ray, float ray_width, Intersection *
 		const float dl = std::max(ray.width(t) * Config::dice_rate * 1.41421f, nodes[hit_node].bounds.diagonal());
 		inter->offset = inter->geo.n * dl * 0.5f; // Origin offset for next ray
 		inter->backfacing = dot(inter->geo.n, ray.d) > 0.0f; // Whether the hit was on the back of the surface
-
-
-		// Color
-		//inter->col = Color(inter->u, inter->v, 0.2f);
-		inter->col = Color(0.8f, 0.8f, 0.8f);
 	}
 
 	return hit;

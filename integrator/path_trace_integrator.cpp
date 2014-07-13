@@ -110,9 +110,9 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		// Shadow ray
 
 		// BSDF
-		GTRClosure bsdf;
+		SurfaceClosure* bsdf = path.inter.surface_closure.get();
 
-		if (!bsdf.is_delta()) {
+		if (!bsdf->is_delta()) {
 			// Get differential geometry of hit point in world space
 			const DifferentialGeometry geo = path.inter.geo.transformed_from(path.inter.space);
 
@@ -138,7 +138,7 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 			scene->root->light_accel.sample(&lq);
 
 			// Get the pdf of sampling this light vector from the bsdf
-			//const float bsdf_pdf = bsdf.pdf(Vec3(), lq.to_light, path.inter);
+			//const float bsdf_pdf = bsdf->pdf(Vec3(), lq.to_light, path.inter);
 
 			// Set light color
 			//path.lcol = (lq.color * power_heuristic(lq.pdf, bsdf_pdf) / lq.pdf) * scene->root->light_accel.light_count();
@@ -151,7 +151,7 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 			ray.type = WorldRay::OCCLUSION;
 
 			// Propagate ray differentials
-			bsdf.propagate_differentials(path.inter.t, path.prev_ray, geo, &ray);
+			bsdf->propagate_differentials(path.inter.t, path.prev_ray, geo, &ray);
 		} else {
 			path.lcol = Color(0.0f);
 		}
@@ -161,7 +161,7 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 	} else {
 		// Bounce ray
 
-		GTRClosure bsdf;
+		SurfaceClosure* bsdf = path.inter.surface_closure.get();
 
 		// Get differential geometry of hit point in world space
 		const DifferentialGeometry geo = path.inter.geo.transformed_from(path.inter.space);
@@ -176,7 +176,7 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		Color filter;
 		float pdf;
 
-		bsdf.sample(path.prev_ray.d, geo, path.samples[0], path.samples[1], &out, &filter, &pdf);
+		bsdf->sample(path.prev_ray.d, geo, path.samples[0], path.samples[1], &out, &filter, &pdf);
 
 		ray.o = geo.p + pos_offset;
 		ray.d = out;
@@ -184,11 +184,11 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		ray.type = WorldRay::R_DIFFUSE;
 
 		// Propagate ray differentials
-		bsdf.propagate_differentials(path.inter.t, path.prev_ray, geo, &ray);
+		bsdf->propagate_differentials(path.inter.t, path.prev_ray, geo, &ray);
 
 		// Calculate the color filtering effect that the
 		// bounce from the current intersection will create.
-		if (!bsdf.is_delta())
+		if (!bsdf->is_delta())
 			path.fcol *= filter / pdf;
 		else
 			path.fcol *= filter;
@@ -212,12 +212,12 @@ void PathTraceIntegrator::update_path(PTState* pstate, const WorldRay& ray, cons
 		// Result of shadow ray
 		if (!inter.hit) {
 			// Sample was lit
-			GTRClosure bsdf;
+			SurfaceClosure* bsdf = path.inter.surface_closure.get();
 
-			if (!bsdf.is_delta()) {
+			if (!bsdf->is_delta()) {
 				const DifferentialGeometry geo = path.inter.geo.transformed_from(path.inter.space);
 
-				Color fac = bsdf.evaluate(path.prev_ray.d, ray.d, geo);
+				Color fac = bsdf->evaluate(path.prev_ray.d, ray.d, geo);
 
 				path.col += path.fcol * path.lcol * fac;
 			}
