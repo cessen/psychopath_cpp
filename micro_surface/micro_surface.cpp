@@ -182,8 +182,8 @@ bool MicroSurface::intersect_ray(const Ray &ray, float ray_width, Intersection *
 		const int tot_v = res_u * res_v;
 
 		// Length in u and v of the node
-		const float u_delta = lerp(rv, (uvs[i3] - uvs[i1]), (uvs[i4] - uvs[i2]));
-		const float v_delta = lerp(ru, (uvs[i2] - uvs[i1]), (uvs[i4] - uvs[i3]));
+		const float u_delta = lerp(rv, uvs[i2*2], uvs[i4*2]) - lerp(rv, uvs[i1*2], uvs[i3*2]);
+		const float v_delta = lerp(ru, uvs[i3*2+1], uvs[i4*2+1]) - lerp(ru, uvs[i1*2+1], uvs[i2*2+1]);
 
 
 		//// UV coords ////
@@ -232,7 +232,6 @@ bool MicroSurface::intersect_ray(const Ray &ray, float ray_width, Intersection *
 		inter->geo.dpdv = dpdv / v_delta;
 
 
-
 		//// Surface Normal ////
 		const Vec3 n1t1 = normals[i1+(t_i*tot_v)];
 		const Vec3 n2t1 = normals[i2+(t_i*tot_v)];
@@ -271,7 +270,7 @@ bool MicroSurface::intersect_ray(const Ray &ray, float ray_width, Intersection *
 
 		inter->geo.n = n;
 		inter->geo.dndu = dndu / u_delta;
-		inter->geo.dndv = dndu / v_delta;
+		inter->geo.dndv = dndv / v_delta;
 
 
 		// Offset and backfacing

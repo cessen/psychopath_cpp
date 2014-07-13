@@ -401,12 +401,19 @@ public:
 		out->ddy *= len_fac;
 
 		// Convert back to differentials
-		out->ddx -= out->d;
-		out->ddy -= out->d;
+		out->ddx = (out->ddx - out->d) / len_o;
+		out->ddy = (out->ddy - out->d) / len_o;
 
 		// Scale differentials for bluriness
-		out->ddx *= 1.0f + (roughness * 8);
-		out->ddy *= 1.0f + (roughness * 8);
+		const float roughness_spread = 0.15f;
+		if (out->ddx.length() > 0.0f && out->ddx.length() < roughness_spread)
+			out->ddx = lerp(roughness, out->ddx, out->ddx.normalized() * roughness_spread);
+		if (out->ddy.length() > 0.0f && out->ddy.length() < roughness_spread)
+			out->ddy = lerp(roughness, out->ddx, out->ddx.normalized() * roughness_spread);
+
+		// Normalize differentials to out direction length
+		out->ddx *= len_o;
+		out->ddy *= len_o;
 
 		// Clamp ray direction differentials
 		clamp_dd(out);
