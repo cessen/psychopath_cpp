@@ -147,26 +147,33 @@ bool Sphere::intersect_ray(const Ray &ray, Intersection *intersection)
 
 		// Calculate the latitude and longitude of the hit point on the sphere
 		const Vec3 unit_p = intersection->geo.n;
-		float latitude = M_PI - std::acos(unit_p.z);
+		const Vec3 p = unit_p * radi;
+		const float lat_cos = unit_p.z;
+		const float lat_sin = std::sqrt((unit_p.x * unit_p.x) + (unit_p.y * unit_p.y));
+		const float long_cos = unit_p.x / lat_sin;
+		const float long_sin = unit_p.y / lat_sin;
+
+		float latitude = std::acos(lat_cos);
 		float longitude = 0.0f;
 		if (unit_p.x != 0.0f || unit_p.y != 0.0f) {
-			longitude = std::acos(unit_p.x/std::sqrt(unit_p.x*unit_p.x+unit_p.y*unit_p.y));
+			longitude = std::acos(long_cos);
 			if (unit_p.y < 0.0f)
 				longitude = (2.0f * M_PI) - longitude;
 		}
 
 		// UV
-		intersection->geo.u = longitude / (2.0f * M_PI);
+		const float pi2 = M_PI * 2;
+		intersection->geo.u = longitude / pi2;
 		intersection->geo.v = latitude / M_PI;
 
 		// Differential position
-		intersection->geo.dpdu = Vec3(unit_p.y, unit_p.x, 0.0f);
-		intersection->geo.dpdv = Vec3(unit_p.z * unit_p.x, unit_p.z * unit_p.y, std::sin(latitude));
+		intersection->geo.dpdu = Vec3(p.y * -pi2, p.x * pi2, 0.0f);
+		intersection->geo.dpdv = Vec3(p.z * long_cos, p.z * long_sin, -radi * lat_sin) * M_PI;
 
 		// Differential normal
-		// TODO
-		intersection->geo.dndu = Vec3(0.0f);
-		intersection->geo.dndv = Vec3(0.0f);
+		// TODO: verify that this is correct
+		intersection->geo.dndu = Vec3(unit_p.y * -1.0f, p.x, 0.0f) * 2.0f;
+		intersection->geo.dndv = Vec3(unit_p.z * long_cos, unit_p.z * long_sin, lat_sin);
 
 		intersection->offset = intersection->geo.n * 0.000001f;
 	}
