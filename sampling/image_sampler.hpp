@@ -7,6 +7,7 @@
 #include "hash.hpp"
 #include <vector>
 
+
 /*
  * An image sampler.  Returns samples for use by the renderer.
  * Image plane <x,y> samples are returned on the [0,1] square, + edge buffer for filtering.

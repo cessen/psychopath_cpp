@@ -27,7 +27,7 @@
 #include "bvh4.hpp"
 
 #include "surface_closure.hpp"
-
+#include "closure_union.hpp"
 
 uint32_t Tracer::trace(const WorldRay* w_rays_begin, const WorldRay* w_rays_end, Intersection* intersections_begin, Intersection* intersections_end)
 {
@@ -178,8 +178,8 @@ void Tracer::trace_surface(Surface* surface, const std::vector<Transform>& paren
 			} else {
 				ray.max_t = inter.t;
 				inter.space = parent_xforms.size() > 0 ? lerp_seq(ray.time, parent_xforms) : Transform();
-				//inter.surface_closure = std::shared_ptr<SurfaceClosure>(new GTRClosure(Color(0.9, 0.9, 0.9), 0.02f, 1.2f, 0.25f));
-				inter.surface_closure = std::shared_ptr<SurfaceClosure>(new LambertClosure(Color(inter.geo.u*0.9f, inter.geo.v*0.9f, 0.2f)));
+				//inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.0f, 1.5f, 0.25f));
+				inter.surface_closure.init(LambertClosure(Color(inter.geo.u*0.9f, inter.geo.v*0.9f, 0.2f)));
 			}
 		}
 	}
@@ -273,8 +273,8 @@ void Tracer::trace_diceable_surface(DiceableSurface* prim, const std::vector<Tra
 						} else {
 							ray.max_t = inter.t;
 							inter.space = parent_xforms.size() > 0 ? lerp_seq(ray.time, parent_xforms) : Transform();
-							inter.surface_closure = std::shared_ptr<SurfaceClosure>(new GTRClosure(Color(0.9, 0.9, 0.9), 0.02f, 1.2f, 0.25f));
-							//inter.surface_closure = std::shared_ptr<SurfaceClosure>(new LambertClosure(Color(inter.geo.u*0.9f, inter.geo.v*0.9f, 0.9)));
+							inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.02f, 1.2f, 0.25f));
+							//inter.surface_closure.init(LambertClosure(Color(0.7f, 0.7f, 0.7f)));
 						}
 					}
 				}

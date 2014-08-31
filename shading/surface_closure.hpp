@@ -11,17 +11,16 @@
 #include "ray.hpp"
 #include "differential_geometry.hpp"
 
+/**
+ * Interface for surface closures.
+ *
+ * IMPORTANT: due to the way surface closures are used elsewhere in Psychopath,
+ * any class inheriting from this MUST be a POD type (aside from the inheritance
+ * and implementing this interface, of course).
+ */
 class SurfaceClosure
 {
 public:
-	// Virtual destructor, and don't delete default copy/move constructors
-	SurfaceClosure() = default;
-	virtual ~SurfaceClosure() = default;
-	SurfaceClosure(const SurfaceClosure&) = default;
-	SurfaceClosure(SurfaceClosure&&) = default;
-	SurfaceClosure& operator=(const SurfaceClosure&) = default;
-	SurfaceClosure& operator=(SurfaceClosure&&) = default;
-
 	/**
 	 * Returns whether the closure has a delta distribution or not.
 	 */

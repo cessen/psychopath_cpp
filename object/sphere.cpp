@@ -167,13 +167,13 @@ bool Sphere::intersect_ray(const Ray &ray, Intersection *intersection)
 		intersection->geo.v = latitude / M_PI;
 
 		// Differential position
-		intersection->geo.dpdu = Vec3(p.y * -pi2, p.x * pi2, 0.0f);
+		intersection->geo.dpdu = Vec3(p.y * -1.0f, p.x, 0.0f) * pi2;
 		intersection->geo.dpdv = Vec3(p.z * long_cos, p.z * long_sin, -radi * lat_sin) * M_PI;
 
 		// Differential normal
 		// TODO: verify that this is correct
-		intersection->geo.dndu = Vec3(unit_p.y * -1.0f, p.x, 0.0f) * 2.0f;
-		intersection->geo.dndv = Vec3(unit_p.z * long_cos, unit_p.z * long_sin, lat_sin);
+		intersection->geo.dndu = Vec3(unit_p.y * -1.0f, unit_p.x, 0.0f) * pi2;
+		intersection->geo.dndv = Vec3(unit_p.z * long_cos, unit_p.z * long_sin, lat_sin) * M_PI;
 
 		intersection->offset = intersection->geo.n * 0.000001f;
 	}
