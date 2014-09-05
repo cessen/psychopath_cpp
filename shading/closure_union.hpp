@@ -1,6 +1,7 @@
 #ifndef CLOSURE_UNION_HPP
 #define CLOSURE_UNION_HPP
 
+#include <type_traits>
 #include "surface_closure.hpp"
 
 /**
@@ -13,21 +14,24 @@
  * SurfaceClosure pointer.
  */
 struct SurfaceClosureUnion {
-	char data[sizeof(GTRClosure)]; // Should always be the size of the largest surface closure
+	// The following should always be the size and alignment of the
+	// largest and largest-aligning surface closure, respectively.
+	alignas(GTRClosure) char data[sizeof(GTRClosure)];
 
 	/**
 	 * Properly initialize the struct from any surface closure.
 	 */
 	template <class CLOSURE_TYPE>
 	void init(CLOSURE_TYPE closure) {
-		new(reinterpret_cast<CLOSURE_TYPE*>(this)) CLOSURE_TYPE(closure);
+		static_assert(std::is_base_of<SurfaceClosure, CLOSURE_TYPE>::value, "CLOSURE_TYPE is not derived from SurfaceClosure.");
+		new(reinterpret_cast<CLOSURE_TYPE*>(data)) CLOSURE_TYPE(closure);
 	}
 
 	/**
 	 * Return a pointer to the underlying SurfaceClosure.
 	 */
 	SurfaceClosure* get() {
-		return reinterpret_cast<SurfaceClosure*>(this);
+		return reinterpret_cast<SurfaceClosure*>(data);
 	}
 };
 
