@@ -4,6 +4,7 @@
 #include "numtype.h"
 #include <assert.h>
 #include <x86intrin.h>
+#include <cmath>
 
 #include "ImathVec.h"
 
@@ -183,6 +184,11 @@ static inline Vec3 max(const Vec3 &a, const Vec3 &b)
 	for (int i = 0; i < 3; i++)
 		c[i] = a[i] > b[i] ? a[i] : b[i];
 	return c;
+}
+
+static inline float longest_axis(const Vec3 &v)
+{
+	return std::max(std::max(std::abs(v.x), std::abs(v.y)), std::abs(v.z));
 }
 
 #endif // VECTOR_HPP

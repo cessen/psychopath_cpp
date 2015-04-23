@@ -37,7 +37,11 @@ struct Intersection {
 	// Should be added for reflection, subtracted for transmission
 	Vec3 offset {0.0f, 0.0f, 0.0f};
 
+	// The surface closure at the intersection, along with the probability
+	// of that closure having been selected amongst multuple possible
+	// closures.
 	SurfaceClosureUnion surface_closure;
+	float closure_prob {1.0f};
 };
 
 #endif

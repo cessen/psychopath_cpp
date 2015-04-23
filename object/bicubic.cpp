@@ -10,6 +10,49 @@
 #include "config.hpp"
 #include "global.hpp"
 
+
+inline void split_u(const Vec3 p[], Vec3 p1[], Vec3 p2[])
+{
+	for (int r = 0; r < 4; ++r) {
+		const auto rr = (r * 4);
+		Vec3 tmp = (p[rr+1] + p[rr+2]) * 0.5;
+
+		p1[rr+0] = p[rr+0];
+		p1[rr+1] = (p[rr+0] + p[rr+1]) * 0.5;
+		p1[rr+2] = (tmp + p1[rr+1]) * 0.5;
+
+		p2[rr+3] = p[rr+3];
+		p2[rr+2] = (p[rr+3] + p[rr+2]) * 0.5;
+		p2[rr+1] = (tmp + p2[rr+2]) * 0.5;
+
+		p1[rr+3] = (p1[rr+2] + p2[rr+1]) * 0.5;
+		p2[rr+0] = p1[rr+3];
+	}
+}
+
+
+inline void split_v(const Vec3 p[], Vec3 p1[], Vec3 p2[])
+{
+	for (int c = 0; c < 4; ++c) {
+		Vec3 tmp = (p[c+(1*4)] + p[c+(2*4)]) * 0.5;
+
+		p1[c+(0*4)] = p[c+(0*4)];
+		p1[c+(1*4)] = (p[c+(0*4)] + p[c+(1*4)]) * 0.5;
+		p1[c+(2*4)] = (tmp + p1[c+(1*4)]) * 0.5;
+
+		p2[c+(3*4)] = p[c+(3*4)];
+		p2[c+(2*4)] = (p[c+(3*4)] + p[c+(2*4)]) * 0.5;
+		p2[c+(1*4)] = (tmp + p2[c+(2*4)]) * 0.5;
+
+		p1[c+(3*4)] = (p1[c+(2*4)] + p2[c+(1*4)]) * 0.5;
+		p2[c+(0*4)] = p1[c+(3*4)];
+	}
+}
+
+///////////////////////////////////////////////////
+
+
+
 Bicubic::Bicubic(Vec3 v1,  Vec3 v2,  Vec3 v3,  Vec3 v4,
                  Vec3 v5,  Vec3 v6,  Vec3 v7,  Vec3 v8,
                  Vec3 v9,  Vec3 v10, Vec3 v11, Vec3 v12,
@@ -74,20 +117,20 @@ void Bicubic::finalize()
 {
 	// Calculate longest u-side of the patch
 	longest_u = 0.0f;
-	for (int r = 0; r < 4; ++r) {
+	for (int r = 1; r < 2; ++r) {
 		float l = 0.0f;
 		for (int c = 1; c < 4; ++c) {
-			l += (verts[0][(r*4)+c] - verts[0][(r*4)+c-1]).length();
+			l += longest_axis(verts[0][(r*4)+c] - verts[0][(r*4)+c-1]);
 		}
 		longest_u = std::max(l, longest_u);
 	}
 
 	// Calculate longest v-side of the patch
 	longest_v = 0.0f;
-	for (int c = 0; c < 4; ++c) {
+	for (int c = 1; c < 2; ++c) {
 		float l = 0.0f;
 		for (int r = 1; r < 4; ++r) {
-			l += (verts[0][(r*4)+c] - verts[0][((r-1)*4)+c]).length();
+			l += longest_axis(verts[0][(r*4)+c] - verts[0][((r-1)*4)+c]);
 		}
 		longest_v = std::max(l, longest_v);
 	}
@@ -136,70 +179,15 @@ int Bicubic::split(std::unique_ptr<DiceableSurface> objects[])
 	auto patch1 = new Bicubic();
 	auto patch2 = new Bicubic();
 
+	patch1->verts.resize(verts.size());
+	patch2->verts.resize(verts.size());
+
 	// Split
 	if (longest_u > longest_v) {
 		// Split on U
 		for (size_t time=0; time < verts.size(); time++) {
 			// Calculate split geometry
-			Vec3 verts1[4][4];
-			Vec3 verts2[4][4];
-			for (int r = 0; r < 4; ++r) {
-				const auto rr = (r * 4);
-				Vec3 tmp = (verts[time][rr+1] + verts[time][rr+2]) * 0.5;
-
-				verts1[r][0] = verts[time][rr+0];
-				verts1[r][1] = (verts[time][rr+0] + verts[time][rr+1]) * 0.5;
-				verts1[r][2] = (tmp + verts1[r][1]) * 0.5;
-
-				verts2[r][3] = verts[time][rr+3];
-				verts2[r][2] = (verts[time][rr+3] + verts[time][rr+2]) * 0.5;
-				verts2[r][1] = (tmp + verts2[r][2]) * 0.5;
-
-				verts1[r][3] = (verts1[r][2] + verts2[r][1]) * 0.5;
-				verts2[r][0] = verts1[r][3];
-			}
-
-			// Add split geometry to the new patches
-			patch1->add_time_sample(verts1[0][0],
-			                        verts1[0][1],
-			                        verts1[0][2],
-			                        verts1[0][3],
-
-			                        verts1[1][0],
-			                        verts1[1][1],
-			                        verts1[1][2],
-			                        verts1[1][3],
-
-			                        verts1[2][0],
-			                        verts1[2][1],
-			                        verts1[2][2],
-			                        verts1[2][3],
-
-			                        verts1[3][0],
-			                        verts1[3][1],
-			                        verts1[3][2],
-			                        verts1[3][3]
-			                       );
-			patch2->add_time_sample(verts2[0][0],
-			                        verts2[0][1],
-			                        verts2[0][2],
-			                        verts2[0][3],
-
-			                        verts2[1][0],
-			                        verts2[1][1],
-			                        verts2[1][2],
-			                        verts2[1][3],
-
-			                        verts2[2][0],
-			                        verts2[2][1],
-			                        verts2[2][2],
-			                        verts2[2][3],
-
-			                        verts2[3][0],
-			                        verts2[3][1],
-			                        verts2[3][2],
-			                        verts2[3][3]
-			                       );
+			split_u(&(verts[time][0]), &(patch1->verts[time][0]), &(patch2->verts[time][0]));
 		}
 
 		// Fill in uv's
@@ -216,64 +204,7 @@ int Bicubic::split(std::unique_ptr<DiceableSurface> objects[])
 		// Split on V
 		for (size_t time=0; time < verts.size(); time++) {
 			// Calculate split geometry
-			Vec3 verts1[4][4];
-			Vec3 verts2[4][4];
-			for (int c = 0; c < 4; ++c) {
-				Vec3 tmp = (verts[time][c+(1*4)] + verts[time][c+(2*4)]) * 0.5;
-
-				verts1[0][c] = verts[time][c+(0*4)];
-				verts1[1][c] = (verts[time][c+(0*4)] + verts[time][c+(1*4)]) * 0.5;
-				verts1[2][c] = (tmp + verts1[1][c]) * 0.5;
-
-				verts2[3][c] = verts[time][c+(3*4)];
-				verts2[2][c] = (verts[time][c+(3*4)] + verts[time][c+(2*4)]) * 0.5;
-				verts2[1][c] = (tmp + verts2[2][c]) * 0.5;
-
-				verts1[3][c] = (verts1[2][c] + verts2[1][c]) * 0.5;
-				verts2[0][c] = verts1[3][c];
-			}
-
-			// Add split geometry to the new patches
-			patch1->add_time_sample(verts1[0][0],
-			                        verts1[0][1],
-			                        verts1[0][2],
-			                        verts1[0][3],
-
-			                        verts1[1][0],
-			                        verts1[1][1],
-			                        verts1[1][2],
-			                        verts1[1][3],
-
-			                        verts1[2][0],
-			                        verts1[2][1],
-			                        verts1[2][2],
-			                        verts1[2][3],
-
-			                        verts1[3][0],
-			                        verts1[3][1],
-			                        verts1[3][2],
-			                        verts1[3][3]
-			                       );
-			patch2->add_time_sample(verts2[0][0],
-			                        verts2[0][1],
-			                        verts2[0][2],
-			                        verts2[0][3],
-
-			                        verts2[1][0],
-			                        verts2[1][1],
-			                        verts2[1][2],
-			                        verts2[1][3],
-
-			                        verts2[2][0],
-			                        verts2[2][1],
-			                        verts2[2][2],
-			                        verts2[2][3],
-
-			                        verts2[3][0],
-			                        verts2[3][1],
-			                        verts2[3][2],
-			                        verts2[3][3]
-			                       );
+			split_v(&(verts[time][0]), &(patch1->verts[time][0]), &(patch2->verts[time][0]));
 		}
 
 		// Fill in uv's
