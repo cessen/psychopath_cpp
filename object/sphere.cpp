@@ -139,11 +139,12 @@ bool Sphere::intersect_ray(const Ray &ray, Intersection *intersection)
 
 	if (intersection && (ray.flags() & Ray::IS_OCCLUSION) == 0) {
 		intersection->t = t;
-		intersection->backfacing = dot(intersection->geo.n, ray.d.normalized()) > 0.0f;
 
 		intersection->geo.p = ray.o + (ray.d * t);
 		intersection->geo.n = intersection->geo.p - cent;
 		intersection->geo.n.normalize();
+	
+		intersection->backfacing = dot(intersection->geo.n, ray.d.normalized()) > 0.0f;
 
 		// Calculate the latitude and longitude of the hit point on the sphere
 		const Vec3 unit_p = intersection->geo.n;

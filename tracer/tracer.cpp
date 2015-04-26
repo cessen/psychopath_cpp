@@ -180,6 +180,7 @@ void Tracer::trace_surface(Surface* surface, const std::vector<Transform>& paren
 				inter.space = parent_xforms.size() > 0 ? lerp_seq(ray.time, parent_xforms) : Transform();
 				inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.0f, 1.5f, 0.25f));
 				//inter.surface_closure.init(LambertClosure(Color(inter.geo.u*0.9f, inter.geo.v*0.9f, 0.2f)));
+				//inter.surface_closure.init(LambertClosure(Color(0.9f, 0.9f, 0.9f)));
 			}
 		}
 	}
@@ -274,7 +275,8 @@ void Tracer::trace_diceable_surface(DiceableSurface* prim, const std::vector<Tra
 							ray.max_t = inter.t;
 							inter.space = parent_xforms.size() > 0 ? lerp_seq(ray.time, parent_xforms) : Transform();
 							//inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.02f, 1.2f, 0.25f));
-							inter.surface_closure.init(LambertClosure(Color(0.9, 0.9, 0.9)));
+							inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.0f, 1.5f, 0.25f));
+							//inter.surface_closure.init(LambertClosure(Color(0.9, 0.9, 0.9)));
 						}
 					}
 				}

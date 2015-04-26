@@ -11,19 +11,20 @@
 #include "global.hpp"
 
 
+__attribute__((always_inline))
 inline void split_u(const Vec3 p[], Vec3 p1[], Vec3 p2[])
 {
 	for (int r = 0; r < 4; ++r) {
 		const auto rr = (r * 4);
 		Vec3 tmp = (p[rr+1] + p[rr+2]) * 0.5;
 
-		p1[rr+0] = p[rr+0];
-		p1[rr+1] = (p[rr+0] + p[rr+1]) * 0.5;
-		p1[rr+2] = (tmp + p1[rr+1]) * 0.5;
-
 		p2[rr+3] = p[rr+3];
 		p2[rr+2] = (p[rr+3] + p[rr+2]) * 0.5;
 		p2[rr+1] = (tmp + p2[rr+2]) * 0.5;
+
+		p1[rr+0] = p[rr+0];
+		p1[rr+1] = (p[rr+0] + p[rr+1]) * 0.5;
+		p1[rr+2] = (tmp + p1[rr+1]) * 0.5;
 
 		p1[rr+3] = (p1[rr+2] + p2[rr+1]) * 0.5;
 		p2[rr+0] = p1[rr+3];
@@ -31,22 +32,85 @@ inline void split_u(const Vec3 p[], Vec3 p1[], Vec3 p2[])
 }
 
 
+__attribute__((always_inline))
 inline void split_v(const Vec3 p[], Vec3 p1[], Vec3 p2[])
 {
 	for (int c = 0; c < 4; ++c) {
 		Vec3 tmp = (p[c+(1*4)] + p[c+(2*4)]) * 0.5;
 
-		p1[c+(0*4)] = p[c+(0*4)];
-		p1[c+(1*4)] = (p[c+(0*4)] + p[c+(1*4)]) * 0.5;
-		p1[c+(2*4)] = (tmp + p1[c+(1*4)]) * 0.5;
-
 		p2[c+(3*4)] = p[c+(3*4)];
 		p2[c+(2*4)] = (p[c+(3*4)] + p[c+(2*4)]) * 0.5;
 		p2[c+(1*4)] = (tmp + p2[c+(2*4)]) * 0.5;
 
+		p1[c+(0*4)] = p[c+(0*4)];
+		p1[c+(1*4)] = (p[c+(0*4)] + p[c+(1*4)]) * 0.5;
+		p1[c+(2*4)] = (tmp + p1[c+(1*4)]) * 0.5;
+
 		p1[c+(3*4)] = (p1[c+(2*4)] + p2[c+(1*4)]) * 0.5;
 		p2[c+(0*4)] = p1[c+(3*4)];
 	}
+}
+
+
+inline Vec3 dp_u(const Vec3 p[], float u, float v) {
+    
+    // First we interpolate across v to get a curve
+    const float iv = 1.0f - v;
+    const float b0 = iv * iv * iv; 
+    const float b1 = 3.0f * v * iv * iv; 
+    const float b2 = 3.0f * v * v * iv; 
+    const float b3 = v * v * v; 
+    Vec3 c[4];
+    c[0] = (p[0] * b0) + (p[4] * b1) + (p[8] * b2) + (p[12] * b3);
+    c[1] = (p[1] * b0) + (p[5] * b1) + (p[9] * b2) + (p[13] * b3);
+    c[2] = (p[2] * b0) + (p[6] * b1) + (p[10] * b2) + (p[14] * b3);
+    c[3] = (p[3] * b0) + (p[7] * b1) + (p[11] * b2) + (p[15] * b3);
+    
+    // Now we use the derivatives across u to find dp
+    const float iu = 1.0f - u;
+    const float d0 = -3.0f * iu * iu;
+    const float d1 = (3.0f * iu * iu) - (6.0f * iu * u);
+    const float d2 = (6.0f * iu * u) - (3.0f * u * u);
+    const float d3 = 3.0f * u * u;
+    
+    return (c[0] * d0) + (c[1] * d1) + (c[2] * d2) + (c[3] * d3);
+}
+
+
+inline Vec3 dp_v(const Vec3 p[], float u, float v) {
+    
+    // First we interpolate across u to get a curve
+    const float iu = 1.0f - u; // We use this a lot, so pre-calculate
+    const float b0 = iu * iu * iu; 
+    const float b1 = 3.0f * u * iu * iu; 
+    const float b2 = 3.0f * u * u * iu; 
+    const float b3 = u * u * u; 
+    Vec3 c[4];
+    c[0] = (p[0] * b0) + (p[1] * b1) + (p[2] * b2) + (p[3] * b3);
+    c[1] = (p[4] * b0) + (p[5] * b1) + (p[6] * b2) + (p[7] * b3);
+    c[2] = (p[8] * b0) + (p[9] * b1) + (p[10] * b2) + (p[11] * b3);
+    c[3] = (p[12] * b0) + (p[13] * b1) + (p[14] * b2) + (p[15] * b3);
+    
+    // Now we use the derivatives across u to find dp
+    const float iv = 1.0f - v; // We use this a lot, so pre-calculate
+    const float d0 = -3.0f * iv * iv;
+    const float d1 = (3.0f * iv * iv) - (6.0f * iv * v);
+    const float d2 = (6.0f * iv * v) - (3.0f * v * v);
+    const float d3 = 3.0f * v * v;
+    
+    return (c[0] * d0) + (c[1] * d1) + (c[2] * d2) + (c[3] * d3);
+}
+
+
+inline BBox bound(const std::array<Vec3, 16>& p) {
+    BBox bb;
+    
+    for (int i = 0; i < 16; ++i) {
+        bb.min = min(bb.min, p[i]);
+        bb.max = max(bb.max, p[i]);
+    }
+    
+    return bb;
 }
 
 ///////////////////////////////////////////////////
@@ -156,7 +220,13 @@ void Bicubic::finalize()
 
 
 //////////////////////////////////////////////////////////////
+const std::vector<BBox> &Bicubic::bounds() const
+{
+    return bbox;
+}
 
+
+#if 0
 size_t Bicubic::subdiv_estimate(float width) const
 {
 	// Since we want to end up with the log-base-2 of
@@ -165,12 +235,6 @@ size_t Bicubic::subdiv_estimate(float width) const
 	// practice it works very well.
 	const float rate = log_widest - fasterlog2(width * Config::dice_rate) + 1.0f;
 	return std::max(rate, 0.0f);
-}
-
-
-const std::vector<BBox> &Bicubic::bounds() const
-{
-	return bbox;
 }
 
 
@@ -355,4 +419,126 @@ Grid *Bicubic::grid_dice(const int ru, const int rv) const
 	}
 
 	return grid;
+}
+#endif
+
+bool Bicubic::intersect_ray(const Ray &ray, Intersection *intersection) {
+    #define STACK_SIZE 64
+    int stack_i = 0;
+    std::array<Vec3, 16> patch_stack[STACK_SIZE];
+    std::tuple<float, float, float, float> uv_stack[STACK_SIZE]; // (min_u, max_u, min_v, max_v)
+    
+    // Initialize stacks
+    // TODO: take into account ray time
+    patch_stack[0] = verts[0];
+    uv_stack[0] = std::tuple<float, float, float, float>(u_min, u_max, v_min, v_max);
+    
+    // Hit data
+    bool hit = false;
+    float t = ray.max_t;
+    float u = 0.0f;
+    float v = 0.0f;
+    float offset = 0.0f;
+    
+    // Iterate down to find an intersection
+    while (stack_i >= 0) {
+        float hitt0, hitt1;
+        BBox bb = bound(patch_stack[stack_i]);
+        
+        if (bb.intersect_ray(ray, &hitt0, &hitt1, t)) {
+            const float tt = (hitt0 + hitt1) * 0.5f;
+            
+            const float max_dim = longest_axis(bb.max - bb.min);
+            
+            // LEAF
+            if (max_dim <= Config::min_upoly_size || stack_i == (STACK_SIZE-1)) {
+                if (tt > 0.0f && tt <= t) {
+                    if ((ray.flags() & Ray::IS_OCCLUSION) != 0)
+                        return true;
+                        
+                    hit = true;
+                    t = tt;
+                    u = (std::get<0>(uv_stack[stack_i]) + std::get<1>(uv_stack[stack_i])) * 0.5f;
+                    v = (std::get<2>(uv_stack[stack_i]) + std::get<3>(uv_stack[stack_i])) * 0.5f;
+                    offset = max_dim * 1.74f;
+                }
+                
+                --stack_i;
+            }
+            // INNER, do split
+            else {
+                //auto patch = patch_stack[stack_i];
+                auto uv = uv_stack[stack_i];
+                
+                const float ulen = longest_axis(patch_stack[stack_i][0] - patch_stack[stack_i][3]);
+                const float vlen = longest_axis(patch_stack[stack_i][0] - patch_stack[stack_i][4*3]);
+                
+                // Split U
+                if (ulen > vlen) {
+                    split_u(&(patch_stack[stack_i][0]), &(patch_stack[stack_i][0]), &(patch_stack[stack_i+1][0]));
+                    
+                    // Fill in uv's
+                    std::get<0>(uv_stack[stack_i]) = std::get<0>(uv);
+                    std::get<1>(uv_stack[stack_i]) = (std::get<0>(uv) + std::get<1>(uv)) * 0.5;
+                    std::get<2>(uv_stack[stack_i]) = std::get<2>(uv);
+                    std::get<3>(uv_stack[stack_i]) = std::get<3>(uv);
+            
+                    std::get<0>(uv_stack[stack_i+1]) = (std::get<0>(uv) + std::get<1>(uv)) * 0.5;
+                    std::get<1>(uv_stack[stack_i+1]) = std::get<1>(uv);
+                    std::get<2>(uv_stack[stack_i+1]) = std::get<2>(uv);
+                    std::get<3>(uv_stack[stack_i+1]) = std::get<3>(uv);
+                    
+                }
+                // Split V
+                else {
+                    split_v(&(patch_stack[stack_i][0]), &(patch_stack[stack_i][0]), &(patch_stack[stack_i+1][0]));
+                    
+                    // Fill in uv's
+                    std::get<0>(uv_stack[stack_i]) = std::get<0>(uv);
+                    std::get<1>(uv_stack[stack_i]) = std::get<1>(uv);
+                    std::get<2>(uv_stack[stack_i]) = std::get<2>(uv);
+                    std::get<3>(uv_stack[stack_i]) = (std::get<2>(uv) + std::get<3>(uv)) * 0.5;
+            
+                    std::get<0>(uv_stack[stack_i+1]) = std::get<0>(uv);
+                    std::get<1>(uv_stack[stack_i+1]) = std::get<1>(uv);
+                    std::get<2>(uv_stack[stack_i+1]) = (std::get<2>(uv) + std::get<3>(uv)) * 0.5;
+                    std::get<3>(uv_stack[stack_i+1]) = std::get<3>(uv);
+                }
+                
+                ++stack_i;
+            }
+        }
+        else {
+            --stack_i;
+        }
+    }
+
+
+    // Fill in intersection data, if needed
+    if (hit && intersection && (ray.flags() & Ray::IS_OCCLUSION) == 0) {
+        intersection->t = t;
+
+        intersection->geo.p = ray.o + (ray.d * t);
+        intersection->geo.u = u;
+        intersection->geo.v = v;
+        
+        // Differential position
+        intersection->geo.dpdu = dp_u(&(verts[0][0]), u, v);
+        intersection->geo.dpdv = dp_v(&(verts[0][0]), u, v);
+        
+        // Surface normal
+        intersection->geo.n = cross(intersection->geo.dpdv, intersection->geo.dpdu).normalized();
+
+        // Did te ray hit from the back-side of the surface?
+        intersection->backfacing = dot(intersection->geo.n, ray.d.normalized()) > 0.0f;
+
+        // Differential normal
+        // TODO
+        intersection->geo.dndu = Vec3(1.0f, 0.0f, 0.0f);
+        intersection->geo.dndv = Vec3(0.0f, 1.0f, 0.0f);
+
+        intersection->offset = intersection->geo.n * offset;
+    }
+    
+    return hit;
 }

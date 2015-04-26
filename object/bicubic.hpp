@@ -22,7 +22,7 @@
  *    |     |     |     |
  *   v13---v14---v15---v16
  */
-class Bicubic final: public DiceableSurface
+class Bicubic final: public Surface
 {
 public:
 	std::vector<std::array<Vec3, 16>> verts;
@@ -45,17 +45,20 @@ public:
 	                     Vec3 v9,  Vec3 v10, Vec3 v11, Vec3 v12,
 	                     Vec3 v13, Vec3 v14, Vec3 v15, Vec3 v16);
 	void finalize();
-	Grid *grid_dice(const int ru, const int rv) const;
 
 	virtual const std::vector<BBox> &bounds() const override;
 	virtual Color total_emitted_color() const override {
 		return Color(0.0f);
 	}
 
+    /*
+    Grid *grid_dice(const int ru, const int rv) const;
 	virtual int split(std::unique_ptr<DiceableSurface> objects[]) override;
 	virtual std::unique_ptr<DiceableSurface> copy() const override;
 	virtual size_t subdiv_estimate(float width) const override;
-	virtual std::shared_ptr<MicroSurface> dice(size_t subdivisions) const override;
+	virtual std::shared_ptr<MicroSurface> dice(size_t subdivisions) const override;*/
+	
+	virtual bool intersect_ray(const Ray &ray, Intersection *intersection=nullptr);
 };
 
 #endif // BICUBIC
