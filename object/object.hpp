@@ -33,6 +33,7 @@ public:
 	 */
 	enum Type {
 	    SURFACE,
+	    BREADTH_SURFACE,
 	    DICEABLE_SURFACE,
 	    LIGHT,
 	    ASSEMBLY_INSTANCE
@@ -79,6 +80,26 @@ public:
 	 * @brief Tests a ray against the surface.
 	 */
 	virtual bool intersect_ray(const Ray &ray, Intersection *intersection=nullptr) = 0;
+};
+
+
+/**
+ * @brief An interface for surface objects that can improve intersection
+ * performance by testing many rays at once.
+ */
+class BreadthSurface: public Object
+{
+public:
+	virtual ~BreadthSurface() {}
+
+	Object::Type get_type() const final {
+		return Object::BREADTH_SURFACE;
+	}
+
+	/**
+	 * @brief Tests a batch of rays against the surface.
+	 */
+	virtual void intersect_rays(const std::vector<Transform>& parent_xforms, Ray* ray_begin, Ray* ray_end, Intersection *intersections) = 0;
 };
 
 

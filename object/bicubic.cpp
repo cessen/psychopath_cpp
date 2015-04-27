@@ -10,6 +10,9 @@
 #include "config.hpp"
 #include "global.hpp"
 
+#include "surface_closure.hpp"
+#include "closure_union.hpp"
+
 
 __attribute__((always_inline))
 inline void split_u(const Vec3 p[], Vec3 p1[], Vec3 p2[])
@@ -52,65 +55,68 @@ inline void split_v(const Vec3 p[], Vec3 p1[], Vec3 p2[])
 }
 
 
-inline Vec3 dp_u(const Vec3 p[], float u, float v) {
-    
-    // First we interpolate across v to get a curve
-    const float iv = 1.0f - v;
-    const float b0 = iv * iv * iv; 
-    const float b1 = 3.0f * v * iv * iv; 
-    const float b2 = 3.0f * v * v * iv; 
-    const float b3 = v * v * v; 
-    Vec3 c[4];
-    c[0] = (p[0] * b0) + (p[4] * b1) + (p[8] * b2) + (p[12] * b3);
-    c[1] = (p[1] * b0) + (p[5] * b1) + (p[9] * b2) + (p[13] * b3);
-    c[2] = (p[2] * b0) + (p[6] * b1) + (p[10] * b2) + (p[14] * b3);
-    c[3] = (p[3] * b0) + (p[7] * b1) + (p[11] * b2) + (p[15] * b3);
-    
-    // Now we use the derivatives across u to find dp
-    const float iu = 1.0f - u;
-    const float d0 = -3.0f * iu * iu;
-    const float d1 = (3.0f * iu * iu) - (6.0f * iu * u);
-    const float d2 = (6.0f * iu * u) - (3.0f * u * u);
-    const float d3 = 3.0f * u * u;
-    
-    return (c[0] * d0) + (c[1] * d1) + (c[2] * d2) + (c[3] * d3);
+inline Vec3 dp_u(const Vec3 p[], float u, float v)
+{
+
+	// First we interpolate across v to get a curve
+	const float iv = 1.0f - v;
+	const float b0 = iv * iv * iv;
+	const float b1 = 3.0f * v * iv * iv;
+	const float b2 = 3.0f * v * v * iv;
+	const float b3 = v * v * v;
+	Vec3 c[4];
+	c[0] = (p[0] * b0) + (p[4] * b1) + (p[8] * b2) + (p[12] * b3);
+	c[1] = (p[1] * b0) + (p[5] * b1) + (p[9] * b2) + (p[13] * b3);
+	c[2] = (p[2] * b0) + (p[6] * b1) + (p[10] * b2) + (p[14] * b3);
+	c[3] = (p[3] * b0) + (p[7] * b1) + (p[11] * b2) + (p[15] * b3);
+
+	// Now we use the derivatives across u to find dp
+	const float iu = 1.0f - u;
+	const float d0 = -3.0f * iu * iu;
+	const float d1 = (3.0f * iu * iu) - (6.0f * iu * u);
+	const float d2 = (6.0f * iu * u) - (3.0f * u * u);
+	const float d3 = 3.0f * u * u;
+
+	return (c[0] * d0) + (c[1] * d1) + (c[2] * d2) + (c[3] * d3);
 }
 
 
-inline Vec3 dp_v(const Vec3 p[], float u, float v) {
-    
-    // First we interpolate across u to get a curve
-    const float iu = 1.0f - u; // We use this a lot, so pre-calculate
-    const float b0 = iu * iu * iu; 
-    const float b1 = 3.0f * u * iu * iu; 
-    const float b2 = 3.0f * u * u * iu; 
-    const float b3 = u * u * u; 
-    Vec3 c[4];
-    c[0] = (p[0] * b0) + (p[1] * b1) + (p[2] * b2) + (p[3] * b3);
-    c[1] = (p[4] * b0) + (p[5] * b1) + (p[6] * b2) + (p[7] * b3);
-    c[2] = (p[8] * b0) + (p[9] * b1) + (p[10] * b2) + (p[11] * b3);
-    c[3] = (p[12] * b0) + (p[13] * b1) + (p[14] * b2) + (p[15] * b3);
-    
-    // Now we use the derivatives across u to find dp
-    const float iv = 1.0f - v; // We use this a lot, so pre-calculate
-    const float d0 = -3.0f * iv * iv;
-    const float d1 = (3.0f * iv * iv) - (6.0f * iv * v);
-    const float d2 = (6.0f * iv * v) - (3.0f * v * v);
-    const float d3 = 3.0f * v * v;
-    
-    return (c[0] * d0) + (c[1] * d1) + (c[2] * d2) + (c[3] * d3);
+inline Vec3 dp_v(const Vec3 p[], float u, float v)
+{
+
+	// First we interpolate across u to get a curve
+	const float iu = 1.0f - u; // We use this a lot, so pre-calculate
+	const float b0 = iu * iu * iu;
+	const float b1 = 3.0f * u * iu * iu;
+	const float b2 = 3.0f * u * u * iu;
+	const float b3 = u * u * u;
+	Vec3 c[4];
+	c[0] = (p[0] * b0) + (p[1] * b1) + (p[2] * b2) + (p[3] * b3);
+	c[1] = (p[4] * b0) + (p[5] * b1) + (p[6] * b2) + (p[7] * b3);
+	c[2] = (p[8] * b0) + (p[9] * b1) + (p[10] * b2) + (p[11] * b3);
+	c[3] = (p[12] * b0) + (p[13] * b1) + (p[14] * b2) + (p[15] * b3);
+
+	// Now we use the derivatives across u to find dp
+	const float iv = 1.0f - v; // We use this a lot, so pre-calculate
+	const float d0 = -3.0f * iv * iv;
+	const float d1 = (3.0f * iv * iv) - (6.0f * iv * v);
+	const float d2 = (6.0f * iv * v) - (3.0f * v * v);
+	const float d3 = 3.0f * v * v;
+
+	return (c[0] * d0) + (c[1] * d1) + (c[2] * d2) + (c[3] * d3);
 }
 
 
-inline BBox bound(const std::array<Vec3, 16>& p) {
-    BBox bb;
-    
-    for (int i = 0; i < 16; ++i) {
-        bb.min = min(bb.min, p[i]);
-        bb.max = max(bb.max, p[i]);
-    }
-    
-    return bb;
+inline BBox bound(const std::array<Vec3, 16>& p)
+{
+	BBox bb;
+
+	for (int i = 0; i < 16; ++i) {
+		bb.min = min(bb.min, p[i]);
+		bb.max = max(bb.max, p[i]);
+	}
+
+	return bb;
 }
 
 ///////////////////////////////////////////////////
@@ -222,7 +228,7 @@ void Bicubic::finalize()
 //////////////////////////////////////////////////////////////
 const std::vector<BBox> &Bicubic::bounds() const
 {
-    return bbox;
+	return bbox;
 }
 
 
@@ -422,123 +428,291 @@ Grid *Bicubic::grid_dice(const int ru, const int rv) const
 }
 #endif
 
-bool Bicubic::intersect_ray(const Ray &ray, Intersection *intersection) {
-    #define STACK_SIZE 64
-    int stack_i = 0;
-    std::array<Vec3, 16> patch_stack[STACK_SIZE];
-    std::tuple<float, float, float, float> uv_stack[STACK_SIZE]; // (min_u, max_u, min_v, max_v)
-    
-    // Initialize stacks
-    // TODO: take into account ray time
-    patch_stack[0] = verts[0];
-    uv_stack[0] = std::tuple<float, float, float, float>(u_min, u_max, v_min, v_max);
-    
-    // Hit data
-    bool hit = false;
-    float t = ray.max_t;
-    float u = 0.0f;
-    float v = 0.0f;
-    float offset = 0.0f;
-    
-    // Iterate down to find an intersection
-    while (stack_i >= 0) {
-        float hitt0, hitt1;
-        BBox bb = bound(patch_stack[stack_i]);
-        
-        if (bb.intersect_ray(ray, &hitt0, &hitt1, t)) {
-            const float tt = (hitt0 + hitt1) * 0.5f;
-            
-            const float max_dim = longest_axis(bb.max - bb.min);
-            
-            // LEAF
-            if (max_dim <= Config::min_upoly_size || stack_i == (STACK_SIZE-1)) {
-                if (tt > 0.0f && tt <= t) {
-                    if ((ray.flags() & Ray::IS_OCCLUSION) != 0)
-                        return true;
-                        
-                    hit = true;
-                    t = tt;
-                    u = (std::get<0>(uv_stack[stack_i]) + std::get<1>(uv_stack[stack_i])) * 0.5f;
-                    v = (std::get<2>(uv_stack[stack_i]) + std::get<3>(uv_stack[stack_i])) * 0.5f;
-                    offset = max_dim * 1.74f;
-                }
-                
-                --stack_i;
-            }
-            // INNER, do split
-            else {
-                //auto patch = patch_stack[stack_i];
-                auto uv = uv_stack[stack_i];
-                
-                const float ulen = longest_axis(patch_stack[stack_i][0] - patch_stack[stack_i][3]);
-                const float vlen = longest_axis(patch_stack[stack_i][0] - patch_stack[stack_i][4*3]);
-                
-                // Split U
-                if (ulen > vlen) {
-                    split_u(&(patch_stack[stack_i][0]), &(patch_stack[stack_i][0]), &(patch_stack[stack_i+1][0]));
-                    
-                    // Fill in uv's
-                    std::get<0>(uv_stack[stack_i]) = std::get<0>(uv);
-                    std::get<1>(uv_stack[stack_i]) = (std::get<0>(uv) + std::get<1>(uv)) * 0.5;
-                    std::get<2>(uv_stack[stack_i]) = std::get<2>(uv);
-                    std::get<3>(uv_stack[stack_i]) = std::get<3>(uv);
-            
-                    std::get<0>(uv_stack[stack_i+1]) = (std::get<0>(uv) + std::get<1>(uv)) * 0.5;
-                    std::get<1>(uv_stack[stack_i+1]) = std::get<1>(uv);
-                    std::get<2>(uv_stack[stack_i+1]) = std::get<2>(uv);
-                    std::get<3>(uv_stack[stack_i+1]) = std::get<3>(uv);
-                    
-                }
-                // Split V
-                else {
-                    split_v(&(patch_stack[stack_i][0]), &(patch_stack[stack_i][0]), &(patch_stack[stack_i+1][0]));
-                    
-                    // Fill in uv's
-                    std::get<0>(uv_stack[stack_i]) = std::get<0>(uv);
-                    std::get<1>(uv_stack[stack_i]) = std::get<1>(uv);
-                    std::get<2>(uv_stack[stack_i]) = std::get<2>(uv);
-                    std::get<3>(uv_stack[stack_i]) = (std::get<2>(uv) + std::get<3>(uv)) * 0.5;
-            
-                    std::get<0>(uv_stack[stack_i+1]) = std::get<0>(uv);
-                    std::get<1>(uv_stack[stack_i+1]) = std::get<1>(uv);
-                    std::get<2>(uv_stack[stack_i+1]) = (std::get<2>(uv) + std::get<3>(uv)) * 0.5;
-                    std::get<3>(uv_stack[stack_i+1]) = std::get<3>(uv);
-                }
-                
-                ++stack_i;
-            }
-        }
-        else {
-            --stack_i;
-        }
-    }
+
+bool Bicubic::intersect_ray(const Ray &ray, Intersection *intersection)
+{
+#define STACK_SIZE 64
+	int stack_i = 0;
+	std::array<Vec3, 16> patch_stack[STACK_SIZE];
+	std::tuple<float, float, float, float> uv_stack[STACK_SIZE]; // (min_u, max_u, min_v, max_v)
+	std::pair<float, float> hit_stack[STACK_SIZE]; // (hitt0, hitt1)
+
+	// Hit data
+	bool hit = false;
+	float t = ray.max_t;
+	float u = 0.0f;
+	float v = 0.0f;
+	float offset = 0.0f;
+
+	float hitt0, hitt1;
+
+	// Initialize stacks
+	// TODO: take into account ray time
+	patch_stack[0] = verts[0];
+	uv_stack[0] = std::make_tuple(u_min, u_max, v_min, v_max);
+	hit_stack[0] = std::make_pair(0.0f, 0.0f);
+
+	// Test root patch for intersection before iteration
+	if (bounds()[0].intersect_ray(ray, &hitt0, &hitt1, t)) {
+		hit_stack[0].first = (hitt0 + hitt1) * 0.5f;
+		hit_stack[0].second = longest_axis(bounds()[0].max - bounds()[0].min);
+	} else {
+		return false;
+	}
+
+	// Iterate down to find an intersection
+	while (stack_i >= 0) {
+		const float tt = hit_stack[stack_i].first;
+		const float max_dim = hit_stack[stack_i].second;
+
+		// LEAF
+		if (max_dim <= Config::min_upoly_size || stack_i == (STACK_SIZE-1)) {
+			if (tt > 0.0f && tt <= t) {
+				if ((ray.flags() & Ray::IS_OCCLUSION) != 0)
+					return true;
+
+				hit = true;
+				t = tt;
+				u = (std::get<0>(uv_stack[stack_i]) + std::get<1>(uv_stack[stack_i])) * 0.5f;
+				v = (std::get<2>(uv_stack[stack_i]) + std::get<3>(uv_stack[stack_i])) * 0.5f;
+				offset = max_dim * 1.74f;
+			}
+
+			--stack_i;
+		}
+		// INNER, do split
+		else {
+			//auto patch = patch_stack[stack_i];
+			auto uv = uv_stack[stack_i];
+
+			const float ulen = longest_axis(patch_stack[stack_i][0] - patch_stack[stack_i][3]);
+			const float vlen = longest_axis(patch_stack[stack_i][0] - patch_stack[stack_i][4*3]);
+
+			// Split U
+			if (ulen > vlen) {
+				split_u(&(patch_stack[stack_i][0]), &(patch_stack[stack_i][0]), &(patch_stack[stack_i+1][0]));
+
+				// Fill in uv's
+				std::get<0>(uv_stack[stack_i]) = std::get<0>(uv);
+				std::get<1>(uv_stack[stack_i]) = (std::get<0>(uv) + std::get<1>(uv)) * 0.5;
+				std::get<2>(uv_stack[stack_i]) = std::get<2>(uv);
+				std::get<3>(uv_stack[stack_i]) = std::get<3>(uv);
+
+				std::get<0>(uv_stack[stack_i+1]) = (std::get<0>(uv) + std::get<1>(uv)) * 0.5;
+				std::get<1>(uv_stack[stack_i+1]) = std::get<1>(uv);
+				std::get<2>(uv_stack[stack_i+1]) = std::get<2>(uv);
+				std::get<3>(uv_stack[stack_i+1]) = std::get<3>(uv);
+
+			}
+			// Split V
+			else {
+				split_v(&(patch_stack[stack_i][0]), &(patch_stack[stack_i][0]), &(patch_stack[stack_i+1][0]));
+
+				// Fill in uv's
+				std::get<0>(uv_stack[stack_i]) = std::get<0>(uv);
+				std::get<1>(uv_stack[stack_i]) = std::get<1>(uv);
+				std::get<2>(uv_stack[stack_i]) = std::get<2>(uv);
+				std::get<3>(uv_stack[stack_i]) = (std::get<2>(uv) + std::get<3>(uv)) * 0.5;
+
+				std::get<0>(uv_stack[stack_i+1]) = std::get<0>(uv);
+				std::get<1>(uv_stack[stack_i+1]) = std::get<1>(uv);
+				std::get<2>(uv_stack[stack_i+1]) = (std::get<2>(uv) + std::get<3>(uv)) * 0.5;
+				std::get<3>(uv_stack[stack_i+1]) = std::get<3>(uv);
+			}
+
+			// Test ray against their bounds
+			float hitta0, hitta1;
+			float hittb0, hittb1;
+			const auto bb1 = bound(patch_stack[stack_i]);
+			const auto bb2 = bound(patch_stack[stack_i+1]);
+			const bool hita = bb1.intersect_ray(ray, &hitta0, &hitta1, t);
+			const bool hitb = bb2.intersect_ray(ray, &hittb0, &hittb1, t);
+			hit_stack[stack_i].first = (hitta0 + hitta1) * 0.5f;
+			hit_stack[stack_i].second = longest_axis(bb1.max - bb1.min);
+			hit_stack[stack_i+1].first = (hittb0 + hittb1) * 0.5f;
+			hit_stack[stack_i+1].second = longest_axis(bb2.max - bb2.min);
+
+			// Set up the stack properly depending on results
+			if (hita && hitb) {
+				if (hitta0 < hittb0) {
+					std::swap(patch_stack[stack_i], patch_stack[stack_i+1]);
+					std::swap(uv_stack[stack_i], uv_stack[stack_i+1]);
+					std::swap(hit_stack[stack_i], hit_stack[stack_i+1]);
+				}
+				++stack_i;
+			} else if (hitb) {
+				patch_stack[stack_i] = patch_stack[stack_i+1];
+				uv_stack[stack_i] = uv_stack[stack_i+1];
+				hit_stack[stack_i] = hit_stack[stack_i+1];
+			} else if (hita) {
+				// Do nothing
+			} else {
+				--stack_i;
+			}
+		}
+	}
 
 
-    // Fill in intersection data, if needed
-    if (hit && intersection && (ray.flags() & Ray::IS_OCCLUSION) == 0) {
-        intersection->t = t;
+	// Fill in intersection data, if needed
+	if (hit && intersection && (ray.flags() & Ray::IS_OCCLUSION) == 0) {
+		intersection->t = t;
 
-        intersection->geo.p = ray.o + (ray.d * t);
-        intersection->geo.u = u;
-        intersection->geo.v = v;
-        
-        // Differential position
-        intersection->geo.dpdu = dp_u(&(verts[0][0]), u, v);
-        intersection->geo.dpdv = dp_v(&(verts[0][0]), u, v);
-        
-        // Surface normal
-        intersection->geo.n = cross(intersection->geo.dpdv, intersection->geo.dpdu).normalized();
+		intersection->geo.p = ray.o + (ray.d * t);
+		intersection->geo.u = u;
+		intersection->geo.v = v;
 
-        // Did te ray hit from the back-side of the surface?
-        intersection->backfacing = dot(intersection->geo.n, ray.d.normalized()) > 0.0f;
+		// Differential position
+		intersection->geo.dpdu = dp_u(&(verts[0][0]), u, v);
+		intersection->geo.dpdv = dp_v(&(verts[0][0]), u, v);
 
-        // Differential normal
-        // TODO
-        intersection->geo.dndu = Vec3(1.0f, 0.0f, 0.0f);
-        intersection->geo.dndv = Vec3(0.0f, 1.0f, 0.0f);
+		// Surface normal
+		intersection->geo.n = cross(intersection->geo.dpdv, intersection->geo.dpdu).normalized();
 
-        intersection->offset = intersection->geo.n * offset;
-    }
-    
-    return hit;
+		// Did te ray hit from the back-side of the surface?
+		intersection->backfacing = dot(intersection->geo.n, ray.d.normalized()) > 0.0f;
+
+		// Differential normal
+		// TODO
+		intersection->geo.dndu = Vec3(1.0f, 0.0f, 0.0f);
+		intersection->geo.dndv = Vec3(0.0f, 1.0f, 0.0f);
+
+		intersection->offset = intersection->geo.n * offset;
+	}
+
+	return hit;
+}
+
+
+void Bicubic::intersect_rays(const std::vector<Transform>& parent_xforms, Ray* ray_begin, Ray* ray_end, Intersection *intersections)
+{
+#define STACK_SIZE 64
+	int stack_i = 0;
+	std::pair<Ray*, Ray*> ray_stack[STACK_SIZE];
+	std::array<Vec3, 16> patch_stack[STACK_SIZE];
+	std::tuple<float, float, float, float> uv_stack[STACK_SIZE]; // (min_u, max_u, min_v, max_v)
+
+	// Initialize stacks
+	// TODO: take into account ray time
+	ray_stack[0] = std::make_pair(ray_begin, ray_end);
+	patch_stack[0] = verts[0];
+	uv_stack[0] = std::tuple<float, float, float, float>(u_min, u_max, v_min, v_max);
+
+	// Iterate down to find an intersection
+	while (stack_i >= 0) {
+		BBox bb = bound(patch_stack[stack_i]);
+		const float max_dim = longest_axis(bb.max - bb.min);
+
+		// TEST RAYS AGAINST BBOX
+		ray_stack[stack_i].first = mutable_partition(ray_stack[stack_i].first, ray_stack[stack_i].second, [&](Ray& ray) {
+			if ((ray.flags() & Ray::DONE) != 0) {
+				return true;
+			}
+
+			float hitt0, hitt1;
+			if (bb.intersect_ray(ray, &hitt0, &hitt1, ray.max_t)) {
+				// LEAF, so we don't have to go deeper, regardless of whether
+				// we hit it or not.
+				if (max_dim <= Config::min_upoly_size || stack_i == (STACK_SIZE-1)) {
+					const float tt = (hitt0 + hitt1) * 0.5f;
+					if (tt > 0.0f && tt <= ray.max_t) {
+						auto &inter = intersections[ray.id];
+						inter.hit = true;
+						if ((ray.flags() & Ray::IS_OCCLUSION) != 0) {
+							ray.flags() |= Ray::DONE;
+						} else {
+							ray.max_t = tt;
+
+							const float u = (std::get<0>(uv_stack[stack_i]) + std::get<1>(uv_stack[stack_i])) * 0.5f;
+							const float v = (std::get<2>(uv_stack[stack_i]) + std::get<3>(uv_stack[stack_i])) * 0.5f;
+							const float offset = max_dim * 1.74f;
+
+							inter.t = tt;
+
+							inter.space = parent_xforms.size() > 0 ? lerp_seq(ray.time, parent_xforms) : Transform();
+							//inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.02f, 1.2f, 0.25f));
+							//inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.0f, 1.5f, 0.25f));
+							inter.surface_closure.init(LambertClosure(Color(0.9, 0.9, 0.9)));
+
+							inter.geo.p = ray.o + (ray.d * tt);
+							inter.geo.u = u;
+							inter.geo.v = v;
+
+							// Differential position
+							inter.geo.dpdu = dp_u(&(verts[0][0]), u, v);
+							inter.geo.dpdv = dp_v(&(verts[0][0]), u, v);
+
+							// Surface normal
+							inter.geo.n = cross(inter.geo.dpdv, inter.geo.dpdu).normalized();
+
+							// Did te ray hit from the back-side of the surface?
+							inter.backfacing = dot(inter.geo.n, ray.d.normalized()) > 0.0f;
+
+							// Differential normal
+							// TODO
+							inter.geo.dndu = Vec3(0.0f, 0.0f, 0.0f);
+							inter.geo.dndv = Vec3(0.0f, 0.0f, 0.0f);
+
+							inter.offset = inter.geo.n * offset;
+						}
+					}
+
+					return true;
+				}
+				// INNER, so we have to go deeper
+				else {
+					return false;
+				}
+			} else {
+				// Didn't hit it, so we don't have to go deeper
+				return true;
+			}
+		});
+		// END TEST RAYS AGAINST BBOX
+
+		// Split patch for further traversal if necessary
+		if (ray_stack[stack_i].first != ray_stack[stack_i].second) {
+			auto uv = uv_stack[stack_i];
+
+			const float ulen = longest_axis(patch_stack[stack_i][0] - patch_stack[stack_i][3]);
+			const float vlen = longest_axis(patch_stack[stack_i][0] - patch_stack[stack_i][4*3]);
+
+			// Split U
+			if (ulen > vlen) {
+				split_u(&(patch_stack[stack_i][0]), &(patch_stack[stack_i][0]), &(patch_stack[stack_i+1][0]));
+
+				// Fill in uv's
+				std::get<0>(uv_stack[stack_i]) = std::get<0>(uv);
+				std::get<1>(uv_stack[stack_i]) = (std::get<0>(uv) + std::get<1>(uv)) * 0.5;
+				std::get<2>(uv_stack[stack_i]) = std::get<2>(uv);
+				std::get<3>(uv_stack[stack_i]) = std::get<3>(uv);
+
+				std::get<0>(uv_stack[stack_i+1]) = (std::get<0>(uv) + std::get<1>(uv)) * 0.5;
+				std::get<1>(uv_stack[stack_i+1]) = std::get<1>(uv);
+				std::get<2>(uv_stack[stack_i+1]) = std::get<2>(uv);
+				std::get<3>(uv_stack[stack_i+1]) = std::get<3>(uv);
+
+			}
+			// Split V
+			else {
+				split_v(&(patch_stack[stack_i][0]), &(patch_stack[stack_i][0]), &(patch_stack[stack_i+1][0]));
+
+				// Fill in uv's
+				std::get<0>(uv_stack[stack_i]) = std::get<0>(uv);
+				std::get<1>(uv_stack[stack_i]) = std::get<1>(uv);
+				std::get<2>(uv_stack[stack_i]) = std::get<2>(uv);
+				std::get<3>(uv_stack[stack_i]) = (std::get<2>(uv) + std::get<3>(uv)) * 0.5;
+
+				std::get<0>(uv_stack[stack_i+1]) = std::get<0>(uv);
+				std::get<1>(uv_stack[stack_i+1]) = std::get<1>(uv);
+				std::get<2>(uv_stack[stack_i+1]) = (std::get<2>(uv) + std::get<3>(uv)) * 0.5;
+				std::get<3>(uv_stack[stack_i+1]) = std::get<3>(uv);
+			}
+
+			ray_stack[stack_i + 1] = ray_stack[stack_i];
+
+			++stack_i;
+		} else {
+			--stack_i;
+		}
+	}
 }

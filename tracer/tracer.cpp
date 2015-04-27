@@ -127,6 +127,9 @@ void Tracer::trace_assembly(Assembly* assembly, const std::vector<Transform>& pa
 				case Object::SURFACE:
 					trace_surface(reinterpret_cast<Surface*>(obj), xforms, std::get<0>(hits), std::get<1>(hits));
 					break;
+				case Object::BREADTH_SURFACE:
+					trace_breadth_surface(reinterpret_cast<BreadthSurface*>(obj), xforms, std::get<0>(hits), std::get<1>(hits));
+					break;
 				case Object::DICEABLE_SURFACE:
 					trace_diceable_surface(reinterpret_cast<DiceableSurface*>(obj), xforms, std::get<0>(hits), std::get<1>(hits));
 					break;
@@ -178,14 +181,19 @@ void Tracer::trace_surface(Surface* surface, const std::vector<Transform>& paren
 			} else {
 				ray.max_t = inter.t;
 				inter.space = parent_xforms.size() > 0 ? lerp_seq(ray.time, parent_xforms) : Transform();
-				inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.0f, 1.5f, 0.25f));
+				//inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.0f, 1.5f, 0.25f));
 				//inter.surface_closure.init(LambertClosure(Color(inter.geo.u*0.9f, inter.geo.v*0.9f, 0.2f)));
-				//inter.surface_closure.init(LambertClosure(Color(0.9f, 0.9f, 0.9f)));
+				inter.surface_closure.init(LambertClosure(Color(0.9f, 0.9f, 0.9f)));
 			}
 		}
 	}
 }
 
+
+void Tracer::trace_breadth_surface(BreadthSurface* surface, const std::vector<Transform>& parent_xforms, Ray* rays, Ray* end)
+{
+	surface->intersect_rays(parent_xforms, rays, end, &(intersections[0]));
+}
 
 
 void Tracer::trace_diceable_surface(DiceableSurface* prim, const std::vector<Transform>& parent_xforms, Ray* rays, Ray* end)
@@ -275,8 +283,8 @@ void Tracer::trace_diceable_surface(DiceableSurface* prim, const std::vector<Tra
 							ray.max_t = inter.t;
 							inter.space = parent_xforms.size() > 0 ? lerp_seq(ray.time, parent_xforms) : Transform();
 							//inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.02f, 1.2f, 0.25f));
-							inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.0f, 1.5f, 0.25f));
-							//inter.surface_closure.init(LambertClosure(Color(0.9, 0.9, 0.9)));
+							//inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.0f, 1.5f, 0.25f));
+							inter.surface_closure.init(LambertClosure(Color(0.9, 0.9, 0.9)));
 						}
 					}
 				}

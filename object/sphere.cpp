@@ -143,7 +143,7 @@ bool Sphere::intersect_ray(const Ray &ray, Intersection *intersection)
 		intersection->geo.p = ray.o + (ray.d * t);
 		intersection->geo.n = intersection->geo.p - cent;
 		intersection->geo.n.normalize();
-	
+
 		intersection->backfacing = dot(intersection->geo.n, ray.d.normalized()) > 0.0f;
 
 		// Calculate the latitude and longitude of the hit point on the sphere
