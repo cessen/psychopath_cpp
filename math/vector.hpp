@@ -27,159 +27,159 @@ struct __attribute__((aligned(16))) Vec3 {
     };
 
     // Constructors
-    Vec3() {}
-    Vec3(float v) {
-        x = v;
-        y = v;
-        z = v;
-        w = v;
-    }
-    Vec3(float x_, float y_, float z_, float w_=1.0f) {
-    	x = x_;
-    	y = y_;
-    	z = z_;
-    	w = w_;
-    }
-    Vec3(__m128 m) {
-    	m128 = m;
-    }
-    
-    // Element access
-    float &operator[](size_t n) {
-    	assert(n < 4);
-    	return (&x)[n];
-    }
-    const float &operator[](size_t n) const {
-    	assert(n < 4);
-    	return (&x)[n];
-    }
-    
-    // Comparisons
-    bool operator==(const Vec3 &b) const {
-    	return (x==b.x && y==b.y && z==b.z);
-    }
-    
-    // Multiplication and division by scalar
-    Vec3 operator*(float b) const {
-    	return (Vec3)_mm_mul_ps(m128, _mm_set_ps(b,b,b,b));
-    }
-    Vec3 operator/(float b) const {
-    	return (Vec3)_mm_div_ps(m128, _mm_set_ps(b,b,b,b));
-    }
-    
-    Vec3 &operator*=(float b) {
-        m128 = _mm_mul_ps(m128, _mm_set_ps(b,b,b,b));
-        return *this;
-    }
-    Vec3 &operator/=(float b) {
-        m128 = _mm_div_ps(m128, _mm_set_ps(b,b,b,b));
-        return *this;
-    }
-    
-    // Component-wise arithmetic
-    Vec3 operator+(const Vec3& b) const {
-    	return (Vec3)_mm_add_ps(m128, b.m128);
-    }
-    Vec3 operator-(const Vec3& b) const {
-    	return (Vec3)_mm_sub_ps(m128, b.m128);
-    }
-    Vec3 operator*(const Vec3& b) const {
-    	return (Vec3)_mm_mul_ps(m128, b.m128);
-    }
-    Vec3 operator/(const Vec3& b) const {
-    	return (Vec3)_mm_div_ps(m128, b.m128);
-    }
-    
-    Vec3 &operator+=(const Vec3& b) {
-        m128 = _mm_add_ps(m128, b.m128);
-        return *this;
-    }
-    Vec3 &operator-=(const Vec3& b) {
-        m128 = _mm_sub_ps(m128, b.m128);
-        return *this;
-    }
-    Vec3 &operator*=(const Vec3& b) {
-        m128 = _mm_mul_ps(m128, b.m128);
-        return *this;
-    }
-    Vec3 &operator/=(const Vec3& b) {
-        m128 = _mm_div_ps(m128, b.m128);
-        return *this;
-    }
-    
-    // Products
-    float dot(const Vec3 &b) const {
-    	return x*b.x + y*b.y + z*b.z;
-    }
-    Vec3 cross(const Vec3 &b) const {
-    	return (Vec3)_mm_sub_ps(
-    	           _mm_mul_ps(
-    	               _mm_shuffle_ps(m128, m128, _MM_SHUFFLE(3, 0, 2, 1)),
-    	               _mm_shuffle_ps(b.m128, b.m128, _MM_SHUFFLE(3, 1, 0, 2))),
-    	           _mm_mul_ps(
-    	               _mm_shuffle_ps(m128, m128, _MM_SHUFFLE(3, 1, 0, 2)),
-    	               _mm_shuffle_ps(b.m128, b.m128, _MM_SHUFFLE(3, 0, 2, 1)))
-    	       );
-    }
-    
-    // Component-wise min and max
-    Vec3 min(const Vec3 &b) const {
-    	return (Vec3)_mm_min_ps(m128, b.m128);
-    }
-    Vec3 max(const Vec3 &b) const {
-    	return (Vec3)_mm_max_ps(m128, b.m128);
-    }
-    
-    float length() const {
-    	Vec3 a = *this;
-    	a.w = 0.0f;
-    
-    	__m128 &D = a.m128;
-    	D = _mm_mul_ps(D, D);
-    	D = _mm_hadd_ps(D, D);
-    	D = _mm_hadd_ps(D, D);
-    
-    	D = _mm_sqrt_ps(D);
-    
-    	return a.x;
-    }
-    
-    float length2() const {
-    	Vec3 a = *this;
-    	a.w = 0.0f;
-    
-    	__m128 &D = a.m128;
-    	D = _mm_mul_ps(D, D);
-    	D = _mm_hadd_ps(D, D);
-    	D = _mm_hadd_ps(D, D);
-    
-    	return a.x;
-    }
-    
-    const Vec3 &normalize() {
-    	w = 0.f;
-    
-    	__m128 D = m128;
-    	D = _mm_mul_ps(D, D);
-    	D = _mm_hadd_ps(D, D);
-    	D = _mm_hadd_ps(D, D);
-    
-    	// 1 iteration of Newton-raphson -- Idea from Intel's Embree.
-    	__m128 r = _mm_rsqrt_ps(D);
-    	r = _mm_add_ps(
-    	        _mm_mul_ps(_mm_set_ps(1.5f, 1.5f, 1.5f, 1.5f), r),
-    	        _mm_mul_ps(_mm_mul_ps(_mm_mul_ps(D, _mm_set_ps(-0.5f, -0.5f, -0.5f, -0.5f)), r), _mm_mul_ps(r, r)));
-    
-    	m128 = _mm_mul_ps(m128, r);
-    
-    	return *this;
-    }
-    
-    Vec3 normalized() const {
-        Vec3 v = *this;
-        v.normalize();
-        return v;
-    }
+Vec3() {}
+Vec3(float v) {
+	x = v;
+	y = v;
+	z = v;
+	w = v;
+}
+Vec3(float x_, float y_, float z_, float w_=1.0f) {
+	x = x_;
+	y = y_;
+	z = z_;
+	w = w_;
+}
+Vec3(__m128 m) {
+	m128 = m;
+}
+
+// Element access
+float &operator[](size_t n) {
+	assert(n < 4);
+	return (&x)[n];
+}
+const float &operator[](size_t n) const {
+	assert(n < 4);
+	return (&x)[n];
+}
+
+// Comparisons
+bool operator==(const Vec3 &b) const {
+	return (x==b.x && y==b.y && z==b.z);
+}
+
+// Multiplication and division by scalar
+Vec3 operator*(float b) const {
+	return (Vec3)_mm_mul_ps(m128, _mm_set_ps(b,b,b,b));
+}
+Vec3 operator/(float b) const {
+	return (Vec3)_mm_div_ps(m128, _mm_set_ps(b,b,b,b));
+}
+
+Vec3 &operator*=(float b) {
+	m128 = _mm_mul_ps(m128, _mm_set_ps(b,b,b,b));
+	return *this;
+}
+Vec3 &operator/=(float b) {
+	m128 = _mm_div_ps(m128, _mm_set_ps(b,b,b,b));
+	return *this;
+}
+
+// Component-wise arithmetic
+Vec3 operator+(const Vec3& b) const {
+	return (Vec3)_mm_add_ps(m128, b.m128);
+}
+Vec3 operator-(const Vec3& b) const {
+	return (Vec3)_mm_sub_ps(m128, b.m128);
+}
+Vec3 operator*(const Vec3& b) const {
+	return (Vec3)_mm_mul_ps(m128, b.m128);
+}
+Vec3 operator/(const Vec3& b) const {
+	return (Vec3)_mm_div_ps(m128, b.m128);
+}
+
+Vec3 &operator+=(const Vec3& b) {
+	m128 = _mm_add_ps(m128, b.m128);
+	return *this;
+}
+Vec3 &operator-=(const Vec3& b) {
+	m128 = _mm_sub_ps(m128, b.m128);
+	return *this;
+}
+Vec3 &operator*=(const Vec3& b) {
+	m128 = _mm_mul_ps(m128, b.m128);
+	return *this;
+}
+Vec3 &operator/=(const Vec3& b) {
+	m128 = _mm_div_ps(m128, b.m128);
+	return *this;
+}
+
+// Products
+float dot(const Vec3 &b) const {
+	return x*b.x + y*b.y + z*b.z;
+}
+Vec3 cross(const Vec3 &b) const {
+	return (Vec3)_mm_sub_ps(
+	           _mm_mul_ps(
+	               _mm_shuffle_ps(m128, m128, _MM_SHUFFLE(3, 0, 2, 1)),
+	               _mm_shuffle_ps(b.m128, b.m128, _MM_SHUFFLE(3, 1, 0, 2))),
+	           _mm_mul_ps(
+	               _mm_shuffle_ps(m128, m128, _MM_SHUFFLE(3, 1, 0, 2)),
+	               _mm_shuffle_ps(b.m128, b.m128, _MM_SHUFFLE(3, 0, 2, 1)))
+	       );
+}
+
+// Component-wise min and max
+Vec3 min(const Vec3 &b) const {
+	return (Vec3)_mm_min_ps(m128, b.m128);
+}
+Vec3 max(const Vec3 &b) const {
+	return (Vec3)_mm_max_ps(m128, b.m128);
+}
+
+float length() const {
+	Vec3 a = *this;
+	a.w = 0.0f;
+
+	__m128 &D = a.m128;
+	D = _mm_mul_ps(D, D);
+	D = _mm_hadd_ps(D, D);
+	D = _mm_hadd_ps(D, D);
+
+	D = _mm_sqrt_ps(D);
+
+	return a.x;
+}
+
+float length2() const {
+	Vec3 a = *this;
+	a.w = 0.0f;
+
+	__m128 &D = a.m128;
+	D = _mm_mul_ps(D, D);
+	D = _mm_hadd_ps(D, D);
+	D = _mm_hadd_ps(D, D);
+
+	return a.x;
+}
+
+const Vec3 &normalize() {
+	w = 0.f;
+
+	__m128 D = m128;
+	D = _mm_mul_ps(D, D);
+	D = _mm_hadd_ps(D, D);
+	D = _mm_hadd_ps(D, D);
+
+	// 1 iteration of Newton-raphson -- Idea from Intel's Embree.
+	__m128 r = _mm_rsqrt_ps(D);
+	r = _mm_add_ps(
+	        _mm_mul_ps(_mm_set_ps(1.5f, 1.5f, 1.5f, 1.5f), r),
+	        _mm_mul_ps(_mm_mul_ps(_mm_mul_ps(D, _mm_set_ps(-0.5f, -0.5f, -0.5f, -0.5f)), r), _mm_mul_ps(r, r)));
+
+	m128 = _mm_mul_ps(m128, r);
+
+	return *this;
+}
+
+Vec3 normalized() const {
+	Vec3 v = *this;
+	v.normalize();
+	return v;
+}
 
 };
 #else
