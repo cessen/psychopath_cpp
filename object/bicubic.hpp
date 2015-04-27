@@ -58,7 +58,7 @@ public:
 	virtual size_t subdiv_estimate(float width) const override;
 	virtual std::shared_ptr<MicroSurface> dice(size_t subdivisions) const override;*/
 
-	virtual bool intersect_ray(const Ray &ray, Intersection *intersection);
+	virtual bool intersect_single_ray_helper(const Ray &ray, const std::array<Vec3, 16> &patch, const std::array<Vec3, 16> &subpatch, const std::tuple<float, float, float, float> &uvs, Intersection intersections[]);
 	virtual void intersect_rays(const std::vector<Transform>& parent_xforms, Ray* ray_begin, Ray* ray_end, Intersection *intersections);
 };
 
