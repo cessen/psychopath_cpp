@@ -43,8 +43,8 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated")
 #set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math")
 
 # SSE3 and SSSE3 support
-#set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse3 -mssse3")
-#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3 -mssse3")
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse3 -mssse3")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3 -mssse3")
 
 # Warnings
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-unused-function")

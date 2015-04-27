@@ -227,8 +227,9 @@ public:
 
 static inline Transform make_axis_angle_transform(Vec3 axis, float angle)
 {
+    const ImathVec3 a(axis.x, axis.y, axis.z);
 	Transform xform;
-	xform.to.setAxisAngle(axis, angle);
+	xform.to.setAxisAngle(a, angle);
 	return xform;
 }
 

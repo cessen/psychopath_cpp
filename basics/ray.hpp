@@ -20,7 +20,8 @@
 /**
  * @brief A ray in 3d space.
  */
-struct Ray {
+ 
+struct alignas(16) Ray {
 	/**
 	 * @brief Type to store ray direction signs in, and also ray bit flags.
 	 * The ray direction signs are stored in indices 0-2, and the bit flags
