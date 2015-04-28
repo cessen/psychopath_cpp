@@ -70,9 +70,9 @@ inline Vec3 dp_v(const Vec3 p[], float u, float v)
 
 inline BBox bound(const std::array<Vec3, 4>& p)
 {
-	BBox bb;
+	BBox bb = BBox(p[0], p[0]);;
 
-	for (int i = 0; i < 4; ++i) {
+	for (int i = 1; i < 4; ++i) {
 		bb.min = min(bb.min, p[i]);
 		bb.max = max(bb.max, p[i]);
 	}
