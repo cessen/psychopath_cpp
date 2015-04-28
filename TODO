@@ -1,6 +1,11 @@
 - Bugs:
 	- Very small sphere lights introduce severe banding in light attentuation.
 
+- Iterative intersections:
+    - Figure out how to DRY stuff
+    - Get working with motion blur
+    - Displacement tests
+
 - Unit tests:
 	- BitStack
 	- BitStack2
@@ -30,11 +35,6 @@
 	- Catmull-clark subdivision surfaces
 	- Triangle meshes
 	//- Make spheres work again
-
-- Performance improvements:
-	- Change MicroSurface to use a BVH4
-	- Investigate ways to make splitting and splitting-traversal faster:
-		- Can we do BVH4 style traversal?
 
 - Adaptive sampling scheme
 	- "Population Monte Carlo"
