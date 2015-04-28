@@ -354,9 +354,10 @@ void Bilinear::intersect_rays(const std::vector<Transform>& parent_xforms, Ray* 
 
 			float hitt0, hitt1;
 			if (bb.intersect_ray(ray, &hitt0, &hitt1, ray.max_t)) {
+				const float width = ray.min_width(hitt0, hitt1) * Config::dice_rate;
 				// LEAF, so we don't have to go deeper, regardless of whether
 				// we hit it or not.
-				if (max_dim <= Config::min_upoly_size || stack_i == (STACK_SIZE-1)) {
+				if (max_dim <= width || stack_i == (STACK_SIZE-1)) {
 					const float tt = (hitt0 + hitt1) * 0.5f;
 					if (tt > 0.0f && tt <= ray.max_t) {
 						auto &inter = intersections[ray.id];
