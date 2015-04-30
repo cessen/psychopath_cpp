@@ -625,8 +625,22 @@ void Bicubic::intersect_rays(const std::vector<Transform>& parent_xforms, Ray* r
 				return true;
 			}
 
+			// Ray test
 			float hitt0, hitt1;
-			if (lerp_seq(ray.time, bboxes, bboxes+tsc).intersect_ray(ray, &hitt0, &hitt1, ray.max_t)) {
+			bool hit;
+			if (tsc == 1) {
+				// If we only have one time sample, we can skip the bbox interpolation
+				hit = bboxes[0].intersect_ray(ray, &hitt0, &hitt1, ray.max_t);
+			} else {
+				// If we have more than one time sample, we need to interpolate the bbox
+				// before testing.
+				const float temp = ray.time * (tsc - 1);
+				const auto index = static_cast<size_t>(temp);
+				const float nalpha = temp - index;
+				hit = lerp(nalpha, bboxes[index], bboxes[index+1]).intersect_ray(ray, &hitt0, &hitt1, ray.max_t);
+			}
+
+			if (hit) {
 				const float width = ray.min_width(hitt0, hitt1) * Config::dice_rate;
 				// LEAF, so we don't have to go deeper, regardless of whether
 				// we hit it or not.
