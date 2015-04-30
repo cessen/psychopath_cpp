@@ -626,7 +626,7 @@ void Bicubic::intersect_rays(const std::vector<Transform>& parent_xforms, Ray* r
 			}
 
 			float hitt0, hitt1;
-			if (bboxes[0].intersect_ray(ray, &hitt0, &hitt1, ray.max_t)) {
+			if (lerp_seq(ray.time, bboxes, bboxes+tsc).intersect_ray(ray, &hitt0, &hitt1, ray.max_t)) {
 				const float width = ray.min_width(hitt0, hitt1) * Config::dice_rate;
 				// LEAF, so we don't have to go deeper, regardless of whether
 				// we hit it or not.

@@ -340,7 +340,10 @@ void Bilinear::intersect_rays(const std::vector<Transform>& parent_xforms, Ray* 
 	// Initialize stacks
 	// TODO: take into account ray time
 	ray_stack[0] = std::make_pair(ray_begin, ray_end);
-	*(patch_stack.push_frame<std::array<Vec3, 4>>(tsc).first) = verts[0];
+	auto tmp = patch_stack.push_frame<std::array<Vec3, 4>>(tsc).first;
+	for (int i = 0; i < tsc; ++i) {
+		tmp[i] = verts[i];
+	}
 	uv_stack[0] = std::tuple<float, float, float, float>(u_min, u_max, v_min, v_max);
 
 	// Iterate down to find an intersection
@@ -362,7 +365,7 @@ void Bilinear::intersect_rays(const std::vector<Transform>& parent_xforms, Ray* 
 			}
 
 			float hitt0, hitt1;
-			if (bboxes[0].intersect_ray(ray, &hitt0, &hitt1, ray.max_t)) {
+			if (lerp_seq(ray.time, bboxes, bboxes+tsc).intersect_ray(ray, &hitt0, &hitt1, ray.max_t)) {
 				const float width = ray.min_width(hitt0, hitt1) * Config::dice_rate;
 				// LEAF, so we don't have to go deeper, regardless of whether
 				// we hit it or not.

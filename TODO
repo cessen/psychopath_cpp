@@ -3,7 +3,7 @@
 
 - Iterative intersections:
     - Figure out how to DRY stuff
-    - Get working with motion blur
+    //- Get working with motion blur
     //- Adaptive iteration depth based on ray differentials
     - Displacement tests
 
