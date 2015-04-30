@@ -5,6 +5,9 @@
 #include <limits>
 #include <stdlib.h>
 #include <cmath>
+#include <utility>
+#include <vector>
+#include "stack.hpp"
 #include "bicubic.hpp"
 #include "grid.hpp"
 #include "config.hpp"
@@ -585,28 +588,30 @@ bool Bicubic::intersect_single_ray_helper(const Ray &ray, const std::array<Vec3,
 }
 
 
-void Bicubic::intersect_rays(const std::vector<Transform>& parent_xforms, Ray* ray_begin, Ray* ray_end, Intersection *intersections)
+void Bicubic::intersect_rays(const std::vector<Transform>& parent_xforms, Ray* ray_begin, Ray* ray_end, Intersection *intersections, Stack* data_stack)
 {
 #define STACK_SIZE 64
 	int stack_i = 0;
 	std::pair<Ray*, Ray*> ray_stack[STACK_SIZE];
-	std::array<Vec3, 16> patch_stack[STACK_SIZE];
+	Stack &patch_stack = *data_stack;
 	std::tuple<float, float, float, float> uv_stack[STACK_SIZE]; // (min_u, max_u, min_v, max_v)
 
 	// Initialize stacks
 	// TODO: take into account ray time
 	ray_stack[0] = std::make_pair(ray_begin, ray_end);
-	patch_stack[0] = verts[0];
+	*(patch_stack.push_frame<std::array<Vec3, 16>>(1).first) = verts[0];
 	uv_stack[0] = std::tuple<float, float, float, float>(u_min, u_max, v_min, v_max);
 
 	// Iterate down to find an intersection
 	while (stack_i >= 0) {
+		auto &cur_patch = *(patch_stack.top_frame<std::array<Vec3, 16>>().first);
+
 //#define SINGLE_RAY_OPTIMIZE
 #ifdef SINGLE_RAY_OPTIMIZE
 		if (std::distance(ray_stack[stack_i].first, ray_stack[stack_i].second) < 4) {
 			for (auto r = ray_stack[stack_i].first; r < ray_stack[stack_i].second; ++r) {
 				// TODO: take into account time where passing verts[0]
-				if (intersect_single_ray_helper(*r, verts[0], patch_stack[stack_i], uv_stack[stack_i], intersections)) {
+				if (intersect_single_ray_helper(*r, verts[0], cur_patch, uv_stack[stack_i], intersections)) {
 					auto &inter = intersections[r->id];
 
 					inter.hit = true;
@@ -623,9 +628,10 @@ void Bicubic::intersect_rays(const std::vector<Transform>& parent_xforms, Ray* r
 				}
 			}
 			--stack_i;
+			patch_stack.pop_frame();
 		} else {
 #endif
-			BBox bb = bound(patch_stack[stack_i]);
+			BBox bb = bound(cur_patch);
 			const float max_dim = longest_axis(bb.max - bb.min);
 
 			// TEST RAYS AGAINST BBOX
@@ -699,13 +705,14 @@ void Bicubic::intersect_rays(const std::vector<Transform>& parent_xforms, Ray* r
 			// Split patch for further traversal if necessary
 			if (ray_stack[stack_i].first != ray_stack[stack_i].second) {
 				auto uv = uv_stack[stack_i];
+				auto &next_patch = *(patch_stack.push_frame<std::array<Vec3, 16>>(1).first);
 
-				const float ulen = longest_axis(patch_stack[stack_i][0] - patch_stack[stack_i][3]);
-				const float vlen = longest_axis(patch_stack[stack_i][0] - patch_stack[stack_i][4*3]);
+				const float ulen = longest_axis(cur_patch[0] - cur_patch[3]);
+				const float vlen = longest_axis(cur_patch[0] - cur_patch[4*3]);
 
 				// Split U
 				if (ulen > vlen) {
-					split_u(&(patch_stack[stack_i][0]), &(patch_stack[stack_i][0]), &(patch_stack[stack_i+1][0]));
+					split_u(&(cur_patch[0]), &(cur_patch[0]), &(next_patch[0]));
 
 					// Fill in uv's
 					std::get<0>(uv_stack[stack_i]) = std::get<0>(uv);
@@ -721,7 +728,7 @@ void Bicubic::intersect_rays(const std::vector<Transform>& parent_xforms, Ray* r
 				}
 				// Split V
 				else {
-					split_v(&(patch_stack[stack_i][0]), &(patch_stack[stack_i][0]), &(patch_stack[stack_i+1][0]));
+					split_v(&(cur_patch[0]), &(cur_patch[0]), &(next_patch[0]));
 
 					// Fill in uv's
 					std::get<0>(uv_stack[stack_i]) = std::get<0>(uv);
@@ -740,6 +747,7 @@ void Bicubic::intersect_rays(const std::vector<Transform>& parent_xforms, Ray* r
 				++stack_i;
 			} else {
 				--stack_i;
+				patch_stack.pop_frame();
 			}
 #ifdef SINGLE_RAY_OPTIMIZE
 		}

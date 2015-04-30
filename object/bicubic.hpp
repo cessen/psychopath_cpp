@@ -6,6 +6,7 @@
 #include <atomic>
 #include <vector>
 #include <array>
+#include "stack.hpp"
 #include "vector.hpp"
 #include "grid.hpp"
 #include "object.hpp"
@@ -59,7 +60,7 @@ public:
 	virtual std::shared_ptr<MicroSurface> dice(size_t subdivisions) const override;*/
 
 	virtual bool intersect_single_ray_helper(const Ray &ray, const std::array<Vec3, 16> &patch, const std::array<Vec3, 16> &subpatch, const std::tuple<float, float, float, float> &uvs, Intersection intersections[]);
-	virtual void intersect_rays(const std::vector<Transform>& parent_xforms, Ray* ray_begin, Ray* ray_end, Intersection *intersections);
+	virtual void intersect_rays(const std::vector<Transform>& parent_xforms, Ray* ray_begin, Ray* ray_end, Intersection *intersections, Stack* data_stack);
 };
 
 #endif // BICUBIC

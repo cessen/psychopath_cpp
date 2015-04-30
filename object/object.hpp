@@ -7,6 +7,7 @@
 #include <vector>
 #include <iostream>
 #include <stdlib.h>
+#include "stack.hpp"
 #include "ray.hpp"
 #include "intersection.hpp"
 #include "bbox.hpp"
@@ -99,7 +100,7 @@ public:
 	/**
 	 * @brief Tests a batch of rays against the surface.
 	 */
-	virtual void intersect_rays(const std::vector<Transform>& parent_xforms, Ray* ray_begin, Ray* ray_end, Intersection *intersections) = 0;
+	virtual void intersect_rays(const std::vector<Transform>& parent_xforms, Ray* ray_begin, Ray* ray_end, Intersection *intersections, Stack* data_stack) = 0;
 };
 
 

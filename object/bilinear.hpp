@@ -5,6 +5,7 @@
 
 #include <atomic>
 #include <vector>
+#include "stack.hpp"
 #include "vector.hpp"
 #include "grid.hpp"
 #include "object.hpp"
@@ -48,7 +49,7 @@ public:
 	//virtual size_t subdiv_estimate(float width) const override;
 	//virtual std::shared_ptr<MicroSurface> dice(size_t subdivisions) const override;
 
-	virtual void intersect_rays(const std::vector<Transform>& parent_xforms, Ray* ray_begin, Ray* ray_end, Intersection *intersections);
+	virtual void intersect_rays(const std::vector<Transform>& parent_xforms, Ray* ray_begin, Ray* ray_end, Intersection *intersections, Stack* data_stack);
 };
 
 #endif

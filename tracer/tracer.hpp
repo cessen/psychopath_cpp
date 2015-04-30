@@ -10,6 +10,7 @@
 #include "numtype.h"
 #include "range.hpp"
 #include "rng.hpp"
+#include "stack.hpp"
 
 
 #include "ray.hpp"
@@ -48,10 +49,11 @@ public:
 	Range<Intersection*> intersections; // Resulting intersections
 	std::vector<Ray> rays;
 	RNG rng;
+	Stack data_stack; // Stack for arbitrary POD data, passed to other functions
 
-	Tracer() {}
+	Tracer(): data_stack(1024*1024*8, 256) {}
 
-	Tracer(Scene *scene_): scene {scene_} {
+	Tracer(Scene *scene_): scene {scene_}, data_stack(1024*1024*8, 256) {
 	}
 
 	void set_seed(uint32_t seed) {

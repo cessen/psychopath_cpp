@@ -192,7 +192,7 @@ void Tracer::trace_surface(Surface* surface, const std::vector<Transform>& paren
 
 void Tracer::trace_breadth_surface(BreadthSurface* surface, const std::vector<Transform>& parent_xforms, Ray* rays, Ray* end)
 {
-	surface->intersect_rays(parent_xforms, rays, end, &(intersections[0]));
+	surface->intersect_rays(parent_xforms, rays, end, &(intersections[0]), &data_stack);
 }
 
 
