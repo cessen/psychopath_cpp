@@ -330,22 +330,30 @@ Grid *Bilinear::grid_dice(const int ru, const int rv) const
 void Bilinear::intersect_rays(const std::vector<Transform>& parent_xforms, Ray* ray_begin, Ray* ray_end, Intersection *intersections, Stack* data_stack)
 {
 #define STACK_SIZE 64
+	const size_t tsc = verts.size(); // Time sample count
 	int stack_i = 0;
 	std::pair<Ray*, Ray*> ray_stack[STACK_SIZE];
+	BBox* bboxes = data_stack->push_frame<BBox>(tsc).first;
 	Stack &patch_stack = *data_stack;
 	std::tuple<float, float, float, float> uv_stack[STACK_SIZE]; // (min_u, max_u, min_v, max_v)
 
 	// Initialize stacks
 	// TODO: take into account ray time
 	ray_stack[0] = std::make_pair(ray_begin, ray_end);
-	*(patch_stack.push_frame<std::array<Vec3, 4>>(1).first) = verts[0];
+	*(patch_stack.push_frame<std::array<Vec3, 4>>(tsc).first) = verts[0];
 	uv_stack[0] = std::tuple<float, float, float, float>(u_min, u_max, v_min, v_max);
 
 	// Iterate down to find an intersection
 	while (stack_i >= 0) {
-		auto &cur_patch = *(patch_stack.top_frame<std::array<Vec3, 4>>().first);
-		BBox bb = bound(cur_patch);
-		const float max_dim = longest_axis(bb.max - bb.min);
+		auto cur_patches = patch_stack.top_frame<std::array<Vec3, 4>>().first;
+
+		// Calculate bounding boxes and max_dim
+		bboxes[0] = bound(cur_patches[0]);
+		float max_dim = longest_axis(bboxes[0].max - bboxes[0].min);
+		for (int i = 1; i < tsc; ++i) {
+			bboxes[i] = bound(cur_patches[i]);
+			max_dim = std::max(max_dim, longest_axis(bboxes[i].max - bboxes[i].min));
+		}
 
 		// TEST RAYS AGAINST BBOX
 		ray_stack[stack_i].first = mutable_partition(ray_stack[stack_i].first, ray_stack[stack_i].second, [&](Ray& ray) {
@@ -354,7 +362,7 @@ void Bilinear::intersect_rays(const std::vector<Transform>& parent_xforms, Ray* 
 			}
 
 			float hitt0, hitt1;
-			if (bb.intersect_ray(ray, &hitt0, &hitt1, ray.max_t)) {
+			if (bboxes[0].intersect_ray(ray, &hitt0, &hitt1, ray.max_t)) {
 				const float width = ray.min_width(hitt0, hitt1) * Config::dice_rate;
 				// LEAF, so we don't have to go deeper, regardless of whether
 				// we hit it or not.
@@ -418,14 +426,16 @@ void Bilinear::intersect_rays(const std::vector<Transform>& parent_xforms, Ray* 
 		// Split patch for further traversal if necessary
 		if (ray_stack[stack_i].first != ray_stack[stack_i].second) {
 			auto uv = uv_stack[stack_i];
-			auto &next_patch = *(patch_stack.push_frame<std::array<Vec3, 4>>(1).first);
+			auto next_patches = patch_stack.push_frame<std::array<Vec3, 4>>(tsc).first;
 
-			const float ulen = longest_axis(cur_patch[0] - cur_patch[1]);
-			const float vlen = longest_axis(cur_patch[0] - cur_patch[3]);
+			const float ulen = longest_axis(cur_patches[0][0] - cur_patches[0][1]);
+			const float vlen = longest_axis(cur_patches[0][0] - cur_patches[0][3]);
 
 			// Split U
 			if (ulen > vlen) {
-				split_u(&(cur_patch[0]), &(cur_patch[0]), &(next_patch[0]));
+				for (int i = 0; i < tsc; ++i) {
+					split_u(&(cur_patches[i][0]), &(cur_patches[i][0]), &(next_patches[i][0]));
+				}
 
 				// Fill in uv's
 				std::get<0>(uv_stack[stack_i]) = std::get<0>(uv);
@@ -441,7 +451,9 @@ void Bilinear::intersect_rays(const std::vector<Transform>& parent_xforms, Ray* 
 			}
 			// Split V
 			else {
-				split_v(&(cur_patch[0]), &(cur_patch[0]), &(next_patch[0]));
+				for (int i = 0; i < tsc; ++i) {
+					split_v(&(cur_patches[i][0]), &(cur_patches[i][0]), &(next_patches[i][0]));
+				}
 
 				// Fill in uv's
 				std::get<0>(uv_stack[stack_i]) = std::get<0>(uv);
@@ -463,4 +475,6 @@ void Bilinear::intersect_rays(const std::vector<Transform>& parent_xforms, Ray* 
 			patch_stack.pop_frame();
 		}
 	}
+
+	patch_stack.pop_frame(); // Pop BBoxes
 }

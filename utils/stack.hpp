@@ -17,7 +17,7 @@ class Stack
 	std::vector<std::pair<char*, char*>> frames;
 
 public:
-	Stack() {}
+	Stack() = delete;
 	Stack(size_t data_capacity, size_t reserved_frames): data(data_capacity) {
 		frames.reserve(reserved_frames+1);
 		frames.emplace_back(std::make_pair(&(data[0]), &(data[0])));

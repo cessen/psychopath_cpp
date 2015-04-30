@@ -591,166 +591,154 @@ bool Bicubic::intersect_single_ray_helper(const Ray &ray, const std::array<Vec3,
 void Bicubic::intersect_rays(const std::vector<Transform>& parent_xforms, Ray* ray_begin, Ray* ray_end, Intersection *intersections, Stack* data_stack)
 {
 #define STACK_SIZE 64
+	const size_t tsc = verts.size(); // Time sample count
 	int stack_i = 0;
 	std::pair<Ray*, Ray*> ray_stack[STACK_SIZE];
+	BBox* bboxes = data_stack->push_frame<BBox>(tsc).first;
 	Stack &patch_stack = *data_stack;
 	std::tuple<float, float, float, float> uv_stack[STACK_SIZE]; // (min_u, max_u, min_v, max_v)
 
 	// Initialize stacks
 	// TODO: take into account ray time
 	ray_stack[0] = std::make_pair(ray_begin, ray_end);
-	*(patch_stack.push_frame<std::array<Vec3, 16>>(1).first) = verts[0];
+	auto tmp = patch_stack.push_frame<std::array<Vec3, 16>>(tsc).first;
+	for (int i = 0; i < tsc; ++i) {
+		tmp[i] = verts[i];
+	}
 	uv_stack[0] = std::tuple<float, float, float, float>(u_min, u_max, v_min, v_max);
 
 	// Iterate down to find an intersection
 	while (stack_i >= 0) {
-		auto &cur_patch = *(patch_stack.top_frame<std::array<Vec3, 16>>().first);
+		auto cur_patches = patch_stack.top_frame<std::array<Vec3, 16>>().first;
 
-//#define SINGLE_RAY_OPTIMIZE
-#ifdef SINGLE_RAY_OPTIMIZE
-		if (std::distance(ray_stack[stack_i].first, ray_stack[stack_i].second) < 4) {
-			for (auto r = ray_stack[stack_i].first; r < ray_stack[stack_i].second; ++r) {
-				// TODO: take into account time where passing verts[0]
-				if (intersect_single_ray_helper(*r, verts[0], cur_patch, uv_stack[stack_i], intersections)) {
-					auto &inter = intersections[r->id];
+		// Calculate bounding boxes and max_dim
+		bboxes[0] = bound(cur_patches[0]);
+		float max_dim = longest_axis(bboxes[0].max - bboxes[0].min);
+		for (int i = 1; i < tsc; ++i) {
+			bboxes[i] = bound(cur_patches[i]);
+			max_dim = std::max(max_dim, longest_axis(bboxes[i].max - bboxes[i].min));
+		}
 
-					inter.hit = true;
-
-					if ((r->flags() & Ray::IS_OCCLUSION) != 0) {
-						r->flags() |= Ray::DONE; // Early out for shadow rays
-					} else {
-						r->max_t = inter.t;
-						inter.space = parent_xforms.size() > 0 ? lerp_seq(r->time, parent_xforms) : Transform();
-						//inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.0f, 1.5f, 0.25f));
-						//inter.surface_closure.init(LambertClosure(Color(inter.geo.u*0.9f, inter.geo.v*0.9f, 0.2f)));
-						inter.surface_closure.init(LambertClosure(Color(0.9f, 0.9f, 0.9f)));
-					}
-				}
+		// TEST RAYS AGAINST BBOX
+		ray_stack[stack_i].first = mutable_partition(ray_stack[stack_i].first, ray_stack[stack_i].second, [&](Ray& ray) {
+			if ((ray.flags() & Ray::DONE) != 0) {
+				return true;
 			}
+
+			float hitt0, hitt1;
+			if (bboxes[0].intersect_ray(ray, &hitt0, &hitt1, ray.max_t)) {
+				const float width = ray.min_width(hitt0, hitt1) * Config::dice_rate;
+				// LEAF, so we don't have to go deeper, regardless of whether
+				// we hit it or not.
+				if (max_dim <= width || stack_i == (STACK_SIZE-1)) {
+					const float tt = (hitt0 + hitt1) * 0.5f;
+					if (tt > 0.0f && tt <= ray.max_t) {
+						auto &inter = intersections[ray.id];
+						inter.hit = true;
+						if ((ray.flags() & Ray::IS_OCCLUSION) != 0) {
+							ray.flags() |= Ray::DONE;
+						} else {
+							ray.max_t = tt;
+
+							const float u = (std::get<0>(uv_stack[stack_i]) + std::get<1>(uv_stack[stack_i])) * 0.5f;
+							const float v = (std::get<2>(uv_stack[stack_i]) + std::get<3>(uv_stack[stack_i])) * 0.5f;
+							const float offset = max_dim * 1.74f;
+
+							inter.t = tt;
+
+							inter.space = parent_xforms.size() > 0 ? lerp_seq(ray.time, parent_xforms) : Transform();
+							//inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.02f, 1.2f, 0.25f));
+							//inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.0f, 1.5f, 0.25f));
+							inter.surface_closure.init(LambertClosure(Color(0.9, 0.9, 0.9)));
+
+							inter.geo.p = ray.o + (ray.d * tt);
+							inter.geo.u = u;
+							inter.geo.v = v;
+
+							// Differential position
+							inter.geo.dpdu = dp_u(&(verts[0][0]), u, v);
+							inter.geo.dpdv = dp_v(&(verts[0][0]), u, v);
+
+							// Surface normal
+							inter.geo.n = cross(inter.geo.dpdv, inter.geo.dpdu).normalized();
+
+							// Did te ray hit from the back-side of the surface?
+							inter.backfacing = dot(inter.geo.n, ray.d.normalized()) > 0.0f;
+
+							// Differential normal
+							// TODO
+							inter.geo.dndu = Vec3(0.0f, 0.0f, 0.0f);
+							inter.geo.dndv = Vec3(0.0f, 0.0f, 0.0f);
+
+							inter.offset = inter.geo.n * offset;
+						}
+					}
+
+					return true;
+				}
+				// INNER, so we have to go deeper
+				else {
+					return false;
+				}
+			} else {
+				// Didn't hit it, so we don't have to go deeper
+				return true;
+			}
+		});
+		// END TEST RAYS AGAINST BBOX
+
+		// Split patch for further traversal if necessary
+		if (ray_stack[stack_i].first != ray_stack[stack_i].second) {
+			auto uv = uv_stack[stack_i];
+			auto next_patches = patch_stack.push_frame<std::array<Vec3, 16>>(tsc).first;
+
+			const float ulen = longest_axis(cur_patches[0][0] - cur_patches[0][3]);
+			const float vlen = longest_axis(cur_patches[0][0] - cur_patches[0][4*3]);
+
+			// Split U
+			if (ulen > vlen) {
+				for (int i = 0; i < tsc; ++i) {
+					split_u(&(cur_patches[i][0]), &(cur_patches[i][0]), &(next_patches[i][0]));
+				}
+
+				// Fill in uv's
+				std::get<0>(uv_stack[stack_i]) = std::get<0>(uv);
+				std::get<1>(uv_stack[stack_i]) = (std::get<0>(uv) + std::get<1>(uv)) * 0.5;
+				std::get<2>(uv_stack[stack_i]) = std::get<2>(uv);
+				std::get<3>(uv_stack[stack_i]) = std::get<3>(uv);
+
+				std::get<0>(uv_stack[stack_i+1]) = (std::get<0>(uv) + std::get<1>(uv)) * 0.5;
+				std::get<1>(uv_stack[stack_i+1]) = std::get<1>(uv);
+				std::get<2>(uv_stack[stack_i+1]) = std::get<2>(uv);
+				std::get<3>(uv_stack[stack_i+1]) = std::get<3>(uv);
+
+			}
+			// Split V
+			else {
+				for (int i = 0; i < tsc; ++i) {
+					split_v(&(cur_patches[i][0]), &(cur_patches[i][0]), &(next_patches[i][0]));
+				}
+
+				// Fill in uv's
+				std::get<0>(uv_stack[stack_i]) = std::get<0>(uv);
+				std::get<1>(uv_stack[stack_i]) = std::get<1>(uv);
+				std::get<2>(uv_stack[stack_i]) = std::get<2>(uv);
+				std::get<3>(uv_stack[stack_i]) = (std::get<2>(uv) + std::get<3>(uv)) * 0.5;
+
+				std::get<0>(uv_stack[stack_i+1]) = std::get<0>(uv);
+				std::get<1>(uv_stack[stack_i+1]) = std::get<1>(uv);
+				std::get<2>(uv_stack[stack_i+1]) = (std::get<2>(uv) + std::get<3>(uv)) * 0.5;
+				std::get<3>(uv_stack[stack_i+1]) = std::get<3>(uv);
+			}
+
+			ray_stack[stack_i + 1] = ray_stack[stack_i];
+
+			++stack_i;
+		} else {
 			--stack_i;
 			patch_stack.pop_frame();
-		} else {
-#endif
-			BBox bb = bound(cur_patch);
-			const float max_dim = longest_axis(bb.max - bb.min);
-
-			// TEST RAYS AGAINST BBOX
-			ray_stack[stack_i].first = mutable_partition(ray_stack[stack_i].first, ray_stack[stack_i].second, [&](Ray& ray) {
-				if ((ray.flags() & Ray::DONE) != 0) {
-					return true;
-				}
-
-				float hitt0, hitt1;
-				if (bb.intersect_ray(ray, &hitt0, &hitt1, ray.max_t)) {
-					const float width = ray.min_width(hitt0, hitt1) * Config::dice_rate;
-					// LEAF, so we don't have to go deeper, regardless of whether
-					// we hit it or not.
-					if (max_dim <= width || stack_i == (STACK_SIZE-1)) {
-						const float tt = (hitt0 + hitt1) * 0.5f;
-						if (tt > 0.0f && tt <= ray.max_t) {
-							auto &inter = intersections[ray.id];
-							inter.hit = true;
-							if ((ray.flags() & Ray::IS_OCCLUSION) != 0) {
-								ray.flags() |= Ray::DONE;
-							} else {
-								ray.max_t = tt;
-
-								const float u = (std::get<0>(uv_stack[stack_i]) + std::get<1>(uv_stack[stack_i])) * 0.5f;
-								const float v = (std::get<2>(uv_stack[stack_i]) + std::get<3>(uv_stack[stack_i])) * 0.5f;
-								const float offset = max_dim * 1.74f;
-
-								inter.t = tt;
-
-								inter.space = parent_xforms.size() > 0 ? lerp_seq(ray.time, parent_xforms) : Transform();
-								//inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.02f, 1.2f, 0.25f));
-								//inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.0f, 1.5f, 0.25f));
-								inter.surface_closure.init(LambertClosure(Color(0.9, 0.9, 0.9)));
-
-								inter.geo.p = ray.o + (ray.d * tt);
-								inter.geo.u = u;
-								inter.geo.v = v;
-
-								// Differential position
-								inter.geo.dpdu = dp_u(&(verts[0][0]), u, v);
-								inter.geo.dpdv = dp_v(&(verts[0][0]), u, v);
-
-								// Surface normal
-								inter.geo.n = cross(inter.geo.dpdv, inter.geo.dpdu).normalized();
-
-								// Did te ray hit from the back-side of the surface?
-								inter.backfacing = dot(inter.geo.n, ray.d.normalized()) > 0.0f;
-
-								// Differential normal
-								// TODO
-								inter.geo.dndu = Vec3(0.0f, 0.0f, 0.0f);
-								inter.geo.dndv = Vec3(0.0f, 0.0f, 0.0f);
-
-								inter.offset = inter.geo.n * offset;
-							}
-						}
-
-						return true;
-					}
-					// INNER, so we have to go deeper
-					else {
-						return false;
-					}
-				} else {
-					// Didn't hit it, so we don't have to go deeper
-					return true;
-				}
-			});
-			// END TEST RAYS AGAINST BBOX
-
-			// Split patch for further traversal if necessary
-			if (ray_stack[stack_i].first != ray_stack[stack_i].second) {
-				auto uv = uv_stack[stack_i];
-				auto &next_patch = *(patch_stack.push_frame<std::array<Vec3, 16>>(1).first);
-
-				const float ulen = longest_axis(cur_patch[0] - cur_patch[3]);
-				const float vlen = longest_axis(cur_patch[0] - cur_patch[4*3]);
-
-				// Split U
-				if (ulen > vlen) {
-					split_u(&(cur_patch[0]), &(cur_patch[0]), &(next_patch[0]));
-
-					// Fill in uv's
-					std::get<0>(uv_stack[stack_i]) = std::get<0>(uv);
-					std::get<1>(uv_stack[stack_i]) = (std::get<0>(uv) + std::get<1>(uv)) * 0.5;
-					std::get<2>(uv_stack[stack_i]) = std::get<2>(uv);
-					std::get<3>(uv_stack[stack_i]) = std::get<3>(uv);
-
-					std::get<0>(uv_stack[stack_i+1]) = (std::get<0>(uv) + std::get<1>(uv)) * 0.5;
-					std::get<1>(uv_stack[stack_i+1]) = std::get<1>(uv);
-					std::get<2>(uv_stack[stack_i+1]) = std::get<2>(uv);
-					std::get<3>(uv_stack[stack_i+1]) = std::get<3>(uv);
-
-				}
-				// Split V
-				else {
-					split_v(&(cur_patch[0]), &(cur_patch[0]), &(next_patch[0]));
-
-					// Fill in uv's
-					std::get<0>(uv_stack[stack_i]) = std::get<0>(uv);
-					std::get<1>(uv_stack[stack_i]) = std::get<1>(uv);
-					std::get<2>(uv_stack[stack_i]) = std::get<2>(uv);
-					std::get<3>(uv_stack[stack_i]) = (std::get<2>(uv) + std::get<3>(uv)) * 0.5;
-
-					std::get<0>(uv_stack[stack_i+1]) = std::get<0>(uv);
-					std::get<1>(uv_stack[stack_i+1]) = std::get<1>(uv);
-					std::get<2>(uv_stack[stack_i+1]) = (std::get<2>(uv) + std::get<3>(uv)) * 0.5;
-					std::get<3>(uv_stack[stack_i+1]) = std::get<3>(uv);
-				}
-
-				ray_stack[stack_i + 1] = ray_stack[stack_i];
-
-				++stack_i;
-			} else {
-				--stack_i;
-				patch_stack.pop_frame();
-			}
-#ifdef SINGLE_RAY_OPTIMIZE
 		}
-#endif
 	}
+
+	patch_stack.pop_frame(); // Pop BBoxes
 }
