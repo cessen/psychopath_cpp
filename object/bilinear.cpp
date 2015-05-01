@@ -60,8 +60,8 @@ inline Vec3 dp_v(const Vec3 p[], float u, float v)
 	// First we interpolate across u to get a curve
 	const float iu = 1.0f - u; // We use this a lot, so pre-calculate
 	Vec3 c[2];
-	c[0] = (p[0] * iu) + (p[1] * v);
-	c[1] = (p[3] * iu) + (p[2] * v);;
+	c[0] = (p[0] * iu) + (p[1] * u);
+	c[1] = (p[3] * iu) + (p[2] * u);;
 
 	// Now we use the derivatives across u to find dp
 	return c[1] - c[0];
