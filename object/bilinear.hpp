@@ -17,7 +17,7 @@
  *     u-->
  *   v1----v2
  * v  |    |
- * | v4----v3
+ * | v3----v4
  * \/
  */
 class Bilinear final: public PatchSurface
@@ -58,56 +58,33 @@ public:
 
 	__attribute__((always_inline))
 	static float vlen(const std::array<Vec3, 4> &p) {
-		return longest_axis(p[0] - p[3]);
+		return longest_axis(p[0] - p[2]);
 	}
 
 	__attribute__((always_inline))
 	static void split_u(const store_type &p, Vec3 p1[], Vec3 p2[]) {
-		p2[0] = (p[0] + p[1]) * 0.5;
+		p2[0] = (p[0] + p[1]) * 0.5f;
 		p2[1] = p[1];
-		p2[2] = p[2];
-		p2[3] = (p[2] + p[3]) * 0.5;
+		p2[2] = (p[2] + p[3]) * 0.5f;
+		p2[3] = p[3];
 
 		p1[0] = p[0];
-		p1[1] = (p[0] + p[1]) * 0.5;
-		p1[2] = (p[2] + p[3]) * 0.5;
-		p1[3] = p[3];
+		p1[1] = (p[0] + p[1]) * 0.5f;
+		p1[2] = p[2];
+		p1[3] = (p[2] + p[3]) * 0.5f;
 	}
 
 	__attribute__((always_inline))
 	static void split_v(const store_type &p, Vec3 p1[], Vec3 p2[]) {
-		p2[0] = (p[3] + p[0]) * 0.5;
-		p2[1] = (p[1] + p[2]) * 0.5;
+		p2[0] = (p[0] + p[2]) * 0.5f;
+		p2[1] = (p[1] + p[3]) * 0.5f;
 		p2[2] = p[2];
 		p2[3] = p[3];
 
 		p1[0] = p[0];
 		p1[1] = p[1];
-		p1[2] = (p[1] + p[2]) * 0.5;
-		p1[3] = (p[3] + p[0]) * 0.5;
-	}
-
-	static Vec3 dp_u(const store_type &p, float u, float v) {
-		// First we interpolate across v to get a curve
-		const float iv = 1.0f - v;
-		Vec3 c[2];
-		c[0] = (p[0] * iv) + (p[3] * v);
-		c[1] = (p[1] * iv) + (p[2] * v);
-
-		// Now we use the derivatives across u to find dp
-		return c[1] - c[0];
-	}
-
-	static Vec3 dp_v(const store_type &p, float u, float v) {
-
-		// First we interpolate across u to get a curve
-		const float iu = 1.0f - u; // We use this a lot, so pre-calculate
-		Vec3 c[2];
-		c[0] = (p[0] * iu) + (p[1] * u);
-		c[1] = (p[3] * iu) + (p[2] * u);;
-
-		// Now we use the derivatives across u to find dp
-		return c[1] - c[0];
+		p1[2] = (p[0] + p[2]) * 0.5f;
+		p1[3] = (p[1] + p[3]) * 0.5f;
 	}
 
 	/**
@@ -115,30 +92,26 @@ public:
 	 */
 	static std::tuple<Vec3, Vec3, Vec3, Vec3, Vec3> differential_geometry(const store_type &p, float u, float v) {
 		// Calculate first derivatives and surface normal
-		const Vec3 dpdu = dp_u(p, u, v);
-		const Vec3 dpdv = dp_v(p, u, v);
+		const Vec3 dpdu = ((p[0]-p[1]) * v) - (p[2] * v) + p[2] + (p[3] * (v-1.0f));
+		const Vec3 dpdv = ((p[0]-p[2]) * u) - (p[1] * u) + p[1] + (p[3] * (u-1.0f));
 		const Vec3 n = cross(dpdv, dpdu).normalized();
 
-		// TODO
-		//// Calculate second derivatives
-		//const Vec3 d2pduu = ;
-		//const Vec3 d2pduv = ;
-		//const Vec3 d2pdvv = ;
-		//
-		//// Calculate surface normal derivatives
-		//const float E = dot(dpdu, dpdu)
-		//const float F = dot(dpdu, dpdv)
-		//const float G = dot(dpdv, dpdv)
-		//const float e = dot(n, d2pduu);
-		//const float f = dot(n, d2pduv);
-		//const float g = dot(n, d2pdvv);
-		//
-		//const float invEGF2 = 1.0f / ((E*G) - (F*F));
-		//const Vec3 dndu = (((f*F) - (e*G)) * invEGF2 * dpdu) + (((e*F) - (f*E)) * invEGF2 * dpdv);
-		//const Vec3 dndv = (((g*F) - (f*G)) * invEGF2 * dpdu) + (((f*F) - (g*E)) * invEGF2 * dpdv);
+		// Calculate second derivatives
+		const Vec3 d2pduu = Vec3(0.0f);
+		const Vec3 d2pduv = p[0] - p[1] - p[2] + p[3];
+		const Vec3 d2pdvv = Vec3(0.0f);
 
-		const Vec3 dndu = Vec3(0.0, 0.0, 0.0);
-		const Vec3 dndv = Vec3(0.0, 0.0, 0.0);;
+		// Calculate surface normal derivatives
+		const float E = dot(dpdu, dpdu);
+		const float F = dot(dpdu, dpdv);
+		const float G = dot(dpdv, dpdv);
+		const float e = dot(n, d2pduu);
+		const float f = dot(n, d2pduv);
+		const float g = dot(n, d2pdvv);
+
+		const float invEGF2 = 1.0f / ((E*G) - (F*F));
+		const Vec3 dndu = (((f*F) - (e*G)) * invEGF2 * dpdu) + (((e*F) - (f*E)) * invEGF2 * dpdv);
+		const Vec3 dndv = (((g*F) - (f*G)) * invEGF2 * dpdu) + (((f*F) - (g*E)) * invEGF2 * dpdv);
 
 		return std::make_tuple(n, dpdu, dpdv, dndu, dndv);
 	}

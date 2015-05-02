@@ -288,7 +288,7 @@ class PsychoExporter:
                     for i in range(len(time_meshes)):
                         verts = time_meshes[i].vertices
                         vstr = ""
-                        for vi in poly.vertices:
+                        for vi in [poly.vertices[0], poly.vertices[1], poly.vertices[3], poly.vertices[2]]:
                             v = verts[vi].co
                             vstr += ("%f %f %f " % (v[0], v[1], v[2]))
                         self.w.write("Vertices [%s]\n" % vstr[:-1])
