@@ -291,21 +291,11 @@ void intersect_rays_with_patch(const PATCH &patch, const std::vector<Transform>&
 							inter.geo.u = u;
 							inter.geo.v = v;
 
-							// Differential position
-							// TODO: use time-interpolated patch
-							inter.geo.dpdu = PATCH::dp_u(&(ipatch[0]), u, v);
-							inter.geo.dpdv = PATCH::dp_v(&(ipatch[0]), u, v);
-
-							// Surface normal
-							inter.geo.n = cross(inter.geo.dpdv, inter.geo.dpdu).normalized();
+							// Surface normal and differential geometry
+							std::tie(inter.geo.n, inter.geo.dpdu, inter.geo.dpdv, inter.geo.dndu, inter.geo.dndv) = PATCH::differential_geometry(ipatch, u, v);
 
 							// Did te ray hit from the back-side of the surface?
 							inter.backfacing = dot(inter.geo.n, ray.d.normalized()) > 0.0f;
-
-							// Differential normal
-							// TODO
-							inter.geo.dndu = Vec3(0.0f, 0.0f, 0.0f);
-							inter.geo.dndv = Vec3(0.0f, 0.0f, 0.0f);
 
 							inter.offset = inter.geo.n * offset;
 						}
@@ -335,7 +325,7 @@ void intersect_rays_with_patch(const PATCH &patch, const std::vector<Transform>&
 			// Split U
 			if (ulen > vlen) {
 				for (int i = 0; i < tsc; ++i) {
-					PATCH::split_u(&(cur_patches[i][0]), &(cur_patches[i][0]), &(next_patches[i][0]));
+					PATCH::split_u(cur_patches[i], &(cur_patches[i][0]), &(next_patches[i][0]));
 				}
 
 				// Fill in uv's
@@ -353,7 +343,7 @@ void intersect_rays_with_patch(const PATCH &patch, const std::vector<Transform>&
 			// Split V
 			else {
 				for (int i = 0; i < tsc; ++i) {
-					PATCH::split_v(&(cur_patches[i][0]), &(cur_patches[i][0]), &(next_patches[i][0]));
+					PATCH::split_v(cur_patches[i], &(cur_patches[i][0]), &(next_patches[i][0]));
 				}
 
 				// Fill in uv's
