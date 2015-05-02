@@ -92,8 +92,8 @@ public:
 	 */
 	static std::tuple<Vec3, Vec3, Vec3, Vec3, Vec3> differential_geometry(const store_type& p, float u, float v) {
 		// Calculate first derivatives and surface normal
-		const Vec3 dpdu = ((p[0]-p[1]) * v) - (p[2] * v) + p[2] + (p[3] * (v-1.0f));
-		const Vec3 dpdv = ((p[0]-p[2]) * u) - (p[1] * u) + p[1] + (p[3] * (u-1.0f));
+		const Vec3 dpdu = ((p[0]-p[1]) * v) + (p[2] * (1.0f-v)) + (p[3] * (v-1.0f));
+		const Vec3 dpdv = ((p[0]-p[2]) * u) + (p[1] * (1.0f-u)) + (p[3] * (u-1.0f));
 		const Vec3 n = cross(dpdv, dpdu).normalized();
 
 		// Calculate second derivatives
