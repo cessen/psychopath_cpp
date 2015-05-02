@@ -3,9 +3,9 @@
 
 #include "numtype.h"
 
-#include <atomic>
 #include <vector>
 #include <array>
+#include "utils.hpp"
 #include "stack.hpp"
 #include "vector.hpp"
 #include "grid.hpp"
@@ -42,6 +42,14 @@ public:
 
 	// For being traced by intersect_rays_with_patch() in tracer.cpp
 	typedef std::array<Vec3, 4> store_type;
+
+	static store_type interpolate_patch(float alpha, const store_type& p1, const store_type& p2) {
+		store_type p3;
+		for (int i = 0; i < 4; ++i) {
+			p3[i] = lerp(alpha, p1[i], p2[i]);
+		}
+		return p3;
+	}
 
 	__attribute__((always_inline))
 	static float ulen(const std::array<Vec3, 4> &p) {

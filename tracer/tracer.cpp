@@ -227,6 +227,13 @@ void intersect_rays_with_patch(const PATCH &patch, const std::vector<Transform>&
 				return true;
 			}
 
+			// Time interpolation values, which may be used twice in the case
+			// that there is more than one time sample, so store them outside
+			// of the if statement below.
+			float t_time;
+			size_t t_index;
+			float t_nalpha;
+
 			// Ray test
 			float hitt0, hitt1;
 			bool hit;
@@ -236,10 +243,10 @@ void intersect_rays_with_patch(const PATCH &patch, const std::vector<Transform>&
 			} else {
 				// If we have more than one time sample, we need to interpolate the bbox
 				// before testing.
-				const float temp = ray.time * (tsc - 1);
-				const auto index = static_cast<size_t>(temp);
-				const float nalpha = temp - index;
-				hit = lerp(nalpha, bboxes[index], bboxes[index+1]).intersect_ray(ray, &hitt0, &hitt1, ray.max_t);
+				t_time = ray.time * (tsc - 1);
+				t_index = t_time;
+				t_nalpha = t_time - t_index;
+				hit = lerp(t_nalpha, bboxes[t_index], bboxes[t_index+1]).intersect_ray(ray, &hitt0, &hitt1, ray.max_t);
 			}
 
 			if (hit) {
@@ -254,6 +261,19 @@ void intersect_rays_with_patch(const PATCH &patch, const std::vector<Transform>&
 						if ((ray.flags() & Ray::IS_OCCLUSION) != 0) {
 							ray.flags() |= Ray::DONE;
 						} else {
+							// Get the time-interpolated patch, for calculating
+							// surface derivatives and normals below
+							typename PATCH::store_type ipatch;
+							if (tsc == 1) {
+								// If we only have one time sample, we can skip the interpolation
+								ipatch = cur_patches[0];
+							} else {
+								// If we have more than one time sample, we need to interpolate the patch
+								ipatch = PATCH::interpolate_patch(t_nalpha, cur_patches[t_index], cur_patches[t_index+1]);
+							}
+
+
+							// Fill in intersection and ray info
 							ray.max_t = tt;
 
 							const float u = (std::get<0>(uv_stack[stack_i]) + std::get<1>(uv_stack[stack_i])) * 0.5f;
@@ -273,8 +293,8 @@ void intersect_rays_with_patch(const PATCH &patch, const std::vector<Transform>&
 
 							// Differential position
 							// TODO: use time-interpolated patch
-							inter.geo.dpdu = PATCH::dp_u(&(patch.verts[0][0]), u, v);
-							inter.geo.dpdv = PATCH::dp_v(&(patch.verts[0][0]), u, v);
+							inter.geo.dpdu = PATCH::dp_u(&(ipatch[0]), u, v);
+							inter.geo.dpdv = PATCH::dp_v(&(ipatch[0]), u, v);
 
 							// Surface normal
 							inter.geo.n = cross(inter.geo.dpdv, inter.geo.dpdu).normalized();
