@@ -5,6 +5,7 @@
 
 #include <atomic>
 #include <vector>
+#include <array>
 #include "stack.hpp"
 #include "vector.hpp"
 #include "grid.hpp"
@@ -19,15 +20,10 @@
  * | v4----v3
  * \/
  */
-class Bilinear final: public BreadthSurface
+class Bilinear final: public PatchSurface
 {
 public:
 	std::vector<std::array<Vec3, 4>> verts;
-	float u_min {0.0f}, v_min {0.0f};
-	float u_max {1.0f}, v_max {1.0f};
-	float longest_u, longest_v;
-	float log_widest = 0.0f;  // Log base 2 of the widest part of the patch, for fast subdivision rate estimates
-
 	std::vector<BBox> bbox;
 
 	Bilinear() {}
@@ -37,19 +33,86 @@ public:
 	void finalize();
 
 	void add_time_sample(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4);
-	//Grid *grid_dice(const int ru, const int rv) const;
 
 	virtual const std::vector<BBox> &bounds() const override;
 	virtual Color total_emitted_color() const override {
 		return Color(0.0f);
 	}
 
-	//virtual int split(std::unique_ptr<DiceableSurface> objects[]) override;
-	//virtual std::unique_ptr<DiceableSurface> copy() const override;
-	//virtual size_t subdiv_estimate(float width) const override;
-	//virtual std::shared_ptr<MicroSurface> dice(size_t subdivisions) const override;
 
-	virtual void intersect_rays(const std::vector<Transform>& parent_xforms, Ray* ray_begin, Ray* ray_end, Intersection *intersections, Stack* data_stack);
+	// For being traced by intersect_rays_with_patch() in tracer.cpp
+	typedef std::array<Vec3, 4> store_type;
+
+	__attribute__((always_inline))
+	static float ulen(const std::array<Vec3, 4> &p) {
+		return longest_axis(p[0] - p[1]);
+	}
+
+	__attribute__((always_inline))
+	static float vlen(const std::array<Vec3, 4> &p) {
+		return longest_axis(p[0] - p[3]);
+	}
+
+	__attribute__((always_inline))
+	static void split_u(const Vec3 p[], Vec3 p1[], Vec3 p2[]) {
+		p2[0] = (p[0] + p[1]) * 0.5;
+		p2[1] = p[1];
+		p2[2] = p[2];
+		p2[3] = (p[2] + p[3]) * 0.5;
+
+		p1[0] = p[0];
+		p1[1] = (p[0] + p[1]) * 0.5;
+		p1[2] = (p[2] + p[3]) * 0.5;
+		p1[3] = p[3];
+	}
+
+	__attribute__((always_inline))
+	static void split_v(const Vec3 p[], Vec3 p1[], Vec3 p2[]) {
+		p2[0] = (p[3] + p[0]) * 0.5;
+		p2[1] = (p[1] + p[2]) * 0.5;
+		p2[2] = p[2];
+		p2[3] = p[3];
+
+		p1[0] = p[0];
+		p1[1] = p[1];
+		p1[2] = (p[1] + p[2]) * 0.5;
+		p1[3] = (p[3] + p[0]) * 0.5;
+	}
+
+	static Vec3 dp_u(const Vec3 p[], float u, float v) {
+		// First we interpolate across v to get a curve
+		const float iv = 1.0f - v;
+		Vec3 c[2];
+		c[0] = (p[0] * iv) + (p[3] * v);
+		c[1] = (p[1] * iv) + (p[2] * v);
+
+		// Now we use the derivatives across u to find dp
+		return c[1] - c[0];
+	}
+
+	static Vec3 dp_v(const Vec3 p[], float u, float v) {
+
+		// First we interpolate across u to get a curve
+		const float iu = 1.0f - u; // We use this a lot, so pre-calculate
+		Vec3 c[2];
+		c[0] = (p[0] * iu) + (p[1] * u);
+		c[1] = (p[3] * iu) + (p[2] * u);;
+
+		// Now we use the derivatives across u to find dp
+		return c[1] - c[0];
+	}
+
+	__attribute__((always_inline))
+	static BBox bound(const std::array<Vec3, 4>& p) {
+		BBox bb = BBox(p[0], p[0]);;
+
+		for (int i = 1; i < 4; ++i) {
+			bb.min = min(bb.min, p[i]);
+			bb.max = max(bb.max, p[i]);
+		}
+
+		return bb;
+	}
 };
 
 #endif

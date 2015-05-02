@@ -15,6 +15,8 @@
 #include "utils.hpp"
 #include "low_level.hpp"
 
+#include "bilinear.hpp"
+#include "bicubic.hpp"
 #include "micro_surface.hpp"
 #include "micro_surface_cache.hpp"
 
@@ -28,6 +30,8 @@
 
 #include "surface_closure.hpp"
 #include "closure_union.hpp"
+
+#define SPLIT_STACK_SIZE 64
 
 uint32_t Tracer::trace(const WorldRay* w_rays_begin, const WorldRay* w_rays_end, Intersection* intersections_begin, Intersection* intersections_end)
 {
@@ -127,11 +131,8 @@ void Tracer::trace_assembly(Assembly* assembly, const std::vector<Transform>& pa
 				case Object::SURFACE:
 					trace_surface(reinterpret_cast<Surface*>(obj), xforms, std::get<0>(hits), std::get<1>(hits));
 					break;
-				case Object::BREADTH_SURFACE:
-					trace_breadth_surface(reinterpret_cast<BreadthSurface*>(obj), xforms, std::get<0>(hits), std::get<1>(hits));
-					break;
-				case Object::DICEABLE_SURFACE:
-					trace_diceable_surface(reinterpret_cast<DiceableSurface*>(obj), xforms, std::get<0>(hits), std::get<1>(hits));
+				case Object::PATCH_SURFACE:
+					trace_patch_surface(reinterpret_cast<PatchSurface*>(obj), xforms, std::get<0>(hits), std::get<1>(hits));
 					break;
 				default:
 					//std::cout << "WARNING: unknown object type, skipping." << std::endl;
@@ -189,157 +190,182 @@ void Tracer::trace_surface(Surface* surface, const std::vector<Transform>& paren
 	}
 }
 
-
-void Tracer::trace_breadth_surface(BreadthSurface* surface, const std::vector<Transform>& parent_xforms, Ray* rays, Ray* end)
+template <typename PATCH>
+void intersect_rays_with_patch(const PATCH &patch, const std::vector<Transform>& parent_xforms, Ray* ray_begin, Ray* ray_end, Intersection *intersections, Stack* data_stack)
 {
-	surface->intersect_rays(parent_xforms, rays, end, &(intersections[0]), &data_stack);
-}
-
-
-void Tracer::trace_diceable_surface(DiceableSurface* prim, const std::vector<Transform>& parent_xforms, Ray* rays, Ray* end)
-{
-#define STACK_SIZE 64
-
-	using namespace MicroSurfaceCache;
-	int split_count = 0;
-
-	const size_t max_subdivs = intlog2(Config::max_grid_size);
-
-//#define USE_MICROGEO_CACHE
-#ifdef USE_MICROGEO_CACHE
-	// UID's
-	const size_t uid1 = prim->uid; // Main UID
-	size_t uid2_stack[STACK_SIZE]; // Sub-UID
-	uid2_stack[0] = 1;
-#endif
-
-	// Stack
-	std::unique_ptr<DiceableSurface> primitive_stack[STACK_SIZE];
-	primitive_stack[0] = prim->copy();
+	const size_t tsc = patch.verts.size(); // Time sample count
 	int stack_i = 0;
+	std::pair<Ray*, Ray*> ray_stack[SPLIT_STACK_SIZE];
+	BBox* bboxes = data_stack->push_frame<BBox>(tsc).first;
+	Stack &patch_stack = *data_stack;
+	std::tuple<float, float, float, float> uv_stack[SPLIT_STACK_SIZE]; // (min_u, max_u, min_v, max_v)
 
-	// Stacks of start/end iterators for partitioning the potints as we
-	// dive deeper into the traversal
-	Ray* ray_starts[STACK_SIZE];
-	Ray* ray_ends[STACK_SIZE];
-	ray_starts[0] = rays;
-	ray_ends[0] = end;
+	// Initialize stacks
+	// TODO: take into account ray time
+	ray_stack[0] = std::make_pair(ray_begin, ray_end);
+	auto tmp = patch_stack.push_frame<typename PATCH::store_type>(tsc).first;
+	for (int i = 0; i < tsc; ++i) {
+		tmp[i] = patch.verts[i];
+	}
+	uv_stack[0] = std::tuple<float, float, float, float>(0.0f, 1.0f, 0.0f, 1.0f);
 
-	// Traversal
+	// Iterate down to find an intersection
 	while (stack_i >= 0) {
-		DiceableSurface& primitive = *(primitive_stack[stack_i]); // Shorthand reference to potint's primitive
+		auto cur_patches = patch_stack.top_frame<typename PATCH::store_type>().first;
 
-#ifdef USE_MICROGEO_CACHE
-		// Fetch the current primitive's microgeo cache if it exists
-		std::shared_ptr<MicroSurface> micro_surface = cache.get(Key(uid1, uid2_stack[stack_i]));
-		bool rediced = false;
-#else
-		std::shared_ptr<MicroSurface> micro_surface;
-#endif
+		// Calculate bounding boxes and max_dim
+		bboxes[0] = PATCH::bound(cur_patches[0]);
+		float max_dim = longest_axis(bboxes[0].max - bboxes[0].min);
+		for (int i = 1; i < tsc; ++i) {
+			bboxes[i] = PATCH::bound(cur_patches[i]);
+			max_dim = std::max(max_dim, longest_axis(bboxes[i].max - bboxes[i].min));
+		}
 
-		// Get the number of subdivisions of the cached microsurface if it exists
-		size_t current_subdivs = 0;
-		if (micro_surface)
-			current_subdivs = micro_surface->subdivisions();
+		// TEST RAYS AGAINST BBOX
+		ray_stack[stack_i].first = mutable_partition(ray_stack[stack_i].first, ray_stack[stack_i].second, [&](Ray& ray) {
+			if ((ray.flags() & Ray::DONE) != 0) {
+				return true;
+			}
 
-		// Test rays against primitive, marking for deeper traversal
-		// if they can't be directly tested
-		for (auto ritr = ray_starts[stack_i]; ritr != ray_ends[stack_i]; ++ritr) {
-			// Setup
-			ritr->flags() &= ~Ray::DEEPER_SPLIT; // No traversing deeper by default
-			Ray& ray = *ritr;  // Shorthand reference to the ray
-			Intersection& inter = intersections[ritr->id]; // Shorthand reference to ray's intersection
+			// Ray test
+			float hitt0, hitt1;
+			bool hit;
+			if (tsc == 1) {
+				// If we only have one time sample, we can skip the bbox interpolation
+				hit = bboxes[0].intersect_ray(ray, &hitt0, &hitt1, ray.max_t);
+			} else {
+				// If we have more than one time sample, we need to interpolate the bbox
+				// before testing.
+				const float temp = ray.time * (tsc - 1);
+				const auto index = static_cast<size_t>(temp);
+				const float nalpha = temp - index;
+				hit = lerp(nalpha, bboxes[index], bboxes[index+1]).intersect_ray(ray, &hitt0, &hitt1, ray.max_t);
+			}
 
-			// If the potint intersects with the primitive's bbox
-			float tnear, tfar;
-			if (lerp_seq(ray.time, primitive.bounds()).intersect_ray(ray, &tnear, &tfar, ray.max_t)) {
-				// Calculate the width of the ray within the bounding box
-				const float width = ray.min_width(tnear, tfar);
-
-				// Calculate the number of subdivisions necessary for this ray
-				const size_t subdivs = primitive.subdiv_estimate(width);
-
-				// If it's under the max subdivisions allowed, test
-				// against primitive
-				if (subdivs <= max_subdivs) {
-					// If we're missing a cached microsurface or it's not high resolution enough,
-					// dice a new one
-					if (micro_surface == nullptr || subdivs > current_subdivs) {
-						micro_surface = primitive.dice(subdivs);
-						current_subdivs = subdivs;
-#ifdef USE_MICROGEO_CACHE
-						rediced = true;
-#endif
-					}
-
-
-					// Test against the ray
-					if (micro_surface->intersect_ray(ray, width, &inter, &rng)) {
+			if (hit) {
+				const float width = ray.min_width(hitt0, hitt1) * Config::dice_rate;
+				// LEAF, so we don't have to go deeper, regardless of whether
+				// we hit it or not.
+				if (max_dim <= width || stack_i == (SPLIT_STACK_SIZE-1)) {
+					const float tt = (hitt0 + hitt1) * 0.5f;
+					if (tt > 0.0f && tt <= ray.max_t) {
+						auto &inter = intersections[ray.id];
 						inter.hit = true;
-
 						if ((ray.flags() & Ray::IS_OCCLUSION) != 0) {
-							ray.flags() |= Ray::DONE; // Early out for shadow rays
+							ray.flags() |= Ray::DONE;
 						} else {
-							ray.max_t = inter.t;
+							ray.max_t = tt;
+
+							const float u = (std::get<0>(uv_stack[stack_i]) + std::get<1>(uv_stack[stack_i])) * 0.5f;
+							const float v = (std::get<2>(uv_stack[stack_i]) + std::get<3>(uv_stack[stack_i])) * 0.5f;
+							const float offset = max_dim * 1.74f;
+
+							inter.t = tt;
+
 							inter.space = parent_xforms.size() > 0 ? lerp_seq(ray.time, parent_xforms) : Transform();
 							//inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.02f, 1.2f, 0.25f));
 							//inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.0f, 1.5f, 0.25f));
 							inter.surface_closure.init(LambertClosure(Color(0.9, 0.9, 0.9)));
+
+							inter.geo.p = ray.o + (ray.d * tt);
+							inter.geo.u = u;
+							inter.geo.v = v;
+
+							// Differential position
+							// TODO: use time-interpolated patch
+							inter.geo.dpdu = PATCH::dp_u(&(patch.verts[0][0]), u, v);
+							inter.geo.dpdv = PATCH::dp_v(&(patch.verts[0][0]), u, v);
+
+							// Surface normal
+							inter.geo.n = cross(inter.geo.dpdv, inter.geo.dpdu).normalized();
+
+							// Did te ray hit from the back-side of the surface?
+							inter.backfacing = dot(inter.geo.n, ray.d.normalized()) > 0.0f;
+
+							// Differential normal
+							// TODO
+							inter.geo.dndu = Vec3(0.0f, 0.0f, 0.0f);
+							inter.geo.dndv = Vec3(0.0f, 0.0f, 0.0f);
+
+							inter.offset = inter.geo.n * offset;
 						}
 					}
+
+					return true;
 				}
-				// If it's over the max subdivisions allowed, mark for deeper traversal
+				// INNER, so we have to go deeper
 				else {
-					ray.flags() |= Ray::DEEPER_SPLIT;
+					return false;
 				}
+			} else {
+				// Didn't hit it, so we don't have to go deeper
+				return true;
 			}
-		} // End test potints
-
-#ifdef USE_MICROGEO_CACHE
-		// If we re-diced the microsurface, store it in the cache
-		if (rediced)
-			cache.put(micro_surface, Key(uid1, uid2_stack[stack_i]));
-#endif
-
-		// Filter potints based on whether they need deeper traversal
-		ray_starts[stack_i] = std::partition(ray_starts[stack_i], ray_ends[stack_i], [this](const Ray& r) {
-			return ((r.flags() & Ray::DEEPER_SPLIT) == 0) || ((r.flags() & Ray::DONE) != 0);
 		});
+		// END TEST RAYS AGAINST BBOX
 
-		// If any potints left, traverse down the stack via splitting
-		if (ray_starts[stack_i] != ray_ends[stack_i]) {
-			++split_count;
-			std::unique_ptr<DiceableSurface> new_prims[4];
+		// Split patch for further traversal if necessary
+		if (ray_stack[stack_i].first != ray_stack[stack_i].second) {
+			auto uv = uv_stack[stack_i];
+			auto next_patches = patch_stack.push_frame<typename PATCH::store_type>(tsc).first;
 
-			// Split the primitive
-			const int new_count = primitive.split(new_prims);
+			const float ulen = PATCH::ulen(cur_patches[0]);
+			const float vlen = PATCH::vlen(cur_patches[0]);
 
-#ifdef USE_MICROGEO_CACHE
-			const auto parent_uid2 = uid2_stack[stack_i];
-#endif
-			for (int i = 0; i < new_count; ++i) {
-				const int ii = stack_i + i;
+			// Split U
+			if (ulen > vlen) {
+				for (int i = 0; i < tsc; ++i) {
+					PATCH::split_u(&(cur_patches[i][0]), &(cur_patches[i][0]), &(next_patches[i][0]));
+				}
 
-				// Update potint iterator stack
-				ray_starts[ii] = ray_starts[stack_i];
-				ray_ends[ii] = ray_ends[stack_i];
+				// Fill in uv's
+				std::get<0>(uv_stack[stack_i]) = std::get<0>(uv);
+				std::get<1>(uv_stack[stack_i]) = (std::get<0>(uv) + std::get<1>(uv)) * 0.5;
+				std::get<2>(uv_stack[stack_i]) = std::get<2>(uv);
+				std::get<3>(uv_stack[stack_i]) = std::get<3>(uv);
 
-				// Update primitive stack
-				std::swap(primitive_stack[ii], new_prims[i]);
-#ifdef USE_MICROGEO_CACHE
-				// Update uid stack
-				uid2_stack[ii] = (parent_uid2 << 2) | i;
-#endif
+				std::get<0>(uv_stack[stack_i+1]) = (std::get<0>(uv) + std::get<1>(uv)) * 0.5;
+				std::get<1>(uv_stack[stack_i+1]) = std::get<1>(uv);
+				std::get<2>(uv_stack[stack_i+1]) = std::get<2>(uv);
+				std::get<3>(uv_stack[stack_i+1]) = std::get<3>(uv);
+
+			}
+			// Split V
+			else {
+				for (int i = 0; i < tsc; ++i) {
+					PATCH::split_v(&(cur_patches[i][0]), &(cur_patches[i][0]), &(next_patches[i][0]));
+				}
+
+				// Fill in uv's
+				std::get<0>(uv_stack[stack_i]) = std::get<0>(uv);
+				std::get<1>(uv_stack[stack_i]) = std::get<1>(uv);
+				std::get<2>(uv_stack[stack_i]) = std::get<2>(uv);
+				std::get<3>(uv_stack[stack_i]) = (std::get<2>(uv) + std::get<3>(uv)) * 0.5;
+
+				std::get<0>(uv_stack[stack_i+1]) = std::get<0>(uv);
+				std::get<1>(uv_stack[stack_i+1]) = std::get<1>(uv);
+				std::get<2>(uv_stack[stack_i+1]) = (std::get<2>(uv) + std::get<3>(uv)) * 0.5;
+				std::get<3>(uv_stack[stack_i+1]) = std::get<3>(uv);
 			}
 
-			// Update stack index_potint
-			stack_i += new_count - 1;
-		}
-		// If not any potints left, move up the stack
-		else {
-			stack_i--;
+			ray_stack[stack_i + 1] = ray_stack[stack_i];
+
+			++stack_i;
+		} else {
+			--stack_i;
+			patch_stack.pop_frame();
 		}
 	}
 
-	Global::Stats::split_count += split_count;
+	patch_stack.pop_frame(); // Pop BBoxes
+}
+
+
+void Tracer::trace_patch_surface(PatchSurface* surface, const std::vector<Transform>& parent_xforms, Ray* rays, Ray* end)
+{
+	if (auto patch = dynamic_cast<Bilinear*>(surface)) {
+		intersect_rays_with_patch<Bilinear>(*patch, parent_xforms, rays, end, &(intersections[0]), &data_stack);
+	} else if (auto patch = dynamic_cast<Bicubic*>(surface)) {
+		intersect_rays_with_patch<Bicubic>(*patch, parent_xforms, rays, end, &(intersections[0]), &data_stack);
+	}
 }

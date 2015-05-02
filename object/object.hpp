@@ -34,8 +34,7 @@ public:
 	 */
 	enum Type {
 	    SURFACE,
-	    BREADTH_SURFACE,
-	    DICEABLE_SURFACE,
+	    PATCH_SURFACE,
 	    LIGHT,
 	    ASSEMBLY_INSTANCE
 	};
@@ -66,7 +65,8 @@ public:
 
 
 /**
- * @brief An interface for traditional surface objects.
+ * @brief An interface for traditional surface objects that can be easily
+ * directly tested against a single ray at a time.
  */
 class Surface: public Object
 {
@@ -85,72 +85,25 @@ public:
 
 
 /**
- * @brief An interface for surface objects that can improve intersection
- * performance by testing many rays at once.
+ * @brief An interface for surface patch with inherent UV coordinates, and
+ * which can be easily recursively split into smaller patches.
+ *
+ * Other than defining get_type() there are no methods defined in this class.
+ * However, subclasses of this must nevertheless adhere to an interface and
+ * provide certain static methods that certain templated functions end up
+ * using.  C++14 and earlier are, unfortunately, not able to describe such
+ * interfaces.  Hopefully Concepts Lite in C++17 will allow this.  In the mean
+ * time, look at the Bilinear and Bicubic classes for examples of the required
+ * interface.
  */
-class BreadthSurface: public Object
+class PatchSurface: public Object
 {
 public:
-	virtual ~BreadthSurface() {}
+	virtual ~PatchSurface() {}
 
 	Object::Type get_type() const final {
-		return Object::BREADTH_SURFACE;
+		return Object::PATCH_SURFACE;
 	}
-
-	/**
-	 * @brief Tests a batch of rays against the surface.
-	 */
-	virtual void intersect_rays(const std::vector<Transform>& parent_xforms, Ray* ray_begin, Ray* ray_end, Intersection *intersections, Stack* data_stack) = 0;
-};
-
-
-/**
- * @brief An interface for diceable surface objects.
- */
-class DiceableSurface: public Object
-{
-public:
-	virtual ~DiceableSurface() {}
-
-	Object::Type get_type() const final {
-		return DICEABLE_SURFACE;
-	}
-
-	/**
-	 * @brief Returns the number of subdivisions necessary to achieve the
-	 * given target width of microgeometry.
-	 */
-	virtual size_t subdiv_estimate(float width) const = 0;
-
-	/**
-	 * @brief Returns a pointer to a heap-allocated duplicate of the surface.
-	 */
-	virtual std::unique_ptr<DiceableSurface> copy() const = 0;
-
-	/**
-	 * @brief Splits a diceable surface into two or more sub-surfaces.
-	 * Splitting MUST be deterministic: given the same surface, splitting
-	 * should result in the same output surfaces in the same order.
-	 *
-	 * Places pointers to the surfaces in the given surface pointer array.
-	 *
-	 * @warning To implementors: the implementation of this method must allow
-	 * the surface itself to be replaced by one of the new surfaces.  So make
-	 * sure not to assign to the array until you don't need the surface's data
-	 * anymore.
-	 *
-	 * @return The number of new surfaces generated from the split
-	 */
-	virtual int split(std::unique_ptr<DiceableSurface> objects[]) = 0;
-
-	/**
-	 * @brief Dices the surface into a MicroSurface.
-	 *
-	 * @param subdivisions The number of subdivisions to dice it to.  For most
-	 *        subdivision schemes, the amount of geometry quadruples every
-	 *        subdivision iteration.
-	 */
-	virtual std::shared_ptr<MicroSurface> dice(size_t subdivisions) const = 0;
 };
 
 #endif // OBJECT_HPP
