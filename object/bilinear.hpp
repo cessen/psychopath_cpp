@@ -52,45 +52,45 @@ public:
 	}
 
 	__attribute__((always_inline))
-	static float ulen(const std::array<Vec3, 4> &p) {
+	static float ulen(const store_type& p) {
 		return longest_axis(p[0] - p[1]);
 	}
 
 	__attribute__((always_inline))
-	static float vlen(const std::array<Vec3, 4> &p) {
+	static float vlen(const store_type& p) {
 		return longest_axis(p[0] - p[2]);
 	}
 
 	__attribute__((always_inline))
-	static void split_u(const store_type &p, Vec3 p1[], Vec3 p2[]) {
-		p2[0] = (p[0] + p[1]) * 0.5f;
-		p2[1] = p[1];
-		p2[2] = (p[2] + p[3]) * 0.5f;
-		p2[3] = p[3];
+	static void split_u(const store_type& p, store_type* p1, store_type* p2) {
+		(*p2)[0] = (p[0] + p[1]) * 0.5f;
+		(*p2)[1] = p[1];
+		(*p2)[2] = (p[2] + p[3]) * 0.5f;
+		(*p2)[3] = p[3];
 
-		p1[0] = p[0];
-		p1[1] = (p[0] + p[1]) * 0.5f;
-		p1[2] = p[2];
-		p1[3] = (p[2] + p[3]) * 0.5f;
+		(*p1)[0] = p[0];
+		(*p1)[1] = (p[0] + p[1]) * 0.5f;
+		(*p1)[2] = p[2];
+		(*p1)[3] = (p[2] + p[3]) * 0.5f;
 	}
 
 	__attribute__((always_inline))
-	static void split_v(const store_type &p, Vec3 p1[], Vec3 p2[]) {
-		p2[0] = (p[0] + p[2]) * 0.5f;
-		p2[1] = (p[1] + p[3]) * 0.5f;
-		p2[2] = p[2];
-		p2[3] = p[3];
+	static void split_v(const store_type& p, store_type* p1, store_type* p2) {
+		(*p2)[0] = (p[0] + p[2]) * 0.5f;
+		(*p2)[1] = (p[1] + p[3]) * 0.5f;
+		(*p2)[2] = p[2];
+		(*p2)[3] = p[3];
 
-		p1[0] = p[0];
-		p1[1] = p[1];
-		p1[2] = (p[0] + p[2]) * 0.5f;
-		p1[3] = (p[1] + p[3]) * 0.5f;
+		(*p1)[0] = p[0];
+		(*p1)[1] = p[1];
+		(*p1)[2] = (p[0] + p[2]) * 0.5f;
+		(*p1)[3] = (p[1] + p[3]) * 0.5f;
 	}
 
 	/**
 	 * Returns <n, dpdu, dpdv, dndu, dndv>
 	 */
-	static std::tuple<Vec3, Vec3, Vec3, Vec3, Vec3> differential_geometry(const store_type &p, float u, float v) {
+	static std::tuple<Vec3, Vec3, Vec3, Vec3, Vec3> differential_geometry(const store_type& p, float u, float v) {
 		// Calculate first derivatives and surface normal
 		const Vec3 dpdu = ((p[0]-p[1]) * v) - (p[2] * v) + p[2] + (p[3] * (v-1.0f));
 		const Vec3 dpdv = ((p[0]-p[2]) * u) - (p[1] * u) + p[1] + (p[3] * (u-1.0f));
@@ -117,7 +117,7 @@ public:
 	}
 
 	__attribute__((always_inline))
-	static BBox bound(const std::array<Vec3, 4>& p) {
+	static BBox bound(const store_type& p) {
 		BBox bb = BBox(p[0], p[0]);;
 
 		for (int i = 1; i < 4; ++i) {

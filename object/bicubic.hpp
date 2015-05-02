@@ -61,53 +61,53 @@ public:
 	}
 
 	__attribute__((always_inline))
-	static float ulen(const std::array<Vec3, 16> &p) {
+	static float ulen(const store_type &p) {
 		return longest_axis(p[0] - p[3]);
 	}
 
 	__attribute__((always_inline))
-	static float vlen(const std::array<Vec3, 16> &p) {
+	static float vlen(const store_type &p) {
 		return longest_axis(p[0] - p[4*3]);
 	}
 
 	__attribute__((always_inline))
-	static void split_u(const store_type &p, Vec3 p1[], Vec3 p2[]) {
+	static void split_u(const store_type& p, store_type* p1, store_type *p2) {
 		for (int r = 0; r < 4; ++r) {
 			const auto rr = (r * 4);
 			Vec3 tmp = (p[rr+1] + p[rr+2]) * 0.5;
 
-			p2[rr+3] = p[rr+3];
-			p2[rr+2] = (p[rr+3] + p[rr+2]) * 0.5;
-			p2[rr+1] = (tmp + p2[rr+2]) * 0.5;
+			(*p2)[rr+3] = p[rr+3];
+			(*p2)[rr+2] = (p[rr+3] + p[rr+2]) * 0.5;
+			(*p2)[rr+1] = (tmp + (*p2)[rr+2]) * 0.5;
 
-			p1[rr+0] = p[rr+0];
-			p1[rr+1] = (p[rr+0] + p[rr+1]) * 0.5;
-			p1[rr+2] = (tmp + p1[rr+1]) * 0.5;
+			(*p1)[rr+0] = p[rr+0];
+			(*p1)[rr+1] = (p[rr+0] + p[rr+1]) * 0.5;
+			(*p1)[rr+2] = (tmp + (*p1)[rr+1]) * 0.5;
 
-			p1[rr+3] = (p1[rr+2] + p2[rr+1]) * 0.5;
-			p2[rr+0] = p1[rr+3];
+			(*p1)[rr+3] = ((*p1)[rr+2] + (*p2)[rr+1]) * 0.5;
+			(*p2)[rr+0] = (*p1)[rr+3];
 		}
 	}
 
 	__attribute__((always_inline))
-	static void split_v(const store_type &p, Vec3 p1[], Vec3 p2[]) {
+	static void split_v(const store_type& p, store_type* p1, store_type* p2) {
 		for (int c = 0; c < 4; ++c) {
 			Vec3 tmp = (p[c+(1*4)] + p[c+(2*4)]) * 0.5;
 
-			p2[c+(3*4)] = p[c+(3*4)];
-			p2[c+(2*4)] = (p[c+(3*4)] + p[c+(2*4)]) * 0.5;
-			p2[c+(1*4)] = (tmp + p2[c+(2*4)]) * 0.5;
+			(*p2)[c+(3*4)] = p[c+(3*4)];
+			(*p2)[c+(2*4)] = (p[c+(3*4)] + p[c+(2*4)]) * 0.5;
+			(*p2)[c+(1*4)] = (tmp + (*p2)[c+(2*4)]) * 0.5;
 
-			p1[c+(0*4)] = p[c+(0*4)];
-			p1[c+(1*4)] = (p[c+(0*4)] + p[c+(1*4)]) * 0.5;
-			p1[c+(2*4)] = (tmp + p1[c+(1*4)]) * 0.5;
+			(*p1)[c+(0*4)] = p[c+(0*4)];
+			(*p1)[c+(1*4)] = (p[c+(0*4)] + p[c+(1*4)]) * 0.5;
+			(*p1)[c+(2*4)] = (tmp + (*p1)[c+(1*4)]) * 0.5;
 
-			p1[c+(3*4)] = (p1[c+(2*4)] + p2[c+(1*4)]) * 0.5;
-			p2[c+(0*4)] = p1[c+(3*4)];
+			(*p1)[c+(3*4)] = ((*p1)[c+(2*4)] + (*p2)[c+(1*4)]) * 0.5;
+			(*p2)[c+(0*4)] = (*p1)[c+(3*4)];
 		}
 	}
 
-	static Vec3 dp_u(const store_type &p, float u, float v) {
+	static Vec3 dp_u(const store_type& p, float u, float v) {
 
 		// First we interpolate across v to get a curve
 		const float iv = 1.0f - v;
@@ -131,7 +131,7 @@ public:
 		return (c[0] * d0) + (c[1] * d1) + (c[2] * d2) + (c[3] * d3);
 	}
 
-	static Vec3 dp_v(const store_type &p, float u, float v) {
+	static Vec3 dp_v(const store_type& p, float u, float v) {
 
 		// First we interpolate across u to get a curve
 		const float iu = 1.0f - u; // We use this a lot, so pre-calculate
@@ -158,7 +158,7 @@ public:
 	/**
 	 * Returns <n, dpdu, dpdv, dndu, dndv>
 	 */
-	static std::tuple<Vec3, Vec3, Vec3, Vec3, Vec3> differential_geometry(const store_type &p, float u, float v) {
+	static std::tuple<Vec3, Vec3, Vec3, Vec3, Vec3> differential_geometry(const store_type& p, float u, float v) {
 		// Calculate first derivatives and surface normal
 		const Vec3 dpdu = dp_u(p, u, v);
 		const Vec3 dpdv = dp_v(p, u, v);
@@ -189,7 +189,7 @@ public:
 	}
 
 	__attribute__((always_inline))
-	static BBox bound(const std::array<Vec3, 16>& p) {
+	static BBox bound(const store_type& p) {
 		BBox bb = BBox(p[0], p[0]);
 
 		for (int i = 1; i < 16; ++i) {

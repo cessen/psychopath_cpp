@@ -325,7 +325,7 @@ void intersect_rays_with_patch(const PATCH &patch, const std::vector<Transform>&
 			// Split U
 			if (ulen > vlen) {
 				for (int i = 0; i < tsc; ++i) {
-					PATCH::split_u(cur_patches[i], &(cur_patches[i][0]), &(next_patches[i][0]));
+					PATCH::split_u(cur_patches[i], &(cur_patches[i]), &(next_patches[i]));
 				}
 
 				// Fill in uv's
@@ -343,7 +343,7 @@ void intersect_rays_with_patch(const PATCH &patch, const std::vector<Transform>&
 			// Split V
 			else {
 				for (int i = 0; i < tsc; ++i) {
-					PATCH::split_v(cur_patches[i], &(cur_patches[i][0]), &(next_patches[i][0]));
+					PATCH::split_v(cur_patches[i], &(cur_patches[i]), &(next_patches[i]));
 				}
 
 				// Fill in uv's
