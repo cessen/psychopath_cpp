@@ -172,9 +172,20 @@ bool Sphere::intersect_ray(const Ray &ray, Intersection *intersection)
 		intersection->geo.dpdv = Vec3(p.z * long_cos, p.z * long_sin, -radi * lat_sin) * M_PI;
 
 		// Differential normal
-		// TODO: verify that this is correct
-		intersection->geo.dndu = Vec3(unit_p.y * -1.0f, unit_p.x, 0.0f) * pi2;
-		intersection->geo.dndv = Vec3(unit_p.z * long_cos, unit_p.z * long_sin, lat_sin) * M_PI;
+		// Calculate second derivatives
+		const Vec3 d2pduu = Vec3(p.x, p.y, 0.0f) * (-pi2 * pi2);
+		const Vec3 d2pduv = Vec3(-long_sin, long_cos, 0.0f) * M_PI * p.z * pi2;
+		const Vec3 d2pdvv = Vec3(p.x, p.y, p.z) * (-M_PI * M_PI);
+		// Calculate surface normal derivatives
+		const float E = dot(intersection->geo.dpdu, intersection->geo.dpdu);
+		const float F = dot(intersection->geo.dpdu, intersection->geo.dpdv);
+		const float G = dot(intersection->geo.dpdv, intersection->geo.dpdv);
+		const float e = dot(intersection->geo.n, d2pduu);
+		const float f = dot(intersection->geo.n, d2pduv);
+		const float g = dot(intersection->geo.n, d2pdvv);
+		const float invEGF2 = 1.0f / ((E*G) - (F*F));
+		intersection->geo.dndu = (((f*F) - (e*G)) * invEGF2 * intersection->geo.dpdu) + (((e*F) - (f*E)) * invEGF2 * intersection->geo.dpdv);
+		intersection->geo.dndv = (((g*F) - (f*G)) * invEGF2 * intersection->geo.dpdu) + (((f*F) - (g*E)) * invEGF2 * intersection->geo.dpdv);
 
 		intersection->offset = intersection->geo.n * 0.000001f;
 	}

@@ -182,9 +182,9 @@ void Tracer::trace_surface(Surface* surface, const std::vector<Transform>& paren
 			} else {
 				ray.max_t = inter.t;
 				inter.space = parent_xforms.size() > 0 ? lerp_seq(ray.time, parent_xforms) : Transform();
-				//inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.0f, 1.5f, 0.25f));
+				inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.0f, 1.5f, 0.25f));
 				//inter.surface_closure.init(LambertClosure(Color(inter.geo.u*0.9f, inter.geo.v*0.9f, 0.2f)));
-				inter.surface_closure.init(LambertClosure(Color(0.9f, 0.9f, 0.9f)));
+				//inter.surface_closure.init(LambertClosure(Color(0.9f, 0.9f, 0.9f)));
 			}
 		}
 	}
@@ -266,10 +266,10 @@ void intersect_rays_with_patch(const PATCH &patch, const std::vector<Transform>&
 							typename PATCH::store_type ipatch;
 							if (tsc == 1) {
 								// If we only have one time sample, we can skip the interpolation
-								ipatch = cur_patches[0];
+								ipatch = patch.verts[0];
 							} else {
 								// If we have more than one time sample, we need to interpolate the patch
-								ipatch = PATCH::interpolate_patch(t_nalpha, cur_patches[t_index], cur_patches[t_index+1]);
+								ipatch = PATCH::interpolate_patch(t_nalpha, patch.verts[t_index], patch.verts[t_index+1]);
 							}
 
 
@@ -284,8 +284,8 @@ void intersect_rays_with_patch(const PATCH &patch, const std::vector<Transform>&
 
 							inter.space = parent_xforms.size() > 0 ? lerp_seq(ray.time, parent_xforms) : Transform();
 							//inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.02f, 1.2f, 0.25f));
-							//inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.0f, 1.5f, 0.25f));
-							inter.surface_closure.init(LambertClosure(Color(0.9, 0.9, 0.9)));
+							inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.0f, 1.5f, 0.25f));
+							//inter.surface_closure.init(LambertClosure(Color(0.9, 0.9, 0.9)));
 
 							inter.geo.p = ray.o + (ray.d * tt);
 							inter.geo.u = u;

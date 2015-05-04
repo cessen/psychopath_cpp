@@ -107,83 +107,71 @@ public:
 		}
 	}
 
-	static Vec3 dp_u(const store_type& p, float u, float v) {
+	static Vec3 eval_p(float u, const Vec3 p0, const Vec3 p1, const Vec3 p2, const Vec3 p3) {
+		const float iu = 1.0f - u;
+		const float b0 = iu * iu * iu;
+		const float b1 = 3.0f * u * iu * iu;
+		const float b2 = 3.0f * u * u * iu;
+		const float b3 = u * u * u;
 
-		// First we interpolate across v to get a curve
-		const float iv = 1.0f - v;
-		const float b0 = iv * iv * iv;
-		const float b1 = 3.0f * v * iv * iv;
-		const float b2 = 3.0f * v * v * iv;
-		const float b3 = v * v * v;
-		Vec3 c[4];
-		c[0] = (p[0] * b0) + (p[4] * b1) + (p[8] * b2) + (p[12] * b3);
-		c[1] = (p[1] * b0) + (p[5] * b1) + (p[9] * b2) + (p[13] * b3);
-		c[2] = (p[2] * b0) + (p[6] * b1) + (p[10] * b2) + (p[14] * b3);
-		c[3] = (p[3] * b0) + (p[7] * b1) + (p[11] * b2) + (p[15] * b3);
+		return (p0 * b0) + (p1 * b1) + (p2 * b2) + (p3 * b3);
+	}
 
-		// Now we use the derivatives across u to find dp
+	static Vec3 eval_pd(float u, const Vec3 p0, const Vec3 p1, const Vec3 p2, const Vec3 p3) {
 		const float iu = 1.0f - u;
 		const float d0 = -3.0f * iu * iu;
 		const float d1 = (3.0f * iu * iu) - (6.0f * iu * u);
 		const float d2 = (6.0f * iu * u) - (3.0f * u * u);
 		const float d3 = 3.0f * u * u;
 
-		return (c[0] * d0) + (c[1] * d1) + (c[2] * d2) + (c[3] * d3);
+		return (p0 * d0) + (p1 * d1) + (p2 * d2) + (p3 * d3);
 	}
 
-	static Vec3 dp_v(const store_type& p, float u, float v) {
+	static Vec3 eval_pdd(float u, const Vec3 p0, const Vec3 p1, const Vec3 p2, const Vec3 p3) {
+		const float iu = 1.0f - u;
+		const float dd0 = 6.0f * iu;
+		const float dd1 = (6.0f * u) - (12.0f * iu);
+		const float dd2 = (6.0f * iu) - (12.0f * u);
+		const float dd3 = 6.0f * u;
 
-		// First we interpolate across u to get a curve
-		const float iu = 1.0f - u; // We use this a lot, so pre-calculate
-		const float b0 = iu * iu * iu;
-		const float b1 = 3.0f * u * iu * iu;
-		const float b2 = 3.0f * u * u * iu;
-		const float b3 = u * u * u;
-		Vec3 c[4];
-		c[0] = (p[0] * b0) + (p[1] * b1) + (p[2] * b2) + (p[3] * b3);
-		c[1] = (p[4] * b0) + (p[5] * b1) + (p[6] * b2) + (p[7] * b3);
-		c[2] = (p[8] * b0) + (p[9] * b1) + (p[10] * b2) + (p[11] * b3);
-		c[3] = (p[12] * b0) + (p[13] * b1) + (p[14] * b2) + (p[15] * b3);
-
-		// Now we use the derivatives across u to find dp
-		const float iv = 1.0f - v; // We use this a lot, so pre-calculate
-		const float d0 = -3.0f * iv * iv;
-		const float d1 = (3.0f * iv * iv) - (6.0f * iv * v);
-		const float d2 = (6.0f * iv * v) - (3.0f * v * v);
-		const float d3 = 3.0f * v * v;
-
-		return (c[0] * d0) + (c[1] * d1) + (c[2] * d2) + (c[3] * d3);
+		return (p0 * dd0) + (p1 * dd1) + (p2 * dd2) + (p3 * dd3);
 	}
 
 	/**
 	 * Returns <n, dpdu, dpdv, dndu, dndv>
 	 */
 	static std::tuple<Vec3, Vec3, Vec3, Vec3, Vec3> differential_geometry(const store_type& p, float u, float v) {
+		// Eval points along u and v, and derivatives of u along v
+		Vec3 pu[4];  // Points along u direction at v
+		Vec3 pv[4];  // Points along v direction at u
+		Vec3 pdv[4]; // Derivatives of u along v direction
+		for (int i = 0; i < 4; ++i) {
+			pu[i] = eval_p(v, p[i], p[i+4], p[i+8], p[i+12]);
+			pv[i] = eval_p(u, p[i*4], p[i*4+1], p[i*4+2], p[i*4+3]);
+			pdv[i] = eval_pd(u, p[i*4], p[i*4+1], p[i*4+2], p[i*4+3]);
+		}
+
 		// Calculate first derivatives and surface normal
-		const Vec3 dpdu = dp_u(p, u, v);
-		const Vec3 dpdv = dp_v(p, u, v);
+		const Vec3 dpdu = eval_pd(u, pu[0], pu[1], pu[2], pu[3]);
+		const Vec3 dpdv = eval_pd(v, pv[0], pv[1], pv[2], pv[3]);
 		const Vec3 n = cross(dpdv, dpdu).normalized();
 
-		// TODO
-		//// Calculate second derivatives
-		//const Vec3 d2pduu = ;
-		//const Vec3 d2pduv = ;
-		//const Vec3 d2pdvv = ;
-		//
-		//// Calculate surface normal derivatives
-		//const float E = dot(dpdu, dpdu)
-		//const float F = dot(dpdu, dpdv)
-		//const float G = dot(dpdv, dpdv)
-		//const float e = dot(n, d2pduu);
-		//const float f = dot(n, d2pduv);
-		//const float g = dot(n, d2pdvv);
-		//
-		//const float invEGF2 = 1.0f / ((E*G) - (F*F));
-		//const Vec3 dndu = (((f*F) - (e*G)) * invEGF2 * dpdu) + (((e*F) - (f*E)) * invEGF2 * dpdv);
-		//const Vec3 dndv = (((g*F) - (f*G)) * invEGF2 * dpdu) + (((f*F) - (g*E)) * invEGF2 * dpdv);
+		// Calculate second derivatives
+		const Vec3 d2pduu = eval_pdd(u, pu[0], pu[1], pu[2], pu[3]);
+		const Vec3 d2pduv = eval_pd(v, pdv[0], pdv[1], pdv[2], pdv[3]);
+		const Vec3 d2pdvv = eval_pdd(v, pv[0], pv[1], pv[2], pv[3]);
 
-		const Vec3 dndu = Vec3(0.0, 0.0, 0.0);
-		const Vec3 dndv = Vec3(0.0, 0.0, 0.0);;
+		// Calculate surface normal derivatives
+		const float E = dot(dpdu, dpdu);
+		const float F = dot(dpdu, dpdv);
+		const float G = dot(dpdv, dpdv);
+		const float e = dot(n, d2pduu);
+		const float f = dot(n, d2pduv);
+		const float g = dot(n, d2pdvv);
+
+		const float invEGF2 = 1.0f / ((E*G) - (F*F));
+		const Vec3 dndu = (((f*F) - (e*G)) * invEGF2 * dpdu) + (((e*F) - (f*E)) * invEGF2 * dpdv);
+		const Vec3 dndv = (((g*F) - (f*G)) * invEGF2 * dpdu) + (((f*F) - (g*E)) * invEGF2 * dpdv);
 
 		return std::make_tuple(n, dpdu, dpdv, dndu, dndv);
 	}
