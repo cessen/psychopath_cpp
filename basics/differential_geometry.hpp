@@ -26,15 +26,11 @@ struct DifferentialGeometry {
 		geo.dpdu = xform.dir_from(dpdu);
 		geo.dpdv = xform.dir_from(dpdv);
 
-		//geo.n = xform.nor_from(n).normalized();
-		//const Vec3 nu = xform.nor_from(n+dndu).normalized();
-		//const Vec3 nv = xform.nor_from(n+dndv).normalized();
-		//geo.dndu = nu - geo.n;
-		//geo.dndv = nv - geo.n;
-
-		geo.n = xform.dir_from(n);
-		geo.dndu = xform.dir_from(dndu);
-		geo.dndv = xform.dir_from(dndv);
+		// TODO: figure out how to transform surface normal differentials
+		// properly
+		geo.n = xform.nor_from(n);
+		geo.dndu = xform.nor_from(dndu);
+		geo.dndv = xform.nor_from(dndv);
 		const float il = 1.0f / geo.n.length();
 		geo.n *= il;
 		geo.dndu *= il;
@@ -53,15 +49,11 @@ struct DifferentialGeometry {
 		geo.dpdu = xform.dir_to(dpdu);
 		geo.dpdv = xform.dir_to(dpdv);
 
-		//geo.n = xform.nor_to(n).normalized();
-		//const Vec3 nu = xform.nor_to(n+dndu).normalized();
-		//const Vec3 nv = xform.nor_to(n+dndv).normalized();
-		//geo.dndu = nu - geo.n;
-		//geo.dndv = nv - geo.n;
-
-		geo.n = xform.dir_to(n);
-		geo.dndu = xform.dir_to(dndu);
-		geo.dndv = xform.dir_to(dndv);
+		// TODO: figure out how to transform surface normal differentials
+		// properly
+		geo.n = xform.nor_to(n);
+		geo.dndu = xform.nor_to(dndu);
+		geo.dndv = xform.nor_to(dndv);
 		const float il = 1.0f / geo.n.length();
 		geo.n *= il;
 		geo.dndu *= il;
@@ -148,8 +140,14 @@ static inline void clamp_dd(WorldRay* ray)
  */
 static inline std::pair<float, float> calc_uv_differentials(const Vec3 dp, const Vec3 dpdu, const Vec3 dpdv)
 {
-	const float dudp = dot(dp, dpdu);
-	const float dvdp = dot(dp, dpdv);
+	const float dpdu_ilen = 1.0f / dpdu.length();
+	const Vec3 dpdu_n = dpdu * dpdu_ilen;
+
+	const float dpdv_ilen = 1.0f / dpdv.length();
+	const Vec3 dpdv_n = dpdv * dpdv_ilen;
+
+	float dudp = dot(dp, dpdu_n) * dpdu_ilen;
+	float dvdp = dot(dp, dpdv_n) * dpdv_ilen;;
 
 	return std::make_pair(dudp, dvdp);
 }
