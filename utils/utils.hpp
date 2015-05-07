@@ -8,6 +8,7 @@
 #include <iterator>
 #include <cmath>
 #include <cassert>
+#include <tuple>
 
 
 // Returns value clamped to within the range [a,b]
@@ -405,6 +406,57 @@ static inline std::string to_string(const __m128& v)
 	s.append(std::to_string(vs[3]));
 	s.append(")");
 	return s;
+}
+
+
+/**
+ * Finds the parameter t on the first ray where the two given rays are closest.
+ *
+ * o1 and d1 are the origin and direction of the first ray.
+ * o2 and d2 are the origin and direction of the second ray.
+ *
+ * Returns the t parameter and distance as a tuple.
+ */
+static inline std::tuple<float, float> closest_ray_t(Vec3 o1, Vec3 d1, Vec3 o2, Vec3 d2)
+{
+	const Vec3 w = o1 - o2;
+
+	const float a = dot(d1, d1);
+	const float b = dot(d1, d2);
+	const float c = dot(d2, d2);
+	const float d = dot(d1, w);
+	const float e = dot(d2, w);
+
+	// TODO: return something else in denom is zero
+	const float denom = (a * c) - (b * b);
+
+	float t1, t2;
+	if (denom < 0.00001f) {
+		t1 = 0.0f;
+		t2 = (b>c ? d/b : e/c);
+	} else {
+		t1 = ((b * e) - (c * d)) / denom;
+		t2 = ((a * e) - (b * d)) / denom;
+	}
+
+	const float distance = ((o1 + (d1 * t1)) - (o2 + (d2 * t2))).length();
+
+	return std::make_tuple(t1, distance);
+}
+
+
+/**
+ * Finds the shortest distance between a point and a line.
+ *
+ * p is the point.
+ * o and d are the point in space and direction that define the line.
+ */
+static inline float point_line_distance(Vec3 p, Vec3 o, Vec3 d)
+{
+	const auto w = p - o;
+	const auto n = d.normalized();
+
+	return cross(n, w).length();
 }
 
 

@@ -348,15 +348,12 @@ public:
 
 
 	void propagate_differentials(const float t, const WorldRay& in, const DifferentialGeometry &geo, WorldRay* out) const override {
-		const float len_i = out->d.length();
-		const float len_o = out->d.length();
 		Vec3 nn = geo.n.normalized();
 		const Vec3 hh = ((in.d * -1.0f).normalized() + out->d.normalized()).normalized();
-		const Vec3 dn = in.d.normalized();
 
 		// Project origin differentials
-		out->odx = transfer_ray_origin_differential(t, nn, dn, in.odx, in.ddx);
-		out->ody = transfer_ray_origin_differential(t, nn, dn, in.ody, in.ddy);
+		out->odx = transfer_ray_origin_differential(t, nn, in.d, in.odx, in.ddx);
+		out->ody = transfer_ray_origin_differential(t, nn, in.d, in.ody, in.ddy);
 
 		// Calculate du and dv
 		const float dudx = dot(out->odx, geo.dpdu);
@@ -365,8 +362,8 @@ public:
 		const float dvdy = dot(out->ody, geo.dpdv);
 
 		// Calculate normal differentials for this ray
-		Vec3 dndx = (geo.dndu * dudx) + (geo.dndv * dvdx);
-		Vec3 dndy = (geo.dndu * dudy) + (geo.dndv * dvdy);
+		const Vec3 dndx = (geo.dndu * dudx) + (geo.dndv * dvdx);
+		const Vec3 dndy = (geo.dndu * dudy) + (geo.dndv * dvdy);
 
 		// Calculate Transform between nn and hh
 		if (dot(nn, hh) < 0.0f)
@@ -375,44 +372,13 @@ public:
 		const float angle = std::acos(clamp(dot(nn, hh), 0.0f, 1.0f));
 		Transform xform = make_axis_angle_transform(axis, angle);
 
-		// Calculate normals, transformed onto the half-vector
-		Vec3 nx;
-		Vec3 ny;
-		if (dot(nn, hh) >= 0.0f) {
-			nx = (hh + xform.dir_to(dndx)).normalized();
-			ny = (hh + xform.dir_to(dndy)).normalized();
-		} else {
-			nx = (hh - xform.dir_to(dndx)).normalized();
-			ny = (hh - xform.dir_to(dndy)).normalized();
-		}
-
-		// Calculate differential rays
-		const Vec3 in_dx = in.d + in.ddx;
-		const Vec3 in_dy = in.d + in.ddy;
+		// Transform normal differentials to be relative to the half-vector
+		const Vec3 dhdx = xform.dir_to(dndx);
+		const Vec3 dhdy = xform.dir_to(dndy);
 
 		// Reflect differential rays
-		out->ddx = in_dx - (nx * 2 * dot(in_dx, nx));
-		out->ddy = in_dy - (ny * 2 * dot(in_dy, ny));
-
-		// Adjust differential ray lengths
-		const float len_fac = len_o / len_i;
-		out->ddx *= len_fac;
-		out->ddy *= len_fac;
-
-		// Convert back to differentials
-		out->ddx = (out->ddx - out->d) / len_o;
-		out->ddy = (out->ddy - out->d) / len_o;
-
-		// Scale differentials for bluriness
-		const float roughness_spread = 0.15f;
-		if (out->ddx.length() > 0.0f && out->ddx.length() < roughness_spread)
-			out->ddx = lerp(roughness, out->ddx, out->ddx.normalized() * roughness_spread);
-		if (out->ddy.length() > 0.0f && out->ddy.length() < roughness_spread)
-			out->ddy = lerp(roughness, out->ddx, out->ddx.normalized() * roughness_spread);
-
-		// Normalize differentials to out direction length
-		out->ddx *= len_o;
-		out->ddy *= len_o;
+		out->ddx = reflect_ray_direction_differential(hh, dhdx, in.d, in.ddx);
+		out->ddy = reflect_ray_direction_differential(hh, dhdy, in.d, in.ddy);
 
 		// Clamp ray direction differentials
 		clamp_dd(out);

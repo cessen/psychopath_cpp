@@ -26,11 +26,19 @@ struct DifferentialGeometry {
 		geo.dpdu = xform.dir_from(dpdu);
 		geo.dpdv = xform.dir_from(dpdv);
 
-		geo.n = xform.nor_from(n).normalized();
-		const Vec3 nu = xform.nor_from(n+dndu).normalized();
-		const Vec3 nv = xform.nor_from(n+dndv).normalized();
-		geo.dndu = nu - geo.n;
-		geo.dndv = nv - geo.n;
+		//geo.n = xform.nor_from(n).normalized();
+		//const Vec3 nu = xform.nor_from(n+dndu).normalized();
+		//const Vec3 nv = xform.nor_from(n+dndv).normalized();
+		//geo.dndu = nu - geo.n;
+		//geo.dndv = nv - geo.n;
+
+		geo.n = xform.dir_from(n);
+		geo.dndu = xform.dir_from(dndu);
+		geo.dndv = xform.dir_from(dndv);
+		const float il = 1.0f / geo.n.length();
+		geo.n *= il;
+		geo.dndu *= il;
+		geo.dndv *= il;
 
 		return geo;
 	}
@@ -45,11 +53,19 @@ struct DifferentialGeometry {
 		geo.dpdu = xform.dir_to(dpdu);
 		geo.dpdv = xform.dir_to(dpdv);
 
-		geo.n = xform.nor_to(n).normalized();
-		const Vec3 nu = xform.nor_to(n+dndu).normalized();
-		const Vec3 nv = xform.nor_to(n+dndv).normalized();
-		geo.dndu = nu - geo.n;
-		geo.dndv = nv - geo.n;
+		//geo.n = xform.nor_to(n).normalized();
+		//const Vec3 nu = xform.nor_to(n+dndu).normalized();
+		//const Vec3 nv = xform.nor_to(n+dndv).normalized();
+		//geo.dndu = nu - geo.n;
+		//geo.dndv = nv - geo.n;
+
+		geo.n = xform.dir_to(n);
+		geo.dndu = xform.dir_to(dndu);
+		geo.dndv = xform.dir_to(dndv);
+		const float il = 1.0f / geo.n.length();
+		geo.n *= il;
+		geo.dndu *= il;
+		geo.dndv *= il;
 
 		return geo;
 	}
@@ -63,7 +79,7 @@ struct DifferentialGeometry {
 };
 
 /*
- * Transfer's a ray differential onto a surface intersection.
+ * Transfers a ray differential onto a surface intersection.
  * This assumes that both normal and d are normalized.
  *
  * t is the distance along the primary ray to the intersection
@@ -78,12 +94,29 @@ static inline Vec3 transfer_ray_origin_differential(const float t, const Vec3 no
         const Vec3 od, const Vec3 dd)
 {
 	const Vec3 temp = od + (dd * t);
-	const float td = dot(temp, normal) / dot(d, normal);
+	const float td = -dot(temp, normal) / dot(d, normal);
 
-	const Vec3 real_projected = temp + (d * td); // Real projected origin differential
+	return temp + (d * td);
+}
 
-	// Scaled for dicing rates
-	return real_projected.normalized() * temp.length();
+
+/*
+* Reflects a ray differential off of a surface intersection as a
+* perfect mirror.
+* This assumes that 'normal' is normalized.
+*
+* normal is the surface normal at the intersection
+* normal_d is the surface normal differential for the intersection
+* d is the primary ray's direction
+* dd is the ray direction differential
+*
+* Returns the direction differential reflected off the surface.
+*/
+static inline Vec3 reflect_ray_direction_differential(const Vec3 normal, const Vec3 normal_d, const Vec3 d, const Vec3 dd)
+{
+	const auto ddn = dot(dd, normal) + dot(d, normal_d);
+	const auto tmp = (normal_d * dot(d, normal)) + (normal * ddn);
+	return dd - (tmp * 2.0f);
 }
 
 

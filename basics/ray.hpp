@@ -51,9 +51,9 @@ struct alignas(16) Ray {
     SignsAndFlags d_sign_and_flags; // Sign of the components of d in [0..2] and flags in [3]
     Vec3 d_inv; // 1.0 / d
     float time; // Time coordinate
-    float ow; // Origin width
-    float dw; // Width delta
-    float fw; // Width floor
+    float owx, owy; // Origin width
+    float dwx, dwy; // Width delta
+    float fwx, fwy; // Width floor
     uint32_t id;  // Ray id, used for indexing into other related structures
     BitStack2<uint64_t> trav_stack;  // Bit stack used during BVH traversal
 
@@ -132,7 +132,9 @@ void finalize() {
  * purpose as well: determining dicing rates.
  */
 float width(const float t) const {
-	return ow + (dw * t);
+	const float x = std::abs((owx - fwx) + (dwx * t)) + fwx;
+	const float y = std::abs((owy - fwy) + (dwy * t)) + fwy;
+	return std::min(x, y);
 }
 
 /*
@@ -140,7 +142,26 @@ float width(const float t) const {
  * range along the ray.
  */
 float min_width(const float tnear, const float tfar) const {
-	return ow + (dw * tnear);
+	//return std::min(width(tnear), width(tfar));
+
+	const float tflipx = (owx - fwx) / dwx;
+	const float tflipy = (owy - fwy) / dwy;
+
+	float minx, miny;
+
+	if (tnear < tflipx && tfar > tflipx) {
+		minx = fwx;
+	} else {
+		minx = std::min(std::abs((owx - fwx) + (dwx * tnear)) + fwx, std::abs((owx - fwx) + (dwx * tfar)) + fwx);
+	}
+
+	if (tnear < tflipy && tfar > tflipy) {
+		miny = fwy;
+	} else {
+		miny = std::min(std::abs((owy - fwy) + (dwy * tnear)) + fwy, std::abs((owy - fwy) + (dwy * tfar)) + fwy);
+	}
+
+	return std::min(minx, miny);
 }
 
 };
@@ -224,6 +245,8 @@ struct WorldRay {
 	 * Modifies a Ray in-place to be consistent with the WorldRay.
 	 */
 	void update_ray(Ray* ray) const {
+		update_ray(ray, Transform());
+		/*
 		Ray& r = *ray;
 
 		// Origin, direction, and time
@@ -231,13 +254,50 @@ struct WorldRay {
 		r.d = d;
 
 		// Translate differentials into ray width approximation
-		// TODO: do this correctly for arbitrary ray differentials,
-		// not just camera ray differentials.
-		r.ow = std::min(odx.length(), ody.length());
-		r.dw = std::min(ddx.length(), ddy.length());
+
+		// X ray differential turned into a ray
+		const Vec3 orx = o + odx;
+		const Vec3 drx = d + ddx;
+
+		// Y ray differential turned into a ray
+		const Vec3 ory = o + ody;
+		const Vec3 dry = d + ddy;
+
+		// Find t where dx and dy are smallest, respectively.
+		const float tdx = closest_ray_t(o, d, orx, drx);
+		const float tdy = closest_ray_t(o, d, ory, dry);
+
+		// Get the lengths of those smallest points
+		const float lx = ((o + (d * tdx)) - (orx + (drx * tdx))).length();
+		const float ly = ((o + (d * tdy)) - (ory + (dry * tdy))).length();
+
+		// Set x widths
+		if (lx < 0.0f) {
+		    r.owx = odx.length();
+		    r.dwx = ddx.length();
+		    r.fwx = 0.0f;
+		}
+		else {
+		    r.owx = odx.length();
+		    r.dwx = (lx - r.owx) / tdx;
+		    r.fwx = lx;
+		}
+
+		// Set y widths
+		if (ly < 0.0f) {
+		    r.owy = ody.length();
+		    r.dwy = ddy.length();
+		    r.fwy = 0.0f;
+		}
+		else {
+		    r.owy = ody.length();
+		    r.dwy = (ly - r.owy) / tdy;
+		    r.fwy = ly;
+		}
 
 		// Finalize ray
 		r.finalize();
+		*/
 	}
 
 	void update_ray(Ray* ray, const Transform& t) const {
@@ -254,10 +314,42 @@ struct WorldRay {
 		const Vec3 tddy = t.dir_to(ddy);
 
 		// Translate differentials into ray width approximation
-		// TODO: do this correctly for arbitrary ray differentials,
-		// not just camera ray differentials.
-		r.ow = std::min(todx.length(), tody.length());
-		r.dw = std::min(tddx.length(), tddy.length());
+
+		// X ray differential turned into a ray
+		const Vec3 orx = r.o + todx;
+		const Vec3 drx = r.d + tddx;
+
+		// Y ray differential turned into a ray
+		const Vec3 ory = r.o + tody;
+		const Vec3 dry = r.d + tddy;
+
+		// Find t where dx and dy are smallest, respectively.
+		float tdx, lx;
+		float tdy, ly;
+		std::tie(tdx, lx) = closest_ray_t(r.o, r.d, orx, drx);
+		std::tie(tdy, ly) = closest_ray_t(r.o, r.d, ory, dry);
+
+		// Set x widths
+		if (tdx <= 0.0f) {
+			r.owx = point_line_distance(r.o, orx, drx);
+			r.dwx = tddx.length();
+			r.fwx = 0.0f;
+		} else {
+			r.owx = point_line_distance(r.o, orx, drx);
+			r.dwx = (lx - r.owx) / tdx;
+			r.fwx = lx;
+		}
+
+		// Set y widths
+		if (tdy <= 0.0f) {
+			r.owy = point_line_distance(r.o, ory, dry);
+			r.dwy = tddy.length();
+			r.fwy = 0.0f;
+		} else {
+			r.owy = point_line_distance(r.o, ory, dry);
+			r.dwy = (ly - r.owy) / tdy;
+			r.fwy = ly;
+		}
 
 		// Finalize ray
 		r.finalize();
