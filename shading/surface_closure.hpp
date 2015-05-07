@@ -356,23 +356,24 @@ public:
 		out->ody = transfer_ray_origin_differential(t, nn, in.d, in.ody, in.ddy);
 
 		// Calculate du and dv
-		const float dudx = dot(out->odx, geo.dpdu);
-		const float dvdx = dot(out->odx, geo.dpdv);
-		const float dudy = dot(out->ody, geo.dpdu);
-		const float dvdy = dot(out->ody, geo.dpdv);
+		const auto duvdx = calc_uv_differentials(out->odx, geo.dpdu, geo.dpdv);
+		const auto duvdy = calc_uv_differentials(out->ody, geo.dpdu, geo.dpdv);
 
 		// Calculate normal differentials for this ray
-		const Vec3 dndx = (geo.dndu * dudx) + (geo.dndv * dvdx);
-		const Vec3 dndy = (geo.dndu * dudy) + (geo.dndv * dvdy);
+		Vec3 dndx = (geo.dndu * duvdx.first) + (geo.dndv * duvdx.second);
+		Vec3 dndy = (geo.dndu * duvdy.first) + (geo.dndv * duvdy.second);
 
-		// Calculate Transform between nn and hh
-		if (dot(nn, hh) < 0.0f)
+		// Make sure nn and hh are facing the same direction
+		if (dot(nn, hh) < 0.0f) {
 			nn *= -1.0f;
-		const Vec3 axis = cross(nn, hh).normalized();
-		const float angle = std::acos(clamp(dot(nn, hh), 0.0f, 1.0f));
-		Transform xform = make_axis_angle_transform(axis, angle);
+			dndx *= -1.0f;
+			dndy *= -1.0f;
+		}
 
 		// Transform normal differentials to be relative to the half-vector
+		const Vec3 axis = cross(nn, hh).normalized();
+		const float angle = std::acos(clamp(dot(nn, hh), 0.0f, 1.0f));
+		const Transform xform = make_axis_angle_transform(axis, angle);
 		const Vec3 dhdx = xform.dir_to(dndx);
 		const Vec3 dhdy = xform.dir_to(dndy);
 

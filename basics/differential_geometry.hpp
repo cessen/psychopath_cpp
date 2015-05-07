@@ -138,4 +138,20 @@ static inline void clamp_dd(WorldRay* ray)
 		ray->ddy *= 0.9f * len_d / len_dy;
 }
 
+
+/**
+ * Calculates the uv coordinate differentials at the given differential
+ * hit point.
+ *
+ * TODO: apparently this is wrong.  See pg. 508 of PBRT for a correct
+ * implementation.
+ */
+static inline std::pair<float, float> calc_uv_differentials(const Vec3 dp, const Vec3 dpdu, const Vec3 dpdv)
+{
+	const float dudp = dot(dp, dpdu);
+	const float dvdp = dot(dp, dpdv);
+
+	return std::make_pair(dudp, dvdp);
+}
+
 #endif // DIFFERENTIAL_GEOMETRY_HPP
