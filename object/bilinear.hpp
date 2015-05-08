@@ -87,18 +87,32 @@ public:
 		(*p1)[3] = (p[1] + p[3]) * 0.5f;
 	}
 
+	static Vec3 eval_p(float u, const Vec3 p0, const Vec3 p1) {
+		const float b0 = 1.0f - u;
+		const float b1 = u;
+
+		return (p0 * b0) + (p1 * b1);
+	}
+
+	static Vec3 eval_pd(float u, const Vec3 p0, const Vec3 p1) {
+		const float d0 = -1.0f;
+		const float d1 = 1.0f;
+
+		return (p0 * d0) + (p1 * d1);
+	}
+
 	/**
 	 * Returns <n, dpdu, dpdv, dndu, dndv>
 	 */
 	static std::tuple<Vec3, Vec3, Vec3, Vec3, Vec3> differential_geometry(const store_type& p, float u, float v) {
 		// Calculate first derivatives and surface normal
-		const Vec3 dpdu = ((p[0]-p[1]) * v) + (p[2] * (1.0f-v)) + (p[3] * (v-1.0f));
-		const Vec3 dpdv = ((p[0]-p[2]) * u) + (p[1] * (1.0f-u)) + (p[3] * (u-1.0f));
+		const Vec3 dpdu = eval_pd(u, eval_p(v, p[0], p[2]), eval_p(v, p[1], p[3]));
+		const Vec3 dpdv = eval_pd(v, eval_p(u, p[0], p[1]), eval_p(u, p[2], p[3]));
 		const Vec3 n = cross(dpdv, dpdu).normalized();
 
 		// Calculate second derivatives
 		const Vec3 d2pduu = Vec3(0.0f);
-		const Vec3 d2pduv = p[0] - p[1] - p[2] + p[3];
+		const Vec3 d2pduv = eval_pd(v, eval_pd(u, p[0], p[1]), eval_pd(u, p[2], p[3]));
 		const Vec3 d2pdvv = Vec3(0.0f);
 
 		// Calculate surface normal derivatives

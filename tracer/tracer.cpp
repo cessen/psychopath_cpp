@@ -283,9 +283,6 @@ void intersect_rays_with_patch(const PATCH &patch, const std::vector<Transform>&
 							inter.t = tt;
 
 							inter.space = parent_xforms.size() > 0 ? lerp_seq(ray.time, parent_xforms) : Transform();
-							//inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.02f, 1.2f, 0.25f));
-							inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.0f, 1.5f, 0.25f));
-							//inter.surface_closure.init(LambertClosure(Color(0.9, 0.9, 0.9)));
 
 							inter.geo.p = ray.o + (ray.d * tt);
 							inter.geo.u = u;
@@ -298,6 +295,11 @@ void intersect_rays_with_patch(const PATCH &patch, const std::vector<Transform>&
 							inter.backfacing = dot(inter.geo.n, ray.d.normalized()) > 0.0f;
 
 							inter.offset = inter.geo.n * offset;
+
+							//inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.02f, 1.2f, 0.25f));
+							//inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.0f, 1.5f, 0.25f));
+							inter.surface_closure.init(LambertClosure(Color(0.9f, 0.9f, 0.9f)));
+							//inter.surface_closure.init(EmitClosure(Color((1.0+inter.geo.dpdv.normalize().x)*0.5, (1.0+inter.geo.dpdv.normalize().y)*0.5, (1.0+inter.geo.dpdv.normalize().z)*0.5)));
 						}
 					}
 
