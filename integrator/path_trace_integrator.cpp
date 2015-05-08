@@ -226,8 +226,15 @@ void PathTraceIntegrator::update_path(PTState* pstate, const WorldRay& ray, cons
 		// Result of bounce or camera ray
 		if (inter.hit) {
 			// Ray hit something!
-			path.inter = inter; // Store intersection data for creating shadow ray
-			path.prev_ray = ray;  // Store incoming ray direction for use in shading calculations
+			if (auto emit_closure = dynamic_cast<const EmitClosure*>(inter.surface_closure.get())) {
+				// Hit emitting surface, handle specially
+				// Ray didn't hit anything
+				path.done = true;
+				path.col += path.fcol * emit_closure->emitted_color();
+			} else {
+				path.inter = inter; // Store intersection data for creating shadow ray
+				path.prev_ray = ray;  // Store incoming ray direction for use in shading calculations
+			}
 		} else {
 			// Ray didn't hit anything
 			path.done = true;

@@ -33,6 +33,13 @@ struct SurfaceClosureUnion {
 	SurfaceClosure* get() {
 		return reinterpret_cast<SurfaceClosure*>(data);
 	}
+
+	/**
+	 * Return a pointer to the underlying SurfaceClosure.
+	 */
+	const SurfaceClosure* get() const {
+		return reinterpret_cast<const SurfaceClosure*>(data);
+	}
 };
 
 #endif // CLOSURE_UNION_HPP

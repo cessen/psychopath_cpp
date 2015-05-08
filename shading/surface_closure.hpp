@@ -83,6 +83,56 @@ public:
 
 
 
+/**
+ * Emit closure.
+ *
+ * NOTE: this needs to be handled specially by the integrator!  It does not
+ * behave like a standard closure!
+ */
+class EmitClosure final: public SurfaceClosure
+{
+	Color col {1.0f};
+
+public:
+	EmitClosure() = default;
+	EmitClosure(Color col): col {col} {}
+
+
+	virtual bool is_delta() const override {
+		return false;
+	}
+
+
+	virtual void sample(const Vec3 &in, const DifferentialGeometry &geo, const float &si, const float &sj,
+	                    Vec3 *out, Color *filter, float *pdf) const override {
+		*pdf = 1.0f;
+		*out = Vec3(1.0f);
+		*filter = Color(0.0f);
+	}
+
+
+	Color evaluate(const Vec3 &in, const Vec3 &out, const DifferentialGeometry &geo) const override {
+		return Color(0.0f);
+	}
+
+
+	void propagate_differentials(const float t, const WorldRay& in, const DifferentialGeometry &geo, WorldRay* out) const override {
+		// Irrelivant
+	}
+
+
+	float pdf(const Vec3& in, const Vec3& out, const DifferentialGeometry &geo) const override {
+		return 1.0f;
+	}
+
+	Color emitted_color() const {
+		return col;
+	}
+};
+
+
+
+
 class LambertClosure final: public SurfaceClosure
 {
 	Color col {1.0f};
@@ -132,15 +182,14 @@ public:
 	void propagate_differentials(const float t, const WorldRay& in, const DifferentialGeometry &geo, WorldRay* out) const override {
 		const float len = out->d.length();
 		const Vec3 nn = geo.n.normalized();
-		const Vec3 dn = in.d.normalized();
 
 		Vec3 x, y;
 		coordinate_system_from_vec3(out->d, &x, &y);
 		x.normalize();
 		y.normalize();
 
-		out->odx = transfer_ray_origin_differential(t, nn, dn, in.odx, in.ddx);
-		out->ody = transfer_ray_origin_differential(t, nn, dn, in.ody, in.ddy);
+		out->odx = transfer_ray_origin_differential(t, nn, in.d, in.odx, in.ddx);
+		out->ody = transfer_ray_origin_differential(t, nn, in.d, in.ody, in.ddy);
 		out->ddx = x * 0.15f / len;
 		out->ddy = y * 0.15f / len;
 	}
