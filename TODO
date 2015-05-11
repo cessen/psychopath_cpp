@@ -2,7 +2,7 @@
 	- Very small sphere lights introduce severe banding in light attentuation.
 
 - Iterative intersections:
-    - Figure out how to DRY stuff
+    //- Figure out how to DRY stuff
     //- Get working with motion blur
     //- Adaptive iteration depth based on ray differentials
     - Displacement tests
@@ -27,8 +27,10 @@
 	- Allow per-object motion blur segment specification
 
 - Implement a shading system
-	- Proper ray differentials
+	//- Proper ray differentials
 	- Stupid simple shaders first
+	- A few hard-coded displacement shaders, to verify the ideas work (e.g.
+	  with interval arithmetic).
 	- Then use OSL
 
 - More geometry types:
@@ -47,7 +49,7 @@
 
 - Cleanup:
 	- Add NaN and Inf catching to key places in code
-	- Surface Primitives should calculate their own pre-displacement surface normals
+	//- Surface Primitives should calculate their own pre-displacement surface normals
 
 - Splitting:
 	- Splitting code should have protection against stack overflow.

@@ -250,12 +250,12 @@ void intersect_rays_with_patch(const PATCH &patch, const std::vector<Transform>&
 			}
 
 			if (hit) {
-				const float width = ray.min_width(hitt0, hitt1) * Config::dice_rate;
+				const float width = std::max(ray.min_width(hitt0, hitt1) * Config::dice_rate, Config::min_upoly_size);
 				// LEAF, so we don't have to go deeper, regardless of whether
 				// we hit it or not.
 				if (max_dim <= width || stack_i == (SPLIT_STACK_SIZE-1)) {
 					const float tt = (hitt0 + hitt1) * 0.5f;
-					if (tt > 0.0f && tt <= ray.max_t) {
+					if (tt > 0.0f && tt < ray.max_t) {
 						auto &inter = intersections[ray.id];
 						inter.hit = true;
 						if ((ray.flags() & Ray::IS_OCCLUSION) != 0) {
