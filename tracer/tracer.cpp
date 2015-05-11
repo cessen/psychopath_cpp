@@ -204,7 +204,7 @@ void intersect_rays_with_patch(const PATCH &patch, const std::vector<Transform>&
 	// TODO: take into account ray time
 	ray_stack[0] = std::make_pair(ray_begin, ray_end);
 	auto tmp = patch_stack.push_frame<typename PATCH::store_type>(tsc).first;
-	for (int i = 0; i < tsc; ++i) {
+	for (unsigned int i = 0; i < tsc; ++i) {
 		tmp[i] = patch.verts[i];
 	}
 	uv_stack[0] = std::tuple<float, float, float, float>(0.0f, 1.0f, 0.0f, 1.0f);
@@ -216,7 +216,7 @@ void intersect_rays_with_patch(const PATCH &patch, const std::vector<Transform>&
 		// Calculate bounding boxes and max_dim
 		bboxes[0] = PATCH::bound(cur_patches[0]);
 		float max_dim = longest_axis(bboxes[0].max - bboxes[0].min);
-		for (int i = 1; i < tsc; ++i) {
+		for (unsigned int i = 1; i < tsc; ++i) {
 			bboxes[i] = PATCH::bound(cur_patches[i]);
 			max_dim = std::max(max_dim, longest_axis(bboxes[i].max - bboxes[i].min));
 		}
@@ -326,7 +326,7 @@ void intersect_rays_with_patch(const PATCH &patch, const std::vector<Transform>&
 
 			// Split U
 			if (ulen > vlen) {
-				for (int i = 0; i < tsc; ++i) {
+				for (unsigned int i = 0; i < tsc; ++i) {
 					PATCH::split_u(cur_patches[i], &(cur_patches[i]), &(next_patches[i]));
 				}
 
@@ -344,7 +344,7 @@ void intersect_rays_with_patch(const PATCH &patch, const std::vector<Transform>&
 			}
 			// Split V
 			else {
-				for (int i = 0; i < tsc; ++i) {
+				for (unsigned int i = 0; i < tsc; ++i) {
 					PATCH::split_v(cur_patches[i], &(cur_patches[i]), &(next_patches[i]));
 				}
 
