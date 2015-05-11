@@ -86,16 +86,16 @@ set(OIIO_INCLUDE ${OIIO_DIR}/include)
 include_directories (${OIIO_INCLUDE})
 
 
-#--------------------------------------
-# Open Shading Language
-#--------------------------------------
-set(OSL_DIR ${PROJECT_SOURCE_DIR}/../libs/osl/dist/linux64)
-set(OSL_LIBRARYS ${OSL_DIR}/lib/liboslcomp.so
-                   ${OSL_DIR}/lib/liboslexec.so
-                   ${OSL_DIR}/lib/liboslquery.so)
-set(OSL_INCLUDE ${OSL_DIR}/include)
-
-include_directories (${OSL_INCLUDE})
+##--------------------------------------
+## Open Shading Language
+##--------------------------------------
+#set(OSL_DIR ${PROJECT_SOURCE_DIR}/../libs/osl/dist/linux64)
+#set(OSL_LIBRARYS ${OSL_DIR}/lib/liboslcomp.so
+#                   ${OSL_DIR}/lib/liboslexec.so
+#                   ${OSL_DIR}/lib/liboslquery.so)
+#set(OSL_INCLUDE ${OSL_DIR}/include)
+#
+#include_directories (${OSL_INCLUDE})
 
 
 #--------------------------------------
