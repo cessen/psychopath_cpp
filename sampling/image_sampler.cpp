@@ -66,18 +66,6 @@ void ImageSampler::get_sample(uint32_t x, uint32_t y, uint32_t d, uint32_t ns, f
 
 	const std::array<size_t, 10> d_order {{7, 6, 5, 4, 2, 9, 8, 3, 1, 0}}; // Reorder the first several dimensions for least image variance
 
-
-#define LDS_SAMP
-#ifdef LDS_SAMP
-#if 0
-	uint32_t h = (Morton::xy2d(x,y) * spp) + (seed_offset*4096);
-	const uint32_t samp_i = d + h;
-	size_t i = 0;
-	for (; i < ns && i < d_order.size(); ++i)
-		sample[i] = Halton::sample(d_order[i], samp_i);
-	for (; i < ns; ++i)
-		sample[i] = Halton::sample(i, samp_i);
-#else
 	// Hash the x and y indices of the pixel and use that as an offset
 	// into the LDS sequence.  This gives the image a more random appearance
 	// before converging, which is less distracting than the LDS patterns.
@@ -94,15 +82,6 @@ void ImageSampler::get_sample(uint32_t x, uint32_t y, uint32_t d, uint32_t ns, f
 		sample[i] = Halton::sample(d_order[i], samp_i);
 	for (; i < ns; ++i)
 		sample[i] = Halton::sample(i, samp_i);
-#endif
-#else
-	// Generate the sample
-	for (size_t i = 0; i < ns; ++i) {
-		sample[i] = rng.next_float();
-	}
-#endif
-
-
 
 #define WIDTH 1.5f
 	sample[0] = logit(sample[0], WIDTH) + 0.5f;

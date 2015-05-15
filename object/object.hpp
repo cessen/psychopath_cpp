@@ -12,7 +12,6 @@
 #include "intersection.hpp"
 #include "bbox.hpp"
 #include "transform.hpp"
-#include "micro_surface.hpp"
 
 
 /**

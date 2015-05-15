@@ -9,7 +9,6 @@
 #include "utils.hpp"
 #include "stack.hpp"
 #include "vector.hpp"
-#include "grid.hpp"
 #include "object.hpp"
 
 /*

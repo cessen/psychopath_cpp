@@ -26,18 +26,15 @@
 	- Export Group instances as assemblies
 	- Allow per-object motion blur segment specification
 
-- Implement a shading system
-	//- Proper ray differentials
+- Shading system
 	- Stupid simple shaders first
 	- A few hard-coded displacement shaders, to verify the ideas work (e.g.
 	  with interval arithmetic).
 	- Then use OSL
 
 - More geometry types:
-	//- Bicubic bezier patches
 	- Catmull-clark subdivision surfaces
 	- Triangle meshes
-	//- Make spheres work again
 
 - Adaptive sampling scheme
 	- "Population Monte Carlo"
@@ -49,7 +46,3 @@
 
 - Cleanup:
 	- Add NaN and Inf catching to key places in code
-	//- Surface Primitives should calculate their own pre-displacement surface normals
-
-- Splitting:
-	- Splitting code should have protection against stack overflow.

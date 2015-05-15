@@ -17,8 +17,6 @@
 
 #include "bilinear.hpp"
 #include "bicubic.hpp"
-#include "micro_surface.hpp"
-#include "micro_surface_cache.hpp"
 
 #include "ray.hpp"
 #include "intersection.hpp"

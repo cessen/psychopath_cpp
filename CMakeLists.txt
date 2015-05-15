@@ -105,7 +105,6 @@ include_directories ("${PROJECT_BINARY_DIR}",
                      "${PROJECT_SOURCE_DIR}",
                      "${PROJECT_SOURCE_DIR}/accel",
                      "${PROJECT_SOURCE_DIR}/basics",
-                     "${PROJECT_SOURCE_DIR}/micro_surface",
                      "${PROJECT_SOURCE_DIR}/integrator",
                      "${PROJECT_SOURCE_DIR}/lights",
                      "${PROJECT_SOURCE_DIR}/math",
@@ -126,7 +125,6 @@ include_directories ("${PROJECT_BINARY_DIR}",
 #--------------------------------------
 add_subdirectory(accel)
 #add_subdirectory(basics)
-add_subdirectory(micro_surface)
 add_subdirectory(integrator)
 add_subdirectory(math)
 add_subdirectory(object)
@@ -149,7 +147,6 @@ set (PSYCHO_LIB
     parser
     object
 #    basics
-    micro_surface
     accel
     config
     global)
@@ -162,7 +159,7 @@ target_link_libraries(psychopath
     ${Boost_LIBRARIES}
     ${ILMBASE_LIBRARIES}
     ${OIIO_LIBRARY}
-    ${OSL_LIBRARYS}
+#    ${OSL_LIBRARYS}
     )
 
 # Unit-test executable
@@ -175,5 +172,5 @@ target_link_libraries(unit_tests
     ${Boost_LIBRARIES}
     ${ILMBASE_LIBRARIES}
     ${OIIO_LIBRARY}
-    ${OSL_LIBRARYS}
+#    ${OSL_LIBRARYS}
     )

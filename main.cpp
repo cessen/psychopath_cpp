@@ -26,7 +26,6 @@
 #include "ray.hpp"
 #include "intersection.hpp"
 #include "potentialinter.hpp"
-#include "micro_surface.hpp"
 
 #include "global.hpp"
 

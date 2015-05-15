@@ -9,7 +9,6 @@
 #include <vector>
 #include "stack.hpp"
 #include "bicubic.hpp"
-#include "grid.hpp"
 #include "config.hpp"
 #include "global.hpp"
 

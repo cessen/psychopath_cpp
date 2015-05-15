@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <cmath>
 #include "bilinear.hpp"
-#include "grid.hpp"
 #include "config.hpp"
 #include "global.hpp"
 

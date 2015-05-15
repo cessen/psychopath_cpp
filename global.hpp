@@ -14,11 +14,6 @@ namespace Stats
 {
 extern std::atomic<uint64_t> rays_shot;
 extern std::atomic<uint64_t> split_count;
-extern std::atomic<uint64_t> microsurface_count;
-extern std::atomic<uint64_t> microelement_count;
-extern std::atomic<uint64_t> microelement_min_count;
-extern std::atomic<uint64_t> microelement_max_count;
-extern std::atomic<uint64_t> cache_misses;
 extern std::atomic<size_t> object_ray_tests;
 extern std::atomic<size_t> top_level_bvh_node_tests;
 
@@ -29,11 +24,6 @@ static void clear()
 {
 	rays_shot = 0;
 	split_count = 0;
-	microsurface_count = 0;
-	microelement_count = 0;
-	microelement_min_count = 99999999999999;
-	microelement_max_count = 0;
-	cache_misses = 0;
 	object_ray_tests = 0;
 	top_level_bvh_node_tests = 0;
 
