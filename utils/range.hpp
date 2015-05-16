@@ -2,6 +2,7 @@
 #define RANGE_HPP
 
 #include <iterator>
+#include <utility>
 
 /**
  * A Range class, based on the proposal for std::range at:
@@ -26,12 +27,19 @@ public:
 	// constructors
 	Range() {}
 	constexpr Range(Iterator begin, Iterator end): iter_begin {begin}, iter_end {end} {}
+	constexpr Range(std::pair<Iterator, Iterator> iter_pair): iter_begin {iter_pair.first}, iter_end {iter_pair.second} {}
 
 	// iterator access
 	constexpr Iterator begin() const {
 		return iter_begin;
 	}
 	constexpr Iterator end() const {
+		return iter_end;
+	}
+	constexpr const Iterator cbegin() const {
+		return iter_begin;
+	}
+	constexpr const Iterator cend() const {
 		return iter_end;
 	}
 

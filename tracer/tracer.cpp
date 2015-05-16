@@ -13,6 +13,7 @@
 #include "global.hpp"
 #include "counting_sort.hpp"
 #include "utils.hpp"
+#include "range.hpp"
 #include "low_level.hpp"
 
 #include "bilinear.hpp"
@@ -49,7 +50,7 @@ uint32_t Tracer::trace(const WorldRay* w_rays_begin, const WorldRay* w_rays_end,
 	std::fill(intersections.begin(), intersections.end(), Intersection());
 
 	// Start tracing!
-	std::vector<Transform> xforms(0);
+	xform_stack.push_frame<Transform>(0);
 
 #if 0
 	// Split rays into groups based on primary direction before tracing
@@ -58,36 +59,36 @@ uint32_t Tracer::trace(const WorldRay* w_rays_begin, const WorldRay* w_rays_end,
 		       std::abs(r.d[0]) > std::abs(r.d[1]) &&
 		       std::abs(r.d[0]) > std::abs(r.d[2]);
 	});
-	trace_assembly(scene->root.get(), xforms, &(*rays.begin()), &(*split1));
+	trace_assembly(scene->root.get(), &(*rays.begin()), &(*split1));
 
 	auto split2 = std::partition(split1, rays.end(), [](Ray r) {
 		return r.d[0] <= 0 &&
 		       std::abs(r.d[0]) > std::abs(r.d[1]) &&
 		       std::abs(r.d[0]) > std::abs(r.d[2]);
 	});
-	trace_assembly(scene->root.get(), xforms, &(*split1), &(*split2));
+	trace_assembly(scene->root.get(), &(*split1), &(*split2));
 
 	auto split3 = std::partition(split2, rays.end(), [](Ray r) {
 		return r.d[1] > 0 &&
 		       std::abs(r.d[1]) > std::abs(r.d[2]);
 	});
-	trace_assembly(scene->root.get(), xforms, &(*split2), &(*split3));
+	trace_assembly(scene->root.get(), &(*split2), &(*split3));
 
 	auto split4 = std::partition(split3, rays.end(), [](Ray r) {
 		return r.d[1] <= 0 &&
 		       std::abs(r.d[1]) > std::abs(r.d[2]);
 	});
-	trace_assembly(scene->root.get(), xforms, &(*split3), &(*split4));
+	trace_assembly(scene->root.get(), &(*split3), &(*split4));
 
 	auto split5 = std::partition(split4, rays.end(), [](Ray r) {
 		return r.d[2] > 0;
 	});
-	trace_assembly(scene->root.get(), xforms, &(*split4), &(*split5));
+	trace_assembly(scene->root.get(), &(*split4), &(*split5));
 
-	trace_assembly(scene->root.get(), xforms, &(*split5), &(*rays.end()));
+	trace_assembly(scene->root.get(), &(*split5), &(*rays.end()));
 #else
 	// Just trace all the rays together
-	trace_assembly(scene->root.get(), xforms, &(*rays.begin()), &(*rays.end()));
+	trace_assembly(scene->root.get(), &(*rays.begin()), &(*rays.end()));
 #endif
 
 	return w_rays.size();
@@ -95,7 +96,7 @@ uint32_t Tracer::trace(const WorldRay* w_rays_begin, const WorldRay* w_rays_end,
 
 
 
-void Tracer::trace_assembly(Assembly* assembly, const std::vector<Transform>& parent_xforms, Ray* rays, Ray* rays_end)
+void Tracer::trace_assembly(Assembly* assembly, Ray* rays, Ray* rays_end)
 {
 	BVH4StreamTraverser traverser;
 
@@ -108,15 +109,20 @@ void Tracer::trace_assembly(Assembly* assembly, const std::vector<Transform>& pa
 	while (std::get<0>(hits) != std::get<1>(hits)) {
 		const auto& instance = assembly->instances[std::get<2>(hits)]; // Short-hand for the current instance
 
-		// Propagate transforms
-		const auto xbegin = assembly->xforms.begin() + instance.transform_index;
-		const auto xend = xbegin + instance.transform_count;
-		std::vector<Transform> xforms {merge(parent_xforms.begin(), parent_xforms.end(), xbegin, xend)};
-
-		// Transform rays if necessary
+		// Propagate transforms (if necessary)
+		const auto parent_xforms = xform_stack.top_frame<Transform>();
+		const size_t parent_xforms_count = std::distance(parent_xforms.first, parent_xforms.second);
 		if (instance.transform_count > 0) {
+			const auto xbegin = &(*(assembly->xforms.begin() + instance.transform_index));
+			const auto xend = xbegin + instance.transform_count;
+			const auto larger_xform_count = std::max(instance.transform_count, parent_xforms_count);
+
+			// Push merged transforms onto transform stack
+			auto xforms = xform_stack.push_frame<Transform>(larger_xform_count);
+			merge(xforms.first, parent_xforms.first, parent_xforms.second, xbegin, xend);
+
 			for (auto ray = std::get<0>(hits); ray != std::get<1>(hits); ++ray) {
-				w_rays[ray->id].update_ray(ray, lerp_seq(ray->time, xforms.begin(), xforms.end()));
+				w_rays[ray->id].update_ray(ray, lerp_seq(ray->time, xforms.first, xforms.second));
 			}
 		}
 
@@ -127,10 +133,10 @@ void Tracer::trace_assembly(Assembly* assembly, const std::vector<Transform>& pa
 			// Branch to different code path based on object type
 			switch (obj->get_type()) {
 				case Object::SURFACE:
-					trace_surface(reinterpret_cast<Surface*>(obj), xforms, std::get<0>(hits), std::get<1>(hits));
+					trace_surface(reinterpret_cast<Surface*>(obj), std::get<0>(hits), std::get<1>(hits));
 					break;
 				case Object::PATCH_SURFACE:
-					trace_patch_surface(reinterpret_cast<PatchSurface*>(obj), xforms, std::get<0>(hits), std::get<1>(hits));
+					trace_patch_surface(reinterpret_cast<PatchSurface*>(obj), std::get<0>(hits), std::get<1>(hits));
 					break;
 				default:
 					//std::cout << "WARNING: unknown object type, skipping." << std::endl;
@@ -140,23 +146,25 @@ void Tracer::trace_assembly(Assembly* assembly, const std::vector<Transform>& pa
 			Global::Stats::object_ray_tests += std::distance(std::get<0>(hits), std::get<1>(hits));
 		} else { /* Instance::ASSEMBLY */
 			Assembly* asmb = assembly->assemblies[instance.data_index].get(); // Short-hand for the current object
-			trace_assembly(asmb, xforms, std::get<0>(hits), std::get<1>(hits));
+			trace_assembly(asmb, std::get<0>(hits), std::get<1>(hits));
 		}
 
 		// Un-transform rays if we transformed them earlier
 		if (instance.transform_count > 0) {
-			if (parent_xforms.size() > 0) {
-				auto xbegin = parent_xforms.cbegin();
-				auto xend = parent_xforms.cend();
+			if (parent_xforms_count > 0) {
 				for (auto ray = std::get<0>(hits); ray != std::get<1>(hits); ++ray) {
-					w_rays[ray->id].update_ray(ray, lerp_seq(ray->time, xbegin, xend));
+					w_rays[ray->id].update_ray(ray, lerp_seq(ray->time, parent_xforms.first, parent_xforms.second));
 				}
 			} else {
 				for (auto ray = std::get<0>(hits); ray != std::get<1>(hits); ++ray) {
 					w_rays[ray->id].update_ray(ray);
 				}
 			}
+
+			// Pop top off of xform stack
+			xform_stack.pop_frame();
 		}
+
 
 		// Get next object to test against
 		hits = traverser.next_object();
@@ -165,8 +173,13 @@ void Tracer::trace_assembly(Assembly* assembly, const std::vector<Transform>& pa
 
 
 
-void Tracer::trace_surface(Surface* surface, const std::vector<Transform>& parent_xforms, Ray* rays, Ray* end)
+void Tracer::trace_surface(Surface* surface, Ray* rays, Ray* end)
 {
+	// Get parent transforms
+	const auto parent_xforms = xform_stack.top_frame<Transform>();
+	const size_t parent_xforms_count = std::distance(parent_xforms.first, parent_xforms.second);
+
+	// Trace!
 	for (auto ritr = rays; ritr != end; ++ritr) {
 		Ray& ray = *ritr;  // Shorthand reference to the ray
 		Intersection& inter = intersections[ritr->id]; // Shorthand reference to ray's intersection
@@ -179,7 +192,7 @@ void Tracer::trace_surface(Surface* surface, const std::vector<Transform>& paren
 				ray.flags() |= Ray::DONE; // Early out for shadow rays
 			} else {
 				ray.max_t = inter.t;
-				inter.space = parent_xforms.size() > 0 ? lerp_seq(ray.time, parent_xforms) : Transform();
+				inter.space = parent_xforms_count > 0 ? lerp_seq(ray.time, parent_xforms.first, parent_xforms.second) : Transform();
 				inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.0f, 1.5f, 0.25f));
 				//inter.surface_closure.init(LambertClosure(Color(inter.geo.u*0.9f, inter.geo.v*0.9f, 0.2f)));
 				//inter.surface_closure.init(LambertClosure(Color(0.9f, 0.9f, 0.9f)));
@@ -189,7 +202,7 @@ void Tracer::trace_surface(Surface* surface, const std::vector<Transform>& paren
 }
 
 template <typename PATCH>
-void intersect_rays_with_patch(const PATCH &patch, const std::vector<Transform>& parent_xforms, Ray* ray_begin, Ray* ray_end, Intersection *intersections, Stack* data_stack)
+void intersect_rays_with_patch(const PATCH &patch, const Range<const Transform*> parent_xforms, Ray* ray_begin, Ray* ray_end, Intersection *intersections, Stack* data_stack)
 {
 	const size_t tsc = patch.verts.size(); // Time sample count
 	int stack_i = 0;
@@ -371,8 +384,12 @@ void intersect_rays_with_patch(const PATCH &patch, const std::vector<Transform>&
 }
 
 
-void Tracer::trace_patch_surface(PatchSurface* surface, const std::vector<Transform>& parent_xforms, Ray* rays, Ray* end)
+void Tracer::trace_patch_surface(PatchSurface* surface, Ray* rays, Ray* end)
 {
+	// Get parent transforms
+	const auto parent_xforms = Range<const Transform*>(xform_stack.top_frame<Transform>());
+
+	// Trace!
 	if (auto patch = dynamic_cast<Bilinear*>(surface)) {
 		intersect_rays_with_patch<Bilinear>(*patch, parent_xforms, rays, end, &(intersections[0]), &data_stack);
 	} else if (auto patch = dynamic_cast<Bicubic*>(surface)) {

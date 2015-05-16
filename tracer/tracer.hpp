@@ -49,11 +49,12 @@ public:
 	Range<Intersection*> intersections; // Resulting intersections
 	std::vector<Ray> rays;
 	RNG rng;
+	Stack xform_stack; // Stack for transforms as we traverse into transform hierarchies
 	Stack data_stack; // Stack for arbitrary POD data, passed to other functions
 
-	Tracer(): data_stack(1024*1024*8, 256) {}
+	Tracer(): xform_stack(16*4*256*64, 256), data_stack(1024*1024*8, 256) {}
 
-	Tracer(Scene *scene_): scene {scene_}, data_stack(1024*1024*8, 256) {
+	Tracer(Scene *scene_): scene {scene_}, xform_stack(16*4*256*64, 256), data_stack(1024*1024*8, 256) {
 	}
 
 	void set_seed(uint32_t seed) {
@@ -71,9 +72,9 @@ public:
 
 private:
 	// Various methods for tracing different object types
-	void trace_assembly(Assembly* assembly, const std::vector<Transform>& parent_xforms, Ray* rays, Ray* rays_end);
-	void trace_surface(Surface* surface, const std::vector<Transform>& parent_xforms, Ray* rays, Ray* end);
-	void trace_patch_surface(PatchSurface* surface, const std::vector<Transform>& parent_xforms, Ray* rays, Ray* end);
+	void trace_assembly(Assembly* assembly, Ray* rays, Ray* rays_end);
+	void trace_surface(Surface* surface, Ray* rays, Ray* end);
+	void trace_patch_surface(PatchSurface* surface, Ray* rays, Ray* end);
 };
 
 #endif // TRACER_HPP

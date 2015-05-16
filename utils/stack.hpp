@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <utility>
+#include <cassert>
 
 /**
  * A type-erased stack that can store arrays of POD data.
@@ -48,6 +49,17 @@ public:
 	}
 
 	/**
+	 * Returns a frame walking backwards from the top frame.  Zero means the
+	 * top frame.
+	 */
+	template <typename T>
+	std::pair<T*, T*> prev_frame(size_t i) {
+		assert(i < frames.size());
+		const auto i2 = frames.size() - i - 1;
+		return std::make_pair(reinterpret_cast<T*>(frames[i2].first), reinterpret_cast<T*>(frames[i2].second));
+	}
+
+	/**
 	 * Pops the top frame off the stack.
 	 *
 	 * This invalidates any pointers to that stack frame's memory, as that
@@ -55,6 +67,14 @@ public:
 	 */
 	void pop_frame() {
 		frames.pop_back();
+	}
+
+	/**
+	 * Clears the stack, as if no pushes had ever taken place.
+	 */
+	void clear() {
+		frames.clear();
+		frames.emplace_back(std::make_pair(&(data[0]), &(data[0])));
 	}
 };
 

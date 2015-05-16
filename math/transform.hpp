@@ -235,34 +235,67 @@ static inline Transform make_axis_angle_transform(Vec3 axis, float angle)
 
 
 /**
+* Merges two arrays of Transforms and writes the result into a third
+* sufficiently large array.  The two arrays are interpretted as being
+* the Transforms over time.
+*
+* The destination array should be the size of the larger of the two input
+* arrays.
+*
+* This is only a valid operation when the time samples of each set of
+* transforms line up (i.e. the time segments of each are an even multiple of
+* each other).
+*/
+static inline void merge(Transform* dest, const Transform* a_begin, const Transform* a_end, const Transform* b_begin, const Transform* b_end)
+{
+	const auto size_a = std::distance(a_begin, a_end);
+	const auto size_b = std::distance(b_begin, b_end);
+
+	if (size_a == size_b) {
+		for (int i = 0; i < size_a; ++i) {
+			dest[i] = a_begin[i] * b_begin[i];
+		}
+	} else if (size_a > size_b) {
+		if (size_b == 0) {
+			for (int i = 0; i < size_a; ++i) {
+				dest[i] = a_begin[i];
+			}
+		} else {
+			const float inv_s = 1.0f / (size_a - 1);
+			for (int i = 0; i < size_a; ++i) {
+				dest[i] = a_begin[i] * lerp_seq(i*inv_s, b_begin, b_end);
+			}
+		}
+	} else if (size_a < size_b) {
+		if (size_a == 0) {
+			for (int i = 0; i < size_b; ++i) {
+				dest[i] = b_begin[i];
+			}
+		} else {
+			const float inv_s = 1.0f / (size_b - 1);
+			for (int i = 0; i < size_b; ++i) {
+				dest[i] = b_begin[i] * lerp_seq(i*inv_s, a_begin, a_end);
+			}
+		}
+	}
+}
+
+
+/**
  * Merges two vectors of Transforms, interpreting the vectors as
  * being the Transforms over time.  The result is a vector that
  * is the multiplication of the two vectors of Transforms.
+ *
+ * This is only a valid operation when the time samples of each set of
+ * transforms line up (i.e. the time segments of each are an even multiple of
+ * each other).
  */
 static inline std::vector<Transform> merge(const std::vector<Transform>::const_iterator& a_begin, const std::vector<Transform>::const_iterator& a_end,
         const std::vector<Transform>::const_iterator& b_begin, const std::vector<Transform>::const_iterator& b_end)
 {
-	auto a = make_range(a_begin, a_end);
-	auto b = make_range(b_begin, b_end);
-	std::vector<Transform> c;
-
-	if (a.size() == 0) {
-		c.insert(c.begin(), b.begin(), b.end());
-	} else if (b.size() == 0) {
-		c.insert(c.begin(), a.begin(), a.end());
-	} else if (a.size() == b.size()) {
-		for (int i = 0; i < a.size(); ++i)
-			c.emplace_back(a[i] * b[i]);
-	} else if (a.size() > b.size()) {
-		const float s = a.size() - 1;
-		for (int i = 0; i < a.size(); ++i)
-			c.emplace_back(a[i] * lerp_seq(i/s, b.begin(), b.end()));
-	} else if (a.size() < b.size()) {
-		const float s = b.size() - 1;
-		for (int i = 0; i < b.size(); ++i)
-			c.emplace_back(b[i] * lerp_seq(i/s, a.begin(), a.end()));
-	}
-
+	const auto size = std::max(std::distance(a_begin, a_end), std::distance(b_begin, b_end));
+	std::vector<Transform> c(size);
+	merge(&(c[0]), &(*a_begin), &(*a_end), &(*b_begin), &(*b_end));
 	return c;
 }
 
