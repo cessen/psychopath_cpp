@@ -7,6 +7,7 @@
 
 #include <iterator>
 #include <cmath>
+#include <cstring>
 #include <cassert>
 #include <tuple>
 
@@ -96,6 +97,8 @@ T lerp_seq(float alpha, const RandContainer& c)
 template <typename Predicate, typename BidirIt>
 BidirIt mutable_partition(BidirIt begin, BidirIt end, Predicate pred)
 {
+	alignas(decltype(*begin)) char tmp[sizeof(decltype(*begin))];
+
 	while (true) {
 		while (true) {
 			if (begin == end)
@@ -110,7 +113,10 @@ BidirIt mutable_partition(BidirIt begin, BidirIt end, Predicate pred)
 				return begin;
 		} while (!pred(*end));
 
-		std::swap(*begin, *end);
+		std::memcpy((void*)tmp, (void*)begin, sizeof(decltype(*begin)));
+		std::memcpy((void*)begin, (void*)end, sizeof(decltype(*begin)));
+		std::memcpy((void*)end, (void*)tmp, sizeof(decltype(*begin)));
+
 		++begin;
 	}
 }
@@ -409,6 +415,8 @@ static inline std::string to_string(const __m128& v)
 }
 
 
+
+
 /**
  * Finds the parameter t on the first ray where the two given rays are closest.
  *
@@ -427,7 +435,6 @@ static inline std::tuple<float, float> closest_ray_t(Vec3 o1, Vec3 d1, Vec3 o2, 
 	const float d = dot(d1, w);
 	const float e = dot(d2, w);
 
-	// TODO: return something else in denom is zero
 	const float denom = (a * c) - (b * b);
 
 	float t1, t2;
@@ -442,6 +449,32 @@ static inline std::tuple<float, float> closest_ray_t(Vec3 o1, Vec3 d1, Vec3 o2, 
 	const float distance = ((o1 + (d1 * t1)) - (o2 + (d2 * t2))).length();
 
 	return std::make_tuple(t1, distance);
+}
+
+
+/**
+ * Finds the parameter t where rays are closest when both are at t.
+ * This is subtly but importantly different from closest_ray_t() above.
+ *
+ * o1 and d1 are the origin and direction of the first ray.
+ * o2 and d2 are the origin and direction of the second ray.
+ *
+ * Returns the t parameter and distance as a tuple.
+ */
+static inline std::tuple<float, float> closest_ray_t2(Vec3 o1, Vec3 d1, Vec3 o2, Vec3 d2)
+{
+	const Vec3 dd = d1 - d2;
+	const float dd2 = dot(dd, dd);
+
+	if (dd2 < 0.00001f) {
+		return std::make_tuple(-1.0f, -1.0f);
+	}
+
+	const Vec3 w = o1 - o2;
+	const float t = -dot(w, dd) / dd2;
+	const float distance = ((o1 + (d1 * t)) - (o2 + (d2 * t))).length();
+
+	return std::make_tuple(t, distance);
 }
 
 

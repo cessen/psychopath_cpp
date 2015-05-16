@@ -326,27 +326,25 @@ struct WorldRay {
 		// Find t where dx and dy are smallest, respectively.
 		float tdx, lx;
 		float tdy, ly;
-		std::tie(tdx, lx) = closest_ray_t(r.o, r.d, orx, drx);
-		std::tie(tdy, ly) = closest_ray_t(r.o, r.d, ory, dry);
+		std::tie(tdx, lx) = closest_ray_t2(r.o, r.d, orx, drx);
+		std::tie(tdy, ly) = closest_ray_t2(r.o, r.d, ory, dry);
 
 		// Set x widths
+		r.owx = todx.length();
 		if (tdx <= 0.0f) {
-			r.owx = point_line_distance(r.o, orx, drx);
 			r.dwx = tddx.length();
 			r.fwx = 0.0f;
 		} else {
-			r.owx = point_line_distance(r.o, orx, drx);
 			r.dwx = (lx - r.owx) / tdx;
 			r.fwx = lx;
 		}
 
 		// Set y widths
+		r.owy = tody.length();
 		if (tdy <= 0.0f) {
-			r.owy = point_line_distance(r.o, ory, dry);
 			r.dwy = tddy.length();
 			r.fwy = 0.0f;
 		} else {
-			r.owy = point_line_distance(r.o, ory, dry);
 			r.dwy = (ly - r.owy) / tdy;
 			r.fwy = ly;
 		}
