@@ -12,7 +12,6 @@
 #include "bvh.hpp"
 #include "light_array.hpp"
 #include "light_tree.hpp"
-#include "scene_graph.hpp"
 #include "assembly.hpp"
 
 #include <vector>
