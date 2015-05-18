@@ -62,7 +62,7 @@ set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -g")
 set (Boost_MULTITHREADED TRUE)
 set (Boost_USE_STATIC_LIBS FALSE)
 
-find_package (Boost 1.48 COMPONENTS program_options regex unit_test_framework REQUIRED)
+find_package (Boost 1.48 COMPONENTS program_options REQUIRED)
 
 include_directories (${Boost_INCLUDE_DIRS})
 link_directories (${Boost_LIBRARY_DIRS})

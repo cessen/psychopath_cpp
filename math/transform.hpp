@@ -124,57 +124,51 @@ public:
 	 */
 	// Transform vector as position
 	Vec3 pos_to(const Vec3 &v) const {
-		const ImathVec3 a(v.x, v.y, v.z);
 		ImathVec3 r;
 
-		to.multVecMatrix(a, r);
+		to.multVecMatrix(static_cast<const ImathVec3>(v), r);
 
-		return Vec3(r.x, r.y, r.z);
+		return static_cast<Vec3>(r);
 	}
 	Vec3 pos_from(const Vec3 &v) const {
-		const ImathVec3 a(v.x, v.y, v.z);
 		ImathVec3 r;
 
-		to.inverse().multVecMatrix(a, r);
+		to.inverse().multVecMatrix(static_cast<const ImathVec3>(v), r);
 
-		return Vec3(r.x, r.y, r.z);
+		return static_cast<Vec3>(r);
 	}
 
 	// Transform vector as direction
 	Vec3 dir_to(const Vec3 &v) const {
-		const ImathVec3 a(v.x, v.y, v.z);
 		ImathVec3 r;
 
-		to.multDirMatrix(a, r);
+		to.multDirMatrix(static_cast<const ImathVec3>(v), r);
 
-		return Vec3(r.x, r.y, r.z);
+		return static_cast<Vec3>(r);
 	}
 	Vec3 dir_from(const Vec3 &v) const {
-		const ImathVec3 a(v.x, v.y, v.z);
 		ImathVec3 r;
 
-		to.inverse().multDirMatrix(a, r);
+		to.inverse().multDirMatrix(static_cast<const ImathVec3>(v), r);
 
-		return Vec3(r.x, r.y, r.z);
+		return static_cast<Vec3>(r);
 	}
 
 	// Transform vector as surface normal
 	Vec3 nor_to(const Vec3 &v) const {
-		const ImathVec3 a(v.x, v.y, v.z);
 		ImathVec3 r;
 
 		// Transform by the transpose of the inverse
-		r = dir_transform_transpose(to.inverse(), a);
+		r = dir_transform_transpose(to.inverse(), static_cast<const ImathVec3>(v));
 
-		return Vec3(r.x, r.y, r.z);
+		return static_cast<Vec3>(r);
 	}
 	Vec3 nor_from(const Vec3 &v) const {
-		const ImathVec3 a(v.x, v.y, v.z);
 		ImathVec3 r;
 
-		r = dir_transform_transpose(to, a);
+		r = dir_transform_transpose(to, static_cast<const ImathVec3>(v));
 
-		return Vec3(r.x, r.y, r.z);
+		return static_cast<Vec3>(r);
 	}
 
 

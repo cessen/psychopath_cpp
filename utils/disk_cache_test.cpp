@@ -3,51 +3,48 @@
 #include "disk_cache.hpp"
 #include "rng.hpp"
 
-BOOST_AUTO_TEST_SUITE(disk_cache);
 
-// Constructors
-BOOST_AUTO_TEST_CASE(constructor)
+TEST_CASE("disk_cache")
 {
-	DiskCache::Cache<float, 1024> cache1(100000, 32);
-	DiskCache::Cache<float, 213> cache2(30001, 33);
+	// Constructors
+	SECTION("constructor") {
+		DiskCache::Cache<float, 1024> cache1(100000, 32);
+		DiskCache::Cache<float, 213> cache2(30001, 33);
 
-	BOOST_CHECK(cache1.block_size() == 1024);
-	BOOST_CHECK(cache2.block_size() == 213);
-	BOOST_CHECK(cache1.element_count() >= 100000);
-	BOOST_CHECK(cache2.element_count() >= 30001);
-}
-
-BOOST_AUTO_TEST_CASE(manual_init)
-{
-	DiskCache::Cache<float, 1024> cache1;
-	DiskCache::Cache<float, 213> cache2;
-
-	cache1.init(100000, 32);
-	cache2.init(30001, 33);
-
-	BOOST_CHECK(cache1.block_size() == 1024);
-	BOOST_CHECK(cache2.block_size() == 213);
-	BOOST_CHECK(cache1.element_count() >= 100000);
-	BOOST_CHECK(cache2.element_count() >= 30001);
-}
-
-BOOST_AUTO_TEST_CASE(write_read)
-{
-	RNG rng(1);
-	DiskCache::Cache<float, 1024> cache(1000000, 32);
-
-	for (int i = 0; i < 1000000; i++) {
-		cache[i] = rng.next_float();
+		REQUIRE(cache1.block_size() == 1024);
+		REQUIRE(cache2.block_size() == 213);
+		REQUIRE(cache1.element_count() >= 100000);
+		REQUIRE(cache2.element_count() >= 30001);
 	}
 
-	rng.seed(1);
-	bool match = true;
-	for (int i = 0; i < 1000000; i++) {
-		match = match && cache[i] == rng.next_float();
+	SECTION("manual_init") {
+		DiskCache::Cache<float, 1024> cache1;
+		DiskCache::Cache<float, 213> cache2;
+
+		cache1.init(100000, 32);
+		cache2.init(30001, 33);
+
+		REQUIRE(cache1.block_size() == 1024);
+		REQUIRE(cache2.block_size() == 213);
+		REQUIRE(cache1.element_count() >= 100000);
+		REQUIRE(cache2.element_count() >= 30001);
 	}
 
-	BOOST_CHECK(match);
+	SECTION("write_read") {
+		RNG rng(1);
+		DiskCache::Cache<float, 1024> cache(1000000, 32);
+
+		for (int i = 0; i < 1000000; i++) {
+			cache[i] = rng.next_float();
+		}
+
+		rng.seed(1);
+		bool match = true;
+		for (int i = 0; i < 1000000; i++) {
+			match = match && cache[i] == rng.next_float();
+		}
+
+		REQUIRE(match);
+	}
 }
 
-
-BOOST_AUTO_TEST_SUITE_END();

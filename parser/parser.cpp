@@ -5,7 +5,7 @@
 #include <string>
 #include <tuple>
 #include <memory>
-#include <boost/regex.hpp>
+#include <regex>
 
 #include "config.hpp"
 
@@ -23,11 +23,11 @@
 #include "scene.hpp"
 
 
-static boost::regex re_int("-?[0-9]+");
-static boost::regex re_float("-?[0-9]+[.]?[0-9]*");
+static std::regex re_int("-?[0-9]+");
+static std::regex re_float("-?[0-9]+[.]?[0-9]*");
 
-static boost::regex re_quote("\"");
-static boost::regex re_qstring("\".*\"");
+static std::regex re_quote("\"");
+static std::regex re_qstring("\".*\"");
 
 
 
@@ -68,9 +68,9 @@ std::unique_ptr<Renderer> Parser::parse_next_frame()
 			for (const auto& child: node.children) {
 				if (child.type == "Path") {
 					// Get the output path
-					boost::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_qstring);
-					if (matches != boost::sregex_iterator()) {
-						output_path = boost::regex_replace(matches->str(), re_quote, "");
+					std::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_qstring);
+					if (matches != std::sregex_iterator()) {
+						output_path = std::regex_replace(matches->str(), re_quote, "");
 					}
 				} else if (child.type == "Format") {
 					// TODO
@@ -87,8 +87,8 @@ std::unique_ptr<Renderer> Parser::parse_next_frame()
 			for (const auto& child: node.children) {
 				if (child.type == "Resolution") {
 					// Get the output resolution
-					boost::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_int);
-					for (int i = 0; matches != boost::sregex_iterator() && i < 2; ++matches) {
+					std::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_int);
+					for (int i = 0; matches != std::sregex_iterator() && i < 2; ++matches) {
 						if (i == 0)
 							res_x = std::stoi(matches->str());
 						else
@@ -99,22 +99,22 @@ std::unique_ptr<Renderer> Parser::parse_next_frame()
 					// TODO
 				} else if (child.type == "SamplesPerPixel") {
 					// Get the number of samples per pixel
-					boost::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_int);
-					if (matches != boost::sregex_iterator()) {
+					std::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_int);
+					if (matches != std::sregex_iterator()) {
 						spp = std::stoi(matches->str());
 					}
 				} else if (child.type == "Filter") {
 					// TODO
 				} else if (child.type == "DicingRate") {
 					// Get aperture size
-					boost::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
-					if (matches != boost::sregex_iterator()) {
+					std::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
+					if (matches != std::sregex_iterator()) {
 						Config::dice_rate = std::stof(matches->str());
 					}
 				} else if (child.type == "Seed") {
 					// Get the seed for the frame
-					boost::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_int);
-					if (matches != boost::sregex_iterator()) {
+					std::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_int);
+					if (matches != std::sregex_iterator()) {
 						seed = std::stoi(matches->str());
 					}
 				}
@@ -158,8 +158,8 @@ std::unique_ptr<Renderer> Parser::parse_next_frame()
 Matrix44 Parser::parse_matrix(const std::string line)
 {
 	float matvals[16] {1, 0, 0, 0,  0, 1, 0, 0,  0, 0, 1, 0,  0, 0, 0, 1};
-	boost::sregex_iterator matches(line.begin(), line.end(), re_float);
-	for (int i = 0; matches != boost::sregex_iterator() && i < 16; ++matches) {
+	std::sregex_iterator matches(line.begin(), line.end(), re_float);
+	for (int i = 0; matches != std::sregex_iterator() && i < 16; ++matches) {
 		matvals[i] = std::stof(matches->str());
 		++i;
 	}
@@ -186,20 +186,20 @@ std::unique_ptr<Camera> Parser::parse_camera(const DataTree::Node& node)
 	for (const auto& child: node.children) {
 		if (child.type == "Fov") {
 			// Get FOV
-			boost::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
-			if (matches != boost::sregex_iterator()) {
+			std::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
+			if (matches != std::sregex_iterator()) {
 				fovs.emplace_back((3.1415926536f/180.0f) * std::stof(matches->str()));
 			}
 		} else if (child.type == "FocalDistance") {
 			// Get focal distance
-			boost::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
-			if (matches != boost::sregex_iterator()) {
+			std::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
+			if (matches != std::sregex_iterator()) {
 				focus_distances.emplace_back(std::stof(matches->str()));
 			}
 		} else if (child.type == "ApertureRadius") {
 			// Get aperture size
-			boost::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
-			if (matches != boost::sregex_iterator()) {
+			std::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
+			if (matches != std::sregex_iterator()) {
 				aperture_radii.emplace_back(std::stof(matches->str()));
 			}
 		} else if (child.type == "Transform") {
@@ -294,8 +294,8 @@ std::unique_ptr<Bilinear> Parser::parse_bilinear_patch(const DataTree::Node& nod
 		// Vertex list
 		if (child.type == "Vertices") {
 			BilinearPatchVerts verts;
-			boost::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
-			for (int i = 0; matches != boost::sregex_iterator() && i < 12; ++matches) {
+			std::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
+			for (int i = 0; matches != std::sregex_iterator() && i < 12; ++matches) {
 				verts.v[i] = std::stof(matches->str());
 				++i;
 			}
@@ -331,8 +331,8 @@ std::unique_ptr<Bicubic> Parser::parse_bicubic_patch(const DataTree::Node& node)
 		// Vertex list
 		if (child.type == "Vertices") {
 			BicubicPatchVerts verts;
-			boost::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
-			for (int i = 0; matches != boost::sregex_iterator() && i < 48; ++matches) {
+			std::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
+			for (int i = 0; matches != std::sregex_iterator() && i < 48; ++matches) {
 				verts.v[i] = std::stof(matches->str());
 				++i;
 			}
@@ -380,24 +380,24 @@ std::unique_ptr<SphereLight> Parser::parse_sphere_light(const DataTree::Node& no
 	for (const auto& child: node.children) {
 		if (child.type == "Color") {
 			// Get color
-			boost::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
+			std::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
 			Color col;
-			for (int i = 0; matches != boost::sregex_iterator() && i < 3; ++matches) {
+			for (int i = 0; matches != std::sregex_iterator() && i < 3; ++matches) {
 				col[i] = std::stof(matches->str());
 				++i;
 			}
 			colors.push_back(col);
 		} else if (child.type == "Radius") {
 			// Get radius
-			boost::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
-			if (matches != boost::sregex_iterator()) {
+			std::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
+			if (matches != std::sregex_iterator()) {
 				radii.emplace_back(std::stof(matches->str()));
 			}
 		} else if (child.type == "Location") {
 			// Get location
-			boost::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
+			std::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
 			Vec3 loc;
-			for (int i = 0; matches != boost::sregex_iterator() && i < 3; ++matches) {
+			for (int i = 0; matches != std::sregex_iterator() && i < 3; ++matches) {
 				loc[i] = std::stof(matches->str());
 				++i;
 			}
@@ -424,14 +424,14 @@ std::unique_ptr<Sphere> Parser::parse_sphere(const DataTree::Node& node)
 	for (const auto& child: node.children) {
 		if (child.type == "Radius") {
 			// Get radius
-			boost::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
-			if (matches != boost::sregex_iterator()) {
+			std::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
+			if (matches != std::sregex_iterator()) {
 				radius = std::stof(matches->str());
 			}
 		} else if (child.type == "Location") {
 			// Get location
-			boost::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
-			for (int i = 0; matches != boost::sregex_iterator() && i < 3; ++matches) {
+			std::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
+			for (int i = 0; matches != std::sregex_iterator() && i < 3; ++matches) {
 				location[i] = std::stof(matches->str());
 				++i;
 			}
