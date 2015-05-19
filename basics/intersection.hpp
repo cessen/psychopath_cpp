@@ -22,13 +22,13 @@ struct Intersection {
 	// Whether there's a hit or not
 	bool hit {false};
 
-	// The space that the intersection took place in, relative to world space.
-	Transform space;
-
 	// Information about the intersection point
 	float t {std::numeric_limits<float>::infinity()}; // T-parameter along the ray at the intersection
 	bool backfacing {false}; // Whether it hit the backface of the surface
 	float light_pdf {1.0f};  // Pdf of selecting this hit point and ray via light sampling
+
+	// The space that the intersection took place in, relative to world space.
+	Transform space;
 
 	// Differential geometry at the hit point
 	DifferentialGeometry geo;
