@@ -5,16 +5,22 @@
 
 #include "vector.hpp"
 #include "ImathMatrix.h"
+#include "simd.hpp"
 
+#include <limits>
+#include <cassert>
 #include <cstring>
 
 
 
 
-#if 0
+#if 1
 
 struct alignas(16) Matrix44 {
-    float data[4][4];
+    union {
+        float data[4][4];
+        SIMD::float4 data_s[4];
+    };
 
 
 Matrix44() {}
@@ -59,137 +65,112 @@ const float* operator[](int i) const {
 // Matrix/Scalar operations
 Matrix44 operator*(float n) const {
 	Matrix44 r;
-	for (int i = 0; i < 4; ++i) {
-		r[i][0] = data[i][0] * n;
-		r[i][1] = data[i][1] * n;
-		r[i][2] = data[i][2] * n;
-		r[i][3] = data[i][3] * n;
-	}
+	r.data_s[0] = data_s[0] * n;
+	r.data_s[1] = data_s[1] * n;
+	r.data_s[2] = data_s[2] * n;
+	r.data_s[3] = data_s[3] * n;
 	return r;
 }
 Matrix44& operator*=(float n) {
-	for (int i = 0; i < 4; ++i) {
-		data[i][0] *= n;
-		data[i][1] *= n;
-		data[i][2] *= n;
-		data[i][3] *= n;
-	}
+	data_s[0] = data_s[0] * n;
+	data_s[1] = data_s[1] * n;
+	data_s[2] = data_s[2] * n;
+	data_s[3] = data_s[3] * n;
 	return *this;
 }
 Matrix44 operator/(float n) const {
 	Matrix44 r;
-	for (int i = 0; i < 4; ++i) {
-		r[i][0] = data[i][0] / n;
-		r[i][1] = data[i][1] / n;
-		r[i][2] = data[i][2] / n;
-		r[i][3] = data[i][3] / n;
-	}
+	r.data_s[0] = data_s[0] / n;
+	r.data_s[1] = data_s[1] / n;
+	r.data_s[2] = data_s[2] / n;
+	r.data_s[3] = data_s[3] / n;
 	return r;
 }
 Matrix44& operator/=(float n) {
-	for (int i = 0; i < 4; ++i) {
-		data[i][0] /= n;
-		data[i][1] /= n;
-		data[i][2] /= n;
-		data[i][3] /= n;
-	}
+	data_s[0] = data_s[0] / n;
+	data_s[1] = data_s[1] / n;
+	data_s[2] = data_s[2] / n;
+	data_s[3] = data_s[3] / n;
 	return *this;
 }
 
 
 // Matrix/Vector operations
 void multVecMatrix(const Vec3 &src, Vec3 &dst) const {
-	float w;
+	SIMD::float4 r = (data_s[0] * src[0]) + (data_s[1] * src[1]) + (data_s[2] * src[2]) + data_s[3];
+	r = r / r[3];
 
-	w = src[0] * data[0][3] + src[1] * data[1][3] + src[2] * data[2][3] + data[3][3];
-	dst.x = (src[0] * data[0][0] + src[1] * data[1][0] + src[2] * data[2][0] + data[3][0]) / w;
-	dst.y = (src[0] * data[0][1] + src[1] * data[1][1] + src[2] * data[2][1] + data[3][1]) / w;
-	dst.z = (src[0] * data[0][2] + src[1] * data[1][2] + src[2] * data[2][2] + data[3][2]) / w;
+	dst.x = r[0];
+	dst.y = r[1];
+	dst.z = r[2];
 }
 
 void multDirMatrix(const Vec3 &src, Vec3 &dst) const {
-	dst.x = src[0] * data[0][0] + src[1] * data[1][0] + src[2] * data[2][0];
-	dst.y = src[0] * data[0][1] + src[1] * data[1][1] + src[2] * data[2][1];
-	dst.z = src[0] * data[0][2] + src[1] * data[1][2] + src[2] * data[2][2];
+	SIMD::float4 r = (data_s[0] * src[0]) + (data_s[1] * src[1]) + (data_s[2] * src[2]);
+
+	dst.x = r[0];
+	dst.y = r[1];
+	dst.z = r[2];
 }
 
 
 // Matrix/Matrix operations
 Matrix44 operator+(const Matrix44& m) const {
 	Matrix44 r;
-	for (int i = 0; i < 4; ++i) {
-		r[i][0] = data[i][0] + m[i][0];
-		r[i][1] = data[i][1] + m[i][1];
-		r[i][2] = data[i][2] + m[i][2];
-		r[i][3] = data[i][3] + m[i][3];
-	}
+	r.data_s[0] = data_s[0] + m.data_s[0];
+	r.data_s[1] = data_s[1] + m.data_s[1];
+	r.data_s[2] = data_s[2] + m.data_s[2];
+	r.data_s[3] = data_s[3] + m.data_s[3];
 	return r;
 }
 Matrix44& operator+=(const Matrix44& m) {
-	for (int i = 0; i < 4; ++i) {
-		data[i][0] += m[i][0];
-		data[i][1] += m[i][1];
-		data[i][2] += m[i][2];
-		data[i][3] += m[i][3];
-	}
+	data_s[0] = data_s[0] + m.data_s[0];
+	data_s[1] = data_s[1] + m.data_s[1];
+	data_s[2] = data_s[2] + m.data_s[2];
+	data_s[3] = data_s[3] + m.data_s[3];
 	return *this;
 }
 Matrix44 operator-(const Matrix44& m) const {
 	Matrix44 r;
-	for (int i = 0; i < 4; ++i) {
-		r[i][0] = data[i][0] - m[i][0];
-		r[i][1] = data[i][1] - m[i][1];
-		r[i][2] = data[i][2] - m[i][2];
-		r[i][3] = data[i][3] - m[i][3];
-	}
+	r.data_s[0] = data_s[0] - m.data_s[0];
+	r.data_s[1] = data_s[1] - m.data_s[1];
+	r.data_s[2] = data_s[2] - m.data_s[2];
+	r.data_s[3] = data_s[3] - m.data_s[3];
 	return r;
 }
 Matrix44& operator-=(const Matrix44& m) {
-	for (int i = 0; i < 4; ++i) {
-		data[i][0] -= m[i][0];
-		data[i][1] -= m[i][1];
-		data[i][2] -= m[i][2];
-		data[i][3] -= m[i][3];
-	}
+	data_s[0] = data_s[0] - m.data_s[0];
+	data_s[1] = data_s[1] - m.data_s[1];
+	data_s[2] = data_s[2] - m.data_s[2];
+	data_s[3] = data_s[3] - m.data_s[3];
 	return *this;
 }
 Matrix44 operator*(const Matrix44& m) const {
 	Matrix44 r;
 
-	r[0][0] = data[0][0] * m[0][0] + data[0][1] * m[1][0] + data[0][2] * m[2][0] + data[0][3] * m[3][0];
-	r[0][1] = data[0][0] * m[0][1] + data[0][1] * m[1][1] + data[0][2] * m[2][1] + data[0][3] * m[3][1];
-	r[0][2] = data[0][0] * m[0][2] + data[0][1] * m[1][2] + data[0][2] * m[2][2] + data[0][3] * m[3][2];
-	r[0][3] = data[0][0] * m[0][3] + data[0][1] * m[1][3] + data[0][2] * m[2][3] + data[0][3] * m[3][3];
-
-	r[1][0] = data[1][0] * m[0][0] + data[1][1] * m[1][0] + data[1][2] * m[2][0] + data[1][3] * m[3][0];
-	r[1][1] = data[1][0] * m[0][1] + data[1][1] * m[1][1] + data[1][2] * m[2][1] + data[1][3] * m[3][1];
-	r[1][2] = data[1][0] * m[0][2] + data[1][1] * m[1][2] + data[1][2] * m[2][2] + data[1][3] * m[3][2];
-	r[1][3] = data[1][0] * m[0][3] + data[1][1] * m[1][3] + data[1][2] * m[2][3] + data[1][3] * m[3][3];
-
-	r[2][0] = data[2][0] * m[0][0] + data[2][1] * m[1][0] + data[2][2] * m[2][0] + data[2][3] * m[3][0];
-	r[2][1] = data[2][0] * m[0][1] + data[2][1] * m[1][1] + data[2][2] * m[2][1] + data[2][3] * m[3][1];
-	r[2][2] = data[2][0] * m[0][2] + data[2][1] * m[1][2] + data[2][2] * m[2][2] + data[2][3] * m[3][2];
-	r[2][3] = data[2][0] * m[0][3] + data[2][1] * m[1][3] + data[2][2] * m[2][3] + data[2][3] * m[3][3];
-
-	r[3][0] = data[3][0] * m[0][0] + data[3][1] * m[1][0] + data[3][2] * m[2][0] + data[3][3] * m[3][0];
-	r[3][1] = data[3][0] * m[0][1] + data[3][1] * m[1][1] + data[3][2] * m[2][1] + data[3][3] * m[3][1];
-	r[3][2] = data[3][0] * m[0][2] + data[3][1] * m[1][2] + data[3][2] * m[2][2] + data[3][3] * m[3][2];
-	r[3][3] = data[3][0] * m[0][3] + data[3][1] * m[1][3] + data[3][2] * m[2][3] + data[3][3] * m[3][3];
+	r.data_s[0] = (m.data_s[0] * data[0][0]) + (m.data_s[1] * data[0][1]) + (m.data_s[2] * data[0][2]) + (m.data_s[3] * data[0][3]);
+	r.data_s[1] = (m.data_s[0] * data[1][0]) + (m.data_s[1] * data[1][1]) + (m.data_s[2] * data[1][2]) + (m.data_s[3] * data[1][3]);
+	r.data_s[2] = (m.data_s[0] * data[2][0]) + (m.data_s[1] * data[2][1]) + (m.data_s[2] * data[2][2]) + (m.data_s[3] * data[2][3]);
+	r.data_s[3] = (m.data_s[0] * data[3][0]) + (m.data_s[1] * data[3][1]) + (m.data_s[2] * data[3][2]) + (m.data_s[3] * data[3][3]);
 
 	return r;
 }
 Matrix44& operator*=(const Matrix44& m) {
-	*this = *this * m;
+	data_s[0] = (m.data_s[0] * data[0][0]) + (m.data_s[1] * data[0][1]) + (m.data_s[2] * data[0][2]) + (m.data_s[3] * data[0][3]);
+	data_s[1] = (m.data_s[0] * data[1][0]) + (m.data_s[1] * data[1][1]) + (m.data_s[2] * data[1][2]) + (m.data_s[3] * data[1][3]);
+	data_s[2] = (m.data_s[0] * data[2][0]) + (m.data_s[1] * data[2][1]) + (m.data_s[2] * data[2][2]) + (m.data_s[3] * data[2][3]);
+	data_s[3] = (m.data_s[0] * data[3][0]) + (m.data_s[1] * data[3][1]) + (m.data_s[2] * data[3][2]) + (m.data_s[3] * data[3][3]);
 
 	return *this;
 }
 
 
 // Inversion
-Matrix44 inverse() const {
+Matrix44 gjInverse() const {
 	// Code pulled from ImathMatrix.h, part of the IlmBase library.
 	int i, j, k;
 	Matrix44 s;
+	s.makeIdentity();
 	Matrix44 t(*this);
 
 	// Forward elimination
@@ -214,9 +195,9 @@ Matrix44 inverse() const {
 		}
 
 		if (pivotsize == 0) {
-			// Cannot invert singular matrix
-			assert(false);
-			return Matrix44();
+			// Cannot invert singular matrix, return an all-NaN matrix.
+			s.makeNan();
+			return s;
 		}
 
 		if (pivot != i) {
@@ -248,9 +229,9 @@ Matrix44 inverse() const {
 		float f;
 
 		if ((f = t[i][i]) == 0) {
-			// Cannot invert singular matrix
-			assert(false);
-			return Matrix44();
+			// Cannot invert singular matrix, return an all-NaN matrix.
+			s.makeNan();
+			return s;
 		}
 
 		for (j = 0; j < 4; j++) {
@@ -267,6 +248,66 @@ Matrix44 inverse() const {
 			}
 		}
 	}
+
+	return s;
+}
+
+void gjInvert() {
+	*this = gjInverse();
+}
+
+Matrix44 inverse() const {
+	// Code pulled from ImathMatrix.h, part of the IlmBase library.
+	if (data[0][3] != 0 || data[1][3] != 0 || data[2][3] != 0 || data[3][3] != 1)
+		return gjInverse();
+
+	Matrix44 s(data[1][1] * data[2][2] - data[2][1] * data[1][2],
+	           data[2][1] * data[0][2] - data[0][1] * data[2][2],
+	           data[0][1] * data[1][2] - data[1][1] * data[0][2],
+	           0,
+
+	           data[2][0] * data[1][2] - data[1][0] * data[2][2],
+	           data[0][0] * data[2][2] - data[2][0] * data[0][2],
+	           data[1][0] * data[0][2] - data[0][0] * data[1][2],
+	           0,
+
+	           data[1][0] * data[2][1] - data[2][0] * data[1][1],
+	           data[2][0] * data[0][1] - data[0][0] * data[2][1],
+	           data[0][0] * data[1][1] - data[1][0] * data[0][1],
+	           0,
+
+	           0,
+	           0,
+	           0,
+	           1);
+
+	float r = data[0][0] * s[0][0] + data[0][1] * s[1][0] + data[0][2] * s[2][0];
+
+	if (std::abs(r) >= 1) {
+		for (int i = 0; i < 3; ++i) {
+			for (int j = 0; j < 3; ++j) {
+				s[i][j] /= r;
+			}
+		}
+	} else {
+		float mr = std::abs(r) / std::numeric_limits<float>::min();
+
+		for (int i = 0; i < 3; ++i) {
+			for (int j = 0; j < 3; ++j) {
+				if (mr > std::abs(s[i][j])) {
+					s[i][j] /= r;
+				} else {
+					// Cannot invert singular matrix, return an all-NaN matrix.
+					s.makeNan();
+					return s;
+				}
+			}
+		}
+	}
+
+	s[3][0] = -data[3][0] * s[0][0] - data[3][1] * s[1][0] - data[3][2] * s[2][0];
+	s[3][1] = -data[3][0] * s[0][1] - data[3][1] * s[1][1] - data[3][2] * s[2][1];
+	s[3][2] = -data[3][0] * s[0][2] - data[3][1] * s[1][2] - data[3][2] * s[2][2];
 
 	return s;
 }
@@ -304,6 +345,15 @@ const Matrix44& setAxisAngle(const Vec3& axis, float angle) {
 	data[3][3] = 1;
 
 	return *this;
+}
+
+void makeNan() {
+	for (int i = 0; i < 4; ++i) {
+		data[i][0] = std::numeric_limits<float>::quiet_NaN();
+		data[i][1] = std::numeric_limits<float>::quiet_NaN();
+		data[i][2] = std::numeric_limits<float>::quiet_NaN();
+		data[i][3] = std::numeric_limits<float>::quiet_NaN();
+	}
 }
 
 void makeIdentity() {

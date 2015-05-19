@@ -112,8 +112,6 @@ int main(int argc, char **argv)
 	std::cout << "\tIntersection: " << sizeof(Intersection) << std::endl;
 	std::cout << "\tPotentialInter: " << sizeof(PotentialInter) << std::endl;
 	std::cout << "\tBVH::Node: " << sizeof(BVH::Node) << std::endl;
-	std::cout << "\tMicroSurface: " << sizeof(MicroSurface) << std::endl;
-	std::cout << "\tMicroNode: " << sizeof(MicroNode) << std::endl;
 #endif
 
 
