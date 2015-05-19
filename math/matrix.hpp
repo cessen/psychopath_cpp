@@ -255,7 +255,7 @@ Matrix44 gjInverse() const {
 void gjInvert() {
 	*this = gjInverse();
 }
-
+#if 0
 Matrix44 inverse() const {
 	// Code pulled from ImathMatrix.h, part of the IlmBase library.
 	if (data[0][3] != 0 || data[1][3] != 0 || data[2][3] != 0 || data[3][3] != 1)
@@ -315,6 +315,30 @@ Matrix44 inverse() const {
 void invert() {
 	*this = inverse();
 }
+#else
+Matrix44 inverse() const {
+	Matrix44 m = *this;
+	const float det = SIMD::invert_44_matrix(&(m.data[0][0]));
+
+	if (det == 0) {
+		// Cannot invert singular matrix, return an all-NaN matrix.
+		m.makeNan();
+	}
+
+	return m;
+}
+
+void invert() {
+	const float det = SIMD::invert_44_matrix(&(data[0][0]));
+
+	if (det == 0) {
+		// Cannot invert singular matrix, return an all-NaN matrix.
+		makeNan();
+	}
+}
+#endif
+
+
 
 
 // Misc
@@ -377,15 +401,16 @@ typedef Imath::Matrix44<float> Matrix44;
 
 
 // Tranforms a vector with the transpose of a matrix
-static inline ImathVec3 vec_transform_transpose(const Matrix44 &m, const ImathVec3 &v)
+static inline ImathVec3 vec_transform_transpose(const Matrix44 &m, const Vec3 &v)
 {
-	ImathVec3 r;
+	const SIMD::float4 vv(v.x, v.y, v.z, 1.0f);
+	Vec3 r;
 	float w;
 
-	r.x = v[0] * m[0][0] + v[1] * m[0][1] + v[2] * m[0][2] + m[0][3];
-	r.y = v[0] * m[1][0] + v[1] * m[1][1] + v[2] * m[1][2] + m[1][3];
-	r.z = v[0] * m[2][0] + v[1] * m[2][1] + v[2] * m[2][2] + m[2][3];
-	w   = v[0] * m[3][0] + v[1] * m[3][1] + v[2] * m[3][2] + m[3][3];
+	r.x = (m[0] * vv).sum();
+	r.y = (m[1] * vv).sum();
+	r.z = (m[2] * vv).sum();
+	w   = (m[3] * vv).sum();
 
 	r.x /= w;
 	r.y /= w;
@@ -397,13 +422,8 @@ static inline ImathVec3 vec_transform_transpose(const Matrix44 &m, const ImathVe
 // Tranforms a vector, as a direction, with the transpose of a matrix
 static inline ImathVec3 dir_transform_transpose(const Matrix44 &m, const ImathVec3 &v)
 {
-	ImathVec3 r;
-
-	r.x = v[0] * m[0][0] + v[1] * m[0][1] + v[2] * m[0][2];
-	r.y = v[0] * m[1][0] + v[1] * m[1][1] + v[2] * m[1][2];
-	r.z = v[0] * m[2][0] + v[1] * m[2][1] + v[2] * m[2][2];
-
-	return r;
+	const SIMD::float4 vv(v.x, v.y, v.z, 0.0f);
+	return Vec3((m[0] * vv).sum(), (m[1] * vv).sum(), (m[2] * vv).sum());
 }
 
 #endif
