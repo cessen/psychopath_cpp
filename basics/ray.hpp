@@ -36,8 +36,6 @@ struct Ray {
 	BitStack<uint64_t> trav_stack;  // Bit stack used during BVH traversal
 
 
-
-
 	/**
 	 * @brief Constructor.
 	 *
@@ -55,7 +53,7 @@ struct Ray {
 	  id_and_flags {0}
 	{}
 
-// Access to occlusion flag
+	// Access to occlusion flag
 	bool is_occlusion() const {
 		return id_and_flags & (1 << 30);
 	}
@@ -68,7 +66,7 @@ struct Ray {
 		id_and_flags &= ~(1 << 30);
 	}
 
-// Access to done flag
+	// Access to done flag
 	bool is_done() const {
 		return id_and_flags & (1 << 31);
 	}
@@ -81,7 +79,7 @@ struct Ray {
 		id_and_flags &= ~(1 << 31);
 	}
 
-// Access to ray id
+	// Access to ray id
 	uint32_t id() const {
 		return id_and_flags & ((~uint32_t {0}) >> 2);
 	}
@@ -91,7 +89,7 @@ struct Ray {
 		id_and_flags |= n & ((~uint32_t {0}) >> 2);
 	}
 
-// Access to inverse direction
+	// Access to inverse direction
 	Vec3 get_d_inverse() const {
 		return d_inv;
 	}
@@ -203,91 +201,54 @@ struct WorldRay {
 		return r;
 	}
 
-	/*
-	 * Transfers all ray origin differentials to the surface
-	 * intersection.
-	 *
-	 * Returns true on success.
-	 */
-	/*bool transfer_ray_differentials(const Vec3 normal, const float t) {
-		if (!has_differentials)
-			return false;
-
-		const float d_n = dot(d, normal);
-
-		if (d_n == 0.0f)
-			return false;
-
-		// x
-		const Vec3 tempx = odx + (ddx * t);
-		const float tdx = dot(tempx, normal) / d_n;
-		odx = tempx + (d * tdx);
-
-		// y
-		const Vec3 tempy = ody + (ddy * t);
-		const float tdy = dot(tempy, normal) / d_n;
-		ody = tempy + (d * tdy);
-
-		return true;
-	}*/
-
 	/**
 	 * Modifies a Ray in-place to be consistent with the WorldRay.
 	 */
 	void update_ray(Ray* ray) const {
-		update_ray(ray, Transform());
-		/*
 		Ray& r = *ray;
 
 		// Origin, direction, and time
 		r.o = o;
 		r.d = d;
 
-		// Translate differentials into ray width approximation
+		// Convert differentials into ray width approximation
 
 		// X ray differential turned into a ray
-		const Vec3 orx = o + odx;
-		const Vec3 drx = d + ddx;
+		const Vec3 orx = r.o + odx;
+		const Vec3 drx = r.d + ddx;
 
 		// Y ray differential turned into a ray
-		const Vec3 ory = o + ody;
-		const Vec3 dry = d + ddy;
+		const Vec3 ory = r.o + ody;
+		const Vec3 dry = r.d + ddy;
 
 		// Find t where dx and dy are smallest, respectively.
-		const float tdx = closest_ray_t(o, d, orx, drx);
-		const float tdy = closest_ray_t(o, d, ory, dry);
-
-		// Get the lengths of those smallest points
-		const float lx = ((o + (d * tdx)) - (orx + (drx * tdx))).length();
-		const float ly = ((o + (d * tdy)) - (ory + (dry * tdy))).length();
+		float tdx, lx;
+		float tdy, ly;
+		std::tie(tdx, lx) = closest_ray_t2(r.o, r.d, orx, drx);
+		std::tie(tdy, ly) = closest_ray_t2(r.o, r.d, ory, dry);
 
 		// Set x widths
-		if (lx < 0.0f) {
-		    r.owx = odx.length();
-		    r.dwx = ddx.length();
-		    r.fwx = 0.0f;
-		}
-		else {
-		    r.owx = odx.length();
-		    r.dwx = (lx - r.owx) / tdx;
-		    r.fwx = lx;
+		r.owx = odx.length();
+		if (tdx <= 0.0f) {
+			r.dwx = ddx.length();
+			r.fwx = 0.0f;
+		} else {
+			r.dwx = (lx - r.owx) / tdx;
+			r.fwx = lx;
 		}
 
 		// Set y widths
-		if (ly < 0.0f) {
-		    r.owy = ody.length();
-		    r.dwy = ddy.length();
-		    r.fwy = 0.0f;
-		}
-		else {
-		    r.owy = ody.length();
-		    r.dwy = (ly - r.owy) / tdy;
-		    r.fwy = ly;
+		r.owy = ody.length();
+		if (tdy <= 0.0f) {
+			r.dwy = ddy.length();
+			r.fwy = 0.0f;
+		} else {
+			r.dwy = (ly - r.owy) / tdy;
+			r.fwy = ly;
 		}
 
 		// Finalize ray
 		r.finalize();
-		*/
 	}
 
 	void update_ray(Ray* ray, const Transform& t) const {
@@ -303,7 +264,7 @@ struct WorldRay {
 		const Vec3 tddx = t.dir_to(ddx);
 		const Vec3 tddy = t.dir_to(ddy);
 
-		// Translate differentials into ray width approximation
+		// Convert differentials into ray width approximation
 
 		// X ray differential turned into a ray
 		const Vec3 orx = r.o + todx;
