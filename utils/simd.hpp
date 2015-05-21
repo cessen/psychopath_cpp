@@ -9,7 +9,7 @@ namespace SIMD
 struct float4 {
 	__m128 data;
 
-	float4(): data(_mm_setzero_ps()) {};
+	float4(): data() {};
 	float4(const float f): data(_mm_set_ps1(f)) {}
 	float4(const float f1, const float f2, const float f3, const float f4): data(_mm_set_ps(f4, f3, f2, f1)) {}
 	float4(const float* const fs): data(_mm_load_ps(fs)) {}
