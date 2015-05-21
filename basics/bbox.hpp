@@ -553,25 +553,25 @@ struct BBox4 {
 	 */
 	inline unsigned int intersect_ray(const SIMD::float4* o, const SIMD::float4* d_inv, const SIMD::float4& t_max, SIMD::float4 *hit_ts) const {
 		using namespace SIMD;
-		static const float4 ninf(-std::numeric_limits<float>::infinity());
 		static const float4 zeros(0.0f);
-		static const float4 bbox_maxt_adjust(BBOX_MAXT_ADJUST);
+		static const float4 ninf(-std::numeric_limits<float>::infinity());
 
 		// Calculate the plane intersections
-		const float4 tx1 = (bounds[0] - o[0]) * d_inv[0];
-		const float4 tx2 = (bounds[1] - o[0]) * d_inv[0];
-		float4 mins {min(tx1, tx2)};
-		float4 maxs {max(tx1, tx2)};
+		const int ds0 = d_inv[0][0] < 0.0f;
+		const float4 xlos = (bounds[0+ds0] - o[0]) * d_inv[0];
+		const float4 xhis = (bounds[1-ds0] - o[0]) * d_inv[0];
 
-		const float4 ty1 = (bounds[2] - o[1]) * d_inv[1];
-		const float4 ty2 = (bounds[3] - o[1]) * d_inv[1];
-		mins = max(mins, min(ty1, ty2));
-		maxs = min(maxs, max(ty1, ty2));
+		const int ds1 = d_inv[1][0] < 0.0f;
+		const float4 ylos = (bounds[2+ds1] - o[1]) * d_inv[1];
+		const float4 yhis = (bounds[3-ds1] - o[1]) * d_inv[1];
 
-		const float4 tz1 = (bounds[4] - o[2]) * d_inv[2];
-		const float4 tz2 = (bounds[5] - o[2]) * d_inv[2];
-		mins = max(zeros, max(mins, min(tz1, tz2)));
-		maxs = min(maxs, max(tz1, tz2)) * bbox_maxt_adjust;
+		const int ds2 = d_inv[2][0] < 0.0f;
+		const float4 zlos = (bounds[4+ds2] - o[2]) * d_inv[2];
+		const float4 zhis = (bounds[5-ds2] - o[2]) * d_inv[2];
+
+		// Get the minimum and maximum hits
+		const float4 mins = max(max(xlos, ylos), max(zlos, zeros));
+		const float4 maxs = max(min(min(xhis, yhis), zhis), ninf) * float4(BBOX_MAXT_ADJUST);
 
 		// Check for hits
 		const float4 hits = lt(mins, t_max) && lte(mins, maxs);
