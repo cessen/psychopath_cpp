@@ -52,22 +52,26 @@ static inline T lerp2d(float alpha_u, float alpha_v,
  * alpha = 1.0 means the last element in the sequence
  */
 template<typename RandIt, typename T = typename std::iterator_traits<RandIt>::value_type>
-T lerp_seq(float alpha, const RandIt& begin, const RandIt& end)
+T lerp_seq(float alpha, const RandIt& seq, int seq_length)
 {
 	assert(alpha >= 0 && alpha <= 1);
-
-	const auto seq_length = std::distance(begin, end);
+	assert(seq_length > 0);
 
 	if (seq_length == 1) {
-		return begin[0];
-	} else if (alpha < 1.0) {
-		const float temp = alpha * (seq_length - 1);
-		const auto index = static_cast<decltype(seq_length)>(temp);
-		const float nalpha = temp - index;
-		return lerp(nalpha, begin[index], begin[index+1]);
+		return seq[0];
 	} else {
-		return begin[seq_length-1];
+		const float temp = alpha * (seq_length - 1);
+		const auto index = static_cast<int>(temp);
+		const float nalpha = temp - index;
+		return lerp(nalpha, seq[index], seq[index+1]);
 	}
+}
+
+template<typename RandIt, typename T = typename std::iterator_traits<RandIt>::value_type>
+T lerp_seq(float alpha, const RandIt& begin, const RandIt& end)
+{
+	const auto seq_length = std::distance(begin, end);
+	return lerp_seq(alpha, begin, seq_length);
 }
 
 // Version of lerp_seq for containers with begin() and end() methods that return iterators.

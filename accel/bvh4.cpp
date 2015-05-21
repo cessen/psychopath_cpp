@@ -179,7 +179,6 @@ std::tuple<Ray*, Ray*, size_t> BVH4StreamTraverser::next_object()
 		} else {
 			const int num_children = bvh->child_count(node_stack[stack_ptr]);
 			const auto node_begin = bvh->nodes.cbegin() + node_stack[stack_ptr];
-			const auto node_end = node_begin + bvh->nodes[node_stack[stack_ptr]].ts;
 
 			SIMD::float4 near_hits; // For storing near-hit data in the ray-test loop below
 			bool rot_set = false;
@@ -189,7 +188,7 @@ std::tuple<Ray*, Ray*, size_t> BVH4StreamTraverser::next_object()
 			ray_stack[stack_ptr].second = mutable_partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [&](Ray& ray) {
 				if (!ray.is_done() && (first_call || ray.trav_stack.pop())) {
 					// Get the time-interpolated bounding box
-					const BBox4 b = lerp_seq(ray.time, node_begin, node_end).bounds;
+					const BBox4 b = lerp_seq(ray.time, node_begin, bvh->nodes[node_stack[stack_ptr]].ts).bounds;
 
 					// Ray test
 					const auto hit_mask = b.intersect_ray(ray, &near_hits);
