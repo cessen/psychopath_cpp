@@ -137,7 +137,7 @@ bool Sphere::intersect_ray(const Ray &ray, Intersection *intersection)
 		return false;
 	}
 
-	if (intersection && (ray.flags() & Ray::IS_OCCLUSION) == 0) {
+	if (intersection && !ray.is_occlusion()) {
 		intersection->t = t;
 
 		intersection->geo.p = ray.o + (ray.d * t);

@@ -21,148 +21,138 @@
  * @brief A ray in 3d space.
  */
 
-struct alignas(16) Ray {
-    /**
-     * @brief Type to store ray direction signs in, and also ray bit flags.
-     * The ray direction signs are stored in indices 0-2, and the bit flags
-     * are in 3.
-     *
-     * It's typedef'd as it is for convenience.
-     */
-    typedef std::array<uint8_t, 4> SignsAndFlags;  // Four slots instead of three for alignment
-    typedef SignsAndFlags Signs;
-
-    enum {
-        IS_OCCLUSION = 1 << 0, // Indicates that this is an occlusion ray
-        DONE = 1 << 1, // Indicates the ray is fully processed and can be ignored for any further traversal or testing
-        DEEPER_SPLIT = 1 << 2, // For traversing splittable surfaces
-        MISC5 = 1 << 3,
-        MISC4 = 1 << 4,
-        MISC3 = 1 << 5,
-        MISC2 = 1 << 6,
-        MISC1 = 1 << 7
-    };
-
-    // Ray data
-    // Weird interleaving of fields is for alignment
-    Vec3 o; // Origin
-    float max_t; // Maximum extent along the ray
-    Vec3 d; // Direction
-    SignsAndFlags d_sign_and_flags; // Sign of the components of d in [0..2] and flags in [3]
-    Vec3 d_inv; // 1.0 / d
-    float time; // Time coordinate
-    float owx, owy; // Origin width
-    float dwx, dwy; // Width delta
-    float fwx, fwy; // Width floor
-    uint32_t id;  // Ray id, used for indexing into other related structures
-    BitStack2<uint64_t> trav_stack;  // Bit stack used during BVH traversal
+struct Ray {
+	// Ray data
+	// Weird interleaving of fields is for alignment
+	Vec3 o; // Origin
+	float max_t; // Maximum extent along the ray
+	Vec3 d; // Direction
+	float time; // Time coordinate
+	Vec3 d_inv; // 1.0 / d
+	float owx, owy; // Origin width
+	float dwx, dwy; // Width delta
+	float fwx, fwy; // Width floor
+	uint32_t id_and_flags;  // Ray id and flags, packed into a single int.
+	BitStack<uint64_t> trav_stack;  // Bit stack used during BVH traversal
 
 
 
 
-    /**
-     * @brief Constructor.
-     *
-     * Ray differentials need to be filled in manually after this.
-     *
-     * By default, origin (o) and direction (d) are initialized with NaN's.
-     */
-    Ray(const Vec3 &o_ = Vec3(std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN()),
-        const Vec3 &d_ = Vec3(std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN()),
-        const float &time_ = 0.0f):
-    o {o_},
-    max_t {std::numeric_limits<float>::infinity()},
-    d {d_},
-d_sign_and_flags {{0,0,0,0}},
-time {time_},
-id {0}
-{}
+	/**
+	 * @brief Constructor.
+	 *
+	 * Ray differentials need to be filled in manually after this.
+	 *
+	 * By default, origin (o) and direction (d) are initialized with NaN's.
+	 */
+	Ray(const Vec3 &o_ = Vec3(std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN()),
+	    const Vec3 &d_ = Vec3(std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN()),
+	    const float &time_ = 0.0f):
+		o {o_},
+	  max_t {std::numeric_limits<float>::infinity()},
+	  d {d_},
+	  time {time_},
+	  id_and_flags {0}
+	{}
 
-// Access to flags
-uint8_t& flags() {
-	return d_sign_and_flags[3];
-}
+// Access to occlusion flag
+	bool is_occlusion() const {
+		return id_and_flags & (1 << 30);
+	}
 
-const uint8_t& flags() const {
-	return d_sign_and_flags[3];
-}
+	void set_occlusion_true() {
+		id_and_flags |= (1 << 30);
+	}
 
-// Access to direction signs
-Signs& d_sign() {
-	return d_sign_and_flags;
-}
+	void set_occlusion_false() {
+		id_and_flags &= ~(1 << 30);
+	}
 
-const Signs& d_sign() const {
-	return d_sign_and_flags;
-}
+// Access to done flag
+	bool is_done() const {
+		return id_and_flags & (1 << 31);
+	}
+
+	void set_done_true() {
+		id_and_flags |= (1 << 31);
+	}
+
+	void set_done_false() {
+		id_and_flags &= ~(1 << 31);
+	}
+
+// Access to ray id
+	uint32_t id() const {
+		return id_and_flags & ((~uint32_t {0}) >> 2);
+	}
+
+	void set_id(uint32_t n) {
+		id_and_flags &= ~((~uint32_t {0}) >> 2);
+		id_and_flags |= n & ((~uint32_t {0}) >> 2);
+	}
 
 // Access to inverse direction
-Vec3 get_d_inverse() const {
-	return d_inv;
-}
-
-/**
- * Computes the acceleration data for speedy bbox intersection testing.
- */
-void update_accel() {
-	// Inverse direction
-	d_inv = Vec3(1.0f, 1.0f, 1.0f) / d;
-
-	// Sign of the direction components
-	d_sign_and_flags[0] = (d.x < 0.0f ? 1u : 0u);
-	d_sign_and_flags[1] = (d.y < 0.0f ? 1u : 0u);
-	d_sign_and_flags[2] = (d.z < 0.0f ? 1u : 0u);
-}
-
-
-/*
- * Finalizes the ray after first initialization.
- * Should only be called once, prior to tracing with the ray.
- */
-void finalize() {
-	assert(d.length() > 0.0f);
-
-	update_accel();
-}
-
-/*
- * Returns the "ray width" at the given distance along the ray.
- * The values returned corresponds to roughly the width that a micropolygon
- * needs to be for this ray at that distance.  And that is its primary
- * purpose as well: determining dicing rates.
- */
-float width(const float t) const {
-	const float x = std::abs((owx - fwx) + (dwx * t)) + fwx;
-	const float y = std::abs((owy - fwy) + (dwy * t)) + fwy;
-	return std::min(x, y);
-}
-
-/*
- * Returns an estimate of the minimum ray width over a distance
- * range along the ray.
- */
-float min_width(const float tnear, const float tfar) const {
-	//return std::min(width(tnear), width(tfar));
-
-	const float tflipx = (owx - fwx) / dwx;
-	const float tflipy = (owy - fwy) / dwy;
-
-	float minx, miny;
-
-	if (tnear < tflipx && tfar > tflipx) {
-		minx = fwx;
-	} else {
-		minx = std::min(std::abs((owx - fwx) + (dwx * tnear)) + fwx, std::abs((owx - fwx) + (dwx * tfar)) + fwx);
+	Vec3 get_d_inverse() const {
+		return d_inv;
 	}
 
-	if (tnear < tflipy && tfar > tflipy) {
-		miny = fwy;
-	} else {
-		miny = std::min(std::abs((owy - fwy) + (dwy * tnear)) + fwy, std::abs((owy - fwy) + (dwy * tfar)) + fwy);
+	/**
+	 * Computes the acceleration data for speedy bbox intersection testing.
+	 */
+	void update_accel() {
+		// Inverse direction
+		d_inv = Vec3(1.0f, 1.0f, 1.0f) / d;
 	}
 
-	return std::min(minx, miny);
-}
+
+	/*
+	 * Finalizes the ray after first initialization.
+	 * Should only be called once, prior to tracing with the ray.
+	 */
+	void finalize() {
+		assert(d.length() > 0.0f);
+
+		update_accel();
+	}
+
+	/*
+	 * Returns the "ray width" at the given distance along the ray.
+	 * The values returned corresponds to roughly the width that a micropolygon
+	 * needs to be for this ray at that distance.  And that is its primary
+	 * purpose as well: determining dicing rates.
+	 */
+	float width(const float t) const {
+		const float x = std::abs((owx - fwx) + (dwx * t)) + fwx;
+		const float y = std::abs((owy - fwy) + (dwy * t)) + fwy;
+		return std::min(x, y);
+	}
+
+	/*
+	 * Returns an estimate of the minimum ray width over a distance
+	 * range along the ray.
+	 */
+	float min_width(const float tnear, const float tfar) const {
+		//return std::min(width(tnear), width(tfar));
+
+		const float tflipx = (owx - fwx) / dwx;
+		const float tflipy = (owy - fwy) / dwy;
+
+		float minx, miny;
+
+		if (tnear < tflipx && tfar > tflipx) {
+			minx = fwx;
+		} else {
+			minx = std::min(std::abs((owx - fwx) + (dwx * tnear)) + fwx, std::abs((owx - fwx) + (dwx * tfar)) + fwx);
+		}
+
+		if (tnear < tflipy && tfar > tflipy) {
+			miny = fwy;
+		} else {
+			miny = std::min(std::abs((owy - fwy) + (dwy * tnear)) + fwy, std::abs((owy - fwy) + (dwy * tfar)) + fwy);
+		}
+
+		return std::min(minx, miny);
+	}
 
 };
 
@@ -364,7 +354,7 @@ struct WorldRay {
 		// Ray type
 		if (type == OCCLUSION) {
 			r.max_t = 1.0f;
-			r.flags() |= Ray::IS_OCCLUSION;
+			r.set_occlusion_true();
 		}
 
 		update_ray(&r);
@@ -379,7 +369,7 @@ struct WorldRay {
 		// Ray type
 		if (type == OCCLUSION) {
 			r.max_t = 1.0f;
-			r.flags() |= Ray::IS_OCCLUSION;
+			r.set_occlusion_true();
 		}
 
 		update_ray(&r, t);

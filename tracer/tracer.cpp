@@ -42,7 +42,7 @@ uint32_t Tracer::trace(const WorldRay* w_rays_begin, const WorldRay* w_rays_end,
 	rays.resize(w_rays.size());
 	for (size_t i = 0; i < rays.size(); ++i) {
 		rays[i] = w_rays[i].to_ray();
-		rays[i].id = i;
+		rays[i].set_id(i);
 	}
 
 	// Get and initialize intersections
@@ -122,7 +122,7 @@ void Tracer::trace_assembly(Assembly* assembly, Ray* rays, Ray* rays_end)
 			merge(xforms.first, parent_xforms.first, parent_xforms.second, xbegin, xend);
 
 			for (auto ray = std::get<0>(hits); ray != std::get<1>(hits); ++ray) {
-				w_rays[ray->id].update_ray(ray, lerp_seq(ray->time, xforms.first, xforms.second));
+				w_rays[ray->id()].update_ray(ray, lerp_seq(ray->time, xforms.first, xforms.second));
 			}
 		}
 
@@ -153,11 +153,11 @@ void Tracer::trace_assembly(Assembly* assembly, Ray* rays, Ray* rays_end)
 		if (instance.transform_count > 0) {
 			if (parent_xforms_count > 0) {
 				for (auto ray = std::get<0>(hits); ray != std::get<1>(hits); ++ray) {
-					w_rays[ray->id].update_ray(ray, lerp_seq(ray->time, parent_xforms.first, parent_xforms.second));
+					w_rays[ray->id()].update_ray(ray, lerp_seq(ray->time, parent_xforms.first, parent_xforms.second));
 				}
 			} else {
 				for (auto ray = std::get<0>(hits); ray != std::get<1>(hits); ++ray) {
-					w_rays[ray->id].update_ray(ray);
+					w_rays[ray->id()].update_ray(ray);
 				}
 			}
 
@@ -182,14 +182,14 @@ void Tracer::trace_surface(Surface* surface, Ray* rays, Ray* end)
 	// Trace!
 	for (auto ritr = rays; ritr != end; ++ritr) {
 		Ray& ray = *ritr;  // Shorthand reference to the ray
-		Intersection& inter = intersections[ritr->id]; // Shorthand reference to ray's intersection
+		Intersection& inter = intersections[ritr->id()]; // Shorthand reference to ray's intersection
 
 		// Test against the ray
 		if (surface->intersect_ray(ray, &inter)) {
 			inter.hit = true;
 
-			if ((ray.flags() & Ray::IS_OCCLUSION) != 0) {
-				ray.flags() |= Ray::DONE; // Early out for shadow rays
+			if (ray.is_occlusion()) {
+				ray.set_done_true(); // Early out for shadow rays
 			} else {
 				ray.max_t = inter.t;
 				inter.space = parent_xforms_count > 0 ? lerp_seq(ray.time, parent_xforms.first, parent_xforms.second) : Transform();
@@ -234,7 +234,7 @@ void intersect_rays_with_patch(const PATCH &patch, const Range<const Transform*>
 
 		// TEST RAYS AGAINST BBOX
 		ray_stack[stack_i].first = mutable_partition(ray_stack[stack_i].first, ray_stack[stack_i].second, [&](Ray& ray) {
-			if ((ray.flags() & Ray::DONE) != 0) {
+			if (ray.is_done()) {
 				return true;
 			}
 
@@ -267,10 +267,10 @@ void intersect_rays_with_patch(const PATCH &patch, const Range<const Transform*>
 				if (max_dim <= width || stack_i == (SPLIT_STACK_SIZE-1)) {
 					const float tt = (hitt0 + hitt1) * 0.5f;
 					if (tt > 0.0f && tt < ray.max_t) {
-						auto &inter = intersections[ray.id];
+						auto &inter = intersections[ray.id()];
 						inter.hit = true;
-						if ((ray.flags() & Ray::IS_OCCLUSION) != 0) {
-							ray.flags() |= Ray::DONE;
+						if (ray.is_occlusion()) {
+							ray.set_done_true();
 						} else {
 							// Get the time-interpolated patch, for calculating
 							// surface derivatives and normals below

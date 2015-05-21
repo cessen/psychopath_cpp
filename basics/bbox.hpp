@@ -143,30 +143,25 @@ struct BBox {
 			Global::Stats::inf_count++;
 		}
 #endif
-		const Vec3 *bounds = &min;
-
-		const auto d_sign = ray.d_sign();
 
 		// Find slab intersections
-		const float txmin = (bounds[d_sign[0]].x - ray.o.x) * ray.d_inv.x;
-		const float txmax = (bounds[1-d_sign[0]].x - ray.o.x) * ray.d_inv.x;
-		const float tymin = (bounds[d_sign[1]].y - ray.o.y) * ray.d_inv.y;
-		const float tymax = (bounds[1-d_sign[1]].y - ray.o.y) * ray.d_inv.y;
-		const float tzmin = (bounds[d_sign[2]].z - ray.o.z) * ray.d_inv.z;
-		const float tzmax = (bounds[1-d_sign[2]].z - ray.o.z) * ray.d_inv.z;
+		const float tx1 = (min.x - ray.o.x) * ray.d_inv.x;
+		const float tx2 = (max.x - ray.o.x) * ray.d_inv.x;
+		*hitt0 = std::min(tx1, tx2);
+		*hitt1 = std::max(tx1, tx2);
 
-		// Calculate tmin
-		const float tmin1 = txmin > tymin ? txmin : tymin;
-		const float tmin2 = tzmin > 0.0f ? tzmin : 0.0f;
-		*hitt0 = tmin1 > tmin2 ? tmin1 : tmin2;
+		const float ty1 = (min.y - ray.o.y) * ray.d_inv.y;
+		const float ty2 = (max.y - ray.o.y) * ray.d_inv.y;
+		*hitt0 = std::max(*hitt0, std::min(ty1, ty2));
+		*hitt1 = std::min(*hitt1, std::max(ty1, ty2));
 
-		// Calculate tmax
-		const float tmax1 = txmax < tymax ? txmax : tymax;
-		const float tmax2 = tzmax < t ? tzmax :t;
-		*hitt1 = (tmax1 < tmax2 ? tmax1 : tmax2) * BBOX_MAXT_ADJUST;
+		const float tz1 = (min.z - ray.o.z) * ray.d_inv.z;
+		const float tz2 = (max.z - ray.o.z) * ray.d_inv.z;
+		*hitt0 = std::max(0.0f, std::max(*hitt0, std::min(tz1, tz2)));
+		*hitt1 = std::min(*hitt1, std::max(tz1, tz2)) * BBOX_MAXT_ADJUST;
 
 		// Did we hit?
-		return *hitt0 <= *hitt1;
+		return *hitt0 <= std::min(t, *hitt1);
 	}
 
 	inline bool intersect_ray(const Ray& ray, float *hitt0, float *hitt1) const {
@@ -393,21 +388,20 @@ struct BBox2 {
 	 * @param[in] o The origin of the ray, laid out as [[x,x,x,x],[y,y,y,y],[z,z,z,z]].
 	 * @param[in] d_inv The direction of the ray over 1.0, laid out as [[x,x,x,x],[y,y,y,y],[z,z,z,z]]
 	 * @param[in] t_max The maximum t value of the ray being tested against, laid out as [t,t,t,t].
-	 * @param[in] d_sign Precomputed values indicating whether the x, y, and z components of the ray are negative or not.
 	 * @param[out] hit_ts Pointer to a SIMD::float4 where the t parameter of each hit (if any) will be recorded.
 	 *             The hit t's are stored in index [0] and [1] for the first and second box, respectively.
 	 *
 	 * @returns A bitmask indicating which (if any) of the two boxes were hit.
 	 */
-	inline unsigned int intersect_ray(const SIMD::float4* o, const SIMD::float4* d_inv, const SIMD::float4& t_max, const Ray::Signs& d_sign, SIMD::float4 *hit_ts) const {
+	inline unsigned int intersect_ray(const SIMD::float4* o, const SIMD::float4* d_inv, const SIMD::float4& t_max, SIMD::float4 *hit_ts) const {
 		using namespace SIMD;
 		const float4 zeros(0.0f);
 		const float4 ninf(-std::numeric_limits<float>::infinity());
 
 		// Calculate the plane intersections
-		const float4 xs = (shuffle_swap(bounds[0], d_sign[0]) - o[0]) * d_inv[0];
-		const float4 ys = (shuffle_swap(bounds[1], d_sign[1]) - o[1]) * d_inv[1];
-		const float4 zs = (shuffle_swap(bounds[2], d_sign[2]) - o[2]) * d_inv[2];
+		const float4 xs = (shuffle_swap(bounds[0], d_inv[0][0] < 0.0f) - o[0]) * d_inv[0];
+		const float4 ys = (shuffle_swap(bounds[1], d_inv[1][0] < 0.0f) - o[1]) * d_inv[1];
+		const float4 zs = (shuffle_swap(bounds[2], d_inv[2][0] < 0.0f) - o[2]) * d_inv[2];
 
 		// Get the minimum and maximum hits, and shuffle the max hits
 		// to be in the same location as the minimum hits
@@ -427,7 +421,6 @@ struct BBox2 {
 	inline unsigned int intersect_ray(const Ray& ray, SIMD::float4 *hit_ts) const {
 		using namespace SIMD;
 		const Vec3 d_inv_f = ray.get_d_inverse();
-		const Ray::Signs d_sign = ray.d_sign();
 
 		// Load ray origin, inverse direction, and max_t into simd layouts for intersection testing
 		const float4 ray_o[3] = {ray.o[0], ray.o[1], ray.o[2]};
@@ -436,7 +429,7 @@ struct BBox2 {
 			ray.max_t
 		};
 
-		return intersect_ray(ray_o, d_inv, max_t, d_sign, hit_ts);
+		return intersect_ray(ray_o, d_inv, max_t, hit_ts);
 	}
 
 };
@@ -554,27 +547,31 @@ struct BBox4 {
 	 * @param[in] o The origin of the ray, laid out as [[x,x,x,x],[y,y,y,y],[z,z,z,z]].
 	 * @param[in] d_inv The direction of the ray over 1.0, laid out as [[x,x,x,x],[y,y,y,y],[z,z,z,z]]
 	 * @param[in] t_max The maximum t value of the ray being tested against, laid out as [t,t,t,t].
-	 * @param[in] d_sign Precomputed values indicating whether the x, y, and z components of the ray are negative or not.
 	 * @param[out] hit_ts Pointer to a SIMD::float4 where the t parameter of each hit (if any) will be recorded..
 	 *
 	 * @returns A bitmask indicating which (if any) of the four boxes were hit.
 	 */
-	inline unsigned int intersect_ray(const SIMD::float4* o, const SIMD::float4* d_inv, const SIMD::float4& t_max, const Ray::Signs& d_sign, SIMD::float4 *hit_ts) const {
+	inline unsigned int intersect_ray(const SIMD::float4* o, const SIMD::float4* d_inv, const SIMD::float4& t_max, SIMD::float4 *hit_ts) const {
 		using namespace SIMD;
-		const float4 zeros(0.0f);
-		const float4 ninf(-std::numeric_limits<float>::infinity());
+		static const float4 ninf(-std::numeric_limits<float>::infinity());
+		static const float4 zeros(0.0f);
+		static const float4 bbox_maxt_adjust(BBOX_MAXT_ADJUST);
 
 		// Calculate the plane intersections
-		const float4 xlos = (bounds[0+d_sign[0]] - o[0]) * d_inv[0];
-		const float4 xhis = (bounds[1-d_sign[0]] - o[0]) * d_inv[0];
-		const float4 ylos = (bounds[2+d_sign[1]] - o[1]) * d_inv[1];
-		const float4 yhis = (bounds[3-d_sign[1]] - o[1]) * d_inv[1];
-		const float4 zlos = (bounds[4+d_sign[2]] - o[2]) * d_inv[2];
-		const float4 zhis = (bounds[5-d_sign[2]] - o[2]) * d_inv[2];
+		const float4 tx1 = (bounds[0] - o[0]) * d_inv[0];
+		const float4 tx2 = (bounds[1] - o[0]) * d_inv[0];
+		float4 mins {min(tx1, tx2)};
+		float4 maxs {max(tx1, tx2)};
 
-		// Get the minimum and maximum hits
-		const float4 mins = max(max(xlos, ylos), max(zlos, zeros));
-		const float4 maxs = max(min(min(xhis, yhis), zhis), ninf) * float4(BBOX_MAXT_ADJUST);
+		const float4 ty1 = (bounds[2] - o[1]) * d_inv[1];
+		const float4 ty2 = (bounds[3] - o[1]) * d_inv[1];
+		mins = max(mins, min(ty1, ty2));
+		maxs = min(maxs, max(ty1, ty2));
+
+		const float4 tz1 = (bounds[4] - o[2]) * d_inv[2];
+		const float4 tz2 = (bounds[5] - o[2]) * d_inv[2];
+		mins = max(zeros, max(mins, min(tz1, tz2)));
+		maxs = min(maxs, max(tz1, tz2)) * bbox_maxt_adjust;
 
 		// Check for hits
 		const float4 hits = lt(mins, t_max) && lte(mins, maxs);
@@ -589,7 +586,6 @@ struct BBox4 {
 	inline unsigned int intersect_ray(const Ray& ray, SIMD::float4 *hit_ts) const {
 		using namespace SIMD;
 		const Vec3 d_inv_f = ray.get_d_inverse();
-		const Ray::Signs d_sign = ray.d_sign();
 
 		// Load ray origin, inverse direction, and max_t into simd layouts for intersection testing
 		const float4 ray_o[3] = {ray.o[0], ray.o[1], ray.o[2]};
@@ -598,7 +594,7 @@ struct BBox4 {
 			ray.max_t
 		};
 
-		return intersect_ray(ray_o, d_inv, max_t, d_sign, hit_ts);
+		return intersect_ray(ray_o, d_inv, max_t, hit_ts);
 	}
 
 };
