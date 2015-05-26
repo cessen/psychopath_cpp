@@ -4,6 +4,7 @@
 #include <vector>
 #include <utility>
 #include <cassert>
+#include <stdint.h>
 
 /**
  * A type-erased stack that can store arrays of POD data.
@@ -28,13 +29,24 @@ public:
 	/**
 	 * Pushes space for element_count items or type T, and returns pointers to
 	 * the beginning and just-past-the-end of the resulting array.
-	 *
-	 * TODO: take into account alignment.
 	 */
 	template <typename T>
 	std::pair<T*, T*> push_frame(size_t element_count) {
-		char* begin = frames.back().second;
-		auto end = begin + (sizeof(T) * element_count);
+		// Figure out how much padding we need between elements for proper
+		// memory alignment if we put them in an array.
+		constexpr auto array_pad = (alignof(T) - (sizeof(T) % alignof(T))) % alignof(T);
+
+		// Total needed bytes for the requested array of data
+		const auto needed_bytes = (sizeof(T) * element_count) + (array_pad * (element_count - 1));
+
+		// Figure out how much padding we need at the beginning to put the
+		// first element in the right place for memory alignment.
+		const auto mem_addr = reinterpret_cast<uintptr_t>(frames.back().second);
+		const auto begin_pad = (alignof(T) - (mem_addr % alignof(T))) % alignof(T);
+
+		// Push onto the stack
+		char* begin = reinterpret_cast<char*>(mem_addr) + begin_pad;
+		auto end = begin + needed_bytes;
 		frames.emplace_back(std::make_pair(begin, end));
 
 		return std::make_pair(reinterpret_cast<T*>(begin), reinterpret_cast<T*>(end));
