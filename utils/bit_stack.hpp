@@ -17,6 +17,9 @@ class BitStack
 	INT_TYPE bits;
 
 public:
+	BitStack() {}
+	BitStack(INT_TYPE i): bits {i} {}
+
 	/**
 	 * Push a bit onto the top of the stack.
 	 */
@@ -105,6 +108,9 @@ class BitStack2
 	INT_TYPE bits1, bits2;
 
 public:
+	BitStack2() {}
+	BitStack2(INT_TYPE i): bits1 {i} {}
+
 	/**
 	 * Push a bit onto the top of the stack.
 	 */
