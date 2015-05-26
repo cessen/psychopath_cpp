@@ -85,7 +85,7 @@ T lerp_seq(float alpha, const RandContainer& c)
 /**
  * Partitions a range of elements based on a unary predicate function.
  *
- * This is function applies the predicate precisely once to every element
+ * This function applies the predicate precisely once to every element
  * in the range, which means it is safe and predictable for the predicate
  * to modify the elements of the list.
  *
@@ -117,13 +117,50 @@ BidirIt mutable_partition(BidirIt begin, BidirIt end, Predicate pred)
 				return begin;
 		} while (!pred(*end));
 
-		std::memcpy((void*)tmp, (void*)begin, sizeof(decltype(*begin)));
-		std::memcpy((void*)begin, (void*)end, sizeof(decltype(*begin)));
-		std::memcpy((void*)end, (void*)tmp, sizeof(decltype(*begin)));
+		std::memcpy((void*)&(*tmp), (void*)&(*begin), sizeof(decltype(*begin)));
+		std::memcpy((void*)&(*begin), (void*)&(*end), sizeof(decltype(*begin)));
+		std::memcpy((void*)&(*end), (void*)&(*tmp), sizeof(decltype(*begin)));
 
 		++begin;
 	}
 }
+
+/*template <typename Predicate, typename BidirIt>
+BidirIt mutable_partition(BidirIt begin, BidirIt end, Predicate pred)
+{
+    alignas(decltype(*begin)) char tmp[sizeof(decltype(*begin))];
+
+    auto last = begin;
+
+    while (true) {
+        if( begin == end)
+            return last;
+        if (!pred(*begin))
+            break;
+        ++begin;
+        ++last;
+    }
+    ++begin;
+
+    while (true) {
+        while (true) {
+            if( begin == end)
+                return last;
+            if (pred(*begin))
+                break;
+            ++begin;
+        }
+
+        std::memcpy((void*)&(*tmp), (void*)&(*begin), sizeof(decltype(*begin)));
+        std::memcpy((void*)&(*begin), (void*)&(*last), sizeof(decltype(*begin)));
+        std::memcpy((void*)&(*last), (void*)&(*tmp), sizeof(decltype(*begin)));
+
+        ++last;
+        ++begin;
+    }
+
+    return last;
+}*/
 
 
 /*
