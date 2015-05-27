@@ -17,6 +17,7 @@
 
 #include "integrator.hpp"
 #include "film.hpp"
+#include "image_sampler.hpp"
 #include "scene.hpp"
 #include "tracer.hpp"
 #include "color.hpp"
@@ -47,7 +48,7 @@ class PathTraceIntegrator final: Integrator
 	 * Stores state of a path in progress.
 	 */
 	struct PTState {
-		const float *samples = nullptr;
+		Sampler sampler;
 		float time;
 		int step = 0;
 		short pix_x, pix_y;  // Pixel coordinates of the path
@@ -60,7 +61,7 @@ class PathTraceIntegrator final: Integrator
 		bool done {false};
 	};
 
-	void init_path(PTState* pstate, const float* samps, short x, short y);
+	void init_path(PTState* pstate, Sampler s, short x, short y);
 	WorldRay next_ray_for_path(const WorldRay& prev_ray, PTState* pstate);
 	void update_path(PTState* pstate, const WorldRay& ray, const Intersection& inter);
 

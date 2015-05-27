@@ -3,9 +3,39 @@
 
 #include "numtype.h"
 
+#include "halton.hpp"
 #include "rng.hpp"
 #include "hash.hpp"
 #include <vector>
+
+
+
+/**
+ * A sampler for a single "item" which requires a multi-dimensional sample.
+ */
+struct Sampler {
+	uint32_t offset;
+	uint32_t dim = 0;
+
+	Sampler(): offset {0} {}
+	Sampler(uint32_t x, uint32_t y, uint32_t n, uint32_t seed) {
+		offset = hash_u32(x ^ ((y >> 16) | (y << 16)), seed) + n;
+	}
+
+	float get_sample(const uint32_t dimension) const {
+		static const std::array<size_t, 10> d_order {{7, 6, 5, 4, 2, 9, 8, 3, 1, 0}}; // Reorder the first several dimensions for least image variance
+
+		if (dimension < d_order.size()) {
+			return Halton::sample(d_order[dimension], offset);
+		} else {
+			return Halton::sample(dimension, offset);
+		}
+	}
+
+	float next() {
+		return get_sample(dim++);
+	}
+};
 
 
 /*
@@ -23,7 +53,6 @@ private:
 	/* General settings. */
 	uint spp;  // Approximate number of samples per pixel
 	uint res_x, res_y;  // Image resolution in pixels
-	uint32_t seed_offset;
 
 	/* State information. */
 	uint curve_res; // Space filling curve resolution
@@ -37,6 +66,7 @@ private:
 	/* Random number generator. */
 	RNG rng;
 	Hash hash;
+	uint32_t seed;
 
 public:
 	ImageSampler(uint spp,
@@ -45,6 +75,9 @@ public:
 	~ImageSampler();
 
 	void init_tile();
+	Sampler get_single_sampler(uint32_t x, uint32_t y, uint32_t i) {
+		return Sampler(x, y, i, seed);
+	}
 	void get_sample(uint32_t x, uint32_t y, uint32_t d, uint32_t ns, float *sample, uint16_t *coords=nullptr);
 	bool get_next_sample(uint32_t ns, float *sample, uint16_t *coords=nullptr);
 
@@ -52,5 +85,7 @@ public:
 		return ((float)(samp_taken)) / tot_samp;
 	}
 };
+
+
 
 #endif

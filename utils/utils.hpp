@@ -188,6 +188,18 @@ static inline bool calc_time_interp(const uint8_t& time_count, const float &time
 
 #define QPI (3.1415926535897932384626433 / 4)
 
+/**
+ * The logit function, scaled to approximate the probit function.
+ *
+ * We use this as a close approximation to the gaussian inverse CDF,
+ * since the gaussian inverse CDF (probit) has no analytic formula.
+ */
+static inline float logit(float p, float width = 1.5f)
+{
+	p = 0.001f + (p * 0.998f);
+	return logf(p/(1.0f-p)) * width * (0.6266f/4);
+}
+
 /*
  * Maps the unit square to the unit circle.
  * Modifies x and y in place.

@@ -6,6 +6,7 @@
 #include <cmath>
 #include <vector>
 
+#include "utils.hpp"
 #include "image_sampler.hpp"
 #include "film.hpp"
 #include "intersection.hpp"
@@ -78,10 +79,10 @@ void PathTraceIntegrator::integrate()
 /*
  * Initializes the state of a path.
  */
-void PathTraceIntegrator::init_path(PTState* pstate, const float* samps, short x, short y)
+void PathTraceIntegrator::init_path(PTState* pstate, Sampler s, short x, short y)
 {
 	*pstate = PTState();
-	pstate->samples = samps;
+	pstate->sampler = s;
 	pstate->pix_x = x;
 	pstate->pix_y = y;
 }
@@ -96,16 +97,21 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 	WorldRay ray;
 
 	if (path.step == 0) {
+		const static float PIXEL_FILTER_WIDTH = 1.5f;
+		const float samp_x = (logit(path.sampler.next(), PIXEL_FILTER_WIDTH) + 0.5f + path.pix_x) / image->width;
+		const float samp_y = (logit(path.sampler.next(), PIXEL_FILTER_WIDTH) + 0.5f + path.pix_y) / image->height;
+
 		// Camera ray
-		const float rx = (path.samples[0] - 0.5) * (image->max_x - image->min_x);
-		const float ry = (0.5 - path.samples[1]) * (image->max_y - image->min_y);
+		const float rx = (samp_x - 0.5) * (image->max_x - image->min_x);
+		const float ry = (0.5 - samp_y) * (image->max_y - image->min_y);
 		const float dx = (image->max_x - image->min_x) / image->width;
 		const float dy = (image->max_y - image->min_y) / image->height;
-		ray = scene->camera->generate_ray(rx, ry, dx, dy, path.samples[4], path.samples[2], path.samples[3]);
-		path.time = ray.time;
 
-		// Increment the sample pointer
-		path.samples += 5;
+		const float samp_a = path.sampler.next();
+		const float samp_b = path.sampler.next();
+		const float samp_c = path.sampler.next();
+		ray = scene->camera->generate_ray(rx, ry, dx, dy, samp_c, samp_a, samp_b);
+		path.time = ray.time;
 	} else if (path.step % 2) {
 		// Shadow ray
 
@@ -130,7 +136,7 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 				lq_nor *= -1.0f;
 
 			// Get a sample from lights in the scene
-			LightQuery lq {path.samples[0], path.samples[1], path.samples[2], 0.0f,
+			LightQuery lq {path.sampler.next(), path.sampler.next(), path.sampler.next(), 0.0f,
 			               geo.p, lq_nor, path.time,
 			               Transform()
 			              };
@@ -155,9 +161,6 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		} else {
 			path.lcol = Color(0.0f);
 		}
-
-		// Increment the sample pointer
-		path.samples += 3;
 	} else {
 		// Bounce ray
 
@@ -176,7 +179,7 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 		Color filter;
 		float pdf;
 
-		bsdf->sample(path.prev_ray.d, geo, path.samples[0], path.samples[1], &out, &filter, &pdf);
+		bsdf->sample(path.prev_ray.d, geo, path.sampler.next(), path.sampler.next(), &out, &filter, &pdf);
 
 		ray.o = geo.p + pos_offset;
 		ray.d = out;
@@ -192,9 +195,6 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 			path.fcol *= filter / pdf;
 		else
 			path.fcol *= filter;
-
-		// Increment the sample pointer
-		path.samples += 2;
 	}
 
 	return ray;
@@ -257,11 +257,6 @@ void PathTraceIntegrator::render_blocks()
 	ImageSampler image_sampler(spp, image->width, image->height, seed);
 	Tracer tracer(scene);
 
-	const size_t samp_dim = 5 + (path_length * 5);
-
-	// Sample array
-	std::vector<float> samps;
-
 	// Light path array
 	std::vector<PTState> paths;
 
@@ -281,7 +276,6 @@ void PathTraceIntegrator::render_blocks()
 			const size_t sample_count = (pb.h * pb.w) * spp;
 
 			// Resize arrays for the apropriate sample count
-			samps.resize(sample_count * samp_dim);
 			paths.resize(sample_count);
 			rays.resize(sample_count);
 			intersections.resize(sample_count);
@@ -290,16 +284,13 @@ void PathTraceIntegrator::render_blocks()
 			int samp_i = 0;
 			for (int x = pb.x; x < (pb.x + pb.w); ++x) {
 				for (int y = pb.y; y < (pb.y + pb.h); ++y) {
-					for (int s = samp_it; s < (samp_it + spp); ++s) {
-						image_sampler.get_sample(x, y, s, samp_dim, &samps[samp_i*samp_dim]);
-						init_path(&paths[samp_i], &samps[samp_i*samp_dim], x, y);
+					for (int s = 0; s < spp; ++s) {
+						init_path(&paths[samp_i], image_sampler.get_single_sampler(x, y, s), x, y);
 						++samp_i;
 					}
 				}
 			}
 			samp_it += spp;
-
-			uint32_t samp_size = samps.size() / samp_dim;
 
 			auto p_begin = &(*paths.begin());
 			auto p_end = &(*paths.end());
@@ -335,7 +326,7 @@ void PathTraceIntegrator::render_blocks()
 			if (!Config::no_output) {
 				// Accumulate the samples
 
-				for (uint32_t i = 0; i < samp_size; i++) {
+				for (uint32_t i = 0; i < paths.size(); i++) {
 					image->add_sample(paths[i].col, paths[i].pix_x, paths[i].pix_y);
 				}
 

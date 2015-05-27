@@ -17,7 +17,7 @@
 ImageSampler::ImageSampler(uint spp,
                            uint res_x, uint res_y,
                            uint seed):
-	spp {spp}, res_x {res_x}, res_y {res_y}, rng {seed}, hash {seed} {
+	spp {spp}, res_x {res_x}, res_y {res_y}, rng {seed}, hash {seed}, seed {seed} {
 
 	x = 0;
 	y = 0;
@@ -35,8 +35,6 @@ ImageSampler::ImageSampler(uint spp,
 		curve_order++;
 	}
 	points_traversed = 0;
-
-	seed_offset = rng.next_uint();
 }
 
 
@@ -45,18 +43,6 @@ ImageSampler::~ImageSampler()
 }
 
 
-/**
- * The logit function, scaled to approximate the probit function.
- *
- * We're using it as a close approximation to the gaussian inverse CDF,
- * since the gaussian inverse CDF (probit) has no analytic formula.
- */
-float logit(float p, float width = 1.5f)
-{
-	p = 0.001f + (p * 0.998f);
-	return logf(p/(1.0f-p)) * width * (0.6266f/4);
-}
-
 void ImageSampler::get_sample(uint32_t x, uint32_t y, uint32_t d, uint32_t ns, float *sample, uint16_t *coords)
 {
 	if (coords != nullptr) {
@@ -64,7 +50,7 @@ void ImageSampler::get_sample(uint32_t x, uint32_t y, uint32_t d, uint32_t ns, f
 		coords[1] = y;
 	}
 
-	const std::array<size_t, 10> d_order {{7, 6, 5, 4, 2, 9, 8, 3, 1, 0}}; // Reorder the first several dimensions for least image variance
+	static const std::array<size_t, 10> d_order {{7, 6, 5, 4, 2, 9, 8, 3, 1, 0}}; // Reorder the first several dimensions for least image variance
 
 	// Hash the x and y indices of the pixel and use that as an offset
 	// into the LDS sequence.  This gives the image a more random appearance
@@ -82,12 +68,6 @@ void ImageSampler::get_sample(uint32_t x, uint32_t y, uint32_t d, uint32_t ns, f
 		sample[i] = Halton::sample(d_order[i], samp_i);
 	for (; i < ns; ++i)
 		sample[i] = Halton::sample(i, samp_i);
-
-#define WIDTH 1.5f
-	sample[0] = logit(sample[0], WIDTH) + 0.5f;
-	sample[1] = logit(sample[1], WIDTH) + 0.5f;
-	sample[0] = (sample[0] + x) / res_x;  // Return image x/y in normalized [0,1] range
-	sample[1] = (sample[1] + y) / res_y;
 }
 
 
