@@ -21,6 +21,7 @@
 
 - Parsing:
 	- Give useful error messages...
+	- Support binary geometry files of some kind, for faster scene loading
 
 - PsychoBlend:
 	- Export Group instances as assemblies

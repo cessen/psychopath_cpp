@@ -133,7 +133,7 @@ std::unique_ptr<Renderer> Parser::parse_next_frame()
 
 		// Root Assembly definition
 		else if (node.type == "Assembly") {
-			scene->root = parse_assembly(node);
+			scene->root = parse_assembly(node, nullptr);
 		}
 	}
 
@@ -221,15 +221,17 @@ std::unique_ptr<Camera> Parser::parse_camera(const DataTree::Node& node)
 }
 
 
-std::unique_ptr<Assembly> Parser::parse_assembly(const DataTree::Node& node)
+std::unique_ptr<Assembly> Parser::parse_assembly(const DataTree::Node& node, const Assembly* parent_assembly)
 {
 	// Allocate assembly
 	std::unique_ptr<Assembly> assembly = std::unique_ptr<Assembly>(new Assembly());
 
+	assembly->parent = parent_assembly;
+
 	for (const auto& child: node.children) {
 		// Sub-Assembly
 		if (child.type == "Assembly") {
-			assembly->add_assembly(child.name, parse_assembly(child));
+			assembly->add_assembly(child.name, parse_assembly(child, assembly.get()));
 		}
 
 		// Bilinear Patch
@@ -257,19 +259,25 @@ std::unique_ptr<Assembly> Parser::parse_assembly(const DataTree::Node& node)
 			// Parse
 			std::string name = "";
 			std::vector<Transform> xforms;
+			const SurfaceShader *shader = nullptr;
 			for (const auto& child2: child.children) {
 				if (child2.type == "Transform") {
 					xforms.emplace_back(parse_matrix(child2.leaf_contents));
 				} else if (child2.type == "Data") {
 					name = child2.leaf_contents;
+				} else if (child2.type == "SurfaceShaderBind") {
+					shader = assembly->get_surface_shader(child2.leaf_contents);
+					if (shader == nullptr) {
+						std::cout << "ERROR: attempted to bind surface shader that doesn't exist." << std::endl;
+					}
 				}
 			}
 
 			// Add instance
 			if (assembly->object_map.count(name) != 0) {
-				assembly->create_object_instance(name, xforms);
+				assembly->create_object_instance(name, xforms, shader);
 			} else if (assembly->assembly_map.count(name) != 0) {
-				assembly->create_assembly_instance(name, xforms);
+				assembly->create_assembly_instance(name, xforms, shader);
 			} else {
 				std::cout << "ERROR: attempted to add instace for data that doesn't exist." << std::endl;
 			}

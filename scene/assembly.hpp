@@ -16,6 +16,7 @@
 #include "bvh4.hpp"
 #include "light_array.hpp"
 #include "light_tree.hpp"
+#include "surface_shader.hpp"
 
 
 /**
@@ -34,6 +35,8 @@ struct Instance {
 
 	size_t transform_index; // Index of the first transform for this instance in the transforms array
 	size_t transform_count; // The number of transforms, for transformation motion blur. If zero, no transforms.
+
+	const SurfaceShader *surface_shader;
 
 	std::string to_string() const {
 		std::string s;
@@ -71,6 +74,8 @@ struct Instance {
 class Assembly
 {
 public:
+	const Assembly* parent = nullptr; // Pointer to the parent assembly, if any
+
 	// Instance list
 	std::vector<Instance> instances;
 	std::vector<Transform> xforms;
@@ -83,9 +88,9 @@ public:
 	std::vector<std::unique_ptr<Assembly>> assemblies;
 	std::unordered_map<std::string, size_t> assembly_map; // map Name -> Index
 
-	// TODO: Shader list
-	//std::vector<SHADER> shaders;
-	//std::unordered_map<std::string, size_t> shader_map; // map Name -> Index
+	// Shader list
+	std::vector<std::unique_ptr<SurfaceShader>> surface_shaders;
+	std::unordered_map<std::string, size_t> surface_shader_map; // map Name -> Index
 
 	// Object accel
 	BVH4 object_accel;
@@ -94,6 +99,33 @@ public:
 	LightTree light_accel;
 
 	/*****************************************************/
+
+	/**
+	 * Adds a surface shader to the assembly.
+	 */
+	bool add_surface_shader(const std::string& name, std::unique_ptr<SurfaceShader>&& shader) {
+		surface_shaders.emplace_back(std::move(shader));
+		surface_shader_map.emplace(name, surface_shaders.size() - 1);
+
+		return true;
+	}
+
+	/**
+	 * Finds and returns a pointer to the surface shader with the given name.
+	 * If it is not found in this assembly, the parent assembly will be
+	 * automatically searched, and so on.
+	 *
+	 * If no shader by that name is found, nullptr is returned.
+	 */
+	const SurfaceShader *get_surface_shader(const std::string& name) const {
+		if (surface_shader_map.count(name) != 0) {
+			return surface_shaders[surface_shader_map.at(name)].get();
+		} else if (parent != nullptr) {
+			return parent->get_surface_shader(name);
+		} else {
+			return nullptr;
+		}
+	}
 
 	/**
 	 * Adds an object to the assembly.
@@ -105,23 +137,23 @@ public:
 	bool add_object(const std::string& name, std::unique_ptr<Object>&& object) {
 		object->uid = ++Global::next_object_uid; // TODO: use implicit ID's derived from scene hierarchy.
 		objects.emplace_back(std::move(object));
-		object_map.emplace(name, objects.size() -1);
+		object_map.emplace(name, objects.size() - 1);
 
 		return true;
 	}
 
 
 	/**
-	* Adds a sub-assembly to the assembly.
-	*
-	* Note that this does not add the sub-assembly in such a way that it will
-	* be rendered.  To make the sub-assembly render, you also must instance it
-	* in the assembly with create_assembly_instance().
-	*/
+	 * Adds a sub-assembly to the assembly.
+	 *
+	 * Note that this does not add the sub-assembly in such a way that it will
+	 * be rendered.  To make the sub-assembly render, you also must instance it
+	 * in the assembly with create_assembly_instance().
+	 */
 	bool add_assembly(const std::string& name, std::unique_ptr<Assembly>&& assembly) {
 		//assembly->uid = ++Global::next_object_uid; // TODO: use implicit ID's derived from scene hierarchy.
 		assemblies.emplace_back(std::move(assembly));
-		assembly_map.emplace(name, assemblies.size() -1);
+		assembly_map.emplace(name, assemblies.size() - 1);
 
 		return true;
 	}
@@ -130,9 +162,9 @@ public:
 	/**
 	 * Creates an instance of an already added object.
 	 */
-	bool create_object_instance(const std::string& name, const std::vector<Transform>& transforms) {
+	bool create_object_instance(const std::string& name, const std::vector<Transform>& transforms, const SurfaceShader *surface_shader = nullptr) {
 		// Add the instance
-		instances.emplace_back(Instance {Instance::OBJECT, object_map[name], xforms.size(), transforms.size()});
+		instances.emplace_back(Instance {Instance::OBJECT, object_map[name], xforms.size(), transforms.size(), surface_shader});
 
 		// Add transforms
 		for (const auto& trans: transforms) {
@@ -146,9 +178,9 @@ public:
 	/**
 	 * Creates an instance of an already added assembly.
 	 */
-	bool create_assembly_instance(const std::string& name, const std::vector<Transform>& transforms) {
+	bool create_assembly_instance(const std::string& name, const std::vector<Transform>& transforms, const SurfaceShader *surface_shader = nullptr) {
 		// Add the instance
-		instances.emplace_back(Instance {Instance::ASSEMBLY, assembly_map[name], xforms.size(), transforms.size()});
+		instances.emplace_back(Instance {Instance::ASSEMBLY, assembly_map[name], xforms.size(), transforms.size(), surface_shader});
 
 		// Add transforms
 		for (const auto& trans: transforms) {
@@ -178,12 +210,15 @@ public:
 			ass->finalize();
 		}
 
-		// Clear maps (no longer needed)
+		// Clear maps (no longer needed).
+		// However, don't clear shader maps, as they are still used by
+		// get_surface_shader() et al.
 		object_map.clear();
 		assembly_map.clear();
-		//shader_map.clear();
 
-		// Shrink storage to minimum
+		// Shrink storage to minimum.
+		// However, don't shrink shader storage, because there are pointers to
+		// that data that could get invalidated.
 		instances.shrink_to_fit();
 		xforms.shrink_to_fit();
 		objects.shrink_to_fit();

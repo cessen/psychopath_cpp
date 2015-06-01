@@ -92,10 +92,18 @@ Scene $yar_0001 {
 	Assembly {
 		# Shaders, objects, sub-assemblies, and instances can be listed in any
 		# order, as long as all data preceeds any references to it.
+		SurfaceShader $grey_diffuse {
+			Type [Lambert]
+			Color [0.9 0.9 0.9]
+	}
 
-		OSLShader $grey_diffuse ["/home/cessen/shaders/grey_diffuse.osl"]
-
-		OSLShader $mirror ["/home/cessen/shaders/mirror.osl"]
+	SurfaceShader $mirror {
+		Type [GTR]
+		Color [0.9 0.9 0.9]
+		Roughness [0.0]
+		TailShape [2.0]
+		Fresnel [0.25]
+	}
 
 		SphereLight $light.001 {
 			Location [20 20 20]
@@ -105,18 +113,21 @@ Scene $yar_0001 {
 
 		CatmullClarkSubdiv $subdiv_test {
 			GeometryFile ["/home/cessen/thing.obj"]
-			ShaderRef [$mirror] # Referencing the shader defined previously
+			SurfaceShaderBind [$mirror] # Referencing the shader defined previously
 		}
 
 		# Assemblies can contain other assemblies
 		Assembly $gruble {
-			OSLShader $mirror2 ["/home/cessen/shaders/mirror2.osl"]
+			SurfaceShader $complex_shader {
+			Type [OSL]
+			FilePath ["cool_shader.osl"]
+		}
 
 			# Assembly namespaces are local, so $subdiv_test here does
 			# not conflict with $subdiv_test in the parent assembly.
 			CatmullClarkSubdiv $subdiv_test {
 				GeometryFile ["/home/cessen/thing2.obj"]
-				ShaderRef [$mirror] # Referencing the shader defined previously
+				SurfaceShaderBind [$mirror] # Referencing the shader defined previously
 			}
 
 			Instance {

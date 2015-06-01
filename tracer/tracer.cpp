@@ -54,37 +54,29 @@ uint32_t Tracer::trace(const WorldRay* w_rays_begin, const WorldRay* w_rays_end,
 
 #if 0
 	// Split rays into groups based on primary direction before tracing
-	auto split1 = std::partition(rays.begin(), rays.end(), [](Ray r) {
-		return r.d[0] > 0 &&
-		       std::abs(r.d[0]) > std::abs(r.d[1]) &&
+	auto split2 = std::partition(rays.begin(), rays.end(), [](Ray r) {
+		return std::abs(r.d[0]) > std::abs(r.d[1]) &&
 		       std::abs(r.d[0]) > std::abs(r.d[2]);
+	});
+	auto split1 = std::partition(rays.begin(), split2, [](Ray r) {
+		return r.d[0] > 0.0f;
 	});
 	trace_assembly(scene->root.get(), &(*rays.begin()), &(*split1));
-
-	auto split2 = std::partition(split1, rays.end(), [](Ray r) {
-		return r.d[0] <= 0 &&
-		       std::abs(r.d[0]) > std::abs(r.d[1]) &&
-		       std::abs(r.d[0]) > std::abs(r.d[2]);
-	});
 	trace_assembly(scene->root.get(), &(*split1), &(*split2));
 
-	auto split3 = std::partition(split2, rays.end(), [](Ray r) {
-		return r.d[1] > 0 &&
-		       std::abs(r.d[1]) > std::abs(r.d[2]);
+	auto split4 = std::partition(split2, rays.end(), [](Ray r) {
+		return std::abs(r.d[1]) > std::abs(r.d[2]);
+	});
+	auto split3 = std::partition(split2, split4, [](Ray r) {
+		return r.d[1] > 0.0f;
 	});
 	trace_assembly(scene->root.get(), &(*split2), &(*split3));
-
-	auto split4 = std::partition(split3, rays.end(), [](Ray r) {
-		return r.d[1] <= 0 &&
-		       std::abs(r.d[1]) > std::abs(r.d[2]);
-	});
 	trace_assembly(scene->root.get(), &(*split3), &(*split4));
 
 	auto split5 = std::partition(split4, rays.end(), [](Ray r) {
-		return r.d[2] > 0;
+		return r.d[2] > 0.0f;
 	});
 	trace_assembly(scene->root.get(), &(*split4), &(*split5));
-
 	trace_assembly(scene->root.get(), &(*split5), &(*rays.end()));
 #else
 	// Just trace all the rays together

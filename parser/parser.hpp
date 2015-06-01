@@ -36,7 +36,7 @@ class Parser
 	/**
 	 * @brief Parses an Assembly section.
 	 */
-	std::unique_ptr<Assembly> parse_assembly(const DataTree::Node& node);
+	std::unique_ptr<Assembly> parse_assembly(const DataTree::Node& node, const Assembly* parent_assembly);
 
 
 	/**
