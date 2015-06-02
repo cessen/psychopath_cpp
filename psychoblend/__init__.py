@@ -94,7 +94,7 @@ class PsychopathMaterial(bpy.types.PropertyGroup):
     
     tail_shape = FloatProperty(
         name="Tail Shape", description="",
-        min=0.0, soft_min=0.0, soft_max=4.0, default=2.0
+        min=0.0, max=8.0, soft_min=1.0, soft_max=3.0, default=2.0
         )
     
     fresnel = FloatProperty(

@@ -28,7 +28,7 @@
 	- Allow per-object motion blur segment specification
 
 - Shading system
-	- Stupid simple shaders first
+	//- Stupid simple shaders first
 	- A few hard-coded displacement shaders, to verify the ideas work (e.g.
 	  with interval arithmetic).
 	- Then use OSL

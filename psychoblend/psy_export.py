@@ -178,8 +178,11 @@ class PsychoExporter:
 
         #######################
         # Export objects and materials
+        # TODO: handle materials from linked files (as used in group
+        # instances) properly.
         self.w.write("Assembly {\n")
         self.w.indent()
+        self.export_materials(bpy.data.materials)
         self.export_objects(self.scene.objects, self.scene.layers)
         self.w.unindent()
         self.w.write("}\n")
@@ -193,6 +196,18 @@ class PsychoExporter:
         self.scene.frame_set(self.fr)
 
 
+    def export_materials(self, materials):
+        for m in materials:
+            self.w.write("SurfaceShader $%s {\n" % escape_name(m.name))
+            self.w.indent()
+            self.w.write("Type [%s]\n" % m.psychopath.surface_shader_type)
+            self.w.write("Color [%f %f %f]\n" % (m.psychopath.color[0], m.psychopath.color[1], m.psychopath.color[2]))
+            if m.psychopath.surface_shader_type == 'GTR':
+                self.w.write("Roughness [%f]\n" % m.psychopath.roughness)
+                self.w.write("TailShape [%f]\n" % m.psychopath.tail_shape)
+                self.w.write("Fresnel [%f]\n" % m.psychopath.fresnel)
+            self.w.unindent()
+            self.w.write("}\n")
 
 
     def export_objects(self, objects, visible_layers, group_prefix="", translation_offset=(0,0,0)):
@@ -246,6 +261,8 @@ class PsychoExporter:
                 self.w.write("Instance {\n")
                 self.w.indent()
                 self.w.write("Data [$%s]\n" % name)
+                if len(ob.material_slots) > 0 and ob.material_slots[0].material != None:
+                    self.w.write("SurfaceShaderBind [$%s]\n" % escape_name(ob.material_slots[0].material.name))
                 for i in range(len(time_mats)):
                     mat = time_mats[i].inverted()
                     self.w.write("Transform [%s]\n" % mat2str(mat))
