@@ -16,15 +16,21 @@
 
 - Multiple importance sampling
 
-- Infinite lights (e.g. sun lights) will be considered part of the background,
-  along with e.g. HDRI lighting backgrounds.
+- Light sources:
+    - Infinite lights (e.g. sun lights) will be considered part of the background,
+      along with e.g. HDRI lighting backgrounds.
+    - Point lights should be a special-case of sphere lights, with radius zero.
+    - Spot lights
+    - Rectangular area lights
+    - A way to mark other objects as light sources, for MIS (this can't be done
+      automatically in the general case...?)
 
 - Parsing:
 	- Give useful error messages...
 	- Support binary geometry files of some kind, for faster scene loading
 
 - PsychoBlend:
-	- Export Group instances as assemblies
+	//- Export Group instances as assemblies
 	- Allow per-object motion blur segment specification
 
 - Shading system
@@ -37,8 +43,8 @@
 	- Catmull-clark subdivision surfaces
 	- Triangle meshes
 
-- Adaptive sampling scheme
-	- "Population Monte Carlo"
+//- Adaptive sampling scheme
+//	- "Population Monte Carlo"
 
 - Film class:
 	- Make film class more data-type agnostic.  It should be the responsibility
