@@ -61,6 +61,23 @@ class RENDER_PT_psychopath_export_settings(PsychopathPanel, bpy.types.Panel):
         col.prop(scene.psychopath, "export_path")
 
 
+class WORLD_PT_psychopath_background(PsychopathPanel, bpy.types.Panel):
+    bl_label = "Background"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "world"
+    
+    @classmethod
+    def poll(cls, context):
+        return context.world and PsychopathPanel.poll(context)
+    
+    def draw(self, context):
+        layout = self.layout
+    
+        world = context.world
+        layout.prop(world, "horizon_color", text="Color")
+
+
 class DATA_PT_psychopath_camera_dof(PsychopathPanel, bpy.types.Panel):
     bl_label = "Depth of Field"
     bl_space_type = 'PROPERTIES'
@@ -186,6 +203,7 @@ class MATERIAL_PT_psychopath_surface(PsychopathPanel, bpy.types.Panel):
 def register():
     bpy.utils.register_class(RENDER_PT_psychopath_render_settings)
     bpy.utils.register_class(RENDER_PT_psychopath_export_settings)
+    bpy.utils.register_class(WORLD_PT_psychopath_background)
     bpy.utils.register_class(DATA_PT_psychopath_camera_dof)
     bpy.utils.register_class(DATA_PT_psychopath_lamp)
     bpy.utils.register_class(MATERIAL_PT_psychopath_context_material)
@@ -194,6 +212,7 @@ def register():
 def unregister():
     bpy.utils.unregister_class(RENDER_PT_psychopath_render_settings)
     bpy.utils.unregister_class(RENDER_PT_psychopath_export_settings)
+    bpy.utils.unregister_class(WORLD_PT_psychopath_background)
     bpy.utils.unregister_class(DATA_PT_psychopath_camera_dof)
     bpy.utils.unregister_class(DATA_PT_psychopath_lamp)
     bpy.utils.unregister_class(MATERIAL_PT_psychopath_context_material)

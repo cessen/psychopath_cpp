@@ -128,7 +128,37 @@ std::unique_ptr<Renderer> Parser::parse_next_frame()
 
 		// World description
 		else if (node.type == "World") {
-			// TODO
+			for (const auto& child: node.children) {
+				// Parse background shader
+				if (child.type == "BackgroundShader") {
+					// Find the shader type
+					auto shader_type = std::find_if(child.children.cbegin(), child.children.cend(), [](const DataTree::Node& child2) {
+						return child2.type == "Type";
+					});
+					if (shader_type == child.children.cend()) {
+						std::cout << "ERROR: attempted to add background shader without a type." << std::endl;
+						return nullptr;
+					}
+
+					if (shader_type->leaf_contents == "Color") {
+						Color col(0.0, 0.0, 0.0);
+						for (const auto &child2: child.children) {
+							if (child2.type == "Color") {
+								// Get color
+								std::sregex_iterator matches(child2.leaf_contents.begin(), child2.leaf_contents.end(), re_float);
+								for (int i = 0; matches != std::sregex_iterator() && i < 3; ++matches) {
+									col[i] = std::stof(matches->str());
+									++i;
+								}
+							}
+						}
+
+						scene->background_color = col;
+					}
+				}
+
+				// TODO: distant light sources
+			}
 		}
 
 		// Root Assembly definition

@@ -238,7 +238,7 @@ void PathTraceIntegrator::update_path(PTState* pstate, const WorldRay& ray, cons
 		} else {
 			// Ray didn't hit anything
 			path.done = true;
-			path.col += path.fcol * Color(0.8f); // Background color
+			path.col += path.fcol * scene->background_color;
 		}
 	}
 

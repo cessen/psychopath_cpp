@@ -175,6 +175,25 @@ class PsychoExporter:
         # Camera section end
         self.w.unindent()
         self.w.write("}\n")
+        
+        #######################
+        # World section begin
+        self.w.write("World {\n")
+        self.w.indent()
+
+        world = self.scene.world
+
+        if world != None:
+            self.w.write("BackgroundShader {\n")
+            self.w.indent();
+            self.w.write("Type [Color]\n")
+            self.w.write("Color [%f %f %f]\n" % (world.horizon_color[0], world.horizon_color[1], world.horizon_color[2]))
+            self.w.unindent();
+            self.w.write("}\n")
+
+        # World section end
+        self.w.unindent()
+        self.w.write("}\n")
 
         #######################
         # Export objects and materials

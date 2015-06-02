@@ -75,7 +75,8 @@ Scene $yar_0001 {
 	# of infinite extent.  For example: background shader, distant lights, volumes
 	# that occupy the entire world, etc.
 	World {
-		Background {
+		BackgroundShader {
+		    Type [Color]
 			Color [0.8 0.8 0.8]
 		}
 

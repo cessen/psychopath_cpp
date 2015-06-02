@@ -33,12 +33,15 @@
 struct Scene {
 	std::string name;
 
+	Color background_color;
+
 	std::unique_ptr<Camera> camera; // The camera of the scene
 
 	std::unique_ptr<Assembly> root; // The root assembly of the scene
 
 
 	Scene() {
+		background_color = Color(0.0f, 0.0f, 0.0f);
 		root = std::unique_ptr<Assembly>(new Assembly());
 	}
 
