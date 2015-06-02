@@ -70,7 +70,7 @@ class DATA_PT_psychopath_camera_dof(PsychopathPanel, bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         engine = context.scene.render.engine
-        return context.camera and (engine in cls.COMPAT_ENGINES)
+        return context.camera and PsychopathPanel.poll(context)
 
     def draw(self, context):
         ob = context.active_object
@@ -82,6 +82,7 @@ class DATA_PT_psychopath_camera_dof(PsychopathPanel, bpy.types.Panel):
         col.prop(ob.data, "dof_distance")
         col.prop(ob.data.psychopath, "aperture_radius")
 
+
 class DATA_PT_psychopath_lamp(PsychopathPanel, bpy.types.Panel):
     bl_label = "Lamp"
     bl_space_type = 'PROPERTIES'
@@ -91,7 +92,7 @@ class DATA_PT_psychopath_lamp(PsychopathPanel, bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         engine = context.scene.render.engine
-        return context.lamp and (engine in cls.COMPAT_ENGINES)
+        return context.lamp and PsychopathPanel.poll(context)
 
     def draw(self, context):
         ob = context.active_object
@@ -108,14 +109,92 @@ class DATA_PT_psychopath_lamp(PsychopathPanel, bpy.types.Panel):
         col.prop(ob.data, "energy")
 
 
+class MATERIAL_PT_psychopath_context_material(PsychopathPanel, bpy.types.Panel):
+    bl_label = ""
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "material"
+    bl_options = {'HIDE_HEADER'}
+    
+    @classmethod
+    def poll(cls, context):
+        return (context.material or context.object) and PsychopathPanel.poll(context)
+    
+    def draw(self, context):
+        layout = self.layout
+    
+        mat = context.material
+        ob = context.object
+        slot = context.material_slot
+        space = context.space_data
+    
+        if ob:
+            row = layout.row()
+    
+            row.template_list("MATERIAL_UL_matslots", "", ob, "material_slots", ob, "active_material_index", rows=1)
+    
+            col = row.column(align=True)
+            col.operator("object.material_slot_add", icon='ZOOMIN', text="")
+            col.operator("object.material_slot_remove", icon='ZOOMOUT', text="")
+    
+            col.menu("MATERIAL_MT_specials", icon='DOWNARROW_HLT', text="")
+    
+            if ob.mode == 'EDIT':
+                row = layout.row(align=True)
+                row.operator("object.material_slot_assign", text="Assign")
+                row.operator("object.material_slot_select", text="Select")
+                row.operator("object.material_slot_deselect", text="Deselect")
+    
+        split = layout.split(percentage=0.65)
+    
+        if ob:
+            split.template_ID(ob, "active_material", new="material.new")
+            row = split.row()
+    
+            if slot:
+                row.prop(slot, "link", text="")
+            else:
+                row.label()
+        elif mat:
+            split.template_ID(space, "pin_id")
+            split.separator()
+
+
+class MATERIAL_PT_psychopath_surface(PsychopathPanel, bpy.types.Panel):
+    bl_label = "Surface"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "material"
+    
+    @classmethod
+    def poll(cls, context):
+        return context.material and PsychopathPanel.poll(context)
+    
+    def draw(self, context):
+        layout = self.layout
+    
+        mat = context.material
+        layout.prop(mat.psychopath, "surface_shader_type")
+        layout.prop(mat.psychopath, "color")
+        
+        if mat.psychopath.surface_shader_type == 'GTR':
+            layout.prop(mat.psychopath, "roughness")
+            layout.prop(mat.psychopath, "tail_shape")
+            layout.prop(mat.psychopath, "fresnel")
+
+
 def register():
     bpy.utils.register_class(RENDER_PT_psychopath_render_settings)
     bpy.utils.register_class(RENDER_PT_psychopath_export_settings)
     bpy.utils.register_class(DATA_PT_psychopath_camera_dof)
     bpy.utils.register_class(DATA_PT_psychopath_lamp)
+    bpy.utils.register_class(MATERIAL_PT_psychopath_context_material)
+    bpy.utils.register_class(MATERIAL_PT_psychopath_surface)
 
 def unregister():
     bpy.utils.unregister_class(RENDER_PT_psychopath_render_settings)
     bpy.utils.unregister_class(RENDER_PT_psychopath_export_settings)
     bpy.utils.unregister_class(DATA_PT_psychopath_camera_dof)
     bpy.utils.unregister_class(DATA_PT_psychopath_lamp)
+    bpy.utils.unregister_class(MATERIAL_PT_psychopath_context_material)
+    bpy.utils.unregister_class(MATERIAL_PT_psychopath_surface)

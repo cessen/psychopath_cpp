@@ -72,6 +72,36 @@ class PsychopathCamera(bpy.types.PropertyGroup):
         min=0.0, max=10000.0, soft_min=0.0, soft_max=2.0, default=0.0
         )
 
+# Psychopath material
+class PsychopathMaterial(bpy.types.PropertyGroup):
+    surface_shader_type = EnumProperty(
+        name="Surface Shader Type", description="",
+        items=[('Emit', 'Emit', ""), ('Lambert', 'Lambert', ""), ('GTR', 'GTR', "")],
+        default="Lambert"
+        )
+        
+    color = FloatVectorProperty(
+        name="Color", description="",
+        subtype='COLOR',
+        min=0.0, soft_min=0.0, soft_max = 1.0,
+        default=[0.8,0.8,0.8]
+        )
+    
+    roughness = FloatProperty(
+        name="Roughness", description="",
+        min=-1.0, max=1.0, soft_min=0.0, soft_max=1.0, default=0.1
+        )
+    
+    tail_shape = FloatProperty(
+        name="Tail Shape", description="",
+        min=0.0, soft_min=0.0, soft_max=4.0, default=2.0
+        )
+    
+    fresnel = FloatProperty(
+        name="Fresnel", description="",
+        min=0.0, max=1.0, soft_min=0.0, soft_max=1.0, default=0.9
+        )
+
 
 # Addon Preferences
 class PsychopathPreferences(AddonPreferences):
@@ -93,8 +123,10 @@ def register():
     bpy.utils.register_class(PsychopathPreferences)
     bpy.utils.register_class(RenderPsychopathSettingsScene)
     bpy.utils.register_class(PsychopathCamera)
+    bpy.utils.register_class(PsychopathMaterial)
     bpy.types.Scene.psychopath = PointerProperty(type=RenderPsychopathSettingsScene)
     bpy.types.Camera.psychopath = PointerProperty(type=PsychopathCamera)
+    bpy.types.Material.psychopath = PointerProperty(type=PsychopathMaterial)
     render.register()
     ui.register()
 
@@ -103,7 +135,9 @@ def unregister():
     bpy.utils.unregister_class(PsychopathPreferences)
     bpy.utils.unregister_class(RenderPsychopathSettingsScene)
     bpy.utils.unregister_class(PsychopathCamera)
+    bpy.utils.unregister_class(PsychopathMaterial)
     del bpy.types.Scene.psychopath
     del bpy.types.Camera.psychopath
+    del bpy.types.Material.psychopath
     render.unregister()
     ui.unregister()
