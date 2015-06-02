@@ -55,6 +55,11 @@ class Parser
 	std::unique_ptr<Sphere> parse_sphere(const DataTree::Node& node);
 
 	/**
+	 * @brief Parses a surface shader section.
+	 */
+	std::unique_ptr<SurfaceShader> parse_surface_shader(const DataTree::Node& node);
+
+	/**
 	 * @brief Parses a sphere light section.
 	 */
 	std::unique_ptr<SphereLight> parse_sphere_light(const DataTree::Node& node);

@@ -244,12 +244,17 @@ std::unique_ptr<Assembly> Parser::parse_assembly(const DataTree::Node& node, con
 			assembly->add_object(child.name, parse_bicubic_patch(child));
 		}
 
-		// Spehere Light
+		// Sphere
 		else if (child.type == "Sphere") {
 			assembly->add_object(child.name, parse_sphere(child));
 		}
 
-		// Spehere Light
+		// Surface shader
+		else if (child.type == "SurfaceShader") {
+			assembly->add_surface_shader(child.name, parse_surface_shader(child));
+		}
+
+		// Sphere Light
 		else if (child.type == "SphereLight") {
 			assembly->add_object(child.name, parse_sphere_light(child));
 		}
@@ -375,6 +380,88 @@ std::unique_ptr<Bicubic> Parser::parse_bicubic_patch(const DataTree::Node& node)
 	patch->finalize();
 
 	return patch;
+}
+
+
+std::unique_ptr<SurfaceShader> Parser::parse_surface_shader(const DataTree::Node& node)
+{
+	// Find the shader type
+	auto shader_type = std::find_if(node.children.cbegin(), node.children.cend(), [](const DataTree::Node& child) {
+		return child.type == "Type";
+	});
+	if (shader_type == node.children.cend()) {
+		std::cout << "ERROR: attempted to add surface shader without a type." << std::endl;
+		return nullptr;
+	}
+
+	if (shader_type->leaf_contents == "Emit") {
+		Color col(0.9, 0.9, 0.9);
+		for (const auto &child: node.children) {
+			if (child.type == "Color") {
+				// Get color
+				std::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
+				for (int i = 0; matches != std::sregex_iterator() && i < 3; ++matches) {
+					col[i] = std::stof(matches->str());
+					++i;
+				}
+			}
+		}
+
+		return std::unique_ptr<SurfaceShader>(new EmitShader {col});
+	} else if (shader_type->leaf_contents == "Lambert") {
+		Color col(0.9, 0.9, 0.9);
+		for (const auto &child: node.children) {
+			if (child.type == "Color") {
+				// Get color
+				std::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
+				for (int i = 0; matches != std::sregex_iterator() && i < 3; ++matches) {
+					col[i] = std::stof(matches->str());
+					++i;
+				}
+			}
+		}
+
+		return std::unique_ptr<SurfaceShader>(new LambertShader {col});
+	} else if (shader_type->leaf_contents == "GTR") {
+		Color col(0.9, 0.9, 0.9);
+		float roughness = 0.1;
+		float tail_shape = 2.0;
+		float fresnel = 0.25;
+
+		for (const auto &child: node.children) {
+			if (child.type == "Color") {
+				// Get color
+				std::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
+				for (int i = 0; matches != std::sregex_iterator() && i < 3; ++matches) {
+					col[i] = std::stof(matches->str());
+					++i;
+				}
+			} else if (child.type == "Roughness") {
+				// Get rougness
+				std::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
+				if (matches != std::sregex_iterator()) {
+					roughness = std::stof(matches->str());
+				}
+			} else if (child.type == "TailShape") {
+				// Get tail shape
+				std::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
+				if (matches != std::sregex_iterator()) {
+					tail_shape = std::stof(matches->str());
+				}
+			} else if (child.type == "Fresnel") {
+				// Get fresnel
+				std::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
+				if (matches != std::sregex_iterator()) {
+					fresnel = std::stof(matches->str());
+				}
+			}
+		}
+
+		return std::unique_ptr<SurfaceShader>(new GTRShader {col, roughness, tail_shape, fresnel});
+	} else {
+		std::cout << "ERROR: unknown surface shader type '" << shader_type->leaf_contents << "'." << std::endl;
+		return nullptr;
+	}
 }
 
 

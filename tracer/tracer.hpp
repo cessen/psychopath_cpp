@@ -49,12 +49,16 @@ public:
 	Range<Intersection*> intersections; // Resulting intersections
 	std::vector<Ray> rays;
 	RNG rng;
+	std::vector<const SurfaceShader*> surface_shader_stack;
 	Stack xform_stack; // Stack for transforms as we traverse into transform hierarchies
 	Stack data_stack; // Stack for arbitrary POD data, passed to other functions
 
-	Tracer(): xform_stack(16*4*256*64, 256), data_stack(1024*1024*8, 256) {}
+	Tracer(): xform_stack(16*4*256*64, 256), data_stack(1024*1024*8, 256) {
+		surface_shader_stack.reserve(64);
+	}
 
 	Tracer(Scene *scene_): scene {scene_}, xform_stack(16*4*256*64, 256), data_stack(1024*1024*8, 256) {
+		surface_shader_stack.reserve(64);
 	}
 
 	void set_seed(uint32_t seed) {

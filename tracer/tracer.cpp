@@ -49,8 +49,14 @@ uint32_t Tracer::trace(const WorldRay* w_rays_begin, const WorldRay* w_rays_end,
 	intersections = make_range(intersections_begin, intersections_end);
 	std::fill(intersections.begin(), intersections.end(), Intersection());
 
-	// Start tracing!
+	// Clear and initialize stacks
+	surface_shader_stack.clear();
+	surface_shader_stack.emplace_back(nullptr);
+	xform_stack.clear();
 	xform_stack.push_frame<Transform>(0);
+	data_stack.clear();
+
+	// Start tracing!
 
 #if 0
 	// Split rays into groups based on primary direction before tracing
@@ -118,6 +124,12 @@ void Tracer::trace_assembly(Assembly* assembly, Ray* rays, Ray* rays_end)
 			}
 		}
 
+		// Check for shader on the instance, and push to shader stack if it
+		// has one.
+		if (instance.surface_shader != nullptr) {
+			surface_shader_stack.emplace_back(instance.surface_shader);
+		}
+
 		// Trace against the object or assembly
 		if (instance.type == Instance::OBJECT) {
 			Object* obj = assembly->objects[instance.data_index].get(); // Short-hand for the current object
@@ -139,6 +151,11 @@ void Tracer::trace_assembly(Assembly* assembly, Ray* rays, Ray* rays_end)
 		} else { /* Instance::ASSEMBLY */
 			Assembly* asmb = assembly->assemblies[instance.data_index].get(); // Short-hand for the current object
 			trace_assembly(asmb, std::get<0>(hits), std::get<1>(hits));
+		}
+
+		// Pop shader stack if we pushed onto it earlier
+		if (instance.surface_shader != nullptr) {
+			surface_shader_stack.pop_back();
 		}
 
 		// Un-transform rays if we transformed them earlier
@@ -185,16 +202,21 @@ void Tracer::trace_surface(Surface* surface, Ray* rays, Ray* end)
 			} else {
 				ray.max_t = inter.t;
 				inter.space = parent_xforms_count > 0 ? lerp_seq(ray.time, parent_xforms.first, parent_xforms.second) : Transform();
-				inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.0f, 1.5f, 0.25f));
-				//inter.surface_closure.init(LambertClosure(Color(inter.geo.u*0.9f, inter.geo.v*0.9f, 0.2f)));
-				//inter.surface_closure.init(LambertClosure(Color(0.9f, 0.9f, 0.9f)));
+
+				// Do shading
+				auto shader = surface_shader_stack.back();
+				if (shader != nullptr) {
+					shader->shade(&inter);
+				} else {
+					inter.surface_closure.init(EmitClosure(Color(1.0, 0.0, 1.0)));
+				}
 			}
 		}
 	}
 }
 
 template <typename PATCH>
-void intersect_rays_with_patch(const PATCH &patch, const Range<const Transform*> parent_xforms, Ray* ray_begin, Ray* ray_end, Intersection *intersections, Stack* data_stack)
+void intersect_rays_with_patch(const PATCH &patch, const Range<const Transform*> parent_xforms, Ray* ray_begin, Ray* ray_end, Intersection *intersections, Stack* data_stack, const SurfaceShader* surface_shader)
 {
 	const size_t tsc = patch.verts.size(); // Time sample count
 	int stack_i = 0;
@@ -299,10 +321,12 @@ void intersect_rays_with_patch(const PATCH &patch, const Range<const Transform*>
 
 							inter.offset = inter.geo.n * offset;
 
-							//inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.02f, 1.2f, 0.25f));
-							//inter.surface_closure.init(GTRClosure(Color(0.9, 0.9, 0.9), 0.0f, 1.5f, 0.25f));
-							inter.surface_closure.init(LambertClosure(Color(0.9f, 0.9f, 0.9f)));
-							//inter.surface_closure.init(EmitClosure(Color((1.0+inter.geo.dpdv.normalize().x)*0.5, (1.0+inter.geo.dpdv.normalize().y)*0.5, (1.0+inter.geo.dpdv.normalize().z)*0.5)));
+							// Do shading
+							if (surface_shader != nullptr) {
+								surface_shader->shade(&inter);
+							} else {
+								inter.surface_closure.init(EmitClosure(Color(1.0, 0.0, 1.0)));
+							}
 						}
 					}
 
@@ -383,8 +407,8 @@ void Tracer::trace_patch_surface(PatchSurface* surface, Ray* rays, Ray* end)
 
 	// Trace!
 	if (auto patch = dynamic_cast<Bilinear*>(surface)) {
-		intersect_rays_with_patch<Bilinear>(*patch, parent_xforms, rays, end, &(intersections[0]), &data_stack);
+		intersect_rays_with_patch<Bilinear>(*patch, parent_xforms, rays, end, &(intersections[0]), &data_stack, surface_shader_stack.back());
 	} else if (auto patch = dynamic_cast<Bicubic*>(surface)) {
-		intersect_rays_with_patch<Bicubic>(*patch, parent_xforms, rays, end, &(intersections[0]), &data_stack);
+		intersect_rays_with_patch<Bicubic>(*patch, parent_xforms, rays, end, &(intersections[0]), &data_stack, surface_shader_stack.back());
 	}
 }

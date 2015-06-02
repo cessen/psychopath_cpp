@@ -16,19 +16,62 @@ public:
 	 * @brief Calculates the SurfaceClosure(s) and their pdfs for the given
 	 * intersection.
 	 *
-	 * @param inter The surface intersection data.
-	 * @param max_closures The maximum number of closures that can be handled
-	 *                     by the calling code.
-	 * @param closures Pointer to an array of size max_closures of
-	 *                 SurfaceClosureUnions, for the resulting surface
-	 *                 closure(s) to be stored in.
-	 * @param closure_pdfs Pointer to an array of size max_closures of floats
-	 *                     for the returned closures' pdfs to be stored in.
+	 * @param inter The surface intersection data.  This is an in/out parameter:
+	 *              the geometry, transform, ray data, etc. is 'in' and the
+	 *              closure data is 'out'.
 	 *
-	 * @returns The number of closures actually filled in.
+	 * @returns True on success, false on failure.
 	 */
-	virtual int shade(const Intersection &inter, int max_closures,
-	                  SurfaceClosureUnion *closures, float *closure_pdfs) const = 0;
+	virtual bool shade(Intersection* inter) const = 0;
+};
+
+
+class EmitShader: public SurfaceShader
+{
+public:
+	Color col;
+
+	EmitShader(Color col): col {col} {}
+
+	virtual bool shade(Intersection* inter) const override final {
+		inter->surface_closure.init(EmitClosure(col));
+		inter->closure_prob = 1.0f;
+		return true;
+	}
+};
+
+
+class LambertShader: public SurfaceShader
+{
+public:
+	Color col;
+
+	LambertShader(Color col): col {col} {}
+
+	virtual bool shade(Intersection* inter) const override final {
+		inter->surface_closure.init(LambertClosure(col));
+		inter->closure_prob = 1.0f;
+		return true;
+	}
+};
+
+
+class GTRShader: public SurfaceShader
+{
+public:
+	Color col;
+	float roughness;
+	float tail_shape;
+	float fresnel;
+
+	GTRShader(Color col, float roughness, float tail_shape, float fresnel): col {col}, roughness {roughness}, tail_shape {tail_shape}, fresnel {fresnel}
+	{}
+
+	virtual bool shade(Intersection* inter) const override final {
+		inter->surface_closure.init(GTRClosure(col, roughness, tail_shape, fresnel));
+		inter->closure_prob = 1.0f;
+		return true;
+	}
 };
 
 #endif // SURFACE_SHADER_HPP
