@@ -160,9 +160,7 @@ public:
 		// Generate a random ray direction in the hemisphere
 		// of the surface.
 		const Vec3 dir = cosine_sample_hemisphere(si, sj);
-		*pdf = dir.z * 2;
-		if (*pdf < 0.001)
-			*pdf = 0.001;
+		*pdf = dir.z * (float)(INV_PI) * 2.0f;
 		*out = zup_to_vec(dir, nn);
 		*filter = col * evaluate(in, *out, geo);
 	}
@@ -202,7 +200,7 @@ public:
 		if (dot(nn, in.normalized()) > 0.0f)
 			nn *= -1.0f;
 
-		return std::max(dot(nn, v)*2, 0.0f);
+		return std::max(dot(nn, v) * (float)(INV_PI) * 2.0f, 0.0f);
 	}
 };
 

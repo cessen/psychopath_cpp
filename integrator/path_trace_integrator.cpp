@@ -191,10 +191,13 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 
 		// Calculate the color filtering effect that the
 		// bounce from the current intersection will create.
-		if (!bsdf->is_delta())
+		if (!bsdf->is_delta()) {
+			if (pdf < 0.00001f)
+				pdf = 0.00001f; // Dodge 0 pdf's that might slip through
 			path.fcol *= filter / pdf;
-		else
+		} else {
 			path.fcol *= filter;
+		}
 	}
 
 	return ray;

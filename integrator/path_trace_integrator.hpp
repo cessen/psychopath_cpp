@@ -107,7 +107,7 @@ public:
 		image_variance_max = variance_max_;
 		seed = seed_;
 		thread_count = thread_count_;
-		path_length = 3;
+		path_length = 4;
 		callback = callback_;
 
 		blocks.resize(thread_count_ * 2);

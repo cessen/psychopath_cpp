@@ -11,6 +11,13 @@
 #include <cassert>
 #include <tuple>
 
+// Useful constants
+#ifndef M_PI
+#define M_PI 3.1415926535897932384626433
+#endif
+#define INV_PI (1.0 / M_PI)
+#define QPI (M_PI / 4)
+
 
 // Returns value clamped to within the range [a,b]
 template <class T>
@@ -185,8 +192,6 @@ static inline bool calc_time_interp(const uint8_t& time_count, const float &time
 	return true;
 }
 
-
-#define QPI (3.1415926535897932384626433 / 4)
 
 /**
  * The logit function, scaled to approximate the probit function.
