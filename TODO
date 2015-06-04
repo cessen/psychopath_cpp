@@ -1,10 +1,8 @@
 - Bugs:
 	- Very small sphere lights introduce severe banding in light attentuation.
+	- Some scenes hang when rendering at high sample rates.
 
 - Iterative intersections:
-    //- Figure out how to DRY stuff
-    //- Get working with motion blur
-    //- Adaptive iteration depth based on ray differentials
     - Displacement tests
 
 - Unit tests:
@@ -15,6 +13,8 @@
 	- Optimizations...
 
 - Multiple importance sampling
+
+- Change assemblies to use a memory arena for object/shader/etc. data.
 
 - Light sources:
     - Infinite lights (e.g. sun lights) will be considered part of the background,
@@ -30,7 +30,6 @@
 	- Support binary geometry files of some kind, for faster scene loading
 
 - PsychoBlend:
-	//- Export Group instances as assemblies
 	- Allow per-object motion blur segment specification
 
 - Shading system
@@ -42,9 +41,6 @@
 - More geometry types:
 	- Catmull-clark subdivision surfaces
 	- Triangle meshes
-
-//- Adaptive sampling scheme
-//	- "Population Monte Carlo"
 
 - Film class:
 	- Make film class more data-type agnostic.  It should be the responsibility
