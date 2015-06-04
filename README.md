@@ -25,9 +25,12 @@ able to render using this technique very efficiently.
 
 Current Features
 ----------------
+- Spheres
 - Bilinear patches
 - Bicubic bezier patches
 - Spherical light sources
+- Rectangular light sources
+- Simple shader system (assign BSDF's to objects)
 - Focal blur / DoF
 - Camera motion blur
 - Deformation motion blur
@@ -51,6 +54,8 @@ Features Supported
 ------------------
 - Quad mesh export (exported as bilinear patches, so only flat shading)
 - Point lights exported as spherical lights (point lights have a "radius" setting)
+- Area lights, exported as rectangular area lights
+- Simple material system for assigning different BSDF's to different objects
 - Focal blur / DoF
 - Camera motion blur
 - Transform motion blur
