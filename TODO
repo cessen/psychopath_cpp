@@ -21,7 +21,7 @@
       along with e.g. HDRI lighting backgrounds.
     - Point lights should be a special-case of sphere lights, with radius zero.
     - Spot lights
-    - Rectangular area lights
+    //- Rectangular area lights
     - A way to mark other objects as light sources, for MIS (this can't be done
       automatically in the general case...?)
 

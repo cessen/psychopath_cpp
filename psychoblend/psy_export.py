@@ -257,6 +257,8 @@ class PsychoExporter:
                 name = self.export_surface_object(ob, group_prefix)
             elif ob.type == 'LAMP' and ob.data.type == 'POINT':
                 name = self.export_sphere_lamp(ob, group_prefix)
+            elif ob.type == 'LAMP' and ob.data.type == 'AREA':
+                name = self.export_area_lamp(ob, group_prefix)
             
             # Write object instance, with transforms
             if name != None:
@@ -391,6 +393,34 @@ class PsychoExporter:
         for rad in time_rad:
             self.w.write("Radius [%f]\n" % rad)
 
+        self.w.unindent()
+        self.w.write("}\n")
+        
+        return name
+    
+    def export_area_lamp(self, ob, group_prefix):
+        name = group_prefix + "__" + escape_name(ob.name)
+        
+        # Collect data over time
+        time_col = []
+        time_dim = []
+        for i in range(self.time_samples):
+            self.set_frame(self.fr, self.shutter_start + (self.shutter_diff*i))
+            time_col += [ob.data.color * ob.data.energy]
+            if ob.data.shape == 'RECTANGLE':
+                time_dim += [(ob.data.size, ob.data.size_y)]
+            else:
+                time_dim += [(ob.data.size, ob.data.size)]
+                
+    
+        # Write out sphere light
+        self.w.write("RectangleLight $%s {\n" % name)
+        self.w.indent()
+        for col in time_col:
+            self.w.write("Color [%f %f %f]\n" % (col[0], col[1], col[2]))
+        for dim in time_dim:
+            self.w.write("Dimensions [%f %f]\n" % dim)
+    
         self.w.unindent()
         self.w.write("}\n")
         

@@ -4,6 +4,7 @@
 #include <fstream>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <memory>
 #include <regex>
 
@@ -15,6 +16,7 @@
 #include "transform.hpp"
 
 #include "sphere_light.hpp"
+#include "rectangle_light.hpp"
 #include "sphere.hpp"
 #include "bilinear.hpp"
 #include "bicubic.hpp"
@@ -289,6 +291,11 @@ std::unique_ptr<Assembly> Parser::parse_assembly(const DataTree::Node& node, con
 			assembly->add_object(child.name, parse_sphere_light(child));
 		}
 
+		// Rectangle Light
+		else if (child.type == "RectangleLight") {
+			assembly->add_object(child.name, parse_rectangle_light(child));
+		}
+
 		// Instance
 		else if (child.type == "Instance") {
 			// Parse
@@ -536,6 +543,45 @@ std::unique_ptr<SphereLight> Parser::parse_sphere_light(const DataTree::Node& no
 	                                colors));
 
 	return sl;
+}
+
+
+std::unique_ptr<RectangleLight> Parser::parse_rectangle_light(const DataTree::Node& node)
+{
+	std::vector<std::pair<float, float>> dimensions;
+	std::vector<Color> colors;
+
+	// Parse
+	for (const auto& child: node.children) {
+		if (child.type == "Color") {
+			// Get color
+			std::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
+			Color col;
+			for (int i = 0; matches != std::sregex_iterator() && i < 3; ++matches) {
+				col[i] = std::stof(matches->str());
+				++i;
+			}
+			colors.push_back(col);
+		} else if (child.type == "Dimensions") {
+			// Get dimensions
+			float dim_x = 1.0f;
+			float dim_y = 1.0f;
+			std::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
+			if (matches != std::sregex_iterator()) {
+				dim_x = std::stof(matches->str());
+			}
+			++matches;
+			if (matches != std::sregex_iterator()) {
+				dim_y = std::stof(matches->str());
+			}
+			dimensions.emplace_back(std::make_pair(dim_x, dim_y));
+		}
+	}
+
+	// Build light
+	std::unique_ptr<RectangleLight> rl(new RectangleLight(dimensions, colors));
+
+	return rl;
 }
 
 

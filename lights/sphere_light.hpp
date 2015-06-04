@@ -7,10 +7,7 @@
 #include <algorithm>
 
 /**
- * @brief A point light source.
- *
- * Super simple point light source.  Practically an example of how
- * to write a finite light source.
+ * @brief A spherical light source, emitting light evenly from its surface.
  */
 class SphereLight final: public Light
 {

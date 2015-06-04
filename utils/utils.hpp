@@ -18,6 +18,27 @@
 #define INV_PI (1.0 / M_PI)
 #define QPI (M_PI / 4)
 
+// Math operators for some types commonly used in Psychopath
+static inline std::pair<float, float> operator *(const std::pair<float, float>& a, float b)
+{
+	return std::make_pair(a.first * b, a.second * b);
+}
+
+static inline std::pair<float, float> operator /(const std::pair<float, float>& a, float b)
+{
+	return std::make_pair(a.first / b, a.second / b);
+}
+
+static inline std::pair<float, float> operator +(const std::pair<float, float>& a, const std::pair<float, float>& b)
+{
+	return std::make_pair(a.first + b.first, a.second + b. second);
+}
+
+static inline std::pair<float, float> operator -(const std::pair<float, float>& a, const std::pair<float, float>& b)
+{
+	return std::make_pair(a.first - b.first, a.second - b. second);
+}
+
 
 // Returns value clamped to within the range [a,b]
 template <class T>

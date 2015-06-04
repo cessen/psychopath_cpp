@@ -8,6 +8,7 @@
 #include "data_tree.hpp"
 
 #include "sphere_light.hpp"
+#include "rectangle_light.hpp"
 #include "bilinear.hpp"
 #include "bicubic.hpp"
 #include "sphere.hpp"
@@ -63,6 +64,11 @@ class Parser
 	 * @brief Parses a sphere light section.
 	 */
 	std::unique_ptr<SphereLight> parse_sphere_light(const DataTree::Node& node);
+
+	/**
+	 * @brief Parses a rectangle light section.
+	 */
+	std::unique_ptr<RectangleLight> parse_rectangle_light(const DataTree::Node& node);
 
 public:
 	Parser(std::string input_path) {

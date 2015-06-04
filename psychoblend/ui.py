@@ -126,6 +126,34 @@ class DATA_PT_psychopath_lamp(PsychopathPanel, bpy.types.Panel):
         col.prop(ob.data, "energy")
 
 
+class DATA_PT_psychopath_area_lamp(PsychopathPanel, bpy.types.Panel):
+    bl_label = "Area Shape"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "data"
+    
+    @classmethod
+    def poll(cls, context):
+        lamp = context.lamp
+        engine = context.scene.render.engine
+        return (lamp and lamp.type == 'AREA') and (engine in cls.COMPAT_ENGINES)
+    
+    def draw(self, context):
+        layout = self.layout
+    
+        lamp = context.lamp
+    
+        col = layout.column()
+        col.row().prop(lamp, "shape", expand=True)
+        sub = col.row(align=True)
+    
+        if lamp.shape == 'SQUARE':
+            sub.prop(lamp, "size")
+        elif lamp.shape == 'RECTANGLE':
+            sub.prop(lamp, "size", text="Size X")
+            sub.prop(lamp, "size_y", text="Size Y")
+
+
 class MATERIAL_PT_psychopath_context_material(PsychopathPanel, bpy.types.Panel):
     bl_label = ""
     bl_space_type = "PROPERTIES"
@@ -206,6 +234,7 @@ def register():
     bpy.utils.register_class(WORLD_PT_psychopath_background)
     bpy.utils.register_class(DATA_PT_psychopath_camera_dof)
     bpy.utils.register_class(DATA_PT_psychopath_lamp)
+    bpy.utils.register_class(DATA_PT_psychopath_area_lamp)
     bpy.utils.register_class(MATERIAL_PT_psychopath_context_material)
     bpy.utils.register_class(MATERIAL_PT_psychopath_surface)
 
@@ -215,5 +244,6 @@ def unregister():
     bpy.utils.unregister_class(WORLD_PT_psychopath_background)
     bpy.utils.unregister_class(DATA_PT_psychopath_camera_dof)
     bpy.utils.unregister_class(DATA_PT_psychopath_lamp)
+    bpy.utils.unregister_class(DATA_PT_psychopath_area_lamp)
     bpy.utils.unregister_class(MATERIAL_PT_psychopath_context_material)
     bpy.utils.unregister_class(MATERIAL_PT_psychopath_surface)
