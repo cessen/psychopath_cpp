@@ -44,8 +44,8 @@ public:
 	virtual Color sample(const Vec3 &arr, float u, float v, float time, Vec3 *shadow_vec, float* pdf) const override {
 		// Calculate time interpolated values
 		const auto dim = lerp_seq(time, dimensions);
-		const double surface_area_inv = 1.0 / (dim.first * dim.second);
-		const Color col = lerp_seq(time, colors) * surface_area_inv;
+		const double inv_surface_area = 1.0 / (dim.first * dim.second);
+		const Color col = lerp_seq(time, colors);
 
 		const Vec3 pos = Vec3 {
 			(dim.first * u) - (dim.first * 0.5f),
@@ -54,16 +54,19 @@ public:
 		};
 
 		*shadow_vec = pos - arr;
-		*pdf = 1.0f;
 
 		const float dist = shadow_vec->length();
 
-		return col * std::abs(shadow_vec->normalized().z) / (dist * dist); // Lambertian fall-off, and light attenuation
+		*pdf = (dist * dist) / std::abs(shadow_vec->normalized().z) * inv_surface_area; // PDF of the ray direction being sampled
+
+		return col * inv_surface_area;
 	}
 
 	virtual Color outgoing(const Vec3 &dir, float u, float v, float time) const override {
-		Color col = lerp_seq(time, colors);
-		return col * std::abs(dir.normalized().z);
+		const auto dim = lerp_seq(time, dimensions);
+		const double surface_area = (dim.first * dim.second);
+		const Color col = lerp_seq(time, colors);
+		return col / surface_area;
 	}
 
 	virtual bool is_delta() const override {
