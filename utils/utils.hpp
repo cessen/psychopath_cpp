@@ -307,6 +307,11 @@ static inline Vec3 uniform_sample_cone(float u, float v, float cos_theta_max)
 	return Vec3(std::cos(phi) * sin_theta, std::sin(phi) * sin_theta, cos_theta);
 }
 
+static inline float uniform_sample_cone_pdf(float cos_theta_max)
+{
+	// 1.0 / solid angle
+	return 1.0f / (2.0f * M_PI * (1.0f - cos_theta_max));
+}
 
 
 /**

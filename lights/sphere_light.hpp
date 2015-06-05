@@ -91,9 +91,6 @@ public:
 			const double sin_theta_max = std::sqrt(sin_theta_max2);
 			const double cos_theta_max = std::sqrt(cos_theta_max2);
 
-			// Calculate the solid angle the sphere takes up from the point
-			const double solid_angle = 2 * M_PI * (1.0 - cos_theta_max);
-
 			// Calculate the length that the shadow ray should be.
 			// TODO: make the length end exactly on the surface of
 			// the sphere.
@@ -105,20 +102,22 @@ public:
 			Vec3 sample = uniform_sample_cone(u, v, cos_theta_max);
 			*shadow_vec = ((x * sample[0]) + (y * sample[1]) + (z * sample[2])).normalized() * length;
 
-			*pdf = 1.0f;
-			return col * static_cast<float>(solid_angle * surface_area_inv * (0.5 / M_PI));
+			*pdf = uniform_sample_cone_pdf(cos_theta_max);
+			return col * surface_area_inv;
 		} else {
 			// If we're inside the sphere, there's light from every direction.
 			*shadow_vec = uniform_sample_sphere(u, v);
-			*pdf = 1.0f;
+			*pdf = 1.0f / (4.0f * M_PI);
 			return col * surface_area_inv;
 		}
 
 	}
 
 	virtual Color outgoing(const Vec3 &dir, float u, float v, float time) const override {
+		double radius = lerp_seq(time, radii);
 		Color col = lerp_seq(time, colors);
-		return col;
+		double surface_area = 4.0 * M_PI * radius * radius;
+		return col / surface_area;
 	}
 
 	virtual bool is_delta() const override {

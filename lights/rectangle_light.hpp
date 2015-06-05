@@ -59,14 +59,14 @@ public:
 
 		*pdf = (dist * dist) / std::abs(shadow_vec->normalized().z) * inv_surface_area; // PDF of the ray direction being sampled
 
-		return col * inv_surface_area;
+		return col * inv_surface_area * 0.5f; // 0.5x because it emits on both sides
 	}
 
 	virtual Color outgoing(const Vec3 &dir, float u, float v, float time) const override {
 		const auto dim = lerp_seq(time, dimensions);
 		const double surface_area = (dim.first * dim.second);
 		const Color col = lerp_seq(time, colors);
-		return col / surface_area;
+		return col / surface_area * 0.5f; // 0.5x because it emits on both sides
 	}
 
 	virtual bool is_delta() const override {
