@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "utils.hpp"
+#include "monte_carlo.hpp"
 #include "image_sampler.hpp"
 #include "film.hpp"
 #include "intersection.hpp"

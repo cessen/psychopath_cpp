@@ -3,6 +3,7 @@
 
 #include "light.hpp"
 #include "utils.hpp"
+#include "monte_carlo.hpp"
 #include <cmath>
 #include <algorithm>
 

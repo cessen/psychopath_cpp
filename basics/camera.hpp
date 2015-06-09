@@ -9,6 +9,7 @@
 
 #include "config.hpp"
 #include "utils.hpp"
+#include "monte_carlo.hpp"
 #include "vector.hpp"
 #include "matrix.hpp"
 #include "transform.hpp"

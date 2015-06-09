@@ -5,6 +5,7 @@
 
 #include "numtype.h"
 #include "utils.hpp"
+#include "monte_carlo.hpp"
 
 #include "vector.hpp"
 #include "color.hpp"
