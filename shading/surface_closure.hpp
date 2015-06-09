@@ -82,6 +82,60 @@ public:
 };
 
 
+/**
+ * Utility function that calculates the fresnel reflection factor of a given
+ * incoming ray against a surface with the given ior outside/inside ratio.
+ *
+ * @param ior_ratio The ratio of the outside material ior (probably 1.0 for
+ *                  air) over the inside ior.
+ * @param c The cosine of the angle between the incoming light and the
+ *          surface's normal.  Probably calculated e.g. with a normalized
+ *          dot product.
+ */
+static inline float accurate_fresnel(float ior_ratio, float c)
+{
+	const float g = std::sqrt(ior_ratio - 1.0f + (c * c));
+
+	const float f1 = g - c;
+	const float f2 = g + c;
+	const float f3 = (f1 * f1) / (f2 * f2);
+
+	const float f4 = (c * f2) - 1.0f;
+	const float f5 = (c * f1) + 1.0f;
+	const float f6 = 1.0f + ((f4 * f4) / (f5 * f5));
+
+	return 0.5f * f3 * f6;
+}
+
+
+/**
+ * Schlick's approximation of the fresnel reflection factor.
+ *
+ * Same interface as accurate_fresnel(), above.
+ */
+static inline float schlick_fresnel(float ior_ratio, float c)
+{
+	const float f1 = (1.0f - ior_ratio) / (1.0f + ior_ratio);
+	const float f2 = f1 * f1;
+	return f2 + ((1.0f-f2) * std::pow((1.0f - c), 5.0f));
+}
+
+
+/**
+ * Schlick's approximation of the fresnel reflection factor, calculated
+ * from a "fresnel" term, specifying how much light should be reflected
+ * from a ray perpendicular to the surface normal.
+ *
+ * @param frensel_fac The ratio of light that should be reflected from a
+ *                    head-on ray.
+ * @param c The cosine of the angle between the incoming light and the
+ *          surface's normal.  Probably calculated e.g. with a normalized
+ *          dot product.
+ */
+static inline float schlick_fresnel_from_fac(float frensel_fac, float c)
+{
+	return frensel_fac + ((1.0f-frensel_fac) * std::pow((1.0f - c), 5.0f));
+}
 
 
 /**
@@ -336,7 +390,7 @@ public:
 		float F = 1.0f;
 
 		// Calculate F - Fresnel
-		F = fresnel + ((1.0f-fresnel) * std::pow((1.0f - hb), 5.0f));
+		F = schlick_fresnel_from_fac(fresnel, hb);
 
 		// Calculate everything else
 		if (roughness == 0.0f) {
