@@ -145,7 +145,7 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 			scene->root->light_accel.sample(&lq);
 
 			// Get the pdf of sampling this light vector from the bsdf
-			//const float bsdf_pdf = bsdf->pdf(Vec3(), lq.to_light, path.inter);
+			//const float bsdf_pdf = bsdf->pdf(path.prev_ray.d, lq.to_light, path.inter.geo);
 
 			// Set light color
 			//path.lcol = (lq.color * power_heuristic(lq.pdf, bsdf_pdf) / lq.pdf) * scene->root->light_accel.light_count();

@@ -214,7 +214,7 @@ public:
 class GTRClosure final: public SurfaceClosure
 {
 private:
-	Color col {0.903f};
+	Color col {1.0f};
 	float roughness {0.05f};
 	float tail_shape {2.0f};
 	float fresnel {0.25f};
@@ -226,7 +226,7 @@ private:
 	void validate() {
 		// Clamp values to valid ranges
 		roughness = std::max(0.0f, std::min(0.9999f, roughness));
-		tail_shape = std::max(0.0001f, std::min(8.0f, tail_shape));
+		tail_shape = std::max(0.0001f, tail_shape);
 
 		// When roughness is too small, but not zero, there are floating point accuracy issues
 		if (roughness < 0.000244140625f) // (2^-12)
@@ -240,7 +240,7 @@ private:
 		// difference in renders.
 		const float TAIL_EPSILON = 0.0001f;
 		if (std::abs(tail_shape - 1.0f) < TAIL_EPSILON)
-			tail_shape += TAIL_EPSILON;
+			tail_shape = 1.0f + TAIL_EPSILON;
 
 		// Precalculate normalization factor
 		normalization_factor = normalization(roughness, tail_shape);
@@ -304,7 +304,7 @@ public:
 
 		*out = in - (half_dir * 2 * dot(in, half_dir));
 		*pdf_ = pdf(in, *out, geo);
-		*filter = col * evaluate(in, *out, geo);
+		*filter = evaluate(in, *out, geo);
 	}
 
 
@@ -335,7 +335,14 @@ public:
 		float G2 = 1.0f;
 		float F = 1.0f;
 
-		if (roughness != 0.0f) {
+		// Calculate F - Fresnel
+		F = fresnel + ((1.0f-fresnel) * std::pow((1.0f - hb), 5.0f));
+
+		// Calculate everything else
+		if (roughness == 0.0f) {
+			// If sharp mirror, just return col * fresnel factor
+			return col * F;
+		} else {
 			// Calculate D - Distribution
 			if (nh > 0.0f) {
 				const float nh2 = nh * nh;
@@ -359,11 +366,8 @@ public:
 			G2 = g2_pos_char / (1.0f + g2_b);
 		}
 
-		// Calculate F - Fresnel
-		F = fresnel + ((1.0f-fresnel) * std::pow((1.0f - hb), 5.0f));
-
 		// Final result
-		return col * (D * F * G1 * G2);
+		return col * (D * F * G1 * G2) * (float)(INV_PI);
 	}
 
 
@@ -391,7 +395,7 @@ public:
 			D = normalization_factor / std::pow(1 + ((roughness2 - 1) * nh2), tail_shape);
 		}
 
-		return D;
+		return D * (float)(INV_PI);
 	}
 
 
