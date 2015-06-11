@@ -10,6 +10,7 @@
 #include "monte_carlo.hpp"
 #include "image_sampler.hpp"
 #include "film.hpp"
+#include "color.hpp"
 #include "intersection.hpp"
 #include "tracer.hpp"
 #include "mis.hpp"
@@ -273,7 +274,7 @@ void PathTraceIntegrator::render_blocks()
 		// Seed tracer for random numbers
 		tracer.set_seed(seed + (pb.x ^ (pb.y << 16 | pb.y >> 16) ^ pb.w ^ (pb.h << 16 | pb.h >> 16)));
 
-		Color max_variance = Color(9999999999.0f);
+		Color_XYZ max_variance(9999999999.0f);
 		float samp_it = 0;
 
 		while (max_variance[0] > image_variance_max && samp_it < spp_max) {
@@ -331,7 +332,7 @@ void PathTraceIntegrator::render_blocks()
 				// Accumulate the samples
 
 				for (uint32_t i = 0; i < paths.size(); i++) {
-					image->add_sample(paths[i].col, paths[i].pix_x, paths[i].pix_y);
+					image->add_sample(Color_to_XYZ(paths[i].col), paths[i].pix_x, paths[i].pix_y);
 				}
 
 				// Callback
@@ -342,7 +343,7 @@ void PathTraceIntegrator::render_blocks()
 				}
 			}
 
-			max_variance = Color(0.0f);
+			max_variance = Color_XYZ(0.0f);
 			for (int x = pb.x; x < (pb.x + pb.w); ++x) {
 				for (int y = pb.y; y < (pb.y + pb.h); ++y) {
 					max_variance = mmax(max_variance, image->variance_estimate(x,y));

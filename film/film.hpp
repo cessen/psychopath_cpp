@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <tuple>
 #include <assert.h>
 
 #include "morton.hpp"
@@ -28,9 +29,9 @@ static float hcol(float n)
 		n = 0.0f;
 	return pow(n, 1.0f/2.2f);
 }
-static Color hcol(Color n)
+static Color_XYZ hcol(Color_XYZ n)
 {
-	return Color(hcol(n[0]), hcol(n[1]), hcol(n[2]));
+	return Color_XYZ(hcol(n[0]), hcol(n[1]), hcol(n[2]));
 }
 
 
@@ -41,11 +42,11 @@ static float diff(float n1, float n2)
 {
 	return fabs(n1-n2);
 }
-static Color diff(Color c1, Color c2)
+static Color_XYZ diff(Color_XYZ c1, Color_XYZ c2)
 {
-	Color c = Color(diff(c1[0], c2[0]),
-	                diff(c1[1], c2[1]),
-	                diff(c1[2], c2[2]));
+	Color_XYZ c = Color_XYZ(diff(c1[0], c2[0]),
+	                        diff(c1[1], c2[1]),
+	                        diff(c1[2], c2[2]));
 	return c;
 }
 
@@ -63,9 +64,9 @@ static float mmax(float a, float b)
 	else
 		return b;
 }
-static Color mmax(Color a, Color b)
+static Color_XYZ mmax(Color_XYZ a, Color_XYZ b)
 {
-	return Color(mmax(a[0], b[0]), mmax(a[1], b[1]), mmax(a[2], b[2]));
+	return Color_XYZ(mmax(a[0], b[0]), mmax(a[1], b[1]), mmax(a[2], b[2]));
 }
 
 
@@ -76,8 +77,10 @@ static Color mmax(Color a, Color b)
  * It's not proper variance in the Normal Distribution sense, but it seems to
  * be better at representing the potential for noise in the image.
  * See add_sample() for details.
+ *
+ * TODO: currently Film only collects color data.  Should be expanded to handle
+ * render layers and AOV's.
  */
-template <class PIXFMT>
 class Film
 {
 public:
@@ -86,10 +89,10 @@ public:
 	float min_x, min_y; // Minimum x/y coordinates of the image
 	float max_x, max_y; // Maximum x/y coordinates of the image
 
-	BlockedArray<PIXFMT, LBS> pixels; // Pixel data
+	BlockedArray<Color_XYZ, LBS> pixels; // Pixel data
 	BlockedArray<uint16_t, LBS> accum; // Accumulation buffer
-	BlockedArray<PIXFMT, LBS> var_p; // Entropy buffer "previous"
-	BlockedArray<PIXFMT, LBS> var_f; // Entropy buffer "final"
+	BlockedArray<Color_XYZ, LBS> var_p; // Entropy buffer "previous"
+	BlockedArray<Color_XYZ, LBS> var_f; // Entropy buffer "final"
 
 	/**
 	 * @brief Constructor.
@@ -114,10 +117,10 @@ public:
 		for (uint32_t i = 0; u < width || v < height; i++) {
 			Morton::d2xy(i, &u, &v);
 			if (u < width && v < height) {
-				pixels(u,v) = PIXFMT(0);
+				pixels(u,v) = Color_XYZ(0);
 				accum(u,v) = 0;
-				var_p(u,v) = PIXFMT(0);
-				var_f(u,v) = PIXFMT(0);
+				var_p(u,v) = Color_XYZ(0);
+				var_f(u,v) = Color_XYZ(0);
 			}
 		}
 	}
@@ -133,10 +136,10 @@ public:
 	 * samples are not changing the mean very much, then there isn't much
 	 * opportunity for noise to be introduced.
 	 */
-	void add_sample(PIXFMT samp, uint x, uint y) {
+	void add_sample(Color_XYZ samp, uint x, uint y) {
 		// Skip NaN and infinite samples
-		for (auto s: samp.spectrum) {
-			if (std::isnan(s) || !std::isfinite(s)) {
+		for (int i = 0; i < 3; ++i) {
+			if (std::isnan(samp[i]) || !std::isfinite(samp[i])) {
 				// TODO: log when this happens
 				return;
 			}
@@ -147,7 +150,7 @@ public:
 
 		// Update "variance"
 		const uint16_t k = accum(x,y);
-		const PIXFMT avg = hcol(pixels(x,y) / k);
+		const Color_XYZ avg = hcol(pixels(x,y) / k);
 		if (k > 1)
 			var_f(x,y) += diff(var_p(x,y), avg) * (k-1);
 		var_p(x,y) = avg;
@@ -156,7 +159,7 @@ public:
 	/**
 	 * Returns an estimate of the variance of the pixel.
 	 */
-	PIXFMT variance_estimate(int32_t x, int32_t y) {
+	Color_XYZ variance_estimate(int32_t x, int32_t y) {
 		const int samps = accum(x,y);
 
 		if (samps < 2)
@@ -169,43 +172,33 @@ public:
 	 * @brief Returns a byte array suitable for OIIO to save an
 	 * 8-bit-per-channel RGB image file.
 	 *
-	 * The array is in scanline order.
-	 *
-	 * TODO: currently assumes the film will be templated from Color struct.
-	 *       Remove that assumption.
+	 * Output color space is sRGB.  The array is in scanline order.
 	 */
-	std::vector<uint8_t> scanline_image_8bbc(float gamma=2.2) {
+	std::vector<uint8_t> scanline_image_8bbc() {
 		auto im = std::vector<uint8_t>(width*height*3);
-		float inv_gamma = 1.0 / gamma;
 
 		for (uint32_t y=0; y < height; y++) {
 			for (uint32_t x=0; x < width; x++) {
-				float r = 0.0;
-				float g = 0.0;
-				float b = 0.0;
+				float r = 0.0f;
+				float g = 0.0f;
+				float b = 0.0f;
 
 				// Image shows a grey checkerboard pattern where no samples
 				// have been taken.
 				if (((y % 32) < 16) ^ ((x % 32) < 16))
-					r = g = b = 0.5;
+					r = g = b = 0.5f;
 				else
-					r = g = b = 0.35;
+					r = g = b = 0.35f;
 
 //#define VARIANCE
 #ifdef VARIANCE
-				const PIXFMT var_est = variance_estimate(x, y);
-				r = pow(var_est[0], inv_gamma);
-				g = pow(var_est[1], inv_gamma);
-				b = pow(var_est[2], inv_gamma);
+				const Color_XYZ var_est = variance_estimate(x, y);
+				std::tie(r, g, b) = XYZ_to_sRGB(var_est);
 #else
 				// Get color and apply gamma correction
 				if (accum(x,y) != 0.0) {
-					r = pixels(x,y)[0] / accum(x,y);
-					g = pixels(x,y)[1] / accum(x,y);
-					b = pixels(x,y)[2] / accum(x,y);
-					r = pow(r, inv_gamma);
-					g = pow(g, inv_gamma);
-					b = pow(b, inv_gamma);
+					Color_XYZ cxyz(pixels(x,y)[0] / accum(x,y), pixels(x,y)[1] / accum(x,y), pixels(x,y)[2] / accum(x,y));
+					std::tie(r, g, b) = XYZ_to_sRGB(cxyz);
 				}
 #endif
 

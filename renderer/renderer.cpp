@@ -21,15 +21,15 @@
 
 #define GAMMA 2.2
 
-void write_png_from_film(Film<Color> *image, std::string path, float min_time=4.0)
+void write_png_from_film(Film *image, std::string path, float min_time=4.0)
 {
 	static Timer<> timer;
 
 	if ((timer.time() > min_time || min_time == 0.0f) && !Config::no_output) {
 		timer.reset();
 
-		// Gamma correction + dithering(256)
-		std::vector<uint8_t> im {image->scanline_image_8bbc(2.2)};
+		// Convert to dithered sRGB
+		std::vector<uint8_t> im {image->scanline_image_8bbc()};
 		// Save image
 		std::unique_ptr<OpenImageIO::ImageOutput> out {OpenImageIO::ImageOutput::create(".png")};
 		if (!out) {
@@ -51,9 +51,9 @@ bool Renderer::render(int thread_count)
 	Global::Stats::clear();
 
 	RNG rng;
-	std::unique_ptr<Film<Color>> image {new Film<Color>(res_x, res_y,
-		        -1.0, -((static_cast<float>(res_y))/res_x),
-		        1.0, ((static_cast<float>(res_y))/res_x))
+	std::unique_ptr<Film> image {new Film(res_x, res_y,
+		                                      -1.0, -((static_cast<float>(res_y))/res_x),
+		                                      1.0, ((static_cast<float>(res_y))/res_x))
 	};
 
 	// Save blank image before rendering

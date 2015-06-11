@@ -78,7 +78,7 @@ class PathTraceIntegrator final: Integrator
 
 public:
 	Scene *scene;
-	Film<Color> *image;
+	Film *image;
 	std::mutex image_mut;
 	int spp;
 	int spp_max;
@@ -99,7 +99,7 @@ public:
 	 *                    initialized with 3 channels, for rgb.
 	 * @param spp_ The number of samples to take per pixel for integration.
 	 */
-	PathTraceIntegrator(Scene *scene_, Film<Color> *image_, int spp_, int spp_max_, float variance_max_, uint seed_, int thread_count_=1, std::function<void()> callback_ = std::function<void()>()) {
+	PathTraceIntegrator(Scene *scene_, Film *image_, int spp_, int spp_max_, float variance_max_, uint seed_, int thread_count_=1, std::function<void()> callback_ = std::function<void()>()) {
 		scene = scene_;
 		image = image_;
 		spp = spp_;
