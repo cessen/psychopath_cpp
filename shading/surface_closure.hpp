@@ -92,7 +92,7 @@ public:
  *          surface's normal.  Probably calculated e.g. with a normalized
  *          dot product.
  */
-static inline float accurate_fresnel(float ior_ratio, float c)
+static inline float dielectric_fresnel(float ior_ratio, float c)
 {
 	const float g = std::sqrt(ior_ratio - 1.0f + (c * c));
 
@@ -111,30 +111,54 @@ static inline float accurate_fresnel(float ior_ratio, float c)
 /**
  * Schlick's approximation of the fresnel reflection factor.
  *
- * Same interface as accurate_fresnel(), above.
+ * Same interface as dielectric_fresnel(), above.
  */
 static inline float schlick_fresnel(float ior_ratio, float c)
 {
 	const float f1 = (1.0f - ior_ratio) / (1.0f + ior_ratio);
 	const float f2 = f1 * f1;
-	return f2 + ((1.0f-f2) * std::pow((1.0f - c), 5.0f));
+	const float c1 = (1.0f - c);
+	const float c2 = c1 * c1;
+	return f2 + ((1.0f-f2) * c1 * c2 * c2);
 }
 
 
 /**
- * Schlick's approximation of the fresnel reflection factor, calculated
- * from a "fresnel" term, specifying how much light should be reflected
- * from a ray perpendicular to the surface normal.
+ * Utility function that calculates the fresnel reflection factor of a given
+ * incoming ray against a surface with the given normal-reflectance factor.
  *
- * @param frensel_fac The ratio of light that should be reflected from a
- *                    head-on ray.
+ * @param frensel_fac The ratio of light reflected back if the ray were to
+ *                    hit the surface head-on (perpendicular to the surface).
  * @param c The cosine of the angle between the incoming light and the
  *          surface's normal.  Probably calculated e.g. with a normalized
  *          dot product.
  */
+static inline float dielectric_fresnel_from_fac(float fresnel_fac, float c)
+{
+	const float tmp1 = std::sqrt(fresnel_fac) - 1.0f;
+
+	// Protect against divide by zero.
+	if (std::abs(tmp1) < 0.000001)
+		return 1.0f;
+
+	// Find the ior ratio
+	const float tmp2 = (-2.0f / tmp1) - 1.0f;
+	const float ior_ratio = tmp2 * tmp2;
+
+	// Calculate fresnel factor
+	return dielectric_fresnel(ior_ratio, c);
+}
+
+
+
+/**
+ * Schlick's approximation version of dielectric_fresnel_from_fac() above.
+ */
 static inline float schlick_fresnel_from_fac(float frensel_fac, float c)
 {
-	return frensel_fac + ((1.0f-frensel_fac) * std::pow((1.0f - c), 5.0f));
+	const float c1 = (1.0f - c);
+	const float c2 = c1 * c1;
+	return frensel_fac + ((1.0f-frensel_fac) * c1 * c2 * c2);
 }
 
 
@@ -271,7 +295,7 @@ private:
 	Color col {1.0f};
 	float roughness {0.05f};
 	float tail_shape {2.0f};
-	float fresnel {0.25f};
+	float fresnel {1.0f};
 	float normalization_factor = normalization(roughness, tail_shape);
 
 
@@ -387,15 +411,17 @@ public:
 		float D = 1.0f;
 		float G1 = 1.0f;
 		float G2 = 1.0f;
-		float F = 1.0f;
 
 		// Calculate F - Fresnel
-		F = schlick_fresnel_from_fac(fresnel, hb);
+		Color col_f;
+		col_f[0] = lerp(1.0f - fresnel, schlick_fresnel_from_fac(col[0], hb), col[0]);
+		col_f[1] = lerp(1.0f - fresnel, schlick_fresnel_from_fac(col[1], hb), col[1]);
+		col_f[2] = lerp(1.0f - fresnel, schlick_fresnel_from_fac(col[2], hb), col[2]);
 
 		// Calculate everything else
 		if (roughness == 0.0f) {
 			// If sharp mirror, just return col * fresnel factor
-			return col * F;
+			return col_f;
 		} else {
 			// Calculate D - Distribution
 			if (nh > 0.0f) {
@@ -421,7 +447,7 @@ public:
 		}
 
 		// Final result
-		return col * (D * F * G1 * G2) * (float)(INV_PI);
+		return col_f * (D * G1 * G2) * (float)(INV_PI);
 	}
 
 
