@@ -35,13 +35,14 @@ public:
 	 * @param [in] geo The differential geometry of the reflecting/transmitting surface point.
 	 * @param [in] si  A sample value.
 	 * @param [in] sj  A sample value.
+	 * @param [in] wavelength  The wavelength of light to sample at.
 	 *
 	 * @param [out] out    The generated outgoing light direction.
 	 * @param [out] filter The generated color filter.
 	 * @param [out] pdf    The pdf value of the outgoing ray.
 	 */
-	virtual void sample(const Vec3 &in, const DifferentialGeometry &geo, const float &si, const float &sj,
-	                    Vec3 *out, Color *filter, float *pdf) const = 0;
+	virtual void sample(const Vec3 &in, const DifferentialGeometry &geo, const float &si, const float &sj, const float wavelength,
+	                    Vec3 *out, SpectralSample *filter, float *pdf) const = 0;
 
 
 	/**
@@ -50,10 +51,11 @@ public:
 	 * @param [in] in  The incoming light direction.
 	 * @param [in] out The outgoing light direction.
 	 * @param [in] geo The differential geometry of the reflecting/transmitting surface point.
+	 * @param [in] wavelength The wavelength of light to evaluate for.
 	 *
 	 * @return The resulting filter color.
 	 */
-	virtual Color evaluate(const Vec3 &in, const Vec3 &out, const DifferentialGeometry &geo) const = 0;
+	virtual SpectralSample evaluate(const Vec3 &in, const Vec3 &out, const DifferentialGeometry &geo, const float wavelength) const = 0;
 
 
 	/**
@@ -182,16 +184,16 @@ public:
 	}
 
 
-	virtual void sample(const Vec3 &in, const DifferentialGeometry &geo, const float &si, const float &sj,
-	                    Vec3 *out, Color *filter, float *pdf) const override {
+	virtual void sample(const Vec3 &in, const DifferentialGeometry &geo, const float &si, const float &sj, const float wavelength,
+	                    Vec3 *out, SpectralSample *filter, float *pdf) const override {
 		*pdf = 1.0f;
 		*out = Vec3(1.0f);
-		*filter = Color(0.0f);
+		*filter = SpectralSample {wavelength, 0.0f};
 	}
 
 
-	Color evaluate(const Vec3 &in, const Vec3 &out, const DifferentialGeometry &geo) const override {
-		return Color(0.0f);
+	SpectralSample evaluate(const Vec3 &in, const Vec3 &out, const DifferentialGeometry &geo, const float wavelength) const override {
+		return SpectralSample {wavelength, 0.0f};
 	}
 
 
@@ -204,8 +206,9 @@ public:
 		return 1.0f;
 	}
 
-	Color emitted_color() const {
-		return col;
+	SpectralSample emitted_color(const float wavelength) const {
+		SpectralSample ss {wavelength, Color_to_spectrum(col, wavelength)};
+		return ss;
 	}
 };
 
@@ -226,8 +229,8 @@ public:
 	}
 
 
-	virtual void sample(const Vec3 &in, const DifferentialGeometry &geo, const float &si, const float &sj,
-	                    Vec3 *out, Color *filter, float *pdf) const override {
+	virtual void sample(const Vec3 &in, const DifferentialGeometry &geo, const float &si, const float &sj, const float wavelength,
+	                    Vec3 *out, SpectralSample *filter, float *pdf) const override {
 		// Get normalized surface normal
 		Vec3 nn = geo.n.normalized();
 
@@ -241,18 +244,20 @@ public:
 		const Vec3 dir = cosine_sample_hemisphere(si, sj);
 		*pdf = dir.z * (float)(INV_PI);
 		*out = zup_to_vec(dir, nn);
-		*filter = evaluate(in, *out, geo);
+		*filter = evaluate(in, *out, geo, wavelength);
 	}
 
 
-	Color evaluate(const Vec3 &in, const Vec3 &out, const DifferentialGeometry &geo) const override {
+	SpectralSample evaluate(const Vec3 &in, const Vec3 &out, const DifferentialGeometry &geo, const float wavelength) const override {
 		Vec3 nn = geo.n.normalized();
 		const Vec3 v = out.normalized();
 
 		if (dot(nn, in) > 0.0f)
 			nn *= -1.0f;
 
-		return col * std::max(dot(nn, v), 0.0f) * (float)(INV_PI);
+		SpectralSample ss {wavelength, Color_to_spectrum(col, wavelength)};
+
+		return ss * std::max(dot(nn, v), 0.0f) * (float)(INV_PI);
 	}
 
 
@@ -362,8 +367,8 @@ public:
 	}
 
 
-	virtual void sample(const Vec3 &in, const DifferentialGeometry &geo, const float &si, const float &sj,
-	                    Vec3 *out, Color *filter, float *pdf_) const override {
+	virtual void sample(const Vec3 &in, const DifferentialGeometry &geo, const float &si, const float &sj, const float wavelength,
+	                    Vec3 *out, SpectralSample *filter, float *pdf_) const override {
 		// Get normalized surface normal
 		Vec3 nn = geo.n.normalized();
 
@@ -382,11 +387,11 @@ public:
 
 		*out = in - (half_dir * 2 * dot(in, half_dir));
 		*pdf_ = pdf(in, *out, geo);
-		*filter = evaluate(in, *out, geo);
+		*filter = evaluate(in, *out, geo, wavelength);
 	}
 
 
-	Color evaluate(const Vec3 &in, const Vec3 &out, const DifferentialGeometry &geo) const override {
+	SpectralSample evaluate(const Vec3 &in, const Vec3 &out, const DifferentialGeometry &geo, const float wavelength) const override {
 		// Calculate needed vectors, normalized
 		Vec3 nn = geo.n.normalized();  // SUrface normal
 		const Vec3 aa = in.normalized() * -1.0f;  // Vector pointing to where "in" came from
@@ -413,10 +418,8 @@ public:
 		float G2 = 1.0f;
 
 		// Calculate F - Fresnel
-		Color col_f;
-		col_f[0] = lerp(1.0f - fresnel, schlick_fresnel_from_fac(col[0], hb), col[0]);
-		col_f[1] = lerp(1.0f - fresnel, schlick_fresnel_from_fac(col[1], hb), col[1]);
-		col_f[2] = lerp(1.0f - fresnel, schlick_fresnel_from_fac(col[2], hb), col[2]);
+		SpectralSample col_f {wavelength, Color_to_spectrum(col, wavelength)};
+		col_f.i = lerp(1.0f - fresnel, schlick_fresnel_from_fac(col_f.i, hb), col_f.i);
 
 		// Calculate everything else
 		if (roughness == 0.0f) {

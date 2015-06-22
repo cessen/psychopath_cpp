@@ -105,6 +105,7 @@ include_directories ("${PROJECT_BINARY_DIR}",
                      "${PROJECT_SOURCE_DIR}",
                      "${PROJECT_SOURCE_DIR}/accel",
                      "${PROJECT_SOURCE_DIR}/basics",
+                     "${PROJECT_SOURCE_DIR}/color",
                      "${PROJECT_SOURCE_DIR}/integrator",
                      "${PROJECT_SOURCE_DIR}/lights",
                      "${PROJECT_SOURCE_DIR}/math",
@@ -125,6 +126,7 @@ include_directories ("${PROJECT_BINARY_DIR}",
 #--------------------------------------
 add_subdirectory(accel)
 #add_subdirectory(basics)
+#add_subdirectory(color)
 add_subdirectory(integrator)
 add_subdirectory(math)
 add_subdirectory(object)

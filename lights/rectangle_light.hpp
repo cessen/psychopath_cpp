@@ -41,7 +41,7 @@ public:
 	 * TODO: improve sampling to sample evenly within the projected solid
 	 * angle.
 	 */
-	virtual Color sample(const Vec3 &arr, float u, float v, float time, Vec3 *shadow_vec, float* pdf) const override {
+	virtual SpectralSample sample(const Vec3 &arr, float u, float v, float wavelength, float time, Vec3 *shadow_vec, float* pdf) const override {
 		// Calculate time interpolated values
 		const auto dim = lerp_seq(time, dimensions);
 		const double inv_surface_area = 1.0 / (dim.first * dim.second);
@@ -59,14 +59,14 @@ public:
 
 		*pdf = (dist * dist) / std::abs(shadow_vec->normalized().z) * inv_surface_area; // PDF of the ray direction being sampled
 
-		return col * inv_surface_area * 0.5f; // 0.5x because it emits on both sides
+		return SpectralSample {wavelength, Color_to_spectrum(col, wavelength)} * inv_surface_area * 0.5f; // 0.5x because it emits on both sides
 	}
 
-	virtual Color outgoing(const Vec3 &dir, float u, float v, float time) const override {
+	virtual SpectralSample outgoing(const Vec3 &dir, float u, float v, float wavelength, float time) const override {
 		const auto dim = lerp_seq(time, dimensions);
 		const double surface_area = (dim.first * dim.second);
 		const Color col = lerp_seq(time, colors);
-		return col / surface_area * 0.5f; // 0.5x because it emits on both sides
+		return SpectralSample {wavelength, Color_to_spectrum(col, wavelength)} / surface_area * 0.5f; // 0.5x because it emits on both sides
 	}
 
 	virtual bool is_delta() const override {

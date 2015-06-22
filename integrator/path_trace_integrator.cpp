@@ -87,6 +87,10 @@ void PathTraceIntegrator::init_path(PTState* pstate, Sampler s, short x, short y
 	pstate->sampler = s;
 	pstate->pix_x = x;
 	pstate->pix_y = y;
+	pstate->wavelength = (pstate->sampler.next() * (700.0f-390.0f)) + 390.0f;
+	pstate->col.wavelength = pstate->wavelength;
+	pstate->fcol.wavelength = pstate->wavelength;
+	pstate->lcol.wavelength = pstate->wavelength;
 }
 
 
@@ -139,7 +143,7 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 
 			// Get a sample from lights in the scene
 			LightQuery lq {path.sampler.next(), path.sampler.next(), path.sampler.next(), 0.0f,
-			               geo.p, lq_nor, path.time,
+			               geo.p, lq_nor, path.wavelength, path.time,
 			               Transform()
 			              };
 			lq.pdf = 1.0f;
@@ -149,8 +153,8 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 			//const float bsdf_pdf = bsdf->pdf(path.prev_ray.d, lq.to_light, path.inter.geo);
 
 			// Set light color
-			//path.lcol = (lq.color * power_heuristic(lq.pdf, bsdf_pdf) / lq.pdf) * scene->root->light_accel.light_count();
-			path.lcol = (lq.color / lq.pdf) * scene->root->light_accel.light_count();
+			//path.lcol = (lq.spec_samp * power_heuristic(lq.pdf, bsdf_pdf) / lq.pdf) * scene->root->light_accel.light_count();
+			path.lcol = (lq.spec_samp / lq.pdf) * scene->root->light_accel.light_count();
 
 			// Create a shadow ray for this path
 			ray.o = geo.p + pos_offset;
@@ -161,7 +165,7 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 			// Propagate ray differentials
 			bsdf->propagate_differentials(path.inter.t, path.prev_ray, geo, &ray);
 		} else {
-			path.lcol = Color(0.0f);
+			path.lcol = SpectralSample {path.wavelength, 0.0f};
 		}
 	} else {
 		// Bounce ray
@@ -178,10 +182,10 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 			pos_offset *= -1.0f;
 
 		Vec3 out;
-		Color filter;
+		SpectralSample filter;
 		float pdf;
 
-		bsdf->sample(path.prev_ray.d, geo, path.sampler.next(), path.sampler.next(), &out, &filter, &pdf);
+		bsdf->sample(path.prev_ray.d, geo, path.sampler.next(), path.sampler.next(), path.wavelength, &out, &filter, &pdf);
 
 		ray.o = geo.p + pos_offset;
 		ray.d = out;
@@ -222,7 +226,7 @@ void PathTraceIntegrator::update_path(PTState* pstate, const WorldRay& ray, cons
 			if (!bsdf->is_delta()) {
 				const DifferentialGeometry geo = path.inter.geo.transformed_from(path.inter.space);
 
-				Color fac = bsdf->evaluate(path.prev_ray.d, ray.d, geo);
+				SpectralSample fac = bsdf->evaluate(path.prev_ray.d, ray.d, geo, path.wavelength);
 
 				path.col += path.fcol * path.lcol * fac;
 			}
@@ -233,9 +237,8 @@ void PathTraceIntegrator::update_path(PTState* pstate, const WorldRay& ray, cons
 			// Ray hit something!
 			if (auto emit_closure = dynamic_cast<const EmitClosure*>(inter.surface_closure.get())) {
 				// Hit emitting surface, handle specially
-				// Ray didn't hit anything
 				path.done = true;
-				path.col += path.fcol * emit_closure->emitted_color();
+				path.col += path.fcol * emit_closure->emitted_color(path.wavelength);
 			} else {
 				path.inter = inter; // Store intersection data for creating shadow ray
 				path.prev_ray = ray;  // Store incoming ray direction for use in shading calculations
@@ -243,7 +246,7 @@ void PathTraceIntegrator::update_path(PTState* pstate, const WorldRay& ray, cons
 		} else {
 			// Ray didn't hit anything
 			path.done = true;
-			path.col += path.fcol * scene->background_color;
+			path.col += path.fcol * Color_to_spectrum(scene->background_color, path.wavelength);
 		}
 	}
 
@@ -332,7 +335,7 @@ void PathTraceIntegrator::render_blocks()
 				// Accumulate the samples
 
 				for (uint32_t i = 0; i < paths.size(); i++) {
-					image->add_sample(Color_to_XYZ(paths[i].col), paths[i].pix_x, paths[i].pix_y);
+					image->add_sample(Color_XYZ(paths[i].col), paths[i].pix_x, paths[i].pix_y);
 				}
 
 				// Callback

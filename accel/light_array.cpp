@@ -41,7 +41,7 @@ void LightArray::sample(LightQuery* query) const
 {
 	// Handle empty light accel
 	if (light_indices.size() == 0 && assembly_lights.size() == 0) {
-		query->color = Color(0.0f);
+		query->spec_samp = SpectralSample {query->spec_samp.wavelength, 0.0f};
 		return;
 	}
 
@@ -73,7 +73,7 @@ void LightArray::sample(LightQuery* query) const
 
 		// Sample the light
 		float p;
-		query->color = light->sample(query->pos, query->u, query->v, query->time, &(query->to_light), &p);
+		query->spec_samp = light->sample(query->pos, query->u, query->v, query->wavelength, query->time, &(query->to_light), &p);
 		query->to_light = query->xform.dir_from(query->to_light);
 		query->pdf *= p;
 	}

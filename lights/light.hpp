@@ -24,6 +24,7 @@ public:
 	 * @param arr The point to be illuminated.
 	 * @param u Random parameter U.
 	 * @param v Random parameter V.
+	 * @param wavelength The wavelength of light to sample at.
 	 * @param time The time to sample at.
 	 * @param[out] shadow_vec The world-space direction to cast a shadow ray
 	 *               for visibility testing.  It's length determines the extent
@@ -35,8 +36,8 @@ public:
 	 *
 	 * @returns The light arriving at the point arr.
 	 */
-	virtual Color sample(const Vec3 &arr, float u, float v, float time,
-	                     Vec3 *shadow_vec, float* pdf) const = 0;
+	virtual SpectralSample sample(const Vec3 &arr, float u, float v, float wavelength, float time,
+	                              Vec3 *shadow_vec, float* pdf) const = 0;
 
 
 	/**
@@ -46,9 +47,10 @@ public:
 	 * @param dir The direction of the outgoing light.
 	 * @param u Random parameter U.
 	 * @param v Random parameter V.
+	 * @param wavelength The wavelength of light to sample at.
 	 * @param time The time to sample at.
 	 */
-	virtual Color outgoing(const Vec3 &dir, float u, float v, float time) const = 0;
+	virtual SpectralSample outgoing(const Vec3 &dir, float u, float v, float wavelength, float time) const = 0;
 
 
 	/**

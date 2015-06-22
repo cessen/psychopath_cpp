@@ -54,9 +54,10 @@ class PathTraceIntegrator final: Integrator
 		short pix_x, pix_y;  // Pixel coordinates of the path
 		Intersection inter {};
 		WorldRay prev_ray {};
-		Color col {0.0f}; // Color of the sample collected so far
-		Color fcol {1.0f}; // Accumulated filter color from light path
-		Color lcol {0.0f}; // Temporary storage for incoming light color
+		float wavelength;  // The wavelength of light of the path (in nm)
+		SpectralSample col {0.0f, 0.0f}; // Color of the sample collected so far
+		SpectralSample fcol {0.0f, 1.0f}; // Accumulated filter color from light path
+		SpectralSample lcol {0.0f, 0.0f}; // Temporary storage for incoming light color
 
 		bool done {false};
 	};

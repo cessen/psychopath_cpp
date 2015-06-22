@@ -9,6 +9,7 @@
 #include "ray.hpp"
 #include "light.hpp"
 #include "transform.hpp"
+#include "color.hpp"
 
 
 // Forward declaration of Assembly from scene/assembly.hpp
@@ -23,6 +24,7 @@ struct LightQuery {
 	float n, u, v, w;
 	Vec3 pos;
 	Vec3 nor;
+	float wavelength;
 	float time;
 
 	// Intermediate
@@ -30,8 +32,9 @@ struct LightQuery {
 
 	// Out
 	Vec3 to_light;
-	Color color;
+	SpectralSample spec_samp;
 	float pdf;
+
 };
 
 /**

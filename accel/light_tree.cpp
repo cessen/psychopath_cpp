@@ -82,7 +82,7 @@ void LightTree::sample(LightQuery* query) const
 			const Light* light = dynamic_cast<const Light*>(obj);
 
 			float p = 1.0f;
-			query->color = light->sample(query->pos, query->u, query->v, query->time, &(query->to_light), &p);
+			query->spec_samp = light->sample(query->pos, query->u, query->v, query->wavelength, query->time, &(query->to_light), &p);
 			query->to_light = query->xform.dir_from(query->to_light);
 			query->pdf *= (tot_prob * light_count()) * p;
 		}

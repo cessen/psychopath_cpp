@@ -9,13 +9,61 @@
 
 #include "utils.hpp"
 
+#include "spectrum_grid.h"
+
 
 /**
  * A single spectral sample.
+ *
+ * Wavelengths should be between 390 - 700 nm.
  */
 struct SpectralSample {
-	float w; // Wavelength in nm
+	float wavelength; // Wavelength in nm
 	float i; // Intensity
+
+	SpectralSample operator+(const SpectralSample &other) const {
+		SpectralSample s;
+		s.wavelength = wavelength;
+		s.i = i + other.i;
+		return s;
+	}
+	SpectralSample& operator+=(const SpectralSample &other) {
+		i += other.i;
+		return *this;
+	}
+
+	SpectralSample operator*(const SpectralSample &other) const {
+		SpectralSample s;
+		s.wavelength = wavelength;
+		s.i = i * other.i;
+		return s;
+	}
+	SpectralSample& operator*=(const SpectralSample &other) {
+		i *= other.i;
+		return *this;
+	}
+
+	SpectralSample operator*(float n) const {
+		SpectralSample s;
+		s.wavelength = wavelength;
+		s.i = i * n;
+		return s;
+	}
+	SpectralSample& operator*=(float n) {
+		i *= n;
+		return *this;
+	}
+
+	SpectralSample operator/(float n) const {
+		SpectralSample s;
+		s.wavelength = wavelength;
+		s.i = i / n;
+		return s;
+	}
+	SpectralSample& operator/=(float n) {
+		i /= n;
+		return *this;
+	}
 };
 
 
@@ -59,7 +107,7 @@ struct Color_XYZ {
 	Color_XYZ() = default;
 	Color_XYZ(float intensity): x {intensity}, y {intensity}, z {intensity} {}
 	Color_XYZ(float intensity, float wavelength): x {X_1931(wavelength)*intensity}, y {Y_1931(wavelength)*intensity}, z {Z_1931(wavelength)*intensity} {}
-	Color_XYZ(SpectralSample s): x {X_1931(s.w)*s.i}, y {Y_1931(s.w)*s.i}, z {Z_1931(s.w)*s.i} {}
+	Color_XYZ(SpectralSample s): x {X_1931(s.wavelength)*s.i}, y {Y_1931(s.wavelength)*s.i}, z {Z_1931(s.wavelength)*s.i} {}
 	Color_XYZ(float x, float y, float z): x {x}, y {y}, z {z} {}
 
 	float &operator[](int i) {
@@ -119,9 +167,9 @@ struct Color_XYZ {
 	}
 
 	void add_light(SpectralSample s) {
-		x += X_1931(s.w) * s.i;
-		y += Y_1931(s.w) * s.i;
-		z += Z_1931(s.w) * s.i;
+		x += X_1931(s.wavelength) * s.i;
+		y += Y_1931(s.wavelength) * s.i;
+		z += Z_1931(s.wavelength) * s.i;
 	}
 };
 
@@ -250,7 +298,9 @@ struct Color {
 
 
 
-// sRGB/XYZ conversion functions
+/********************************
+ * sRGB/XYZ conversion functions
+ ********************************/
 static inline float sRGB_gamma(float n)
 {
 	return n < 0.0031308f ? (n * 12.92f) : ((1.055f * std::pow(n, 1.0f/2.4f)) - 0.055f);
@@ -306,6 +356,27 @@ static inline Color_XYZ Color_to_XYZ(Color col)
 	xyz.z = (col[0] * 0.0193f) + (col[1] * 0.1192f) + (col[2] * 0.9505f);
 
 	return xyz;
+}
+
+
+/*************************************************************************
+ * Functions for evaluating various color representations at
+ * spectral wavelengths.
+ *
+ * The approach taken to upsample colors to spectrum is from the paper
+ * "Physically Meaningful Rendering using Tristimulus Colours" by Hanika et al.
+ *************************************************************************/
+static inline float XYZ_to_spectrum(const Color_XYZ& col, float wavelength)
+{
+	// TODO: figure out the correct equal_energy_reflectance factor given
+	// the maths elsewhere in psychopath.
+	return spectrum_xyz_to_p(wavelength, &(col.x)) / equal_energy_reflectance * M_PI * 0.5f;
+}
+
+static inline float Color_to_spectrum(const Color& col, float wavelength)
+{
+	const auto tmp = Color_to_XYZ(col);
+	return spectrum_xyz_to_p(wavelength, &(tmp.x)) / equal_energy_reflectance * M_PI * 0.5f;
 }
 
 

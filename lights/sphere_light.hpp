@@ -64,7 +64,7 @@ public:
 	 * rendering, as it may meaningfully impact lighting effects from a sphere
 	 * light embedded inside a volume.
 	 */
-	virtual Color sample(const Vec3 &arr, float u, float v, float time, Vec3 *shadow_vec, float* pdf) const override {
+	virtual SpectralSample sample(const Vec3 &arr, float u, float v, float wavelength, float time, Vec3 *shadow_vec, float* pdf) const override {
 		// Calculate time interpolated values
 		Vec3 pos = lerp_seq(time, positions);
 		double radius = lerp_seq(time, radii);
@@ -104,21 +104,21 @@ public:
 			*shadow_vec = ((x * sample[0]) + (y * sample[1]) + (z * sample[2])).normalized() * length;
 
 			*pdf = uniform_sample_cone_pdf(cos_theta_max);
-			return col * surface_area_inv;
+			return SpectralSample {wavelength, Color_to_spectrum(col, wavelength)} * surface_area_inv;
 		} else {
 			// If we're inside the sphere, there's light from every direction.
 			*shadow_vec = uniform_sample_sphere(u, v);
 			*pdf = 1.0f / (4.0f * M_PI);
-			return col * surface_area_inv;
+			return SpectralSample {wavelength, Color_to_spectrum(col, wavelength)} * surface_area_inv;
 		}
 
 	}
 
-	virtual Color outgoing(const Vec3 &dir, float u, float v, float time) const override {
+	virtual SpectralSample outgoing(const Vec3 &dir, float u, float v, float wavelength, float time) const override {
 		double radius = lerp_seq(time, radii);
 		Color col = lerp_seq(time, colors);
 		double surface_area = 4.0 * M_PI * radius * radius;
-		return col / surface_area;
+		return SpectralSample {wavelength, Color_to_spectrum(col, wavelength)} / surface_area;
 	}
 
 	virtual bool is_delta() const override {
