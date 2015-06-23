@@ -193,12 +193,12 @@ public:
 //#define VARIANCE
 #ifdef VARIANCE
 				const Color_XYZ var_est = variance_estimate(x, y);
-				std::tie(r, g, b) = XYZ_to_sRGB(var_est);
+				std::tie(r, g, b) = XYZ_to_sRGB_E(var_est);
 #else
 				// Get color and apply gamma correction
 				if (accum(x,y) != 0.0) {
 					Color_XYZ cxyz(pixels(x,y)[0] / accum(x,y), pixels(x,y)[1] / accum(x,y), pixels(x,y)[2] / accum(x,y));
-					std::tie(r, g, b) = XYZ_to_sRGB(cxyz);
+					std::tie(r, g, b) = XYZ_to_sRGB_E(cxyz);
 				}
 #endif
 

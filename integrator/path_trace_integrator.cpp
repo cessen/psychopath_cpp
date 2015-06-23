@@ -87,7 +87,7 @@ void PathTraceIntegrator::init_path(PTState* pstate, Sampler s, short x, short y
 	pstate->sampler = s;
 	pstate->pix_x = x;
 	pstate->pix_y = y;
-	pstate->wavelength = (pstate->sampler.next() * (700.0f-390.0f)) + 390.0f;
+	pstate->wavelength = (pstate->sampler.next() * (WAVELENGTH_MAX - WAVELENGTH_MIN)) + WAVELENGTH_MIN;
 	pstate->col.wavelength = pstate->wavelength;
 	pstate->fcol.wavelength = pstate->wavelength;
 	pstate->lcol.wavelength = pstate->wavelength;
@@ -335,7 +335,7 @@ void PathTraceIntegrator::render_blocks()
 				// Accumulate the samples
 
 				for (uint32_t i = 0; i < paths.size(); i++) {
-					image->add_sample(Color_XYZ(paths[i].col), paths[i].pix_x, paths[i].pix_y);
+					image->add_sample(Color_XYZ(paths[i].col) * XYZ_NORM_FAC, paths[i].pix_x, paths[i].pix_y);
 				}
 
 				// Callback

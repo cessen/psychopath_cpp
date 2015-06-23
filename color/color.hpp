@@ -11,11 +11,18 @@
 
 #include "spectrum_grid.h"
 
+// Min and max wavelength used in sampling the spectrum
+static float const WAVELENGTH_MIN = 380.0f;
+static float const WAVELENGTH_MAX = 700.0f;
+
+// 1 over the integral of any of the XYZ curves
+static float const INV_XYZ_INTEGRAL = 0.009358239977091027f;
+
+// Normalizing factor for when accumulating XYZ color
+static float const XYZ_NORM_FAC = INV_XYZ_INTEGRAL * (WAVELENGTH_MAX - WAVELENGTH_MIN);
 
 /**
  * A single spectral sample.
- *
- * Wavelengths should be between 390 - 700 nm.
  */
 struct SpectralSample {
 	float wavelength; // Wavelength in nm
@@ -175,7 +182,9 @@ struct Color_XYZ {
 
 
 
-
+// An RGB specified color.
+// This is assumed to be the same as linear sRGB, except scaled to have a
+// white point at rgb<1,1,1> instead of D65.
 struct Color {
 	std::array<float, 3> spectrum;
 
@@ -299,7 +308,7 @@ struct Color {
 
 
 /********************************
- * sRGB/XYZ conversion functions
+ * Colorspace conversion functions
  ********************************/
 static inline float sRGB_gamma(float n)
 {
@@ -311,14 +320,14 @@ static inline float sRGB_inv_gamma(float n)
 	return n < 0.04045f ? (n / 12.92f) : std::pow(((n + 0.055f) / 1.055f), 2.4f);
 }
 
-static inline std::tuple<float, float, float> XYZ_to_sRGB(Color_XYZ col)
+static inline std::tuple<float, float, float> XYZ_to_sRGB(Color_XYZ xyz)
 {
 	std::tuple<float, float, float> srgb;
 
 	// First convert from XYZ to linear sRGB
-	std::get<0>(srgb) = clamp((col.x *  3.2406f) + (col.y * -1.5372f) + (col.z * -0.4986f), 0.0f, 1.0f);
-	std::get<1>(srgb) = clamp((col.x * -0.9689f) + (col.y *  1.8758f) + (col.z *  0.0415f), 0.0f, 1.0f);
-	std::get<2>(srgb) = clamp((col.x *  0.0557f) + (col.y * -0.2040f) + (col.z *  1.0570f), 0.0f, 1.0f);
+	std::get<0>(srgb) = clamp((xyz.x *  3.2406f) + (xyz.y * -1.5372f) + (xyz.z * -0.4986f), 0.0f, 1.0f);
+	std::get<1>(srgb) = clamp((xyz.x * -0.9689f) + (xyz.y *  1.8758f) + (xyz.z *  0.0415f), 0.0f, 1.0f);
+	std::get<2>(srgb) = clamp((xyz.x *  0.0557f) + (xyz.y * -0.2040f) + (xyz.z *  1.0570f), 0.0f, 1.0f);
 
 	// Then "gamma" correct
 	std::get<0>(srgb) = sRGB_gamma(std::get<0>(srgb));
@@ -328,32 +337,81 @@ static inline std::tuple<float, float, float> XYZ_to_sRGB(Color_XYZ col)
 	return srgb;
 }
 
-static inline Color_XYZ sRGB_to_XYZ(std::tuple<float, float, float> col)
+static inline Color_XYZ sRGB_to_XYZ(std::tuple<float, float, float> srgb)
 {
 	Color_XYZ xyz;
 
 	// Undo "gamma" correction
-	std::get<0>(col) = sRGB_inv_gamma(std::get<0>(col));
-	std::get<1>(col) = sRGB_inv_gamma(std::get<1>(col));
-	std::get<2>(col) = sRGB_inv_gamma(std::get<2>(col));
+	std::get<0>(srgb) = sRGB_inv_gamma(std::get<0>(srgb));
+	std::get<1>(srgb) = sRGB_inv_gamma(std::get<1>(srgb));
+	std::get<2>(srgb) = sRGB_inv_gamma(std::get<2>(srgb));
 
 	// Convert from linear sRGB to XYZ
-	xyz.x = (std::get<0>(col) * 0.4124f) + (std::get<1>(col) * 0.3576f) + (std::get<2>(col) * 0.1805f);
-	xyz.y = (std::get<0>(col) * 0.2126f) + (std::get<1>(col) * 0.7152f) + (std::get<2>(col) * 0.0722f);
-	xyz.z = (std::get<0>(col) * 0.0193f) + (std::get<1>(col) * 0.1192f) + (std::get<2>(col) * 0.9505f);
+	xyz.x = (std::get<0>(srgb) * 0.4124f) + (std::get<1>(srgb) * 0.3576f) + (std::get<2>(srgb) * 0.1805f);
+	xyz.y = (std::get<0>(srgb) * 0.2126f) + (std::get<1>(srgb) * 0.7152f) + (std::get<2>(srgb) * 0.0722f);
+	xyz.z = (std::get<0>(srgb) * 0.0193f) + (std::get<1>(srgb) * 0.1192f) + (std::get<2>(srgb) * 0.9505f);
 
 	return xyz;
 }
 
-// Treat Color as linear sRGB
+// Conversion for sRGB scaled to have whitepoint E
+static inline std::tuple<float, float, float> XYZ_to_sRGB_E(Color_XYZ xyz)
+{
+	std::tuple<float, float, float> srgbe;
+
+	// First convert from XYZ to linear sRGB with whitepoint E
+	std::get<0>(srgbe) = clamp((xyz.x *  2.6897f) + (xyz.y * -1.2759f) + (xyz.z * -0.4138f), 0.0f, 1.0f);
+	std::get<1>(srgbe) = clamp((xyz.x * -1.0216f) + (xyz.y *  1.9778f) + (xyz.z *  0.0438f), 0.0f, 1.0f);
+	std::get<2>(srgbe) = clamp((xyz.x *  0.0613f) + (xyz.y * -0.2245f) + (xyz.z *  1.1632f), 0.0f, 1.0f);
+
+	// Then "gamma" correct
+	std::get<0>(srgbe) = sRGB_gamma(std::get<0>(srgbe));
+	std::get<1>(srgbe) = sRGB_gamma(std::get<1>(srgbe));
+	std::get<2>(srgbe) = sRGB_gamma(std::get<2>(srgbe));
+
+	return srgbe;
+}
+
+// Conversion for sRGB scaled to have whitepoint E
+static inline Color_XYZ sRGB_E_to_XYZ(std::tuple<float, float, float> srgbe)
+{
+	Color_XYZ xyz;
+
+	// Undo "gamma" correction
+	std::get<0>(srgbe) = sRGB_inv_gamma(std::get<0>(srgbe));
+	std::get<1>(srgbe) = sRGB_inv_gamma(std::get<1>(srgbe));
+	std::get<2>(srgbe) = sRGB_inv_gamma(std::get<2>(srgbe));
+
+	// Convert from linear sRGB with whitepoint E to XYZ
+	xyz.x = (std::get<0>(srgbe) * 0.4339f) + (std::get<1>(srgbe) * 0.3762f) + (std::get<2>(srgbe) * 0.1899f);
+	xyz.y = (std::get<0>(srgbe) * 0.2126f) + (std::get<1>(srgbe) * 0.7152f) + (std::get<2>(srgbe) * 0.0722f);
+	xyz.z = (std::get<0>(srgbe) * 0.0177f) + (std::get<1>(srgbe) * 0.1095f) + (std::get<2>(srgbe) * 0.8728f);
+
+	return xyz;
+}
+
+static inline Color XYZ_to_Color(Color_XYZ xyz)
+{
+	Color col;
+
+	// Convert from XYZ to linear sRGB scaled to have a white point
+	// at rgb<1,1,1>
+	col[0] = std::max(0.0f, (xyz.x *  2.6897f) + (xyz.y * -1.2759f) + (xyz.z * -0.4138f));
+	col[1] = std::max(0.0f, (xyz.x * -1.0216f) + (xyz.y *  1.9778f) + (xyz.z *  0.0438f));
+	col[2] = std::max(0.0f, (xyz.x *  0.0613f) + (xyz.y * -0.2245f) + (xyz.z *  1.1632f));
+
+	return col;
+}
+
 static inline Color_XYZ Color_to_XYZ(Color col)
 {
 	Color_XYZ xyz;
 
-	// Convert from linear sRGB to XYZ
-	xyz.x = (col[0] * 0.4124f) + (col[1] * 0.3576f) + (col[2] * 0.1805f);
+	// Convert from linear sRGB scaled to have a white point at rgb<1,1,1>
+	// to XYZ
+	xyz.x = (col[0] * 0.4339f) + (col[1] * 0.3762f) + (col[2] * 0.1899f);
 	xyz.y = (col[0] * 0.2126f) + (col[1] * 0.7152f) + (col[2] * 0.0722f);
-	xyz.z = (col[0] * 0.0193f) + (col[1] * 0.1192f) + (col[2] * 0.9505f);
+	xyz.z = (col[0] * 0.0177f) + (col[1] * 0.1095f) + (col[2] * 0.8728f);
 
 	return xyz;
 }
@@ -370,13 +428,13 @@ static inline float XYZ_to_spectrum(const Color_XYZ& col, float wavelength)
 {
 	// TODO: figure out the correct equal_energy_reflectance factor given
 	// the maths elsewhere in psychopath.
-	return spectrum_xyz_to_p(wavelength, &(col.x)) / equal_energy_reflectance * M_PI * 0.5f;
+	return spectrum_xyz_to_p(wavelength, &(col.x)) * (1.0f / equal_energy_reflectance);
 }
 
 static inline float Color_to_spectrum(const Color& col, float wavelength)
 {
 	const auto tmp = Color_to_XYZ(col);
-	return spectrum_xyz_to_p(wavelength, &(tmp.x)) / equal_energy_reflectance * M_PI * 0.5f;
+	return spectrum_xyz_to_p(wavelength, &(tmp.x)) * (1.0f / equal_energy_reflectance);
 }
 
 
