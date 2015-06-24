@@ -20,7 +20,7 @@
     - Investigate having the BSDF's provide methods for working with the
       LightTree, to better optimize light selection based on the BSDF.
 
-- Hero wavelength spectral rendering
+//- Hero wavelength spectral rendering
 
 - Change assemblies to use a memory arena for object/shader/etc. data.
 

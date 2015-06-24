@@ -163,9 +163,9 @@ public:
 		const int samps = accum(x,y);
 
 		if (samps < 2)
-			return std::numeric_limits<float>::infinity();
+			return Color_XYZ(std::numeric_limits<float>::infinity());
 		else
-			return (var_f(x,y) / (samps-1)) / sqrt(samps);
+			return Color_XYZ((var_f(x,y) / (samps-1)) / sqrt(samps));
 	}
 
 	/**

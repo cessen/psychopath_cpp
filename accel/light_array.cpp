@@ -41,7 +41,7 @@ void LightArray::sample(LightQuery* query) const
 {
 	// Handle empty light accel
 	if (light_indices.size() == 0 && assembly_lights.size() == 0) {
-		query->spec_samp = SpectralSample {query->spec_samp.wavelength, 0.0f};
+		query->spec_samp = SpectralSample(query->spec_samp.hero_wavelength, 0.0f);
 		return;
 	}
 

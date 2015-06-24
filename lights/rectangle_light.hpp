@@ -59,14 +59,14 @@ public:
 
 		*pdf = (dist * dist) / std::abs(shadow_vec->normalized().z) * inv_surface_area; // PDF of the ray direction being sampled
 
-		return SpectralSample {wavelength, Color_to_spectrum(col, wavelength)} * inv_surface_area * 0.5f; // 0.5x because it emits on both sides
+		return Color_to_SpectralSample(col * inv_surface_area * 0.5f, wavelength); // 0.5x because it emits on both sides
 	}
 
 	virtual SpectralSample outgoing(const Vec3 &dir, float u, float v, float wavelength, float time) const override {
 		const auto dim = lerp_seq(time, dimensions);
 		const double surface_area = (dim.first * dim.second);
 		const Color col = lerp_seq(time, colors);
-		return SpectralSample {wavelength, Color_to_spectrum(col, wavelength)} / surface_area * 0.5f; // 0.5x because it emits on both sides
+		return Color_to_SpectralSample(col / surface_area * 0.5f, wavelength); // 0.5x because it emits on both sides
 	}
 
 	virtual bool is_delta() const override {

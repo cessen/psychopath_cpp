@@ -25,13 +25,13 @@ public:
 		*shadow_vec = pos - arr;
 		float d2 = shadow_vec->length2();
 		if (d2 > 0)
-			return SpectralSample {wavelength, Color_to_spectrum(col, wavelength)} / d2;
+			return Color_to_SpectralSample(col / d2, wavelength);
 		else
-			return SpectralSample {wavelength, Color_to_spectrum(col, wavelength)}; // Fudge for divide by zero.
+			return Color_to_SpectralSample(col, wavelength); // Fudge for divide by zero.
 	}
 
 	virtual SpectralSample outgoing(const Vec3 &dir, float u, float v, float wavelength, float time) const override {
-		return SpectralSample {wavelength, Color_to_spectrum(col, wavelength)};
+		return Color_to_SpectralSample(col, wavelength);
 	}
 
 	virtual bool is_delta() const override {

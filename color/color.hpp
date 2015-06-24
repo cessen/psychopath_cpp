@@ -12,63 +12,121 @@
 #include "spectrum_grid.h"
 
 // Min and max wavelength used in sampling the spectrum
-static float const WAVELENGTH_MIN = 380.0f;
-static float const WAVELENGTH_MAX = 700.0f;
+static constexpr float WAVELENGTH_MIN = 380.0f;
+static constexpr float WAVELENGTH_MAX = 700.0f;
+static constexpr float WAVELENGTH_RANGE = WAVELENGTH_MAX - WAVELENGTH_MIN;
 
 // 1 over the integral of any of the XYZ curves
-static float const INV_XYZ_INTEGRAL = 0.009358239977091027f;
+static constexpr float INV_XYZ_INTEGRAL = 0.009358239977091027f;
 
 // Normalizing factor for when accumulating XYZ color
-static float const XYZ_NORM_FAC = INV_XYZ_INTEGRAL * (WAVELENGTH_MAX - WAVELENGTH_MIN);
+static constexpr float XYZ_NORM_FAC = INV_XYZ_INTEGRAL * (WAVELENGTH_MAX - WAVELENGTH_MIN);
+
+#define SPECTRAL_COUNT 4
 
 /**
- * A single spectral sample.
+ * Gets the nth wavelength given a hero wavelength, as per the paper
+ * "Hero Wavelength Spectral Sampling" by Wilkie et al.
+ */
+static inline float wavelength_n(float hero_wavelength, int n)
+{
+	assert(n < SPECTRAL_COUNT);
+	hero_wavelength += n * (WAVELENGTH_RANGE / SPECTRAL_COUNT);
+	if (hero_wavelength > WAVELENGTH_MAX) {
+		hero_wavelength -= WAVELENGTH_RANGE;
+	}
+	return hero_wavelength;
+}
+
+/**
+ * A spectral sample.
+ *
+ * Contains N actual spectral samples, distributed evenly over the visible
+ * spectrum based on the given wavelength, as per the paper "Hero Wavelength
+ * Spectral Sampling" by Wilkie et al.
  */
 struct SpectralSample {
-	float wavelength; // Wavelength in nm
-	float i; // Intensity
+	float e[SPECTRAL_COUNT]; // Energies at the various wavelengths
+	float hero_wavelength; // Wavelength in nm
 
+	// Constructors
+	SpectralSample() = default;
+	explicit SpectralSample(float w): hero_wavelength {w} {}
+	explicit SpectralSample(float w, float n): hero_wavelength {w} {
+		for (int i = 0; i < SPECTRAL_COUNT; ++i) {
+			e[i] = n;
+		}
+	}
+
+	// Misc convenience functions
+	void set_all_e(float n) {
+		for (int i = 0; i < SPECTRAL_COUNT; ++i) {
+			e[i] = n;
+		}
+	}
+
+	float wavelength_n(int i) const {
+		return ::wavelength_n(hero_wavelength, i);
+	}
+
+	// Math functions
 	SpectralSample operator+(const SpectralSample &other) const {
 		SpectralSample s;
-		s.wavelength = wavelength;
-		s.i = i + other.i;
+		s.hero_wavelength = hero_wavelength;
+		for (int i = 0; i < SPECTRAL_COUNT; ++i) {
+			s.e[i] = e[i] + other.e[i];
+		}
 		return s;
 	}
 	SpectralSample& operator+=(const SpectralSample &other) {
-		i += other.i;
+		for (int i = 0; i < SPECTRAL_COUNT; ++i) {
+			e[i] += other.e[i];
+		}
 		return *this;
 	}
 
 	SpectralSample operator*(const SpectralSample &other) const {
 		SpectralSample s;
-		s.wavelength = wavelength;
-		s.i = i * other.i;
+		s.hero_wavelength = hero_wavelength;
+		for (int i = 0; i < SPECTRAL_COUNT; ++i) {
+			s.e[i] = e[i] * other.e[i];
+		}
 		return s;
 	}
 	SpectralSample& operator*=(const SpectralSample &other) {
-		i *= other.i;
+		for (int i = 0; i < SPECTRAL_COUNT; ++i) {
+			e[i] *= other.e[i];
+		}
 		return *this;
 	}
 
 	SpectralSample operator*(float n) const {
 		SpectralSample s;
-		s.wavelength = wavelength;
-		s.i = i * n;
+		s.hero_wavelength = hero_wavelength;
+		for (int i = 0; i < SPECTRAL_COUNT; ++i) {
+			s.e[i] = e[i] * n;
+		}
 		return s;
 	}
 	SpectralSample& operator*=(float n) {
-		i *= n;
+		for (int i = 0; i < SPECTRAL_COUNT; ++i) {
+			e[i] *= n;
+		}
 		return *this;
 	}
 
 	SpectralSample operator/(float n) const {
 		SpectralSample s;
-		s.wavelength = wavelength;
-		s.i = i / n;
+		s.hero_wavelength = hero_wavelength;
+		for (int i = 0; i < SPECTRAL_COUNT; ++i) {
+			s.e[i] = e[i] / n;
+		}
 		return s;
 	}
 	SpectralSample& operator/=(float n) {
-		i /= n;
+		for (int i = 0; i < SPECTRAL_COUNT; ++i) {
+			e[i] /= n;
+		}
 		return *this;
 	}
 };
@@ -112,10 +170,19 @@ struct Color_XYZ {
 	float x, y, z;
 
 	Color_XYZ() = default;
-	Color_XYZ(float intensity): x {intensity}, y {intensity}, z {intensity} {}
-	Color_XYZ(float intensity, float wavelength): x {X_1931(wavelength)*intensity}, y {Y_1931(wavelength)*intensity}, z {Z_1931(wavelength)*intensity} {}
-	Color_XYZ(SpectralSample s): x {X_1931(s.wavelength)*s.i}, y {Y_1931(s.wavelength)*s.i}, z {Z_1931(s.wavelength)*s.i} {}
-	Color_XYZ(float x, float y, float z): x {x}, y {y}, z {z} {}
+	explicit Color_XYZ(float intensity): x {intensity}, y {intensity}, z {intensity} {}
+	explicit Color_XYZ(float intensity, float wavelength): x {X_1931(wavelength)*intensity}, y {Y_1931(wavelength)*intensity}, z {Z_1931(wavelength)*intensity} {}
+	explicit Color_XYZ(SpectralSample s): x {0.0f}, y {0.0f}, z {0.0f} {
+		for (int i = 0; i < SPECTRAL_COUNT; ++i) {
+			x += X_1931(s.wavelength_n(i)) * s.e[i];
+			y += Y_1931(s.wavelength_n(i)) * s.e[i];
+			z += Z_1931(s.wavelength_n(i)) * s.e[i];
+		}
+		x *= 1.0f / SPECTRAL_COUNT;
+		y *= 1.0f / SPECTRAL_COUNT;
+		z *= 1.0f / SPECTRAL_COUNT;
+	}
+	explicit Color_XYZ(float x, float y, float z): x {x}, y {y}, z {z} {}
 
 	float &operator[](int i) {
 		assert(i >= 0 && i < 3);
@@ -174,9 +241,7 @@ struct Color_XYZ {
 	}
 
 	void add_light(SpectralSample s) {
-		x += X_1931(s.wavelength) * s.i;
-		y += Y_1931(s.wavelength) * s.i;
-		z += Z_1931(s.wavelength) * s.i;
+		*this += Color_XYZ(s);
 	}
 };
 
@@ -188,14 +253,16 @@ struct Color_XYZ {
 struct Color {
 	std::array<float, 3> spectrum;
 
-	Color(float n=0.0) {
+	Color(): spectrum {0.0f, 0.0f, 0.0f} {}
+
+	explicit Color(float n) {
 
 		for (auto& sp: spectrum) {
 			sp = n;
 		}
 	}
 
-	Color(float r_, float g_, float b_) {
+	explicit Color(float r_, float g_, float b_) {
 		spectrum[0] = r_;
 		spectrum[1] = g_;
 		spectrum[2] = b_;
@@ -424,17 +491,31 @@ static inline Color_XYZ Color_to_XYZ(Color col)
  * The approach taken to upsample colors to spectrum is from the paper
  * "Physically Meaningful Rendering using Tristimulus Colours" by Hanika et al.
  *************************************************************************/
-static inline float XYZ_to_spectrum(const Color_XYZ& col, float wavelength)
+static inline float XYZ_to_spectrum(const Color_XYZ& xyz, float wavelength)
 {
-	// TODO: figure out the correct equal_energy_reflectance factor given
-	// the maths elsewhere in psychopath.
-	return spectrum_xyz_to_p(wavelength, &(col.x)) * (1.0f / equal_energy_reflectance);
+	return spectrum_xyz_to_p(wavelength, &(xyz.x)) * (1.0f / equal_energy_reflectance);
 }
 
 static inline float Color_to_spectrum(const Color& col, float wavelength)
 {
-	const auto tmp = Color_to_XYZ(col);
-	return spectrum_xyz_to_p(wavelength, &(tmp.x)) * (1.0f / equal_energy_reflectance);
+	return XYZ_to_spectrum(Color_to_XYZ(col), wavelength);
+}
+
+static inline SpectralSample XYZ_to_SpectralSample(const Color_XYZ& xyz, float wavelength)
+{
+	SpectralSample s;
+	s.hero_wavelength = wavelength;
+
+	for (int i = 0; i < SPECTRAL_COUNT; ++i) {
+		s.e[i] = XYZ_to_spectrum(xyz, s.wavelength_n(i));
+	}
+
+	return s;
+}
+
+static inline SpectralSample Color_to_SpectralSample(const Color& col, float wavelength)
+{
+	return XYZ_to_SpectralSample(Color_to_XYZ(col), wavelength);
 }
 
 

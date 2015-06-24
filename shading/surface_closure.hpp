@@ -207,8 +207,7 @@ public:
 	}
 
 	SpectralSample emitted_color(const float wavelength) const {
-		SpectralSample ss {wavelength, Color_to_spectrum(col, wavelength)};
-		return ss;
+		return Color_to_SpectralSample(col, wavelength);
 	}
 };
 
@@ -255,9 +254,8 @@ public:
 		if (dot(nn, in) > 0.0f)
 			nn *= -1.0f;
 
-		SpectralSample ss {wavelength, Color_to_spectrum(col, wavelength)};
-
-		return ss * std::max(dot(nn, v), 0.0f) * (float)(INV_PI);
+		const float fac = std::max(dot(nn, v), 0.0f) * (float)(INV_PI);
+		return Color_to_SpectralSample(col * fac, wavelength);
 	}
 
 
@@ -418,8 +416,10 @@ public:
 		float G2 = 1.0f;
 
 		// Calculate F - Fresnel
-		SpectralSample col_f {wavelength, Color_to_spectrum(col, wavelength)};
-		col_f.i = lerp(1.0f - fresnel, schlick_fresnel_from_fac(col_f.i, hb), col_f.i);
+		SpectralSample col_f = Color_to_SpectralSample(col, wavelength);
+		for (int i = 0; i < SPECTRAL_COUNT; ++i) {
+			col_f.e[i] = lerp(1.0f - fresnel, schlick_fresnel_from_fac(col_f.e[i], hb), col_f.e[i]);
+		}
 
 		// Calculate everything else
 		if (roughness == 0.0f) {

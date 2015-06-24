@@ -104,12 +104,12 @@ public:
 			*shadow_vec = ((x * sample[0]) + (y * sample[1]) + (z * sample[2])).normalized() * length;
 
 			*pdf = uniform_sample_cone_pdf(cos_theta_max);
-			return SpectralSample {wavelength, Color_to_spectrum(col, wavelength)} * surface_area_inv;
+			return Color_to_SpectralSample(col * surface_area_inv, wavelength);
 		} else {
 			// If we're inside the sphere, there's light from every direction.
 			*shadow_vec = uniform_sample_sphere(u, v);
 			*pdf = 1.0f / (4.0f * M_PI);
-			return SpectralSample {wavelength, Color_to_spectrum(col, wavelength)} * surface_area_inv;
+			return Color_to_SpectralSample(col * surface_area_inv, wavelength);
 		}
 
 	}
@@ -118,7 +118,7 @@ public:
 		double radius = lerp_seq(time, radii);
 		Color col = lerp_seq(time, colors);
 		double surface_area = 4.0 * M_PI * radius * radius;
-		return SpectralSample {wavelength, Color_to_spectrum(col, wavelength)} / surface_area;
+		return Color_to_SpectralSample(col / surface_area, wavelength);
 	}
 
 	virtual bool is_delta() const override {

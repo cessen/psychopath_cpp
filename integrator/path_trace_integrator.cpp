@@ -88,9 +88,9 @@ void PathTraceIntegrator::init_path(PTState* pstate, Sampler s, short x, short y
 	pstate->pix_x = x;
 	pstate->pix_y = y;
 	pstate->wavelength = (pstate->sampler.next() * (WAVELENGTH_MAX - WAVELENGTH_MIN)) + WAVELENGTH_MIN;
-	pstate->col.wavelength = pstate->wavelength;
-	pstate->fcol.wavelength = pstate->wavelength;
-	pstate->lcol.wavelength = pstate->wavelength;
+	pstate->col.hero_wavelength = pstate->wavelength;
+	pstate->fcol.hero_wavelength = pstate->wavelength;
+	pstate->lcol.hero_wavelength = pstate->wavelength;
 }
 
 
