@@ -23,7 +23,7 @@ struct Sampler {
 	}
 
 	float get_sample(const uint32_t dimension) const {
-		static const std::array<size_t, 10> d_order {{7, 6, 5, 4, 2, 9, 8, 3, 1, 0}}; // Reorder the first several dimensions for least image variance
+		static const std::array<size_t, 11> d_order {{10, 7, 6, 5, 4, 2, 9, 8, 3, 1, 0}}; // Reorder the first several dimensions for least image variance
 
 		if (dimension < d_order.size()) {
 			return Halton::sample(d_order[dimension], offset);
