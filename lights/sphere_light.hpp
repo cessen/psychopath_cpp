@@ -4,6 +4,7 @@
 #include "light.hpp"
 #include "utils.hpp"
 #include "monte_carlo.hpp"
+#include <limits>
 #include <cmath>
 #include <algorithm>
 
@@ -54,15 +55,6 @@ public:
 
 	/**
 	 * Samples the sphere light from a given point.
-	 *
-	 * Note that shadowing will only be 100% correct as long as there are no
-	 * blockers inside the sphere light, because the generated ray sometimes
-	 * ends inside the sphere rather than on the surface.  In general this is
-	 * unlikely to cause noticable artifacts.  But it's worth noting.
-	 *
-	 * TODO: fix the above note whenever you get around to implementing volume
-	 * rendering, as it may meaningfully impact lighting effects from a sphere
-	 * light embedded inside a volume.
 	 */
 	virtual SpectralSample sample(const Vec3 &arr, float u, float v, float wavelength, float time, Vec3 *shadow_vec, float* pdf) const override {
 		// Calculate time interpolated values
@@ -92,16 +84,61 @@ public:
 			const double sin_theta_max = std::sqrt(sin_theta_max2);
 			const double cos_theta_max = std::sqrt(cos_theta_max2);
 
-			// Calculate the length that the shadow ray should be.
-			// TODO: make the length end exactly on the surface of
-			// the sphere.
-			const double disc_radius = cos_theta_max * radius;
-			const double disc_dist = d - (sin_theta_max * radius);
-			const double length = std::sqrt((disc_dist * disc_dist) + (disc_radius * disc_radius));
-
 			// Sample the cone subtended by the sphere
-			Vec3 sample = uniform_sample_cone(u, v, cos_theta_max);
-			*shadow_vec = ((x * sample[0]) + (y * sample[1]) + (z * sample[2])).normalized() * length;
+			Vec3 sample = uniform_sample_cone(u, v, cos_theta_max).normalized();
+
+			// Find the intersection of the sample ray with the sphere, and
+			// scale the sample ray to match the intersection distance.
+			{
+				// Calculate quadratic coeffs
+				Vec3 oo {0.0f, 0.0f, (float)(-d)};
+				const float a = sample.length2();
+				const float b = 2.0f * dot(sample, oo);
+				const float c = oo.length2() - radius * radius;
+
+				float t0, t1, discriminant;
+				discriminant = b * b - 4.0f * a * c;
+				if (discriminant < 0.0f) {
+					// Discriminant less than zero?  No solution => no intersection.
+					// Assume the sample is on the edge, and use the subtending disc
+					// distance.
+					const double disc_radius = cos_theta_max * radius;
+					const double disc_dist = d - (sin_theta_max * radius);
+					const double length = std::sqrt((disc_dist * disc_dist) + (disc_radius * disc_radius));
+					sample *= length;
+				} else {
+					discriminant = std::sqrt(discriminant);
+
+					// Compute a more stable form of our param t (t0 = q/a, t1 = c/q)
+					// q = -0.5 * (b - sqrt(b * b - 4.0 * a * c)) if b < 0, or
+					// q = -0.5 * (b + sqrt(b * b - 4.0 * a * c)) if b >= 0
+					float q;
+					if (b < 0.0f) {
+						q = -0.5f * (b - discriminant);
+					} else {
+						q = -0.5f * (b + discriminant);
+					}
+
+					// Get our final parametric values
+					t0 = q / a;
+					if (q != 0.0f) {
+						t1 = c / q;
+					} else {
+						t1 = std::numeric_limits<float>::infinity();
+					}
+
+					// Adjust the sample ray distance to match the
+					// intersection distance
+					if (t0 <= t1) {
+						sample *= t0;
+					} else {
+						sample *= t1;
+					}
+				}
+			}
+
+			// Transform the ray into the proper space, with the proper length
+			*shadow_vec = (x * sample[0]) + (y * sample[1]) + (z * sample[2]);
 
 			*pdf = uniform_sample_cone_pdf(cos_theta_max);
 			return Color_to_SpectralSample(col * surface_area_inv, wavelength);
@@ -131,7 +168,90 @@ public:
 	}
 
 	virtual bool intersect_ray(const Ray &ray, Intersection *intersection=nullptr) const override {
-		return false;
+		// Get the center and radius of the sphere at the ray's time
+		const Vec3 cent = lerp_seq(ray.time, positions); // Center of the sphere
+		const float radi = lerp_seq(ray.time, radii); // Radius of the sphere
+		double surface_area = 4.0 * M_PI * radi * radi;
+
+		// Calculate the relevant parts of the ray for the intersection
+		Vec3 o = ray.o - cent; // Ray origin relative to sphere center
+		Vec3 d = ray.d;
+
+
+		// Code taken shamelessly from https://github.com/Tecla/Rayito
+		// Ray-sphere intersection can result in either zero, one or two points
+		// of intersection.  It turns into a quadratic equation, so we just find
+		// the solution using the quadratic formula.  Note that there is a
+		// slightly more stable form of it when computing it on a computer, and
+		// we use that method to keep everything accurate.
+
+		// Calculate quadratic coeffs
+		float a = d.length2();
+		float b = 2.0f * dot(d, o);
+		float c = o.length2() - radi * radi;
+
+		float t0, t1, discriminant;
+		discriminant = b * b - 4.0f * a * c;
+		if (discriminant < 0.0f) {
+			// Discriminant less than zero?  No solution => no intersection.
+			return false;
+		}
+		discriminant = std::sqrt(discriminant);
+
+		// Compute a more stable form of our param t (t0 = q/a, t1 = c/q)
+		// q = -0.5 * (b - sqrt(b * b - 4.0 * a * c)) if b < 0, or
+		// q = -0.5 * (b + sqrt(b * b - 4.0 * a * c)) if b >= 0
+		float q;
+		if (b < 0.0f) {
+			q = -0.5f * (b - discriminant);
+		} else {
+			q = -0.5f * (b + discriminant);
+		}
+
+		// Get our final parametric values
+		t0 = q / a;
+		if (q != 0.0f) {
+			t1 = c / q;
+		} else {
+			t1 = ray.max_t;
+		}
+
+		// Swap them so they are ordered right
+		if (t0 > t1) {
+			float temp = t1;
+			t1 = t0;
+			t0 = temp;
+		}
+
+		// Check our intersection for validity against this ray's extents
+		if (t0 >= ray.max_t || t1 < 0.0001f)
+			return false;
+
+		float t;
+		if (t0 >= 0.0001f) {
+			t = t0;
+		} else if (t1 < ray.max_t) {
+			t = t1;
+		} else {
+			return false;
+		}
+
+		if (intersection && !ray.is_occlusion()) {
+			intersection->t = t;
+
+			intersection->geo.p = ray.o + (ray.d * t);
+			intersection->geo.n = intersection->geo.p - cent;
+			intersection->geo.n.normalize();
+
+			intersection->backfacing = dot(intersection->geo.n, ray.d.normalized()) > 0.0f;
+
+			intersection->offset = intersection->geo.n * 0.000001f;
+
+			const Color col = lerp_seq(ray.time, colors) / surface_area;
+			intersection->surface_closure.init(EmitClosure(col));
+		}
+
+		return true;
 	}
 
 	virtual const std::vector<BBox>& bounds() const override {

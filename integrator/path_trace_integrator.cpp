@@ -149,16 +149,20 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 			lq.pdf = 1.0f;
 			scene->root->light_accel.sample(&lq);
 
-			// Get the pdf of sampling this light vector from the bsdf
-			//const float bsdf_pdf = bsdf->pdf(path.prev_ray.d, lq.to_light, path.inter.geo);
+			if (!bsdf->is_delta()) {
+				// Get the pdf of sampling this light vector from the bsdf
+				const float bsdf_pdf = bsdf->pdf(path.prev_ray.d, lq.to_light, path.inter.geo);
 
-			// Set light color
-			//path.lcol = (lq.spec_samp * power_heuristic(lq.pdf, bsdf_pdf) / lq.pdf) * scene->root->light_accel.light_count();
-			path.lcol = (lq.spec_samp / lq.pdf) * scene->root->light_accel.light_count();
+				// Set light color
+				path.lcol = (lq.spec_samp * power_heuristic(lq.pdf, bsdf_pdf) / lq.pdf) * scene->root->light_accel.light_count();
+			} else {
+				path.lcol = (lq.spec_samp / lq.pdf) * scene->root->light_accel.light_count();
+			}
 
 			// Create a shadow ray for this path
 			ray.o = geo.p + pos_offset;
-			ray.d = lq.to_light - pos_offset;
+			ray.d = (lq.to_light - pos_offset);
+			ray.d *= 0.9999f;  // HACK.  TODO: utilize object ID to avoid counting intersection with the lightsource itself
 			ray.time = path.time;
 			ray.type = WorldRay::OCCLUSION;
 

@@ -22,6 +22,9 @@ struct Intersection {
 	// Whether there's a hit or not
 	bool hit {false};
 
+	// The GUID of the object instance that was hit
+	uint64_t object_id = 0;
+
 	// Information about the intersection point
 	float t {std::numeric_limits<float>::infinity()}; // T-parameter along the ray at the intersection
 	bool backfacing {false}; // Whether it hit the backface of the surface

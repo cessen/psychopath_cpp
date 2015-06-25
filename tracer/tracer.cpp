@@ -142,6 +142,9 @@ void Tracer::trace_assembly(Assembly* assembly, Ray* rays, Ray* rays_end)
 				case Object::PATCH_SURFACE:
 					trace_patch_surface(reinterpret_cast<PatchSurface*>(obj), std::get<0>(hits), std::get<1>(hits));
 					break;
+				case Object::LIGHT:
+					trace_lightsource(reinterpret_cast<Light*>(obj), std::get<0>(hits), std::get<1>(hits));
+					break;
 				default:
 					//std::cout << "WARNING: unknown object type, skipping." << std::endl;
 					break;
@@ -410,5 +413,32 @@ void Tracer::trace_patch_surface(PatchSurface* surface, Ray* rays, Ray* end)
 		intersect_rays_with_patch<Bilinear>(*patch, parent_xforms, rays, end, &(intersections[0]), &data_stack, surface_shader_stack.back());
 	} else if (auto patch = dynamic_cast<Bicubic*>(surface)) {
 		intersect_rays_with_patch<Bicubic>(*patch, parent_xforms, rays, end, &(intersections[0]), &data_stack, surface_shader_stack.back());
+	}
+}
+
+
+
+void Tracer::trace_lightsource(Light* light, Ray* rays, Ray* end)
+{
+	// Get parent transforms
+	const auto parent_xforms = xform_stack.top_frame<Transform>();
+	const size_t parent_xforms_count = std::distance(parent_xforms.first, parent_xforms.second);
+
+	// Trace!
+	for (auto ritr = rays; ritr != end; ++ritr) {
+		Ray& ray = *ritr;  // Shorthand reference to the ray
+		Intersection& inter = intersections[ritr->id()]; // Shorthand reference to ray's intersection
+
+		// Test against the ray
+		if (light->intersect_ray(ray, &inter)) {
+			inter.hit = true;
+
+			if (ray.is_occlusion()) {
+				ray.set_done_true(); // Early out for shadow rays
+			} else {
+				ray.max_t = inter.t;
+				inter.space = parent_xforms_count > 0 ? lerp_seq(ray.time, parent_xforms.first, parent_xforms.second) : Transform();
+			}
+		}
 	}
 }

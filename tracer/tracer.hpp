@@ -79,6 +79,7 @@ private:
 	void trace_assembly(Assembly* assembly, Ray* rays, Ray* rays_end);
 	void trace_surface(Surface* surface, Ray* rays, Ray* end);
 	void trace_patch_surface(PatchSurface* surface, Ray* rays, Ray* end);
+	void trace_lightsource(Light* light, Ray* rays, Ray* end);
 };
 
 #endif // TRACER_HPP
