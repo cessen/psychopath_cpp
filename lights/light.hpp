@@ -41,6 +41,19 @@ public:
 
 
 	/**
+	 * @brief Calculates the pdf of sampling the given
+	 * sample_dir/sample_u/sample_v from the given point arr.  This is used
+	 * primarily to calculate probabilities for multiple importance sampling.
+	 *
+	 * NOTE: this function CAN assume that sample_dir, sample_u, and sample_v
+	 * are a valid sample for the light source (i.e. hits/lies on the light
+	 * source).  No guarantees are made about the correctness of the return
+	 * value if they are not valid.
+	 */
+	virtual float sample_pdf(const Vec3 &arr, const Vec3 &sample_dir, float sample_u, float sample_v, float wavelength, float time) const = 0;
+
+
+	/**
 	 * @brief Returns the color emitted in the given direction from the
 	 * given parameters on the light.
 	 *
@@ -51,6 +64,7 @@ public:
 	 * @param time The time to sample at.
 	 */
 	virtual SpectralSample outgoing(const Vec3 &dir, float u, float v, float wavelength, float time) const = 0;
+
 
 
 	/**

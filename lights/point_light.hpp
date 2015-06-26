@@ -30,6 +30,10 @@ public:
 			return Color_to_SpectralSample(col, wavelength); // Fudge for divide by zero.
 	}
 
+	virtual float sample_pdf(const Vec3 &arr, const Vec3 &sample_dir, float sample_u, float sample_v, float wavelength, float time) const override {
+		return 0.0f;
+	}
+
 	virtual SpectralSample outgoing(const Vec3 &dir, float u, float v, float wavelength, float time) const override {
 		return Color_to_SpectralSample(col, wavelength);
 	}

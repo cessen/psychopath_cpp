@@ -55,6 +55,7 @@ class PathTraceIntegrator final: Integrator
 		Intersection inter {};
 		WorldRay prev_ray {};
 		float wavelength;  // The wavelength of light of the path (in nm)
+		float last_pdf = 0.0f;
 		SpectralSample col {0.0f, 0.0f}; // Color of the sample collected so far
 		SpectralSample fcol {0.0f, 1.0f}; // Accumulated filter color from light path
 		SpectralSample lcol {0.0f, 0.0f}; // Temporary storage for incoming light color

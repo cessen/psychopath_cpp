@@ -151,12 +151,15 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 
 			if (!bsdf->is_delta()) {
 				// Get the pdf of sampling this light vector from the bsdf
-				const float bsdf_pdf = bsdf->pdf(path.prev_ray.d, lq.to_light, path.inter.geo);
+				const float bsdf_pdf = bsdf->pdf(path.prev_ray.d, lq.to_light, geo);
 
 				// Set light color
-				path.lcol = (lq.spec_samp * power_heuristic(lq.pdf, bsdf_pdf) / lq.pdf) * scene->root->light_accel.light_count();
+				const float mis_inv_pdf = power_heuristic(lq.pdf, bsdf_pdf) / lq.pdf;
+				path.lcol = (lq.spec_samp * mis_inv_pdf) * scene->root->light_accel.light_count();
+				//path.lcol = lq.spec_samp * 0.0f;
 			} else {
 				path.lcol = (lq.spec_samp / lq.pdf) * scene->root->light_accel.light_count();
+				//path.lcol = lq.spec_samp * 0.0f;
 			}
 
 			// Create a shadow ray for this path
@@ -205,9 +208,12 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 			if (pdf < 0.00001f)
 				pdf = 0.00001f; // Dodge 0 pdf's that might slip through
 			path.fcol *= filter / pdf;
+			path.last_pdf = pdf;
 		} else {
 			path.fcol *= filter;
+			path.last_pdf = 0.0f;
 		}
+
 	}
 
 	return ray;
@@ -242,7 +248,14 @@ void PathTraceIntegrator::update_path(PTState* pstate, const WorldRay& ray, cons
 			if (auto emit_closure = dynamic_cast<const EmitClosure*>(inter.surface_closure.get())) {
 				// Hit emitting surface, handle specially
 				path.done = true;
-				path.col += path.fcol * emit_closure->emitted_color(path.wavelength);
+
+				if (path.last_pdf != 0.0f) {
+					const float mis_inv_pdf = power_heuristic(path.last_pdf, inter.light_pdf) / path.last_pdf;
+					path.col += (path.fcol * path.last_pdf) * emit_closure->emitted_color(path.wavelength) * mis_inv_pdf;
+				} else {
+					path.col += path.fcol * emit_closure->emitted_color(path.wavelength);
+				}
+
 			} else {
 				path.inter = inter; // Store intersection data for creating shadow ray
 				path.prev_ray = ray;  // Store incoming ray direction for use in shading calculations

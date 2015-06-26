@@ -28,7 +28,7 @@ struct Intersection {
 	// Information about the intersection point
 	float t {std::numeric_limits<float>::infinity()}; // T-parameter along the ray at the intersection
 	bool backfacing {false}; // Whether it hit the backface of the surface
-	float light_pdf {1.0f};  // Pdf of selecting this hit point and ray via light sampling
+	float light_pdf {9999.0f};  // Pdf of selecting this hit point and ray via light sampling
 
 	// The space that the intersection took place in, relative to world space.
 	Transform space;

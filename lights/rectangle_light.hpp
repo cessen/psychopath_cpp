@@ -62,6 +62,11 @@ public:
 		return Color_to_SpectralSample(col * inv_surface_area * 0.5f, wavelength); // 0.5x because it emits on both sides
 	}
 
+	virtual float sample_pdf(const Vec3 &arr, const Vec3 &sample_dir, float sample_u, float sample_v, float wavelength, float time) const override {
+		// TODO
+		return 0.0f;
+	}
+
 	virtual SpectralSample outgoing(const Vec3 &dir, float u, float v, float wavelength, float time) const override {
 		const auto dim = lerp_seq(time, dimensions);
 		const double surface_area = (dim.first * dim.second);
@@ -79,6 +84,7 @@ public:
 	}
 
 	virtual bool intersect_ray(const Ray &ray, Intersection *intersection=nullptr) const override {
+		// TODO
 		return false;
 	}
 

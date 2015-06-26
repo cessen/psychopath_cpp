@@ -151,6 +151,25 @@ public:
 
 	}
 
+	virtual float sample_pdf(const Vec3 &arr, const Vec3 &sample_dir, float sample_u, float sample_v, float wavelength, float time) const override {
+		Vec3 pos = lerp_seq(time, positions);
+		double radius = lerp_seq(time, radii);
+
+		const double d2 = (pos - arr).length2();  // Distance from center of sphere squared
+		const double d = std::sqrt(d2); // Distance from center of sphere
+
+		if (d > radius) {
+			// Calculate the portion of the sphere visible from the point
+			const double sin_theta_max2 = std::min(1.0, (static_cast<double>(radius) * static_cast<double>(radius)) / d2);
+			const double cos_theta_max2 = 1.0 - sin_theta_max2;
+			const double cos_theta_max = std::sqrt(cos_theta_max2);
+
+			return uniform_sample_cone_pdf(cos_theta_max);
+		} else {
+			return 1.0f / (4.0f * M_PI);
+		}
+	}
+
 	virtual SpectralSample outgoing(const Vec3 &dir, float u, float v, float wavelength, float time) const override {
 		double radius = lerp_seq(time, radii);
 		Color col = lerp_seq(time, colors);
@@ -244,6 +263,8 @@ public:
 			intersection->geo.n.normalize();
 
 			intersection->backfacing = dot(intersection->geo.n, ray.d.normalized()) > 0.0f;
+
+			intersection->light_pdf = sample_pdf(ray.o, ray.d, 0.0f, 0.0f, 0.0f, ray.time);
 
 			intersection->offset = intersection->geo.n * 0.000001f;
 
