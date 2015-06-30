@@ -80,7 +80,7 @@ public:
 	 * @param [in] out The outgoing light direction.
 	 * @param [in] geo The differential geometry of the reflecting/transmitting surface point.
 	 */
-	virtual float pdf(const Vec3& in, const Vec3& out, const DifferentialGeometry &geo) const = 0;
+	virtual float sample_pdf(const Vec3& in, const Vec3& out, const DifferentialGeometry &geo) const = 0;
 };
 
 
@@ -202,7 +202,7 @@ public:
 	}
 
 
-	float pdf(const Vec3& in, const Vec3& out, const DifferentialGeometry &geo) const override {
+	float sample_pdf(const Vec3& in, const Vec3& out, const DifferentialGeometry &geo) const override {
 		return 1.0f;
 	}
 
@@ -275,7 +275,7 @@ public:
 	}
 
 
-	float pdf(const Vec3& in, const Vec3& out, const DifferentialGeometry &geo) const override {
+	float sample_pdf(const Vec3& in, const Vec3& out, const DifferentialGeometry &geo) const override {
 		Vec3 nn = geo.n.normalized();
 		const Vec3 v = out.normalized();
 
@@ -366,7 +366,7 @@ public:
 
 
 	virtual void sample(const Vec3 &in, const DifferentialGeometry &geo, const float &si, const float &sj, const float wavelength,
-	                    Vec3 *out, SpectralSample *filter, float *pdf_) const override {
+	                    Vec3 *out, SpectralSample *filter, float *pdf) const override {
 		// Get normalized surface normal
 		Vec3 nn = geo.n.normalized();
 
@@ -384,8 +384,9 @@ public:
 		half_dir = zup_to_vec(half_dir, nn).normalized();
 
 		*out = in - (half_dir * 2 * dot(in, half_dir));
-		*pdf_ = pdf(in, *out, geo);
+		*pdf = sample_pdf(in, *out, geo);
 		*filter = evaluate(in, *out, geo, wavelength);
+
 	}
 
 
@@ -454,7 +455,7 @@ public:
 	}
 
 
-	float pdf(const Vec3& in, const Vec3& out, const DifferentialGeometry &geo) const override {
+	float sample_pdf(const Vec3& in, const Vec3& out, const DifferentialGeometry &geo) const override {
 		// Calculate needed vectors, normalized
 		Vec3 nn = geo.n.normalized();  // SUrface normal
 		const Vec3 aa = in.normalized() * -1.0f;  // Vector pointing to where "in" came from

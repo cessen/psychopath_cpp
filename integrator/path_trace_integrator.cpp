@@ -151,15 +151,14 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 
 			if (!bsdf->is_delta()) {
 				// Get the pdf of sampling this light vector from the bsdf
-				const float bsdf_pdf = bsdf->pdf(path.prev_ray.d, lq.to_light, geo);
+				const float bsdf_pdf = bsdf->sample_pdf(path.prev_ray.d, lq.to_light, geo);
 
 				// Set light color
 				const float mis_inv_pdf = power_heuristic(lq.pdf, bsdf_pdf) / lq.pdf;
 				path.lcol = (lq.spec_samp * mis_inv_pdf) * scene->root->light_accel.light_count();
-				//path.lcol = lq.spec_samp * 0.0f;
 			} else {
+				// Set light color
 				path.lcol = (lq.spec_samp / lq.pdf) * scene->root->light_accel.light_count();
-				//path.lcol = lq.spec_samp * 0.0f;
 			}
 
 			// Create a shadow ray for this path
