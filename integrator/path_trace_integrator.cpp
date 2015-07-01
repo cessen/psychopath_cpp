@@ -147,6 +147,7 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 			               Transform()
 			              };
 			lq.pdf = 1.0f;
+			lq.id.clear();
 			scene->root->light_accel.sample(&lq);
 
 			if (!bsdf->is_delta()) {

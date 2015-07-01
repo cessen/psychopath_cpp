@@ -76,6 +76,9 @@ void LightArray::sample(LightQuery* query) const
 		query->spec_samp = light->sample(query->pos, query->u, query->v, query->wavelength, query->time, &(query->to_light), &p);
 		query->to_light = query->xform.dir_from(query->to_light);
 		query->pdf *= p;
+
+		// FIll in the light's instance ID
+		query->id.push_back(index, assembly->element_id_bits());
 	}
 	// If we're sampling a light in a child assembly
 	else {
@@ -109,6 +112,9 @@ void LightArray::sample(LightQuery* query) const
 			query->pos = instance_xform.pos_to(query->pos);
 			query->xform *= instance_xform;
 		}
+
+		// Push the assembly's instance ID
+		query->id.push_back(index, assembly->element_id_bits());
 
 		// Traverse into child assembly
 		child_assembly->light_accel.sample(query);

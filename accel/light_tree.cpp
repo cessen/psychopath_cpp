@@ -64,6 +64,9 @@ void LightTree::sample(LightQuery* query) const
 	// Instance shorthand
 	const Instance& instance = assembly->instances[node->instance_index];
 
+	// Push the instance index onto the ID
+	query->id.push_back(node->instance_index, assembly->element_id_bits());
+
 	// Get transforms if any
 	if (instance.transform_count > 0) {
 		auto cbegin = assembly->xforms.cbegin() + instance.transform_index;
