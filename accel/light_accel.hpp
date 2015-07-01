@@ -6,6 +6,7 @@
 #include <memory>
 
 #include "numtype.h"
+#include "instance_id.hpp"
 #include "ray.hpp"
 #include "light.hpp"
 #include "transform.hpp"
@@ -31,6 +32,7 @@ struct LightQuery {
 	Transform xform;
 
 	// Out
+	InstanceID id;
 	Vec3 to_light;
 	SpectralSample spec_samp;
 	float pdf;

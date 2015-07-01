@@ -12,7 +12,7 @@
 #include "rng.hpp"
 #include "stack.hpp"
 
-
+#include "instance_id.hpp"
 #include "ray.hpp"
 #include "intersection.hpp"
 #include "potentialinter.hpp"
@@ -52,6 +52,8 @@ public:
 	std::vector<const SurfaceShader*> surface_shader_stack;
 	Stack xform_stack; // Stack for transforms as we traverse into transform hierarchies
 	Stack data_stack; // Stack for arbitrary POD data, passed to other functions
+	InstanceID element_id;
+	int element_id_pos = 0;
 
 	Tracer(): xform_stack(16*4*256*64, 256), data_stack(1024*1024*8, 256) {
 		surface_shader_stack.reserve(64);

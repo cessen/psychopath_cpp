@@ -34,6 +34,9 @@
 
 uint32_t Tracer::trace(const WorldRay* w_rays_begin, const WorldRay* w_rays_end, Intersection* intersections_begin, Intersection* intersections_end)
 {
+	// Clear ID
+	element_id.clear();
+
 	// Get rays
 	w_rays = make_range(w_rays_begin, w_rays_end);
 	Global::Stats::rays_shot += w_rays.size();
@@ -107,6 +110,10 @@ void Tracer::trace_assembly(Assembly* assembly, Ray* rays, Ray* rays_end)
 	while (std::get<0>(hits) != std::get<1>(hits)) {
 		const auto& instance = assembly->instances[std::get<2>(hits)]; // Short-hand for the current instance
 
+		// Push the current instance index onto the element id
+		const auto element_id_bits = assembly->element_id_bits();
+		element_id.push_back(std::get<2>(hits), element_id_bits);
+
 		// Propagate transforms (if necessary)
 		const auto parent_xforms = xform_stack.top_frame<Transform>();
 		const size_t parent_xforms_count = std::distance(parent_xforms.first, parent_xforms.second);
@@ -177,6 +184,8 @@ void Tracer::trace_assembly(Assembly* assembly, Ray* rays, Ray* rays_end)
 			xform_stack.pop_frame();
 		}
 
+		// Pop the index of this instance off the element id
+		element_id.pop_back(element_id_bits);
 
 		// Get next object to test against
 		hits = traverser.next_object();
@@ -199,6 +208,7 @@ void Tracer::trace_surface(Surface* surface, Ray* rays, Ray* end)
 		// Test against the ray
 		if (surface->intersect_ray(ray, &inter)) {
 			inter.hit = true;
+			inter.id = element_id;
 
 			if (ray.is_occlusion()) {
 				ray.set_done_true(); // Early out for shadow rays
@@ -219,7 +229,7 @@ void Tracer::trace_surface(Surface* surface, Ray* rays, Ray* end)
 }
 
 template <typename PATCH>
-void intersect_rays_with_patch(const PATCH &patch, const Range<const Transform*> parent_xforms, Ray* ray_begin, Ray* ray_end, Intersection *intersections, Stack* data_stack, const SurfaceShader* surface_shader)
+void intersect_rays_with_patch(const PATCH &patch, const Range<const Transform*> parent_xforms, Ray* ray_begin, Ray* ray_end, Intersection *intersections, Stack* data_stack, const SurfaceShader* surface_shader, const InstanceID& element_id)
 {
 	const size_t tsc = patch.verts.size(); // Time sample count
 	int stack_i = 0;
@@ -286,6 +296,7 @@ void intersect_rays_with_patch(const PATCH &patch, const Range<const Transform*>
 					if (tt > 0.0f && tt < ray.max_t) {
 						auto &inter = intersections[ray.id()];
 						inter.hit = true;
+						inter.id = element_id;
 						if (ray.is_occlusion()) {
 							ray.set_done_true();
 						} else {
@@ -410,9 +421,9 @@ void Tracer::trace_patch_surface(PatchSurface* surface, Ray* rays, Ray* end)
 
 	// Trace!
 	if (auto patch = dynamic_cast<Bilinear*>(surface)) {
-		intersect_rays_with_patch<Bilinear>(*patch, parent_xforms, rays, end, &(intersections[0]), &data_stack, surface_shader_stack.back());
+		intersect_rays_with_patch<Bilinear>(*patch, parent_xforms, rays, end, &(intersections[0]), &data_stack, surface_shader_stack.back(), element_id);
 	} else if (auto patch = dynamic_cast<Bicubic*>(surface)) {
-		intersect_rays_with_patch<Bicubic>(*patch, parent_xforms, rays, end, &(intersections[0]), &data_stack, surface_shader_stack.back());
+		intersect_rays_with_patch<Bicubic>(*patch, parent_xforms, rays, end, &(intersections[0]), &data_stack, surface_shader_stack.back(), element_id);
 	}
 }
 
@@ -432,6 +443,7 @@ void Tracer::trace_lightsource(Light* light, Ray* rays, Ray* end)
 		// Test against the ray
 		if (light->intersect_ray(ray, &inter)) {
 			inter.hit = true;
+			inter.id = element_id;
 
 			if (ray.is_occlusion()) {
 				ray.set_done_true(); // Early out for shadow rays
