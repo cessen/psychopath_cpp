@@ -84,58 +84,29 @@ public:
 			const double sin_theta_max = std::sqrt(sin_theta_max2);
 			const double cos_theta_max = std::sqrt(cos_theta_max2);
 
-			// Sample the cone subtended by the sphere
-			Vec3 sample = uniform_sample_cone(u, v, cos_theta_max).normalized();
+			// Sample the cone subtended by the sphere and calculate
+			// useful data from that.
+			Vec3 sample = uniform_sample_cone((double)(u), (double)(v), cos_theta_max).normalized();
+			const double cos_theta = sample.z;
+			const double cos_theta2 = cos_theta * cos_theta;
+			const double sin_theta2 = std::max(0.0, 1.0 - cos_theta2);
+			const double sin_theta = std::sqrt(sin_theta2);
 
-			// Find the intersection of the sample ray with the sphere, and
-			// scale the sample ray to match the intersection distance.
-			{
-				// Calculate quadratic coeffs
-				Vec3 oo {0.0f, 0.0f, (float)(-d)};
-				const float a = sample.length2();
-				const float b = 2.0f * dot(sample, oo);
-				const float c = oo.length2() - radius * radius;
-
-				float t0, t1, discriminant;
-				discriminant = b * b - 4.0f * a * c;
-				if (discriminant < 0.0f) {
-					// Discriminant less than zero?  No solution => no intersection.
-					// Assume the sample is on the edge, and use the subtending disc
-					// distance.
-					const double disc_radius = cos_theta_max * radius;
-					const double disc_dist = d - (sin_theta_max * radius);
-					const double length = std::sqrt((disc_dist * disc_dist) + (disc_radius * disc_radius));
-					sample *= length;
-				} else {
-					discriminant = std::sqrt(discriminant);
-
-					// Compute a more stable form of our param t (t0 = q/a, t1 = c/q)
-					// q = -0.5 * (b - sqrt(b * b - 4.0 * a * c)) if b < 0, or
-					// q = -0.5 * (b + sqrt(b * b - 4.0 * a * c)) if b >= 0
-					float q;
-					if (b < 0.0f) {
-						q = -0.5f * (b - discriminant);
-					} else {
-						q = -0.5f * (b + discriminant);
-					}
-
-					// Get our final parametric values
-					t0 = q / a;
-					if (q != 0.0f) {
-						t1 = c / q;
-					} else {
-						t1 = std::numeric_limits<float>::infinity();
-					}
-
-					// Adjust the sample ray distance to match the
-					// intersection distance
-					if (t0 <= t1) {
-						sample *= t0;
-					} else {
-						sample *= t1;
-					}
-				}
+			// Convert to a point on the sphere.
+			// The technique for this is from "Akalin" on ompf2.com:
+			// http://ompf2.com/viewtopic.php?f=3&t=1914#p4414
+			const double D = 1.0 - (d2 * sin_theta * sin_theta / (radius * radius));
+			double cos_a;
+			if (D <= 0.0) {
+				cos_a = sin_theta_max;
+			} else {
+				cos_a = ((d / radius) * sin_theta2) + (cos_theta * std::sqrt(D));
 			}
+			const double sin_a = std::sqrt(std::max(0.0, 1.0 - (cos_a * cos_a)));
+			const double phi = v * 2.0 * M_PI;
+			sample.x = std::cos(phi) * sin_a * radius;
+			sample.y = std::sin(phi) * sin_a * radius;
+			sample.z = d - (cos_a * radius);
 
 			// Transform the ray into the proper space, with the proper length
 			*shadow_vec = (x * sample[0]) + (y * sample[1]) + (z * sample[2]);

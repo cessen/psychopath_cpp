@@ -1,5 +1,5 @@
 - Bugs:
-	- Very small sphere lights introduce severe banding in light attentuation.
+	//- Very small sphere lights introduce severe banding in light attentuation.
 	- Some scenes hang when rendering at high sample rates.
 
 - Iterative intersections:

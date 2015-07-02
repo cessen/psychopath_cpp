@@ -86,18 +86,20 @@ static inline Vec3 uniform_sample_sphere(float u, float v)
 	return Vec3(x, y, z);
 }
 
-static inline Vec3 uniform_sample_cone(float u, float v, float cos_theta_max)
+template <typename T>
+static inline Vec3 uniform_sample_cone(T u, T v, T cos_theta_max)
 {
-	const float cos_theta = (1.0f - u) + (u * cos_theta_max);
-	const float sin_theta = std::sqrt(1.0f - (cos_theta * cos_theta));
-	const float phi = v * 2.0f * M_PI;
+	const T cos_theta = (1.0 - u) + (u * cos_theta_max);
+	const T sin_theta = std::sqrt(1.0 - (cos_theta * cos_theta));
+	const T phi = v * 2.0 * M_PI;
 	return Vec3(std::cos(phi) * sin_theta, std::sin(phi) * sin_theta, cos_theta);
 }
 
-static inline float uniform_sample_cone_pdf(float cos_theta_max)
+template <typename T>
+static inline T uniform_sample_cone_pdf(T cos_theta_max)
 {
 	// 1.0 / solid angle
-	return 1.0f / (2.0f * M_PI * (1.0f - cos_theta_max));
+	return 1.0 / (2.0 * M_PI * (1.0 - cos_theta_max));
 }
 
 #endif // MONTE_CARLO_HPP

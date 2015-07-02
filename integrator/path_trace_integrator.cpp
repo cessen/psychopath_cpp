@@ -165,7 +165,7 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 			// Create a shadow ray for this path
 			ray.o = geo.p + pos_offset;
 			ray.d = (lq.to_light - pos_offset);
-			ray.d *= 0.9999f;  // HACK.  TODO: utilize object ID to avoid counting intersection with the lightsource itself
+			ray.d *= 0.9995f;  // HACK.  TODO: utilize object ID to avoid counting intersection with the lightsource itself
 			ray.time = path.time;
 			ray.type = WorldRay::OCCLUSION;
 
