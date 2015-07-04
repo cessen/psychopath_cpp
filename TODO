@@ -12,7 +12,7 @@
 - Ray stream tracing:
 	- Optimizations...
 
-- Multiple importance sampling
+//- Multiple importance sampling
 
 - LightTree:
     - Investigate using importance resampling along with leaf nodes that have

@@ -1,7 +1,7 @@
 Overview
 ========
 
-Psychopath is a ray tracing renderer, aimed at rendering animations and VFX for
+Psychopath is a path tracer, aimed at rendering animations and VFX for
 film.  It is currently still in an early prototyping stage of development.  You
 can view a brief video of some animations rendered with it in
 [this (now somewhat out-dated)
@@ -18,10 +18,7 @@ allowing the cost of HDD access, expensive procedurals, etc. to be amortized
 over large batches of rays.
 
 In its current state this principle and its effectiveness are demonstrated by
-rendering geometry by first splitting and dicing it into sub-pixel sized
-micro-geometry (similar to the Reyes rendering architecture) prior to doing
-ray testing.  Even with geometry caching completely disabled, Psychopath is
-able to render using this technique very efficiently.
+by refining geometry to sub-pixel microgeometry on the fly during the rendering process, somewhat analogous to the Reyes rendering architecture.  Even with geometry caching completely disabled, Psychopath is able to render using this technique very efficiently.
 
 Current Features
 ----------------
@@ -31,6 +28,8 @@ Current Features
 - Spherical light sources
 - Rectangular light sources
 - Simple shader system (assign BSDF's to objects)
+- Multiple importance sampling
+- Spectral rendering (via monte carlo, not binning)
 - Focal blur / DoF
 - Camera motion blur
 - Deformation motion blur
@@ -39,7 +38,8 @@ Current Features
 
 Features Currently In-Progress
 ------------------------------
-- Multiple importance sampling
+- A novel method for efficiently handling many (i.e. thousands or millions) of
+  lights in a scene.  See [this thread](http://ompf2.com/viewtopic.php?f=3&t=1938) for an overview.
 
 
 

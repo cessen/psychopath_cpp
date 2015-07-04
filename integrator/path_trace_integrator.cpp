@@ -146,7 +146,8 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 			               geo.p, lq_nor, path.wavelength, path.time,
 			               Transform()
 			              };
-			lq.pdf = 1.0f;
+			lq.selection_pdf = 1.0f;
+			lq.light_sample_pdf = 1.0f;
 			lq.id.clear();
 			scene->root->light_accel.sample(&lq);
 
@@ -155,11 +156,11 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 				const float bsdf_pdf = bsdf->sample_pdf(path.prev_ray.d, lq.to_light, geo);
 
 				// Set light color
-				const float mis_inv_pdf = power_heuristic(lq.pdf, bsdf_pdf) / lq.pdf;
-				path.lcol = (lq.spec_samp * mis_inv_pdf) * scene->root->light_accel.light_count();
+				const float mis_inv_pdf = power_heuristic(lq.light_sample_pdf, bsdf_pdf) / lq.light_sample_pdf;
+				path.lcol = (lq.spec_samp * mis_inv_pdf) * scene->root->light_accel.light_count() / lq.selection_pdf;
 			} else {
 				// Set light color
-				path.lcol = (lq.spec_samp / lq.pdf) * scene->root->light_accel.light_count();
+				path.lcol = (lq.spec_samp / (lq.light_sample_pdf * lq.selection_pdf)) * scene->root->light_accel.light_count();
 			}
 
 			// Create a shadow ray for this path

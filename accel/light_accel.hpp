@@ -35,8 +35,8 @@ struct LightQuery {
 	InstanceID id;
 	Vec3 to_light;
 	SpectralSample spec_samp;
-	float pdf;
-
+	float selection_pdf;  // The pdf of selecting the given light
+	float light_sample_pdf;  // The pdf of the sample taken on the selected light
 };
 
 

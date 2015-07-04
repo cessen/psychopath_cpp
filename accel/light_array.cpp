@@ -52,7 +52,6 @@ void LightArray::sample(LightQuery* query) const
 	if (query->n <= local_prob) {
 		// Update probabilities
 		query->n /= local_prob;
-		query->pdf = (query->pdf * local_prob) / light_indices.size();
 
 		// Get light instance
 		const auto index = light_indices[static_cast<uint32_t>(query->n * light_indices.size()) % light_indices.size()];
@@ -75,7 +74,7 @@ void LightArray::sample(LightQuery* query) const
 		float p;
 		query->spec_samp = light->sample(query->pos, query->u, query->v, query->wavelength, query->time, &(query->to_light), &p);
 		query->to_light = query->xform.dir_from(query->to_light);
-		query->pdf *= p;
+		query->light_sample_pdf = p;
 
 		// FIll in the light's instance ID
 		query->id.push_back(index, assembly->element_id_bits());
@@ -84,7 +83,6 @@ void LightArray::sample(LightQuery* query) const
 	else {
 		// Update probabilities
 		query->n = (query->n - local_prob) / child_prob;
-		query->pdf = (query->pdf * child_prob) / total_assembly_lights;
 
 		// Select assembly
 		// TODO: a binary search would be faster
@@ -93,7 +91,6 @@ void LightArray::sample(LightQuery* query) const
 		for (const auto& al: assembly_lights) {
 			if (std::get<0>(al) <= target_index && target_index < (std::get<0>(al) + std::get<1>(al))) {
 				index = std::get<2>(al);
-				query->pdf *= std::get<1>(al); // Update probability with the number of lights in the child assembly
 				break;
 			}
 		}
@@ -119,4 +116,8 @@ void LightArray::sample(LightQuery* query) const
 		// Traverse into child assembly
 		child_assembly->light_accel.sample(query);
 	}
+
+	// Selection PDF is just one, since all lights have equal probability of
+	// being selected.
+	query->selection_pdf = 1.0f;
 }
