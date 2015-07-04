@@ -255,7 +255,6 @@ void PathTraceIntegrator::update_path(PTState* pstate, const WorldRay& ray, cons
 				} else {
 					path.col += path.fcol * emit_closure->emitted_color(path.wavelength);
 				}
-
 			} else {
 				path.inter = inter; // Store intersection data for creating shadow ray
 				path.prev_ray = ray;  // Store incoming ray direction for use in shading calculations
