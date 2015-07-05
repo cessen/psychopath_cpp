@@ -25,6 +25,8 @@ struct LightQuery {
 	float n, u, v, w;
 	Vec3 pos;
 	Vec3 nor;
+	Vec3 d;  // Direction of the known ray
+	SurfaceClosure* bsdf;
 	float wavelength;
 	float time;
 

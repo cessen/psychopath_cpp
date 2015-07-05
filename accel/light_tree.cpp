@@ -12,21 +12,19 @@ float LightTree::node_prob(const LightQuery& lq, uint32_t index) const
 	const float r2 = r * r;
 	const float inv_surface_area = 1.0f / r2;
 
-	const float sin_theta_max2 = std::min(1.0f, r2 / dist2);
-	const float cos_theta_max = std::sqrt(1.0f - sin_theta_max2);
+	float cos_theta_max;
+	if (dist2 <= r2) {
+		cos_theta_max = -1.0f;
+	} else {
+		const float sin_theta_max2 = std::min(1.0f, r2 / dist2);
+		cos_theta_max = std::sqrt(1.0f - sin_theta_max2);
+	}
 
-	// TODO: why does this work so well?  Specifically: does
-	// it also work well with BSDF's other than lambert?
-	float frac = (dot(lq.nor, d) + r) / std::sqrt(dist2);
-	frac = std::max(0.0f, std::min(1.0f, frac));
+	// Get the approximate amount of light contribution from the
+	// composite light source.
+	const float approx_contrib = std::max(0.0f, lq.bsdf->estimate_eval_over_solid_angle(lq.d, d, cos_theta_max, lq.nor, lq.wavelength));
 
-	// An alternative to the above that's supposedly more "generic",
-	// because it's just expressing the fraction of the light that's
-	// above the surface's horizon.
-	// // float frac = (dot(lq.nor, d) + r) / (r * 2.0f);
-	// // frac = std::max(0.0f, std::min(1.0f, frac));
-
-	return nodes[index].energy * inv_surface_area * (1.0 - cos_theta_max) * frac;
+	return nodes[index].energy * inv_surface_area * approx_contrib;
 }
 
 

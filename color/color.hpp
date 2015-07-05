@@ -69,6 +69,14 @@ struct SpectralSample {
 		return ::wavelength_n(hero_wavelength, i);
 	}
 
+	float sum_wavelength_energy() const {
+		float sum = 0.0f;
+		for (int i = 0; i < SPECTRAL_COUNT; ++i) {
+			sum += e[i];
+		}
+		return sum;
+	}
+
 	// Math functions
 	SpectralSample operator+(const SpectralSample &other) const {
 		SpectralSample s;

@@ -59,6 +59,23 @@ public:
 
 
 	/**
+	 * Estimates how much light propigates from the given circular solid angle
+	 * (out, cos_theta) to the given direction "in".
+	 *
+	 * This function does not need to be 100% accurate, but it does need to
+	 * never be zero where the exact solution wouldn't be zero.  It is used
+	 * for importance sampling.
+	 *
+	 * @param [in] in  The incoming light direction.
+	 * @param [in] out The direction of the outgoing light solid angle.
+	 * @param [in] cos_theta The cosine of the radius of the solid angle.
+	 * @param [in] nor The surface normal at the surface point.
+	 * @param [in] wavelength The wavelength of light to evaluate for.
+	 */
+	virtual float estimate_eval_over_solid_angle(const Vec3 &in, const Vec3 &out, const float cos_theta, const Vec3 nor, const float wavelength) const = 0;
+
+
+	/**
 	 * Transfers the ray differentials from 'in' to 'out' based on their
 	 * incoming and outgoing directions and the differential geometry of the
 	 * intersection point.
@@ -196,6 +213,10 @@ public:
 		return SpectralSample {wavelength, 0.0f};
 	}
 
+	float estimate_eval_over_solid_angle(const Vec3 &in, const Vec3 &out, const float cos_theta, const Vec3 nor, const float wavelength) const override {
+		return 1.0f;
+	}
+
 
 	void propagate_differentials(const float t, const WorldRay& in, const DifferentialGeometry &geo, WorldRay* out) const override {
 		// Irrelivant
@@ -258,6 +279,21 @@ public:
 		return Color_to_SpectralSample(col * fac, wavelength);
 	}
 
+	float estimate_eval_over_solid_angle(const Vec3 &in, const Vec3 &out, const float cos_theta, const Vec3 nor, const float wavelength) const override {
+		assert(cos_theta >= -1.0f && cos_theta <= 1.0f);
+
+		Vec3 nn = nor.normalized();
+		const Vec3 v = out.normalized();
+
+		if (dot(nn, in) > 0.0f)
+			nn *= -1.0f;
+
+		const float cos_nv = dot(nn, v);
+		const float blend = clamp(cos_theta, 0.0f, 1.0f);
+		float fac = lerp(blend, (float)(M_PI), std::max(0.0f, cos_nv)) * std::min(1.0f - cos_theta, 1.0f);
+
+		return fac;
+	}
 
 	void propagate_differentials(const float t, const WorldRay& in, const DifferentialGeometry &geo, WorldRay* out) const override {
 		const float len = out->d.length();
@@ -350,6 +386,20 @@ private:
 		return std::sqrt(top / bottom);
 	}
 
+	float dist(float nh, float rough) const {
+		// Other useful numbers
+		const float roughness2 = rough * rough;
+
+		// Calculate D - Distribution
+		float D = 0.0f;
+		if (nh > 0.0f) {
+			const float nh2 = nh * nh;
+			D = normalization(rough, tail_shape) / std::pow(1 + ((roughness2 - 1) * nh2), tail_shape);
+		}
+
+		return D;
+	}
+
 
 public:
 	GTRClosure() {
@@ -395,7 +445,7 @@ public:
 		Vec3 nn = geo.n.normalized();  // SUrface normal
 		const Vec3 aa = in.normalized() * -1.0f;  // Vector pointing to where "in" came from
 		const Vec3 bb = out.normalized(); // Out
-		const Vec3 hh = ((aa + bb) * 0.5f).normalized(); // Half-way between aa and bb
+		const Vec3 hh = (aa + bb).normalized(); // Half-way between aa and bb
 
 		// If back-facing, flip normal
 		if (dot(nn, hh) < 0.0f)
@@ -455,6 +505,51 @@ public:
 	}
 
 
+	float estimate_eval_over_solid_angle(const Vec3 &in, const Vec3 &cent, const float cos_theta, const Vec3 nor, const float wavelength) const override {
+		// TODO: all of the stuff in this function is horribly hacky.
+		// Find a proper way to approximate the light contribution from a
+		// solid angle.
+		assert(cos_theta >= -1.0f && cos_theta <= 1.0f);
+
+		Vec3 nn = nor.normalized();
+		const Vec3 aa = in.normalized() * -1.0f;  // Vector pointing to where "in" came from
+		const Vec3 bb = cent.normalized(); // Out
+
+		if (dot(nn, in) > 0.0f)
+			nn *= -1.0f;
+
+		const Vec3 refl = reflect_vec(in, nn).normalized(); // Direction of perfect reflection
+		const float rc = dot(refl, bb);
+
+		Vec3 hh;
+		if (rc > cos_theta) {
+			// Perfect reflection ray is inside of light solid angle
+			hh = (aa + refl).normalized();
+		} else {
+			// Perfect reflection ray is outside of light solid angle,
+			// so use ray approximately on the edge of the solid angle.
+			const Vec3 diff = bb - refl;
+			const Vec3 edge = refl - (diff * (1.0f - rc));
+			hh = (aa + edge).normalized();
+		}
+
+		// Calculate needed dot products
+		const float nh = clamp(dot(nn, hh), -1.0f, 1.0f);
+
+		const float narrow = dist(nh, std::min(1.0f, roughness * 2.0f)) * normalization_factor;
+		const float wide = normalization_factor;
+		float fac;
+		if (cos_theta >= 0.0f) {
+			const float blend = clamp(cos_theta, 0.0f, 1.0f);
+			fac = lerp(blend, wide, narrow);
+		} else {
+			fac = wide;
+		}
+
+		return fac * std::min(1.0f - cos_theta, 1.0f) * (float)(INV_PI);
+	}
+
+
 	float sample_pdf(const Vec3& in, const Vec3& out, const DifferentialGeometry &geo) const override {
 		// Calculate needed vectors, normalized
 		Vec3 nn = geo.n.normalized();  // SUrface normal
@@ -469,17 +564,7 @@ public:
 		// Calculate needed dot products
 		const float nh = clamp(dot(nn, hh), -1.0f, 1.0f);
 
-		// Other useful numbers
-		const float roughness2 = roughness * roughness;
-
-		// Calculate D - Distribution
-		float D = 0.0f;
-		if (nh > 0.0f) {
-			const float nh2 = nh * nh;
-			D = normalization_factor / std::pow(1 + ((roughness2 - 1) * nh2), tail_shape);
-		}
-
-		return D * (float)(INV_PI);
+		return dist(nh, roughness) * (float)(INV_PI);
 	}
 
 

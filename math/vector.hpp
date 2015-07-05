@@ -229,4 +229,14 @@ static inline float longest_axis(const Vec3 &v)
 	return std::max(std::max(std::abs(v.x), std::abs(v.y)), std::abs(v.z));
 }
 
+/**
+ * Returns 'in' reflected off a surface with surface normal 'nn'.
+ * 'in' is an incoming direction, i.e. pointing towards the surface.
+ * 'nn' must be normalized.
+ */
+static inline Vec3 reflect_vec(Vec3 in, Vec3 nn)
+{
+	return in - (nn * 2.0f * dot(in, nn));
+}
+
 #endif // VECTOR_HPP

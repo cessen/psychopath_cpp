@@ -143,7 +143,7 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 
 			// Get a sample from lights in the scene
 			LightQuery lq {path.sampler.next(), path.sampler.next(), path.sampler.next(), 0.0f,
-			               geo.p, lq_nor, path.wavelength, path.time,
+			               geo.p, lq_nor, path.prev_ray.d, bsdf, path.wavelength, path.time,
 			               Transform()
 			              };
 			lq.selection_pdf = 1.0f;
