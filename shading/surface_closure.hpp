@@ -6,6 +6,7 @@
 #include "numtype.h"
 #include "utils.hpp"
 #include "monte_carlo.hpp"
+#include "halton.hpp"
 
 #include "vector.hpp"
 #include "color.hpp"
@@ -518,33 +519,26 @@ public:
 		if (dot(nn, in) > 0.0f)
 			nn *= -1.0f;
 
-		const Vec3 refl = reflect_vec(in, nn).normalized(); // Direction of perfect reflection
-		const float rc = dot(refl, bb);
+		// Brute-force method
+		//float fac = 0.0f;
+		//constexpr int N = 256;
+		//for (int i = 0; i < N; ++i) {
+		//    const float uu = Halton::sample(0, i);
+		//    const float vv = Halton::sample(1, i);
+		//    Vec3 samp = uniform_sample_cone(uu, vv, cos_theta);
+		//    samp = zup_to_vec(samp, bb).normalized();
+		//    if (dot(nn, samp) > 0.0f) {
+		//        const Vec3 hh = (aa+samp).normalized();
+		//        fac += dist(dot(nn, hh), roughness);
+		//    }
+		//}
+		//fac /= N * N;
 
-		Vec3 hh;
-		if (rc > cos_theta) {
-			// Perfect reflection ray is inside of light solid angle
-			hh = (aa + refl).normalized();
-		} else {
-			// Perfect reflection ray is outside of light solid angle,
-			// so use ray approximately on the edge of the solid angle.
-			const Vec3 diff = bb - refl;
-			const Vec3 edge = refl - (diff * (1.0f - rc));
-			hh = (aa + edge).normalized();
-		}
-
-		// Calculate needed dot products
+		// Approximate method
+		const float theta = std::acos(cos_theta);
+		const Vec3 hh = (aa + bb).normalized();
 		const float nh = clamp(dot(nn, hh), -1.0f, 1.0f);
-
-		const float narrow = dist(nh, std::min(1.0f, roughness * 2.0f)) * normalization_factor;
-		const float wide = normalization_factor;
-		float fac;
-		if (cos_theta >= 0.0f) {
-			const float blend = clamp(cos_theta, 0.0f, 1.0f);
-			fac = lerp(blend, wide, narrow);
-		} else {
-			fac = wide;
-		}
+		const float fac = dist(nh, std::min(1.0f, std::sqrt(roughness) + (2.0f*theta/(float)(M_PI))));
 
 		return fac * std::min(1.0f - cos_theta, 1.0f) * (float)(INV_PI);
 	}

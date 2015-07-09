@@ -97,6 +97,15 @@ include_directories (${OIIO_INCLUDE})
 #
 #include_directories (${OSL_INCLUDE})
 
+#--------------------------------------
+# OpenSubdiv
+#--------------------------------------
+set(OSD_DIR ${PROJECT_SOURCE_DIR}/../libs/osd/install)
+set(OSD_LIBRARYS ${OSD_DIR}/lib/libosdCPU.so)
+set(OSD_INCLUDE ${OSD_DIR}/include)
+
+include_directories (${OSD_INCLUDE})
+
 
 #--------------------------------------
 # Project include directories
@@ -162,6 +171,7 @@ target_link_libraries(psychopath
     ${ILMBASE_LIBRARIES}
     ${OIIO_LIBRARY}
 #    ${OSL_LIBRARYS}
+    ${OSD_LIBRARYS}
     )
 
 # Unit-test executable
@@ -175,4 +185,5 @@ target_link_libraries(unit_tests
     ${ILMBASE_LIBRARIES}
     ${OIIO_LIBRARY}
 #    ${OSL_LIBRARYS}
+    ${OSD_LIBRARYS}
     )

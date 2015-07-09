@@ -33,6 +33,7 @@ public:
 	 */
 	enum Type {
 	    SURFACE,
+	    COMPLEX_SURFACE,
 	    PATCH_SURFACE,
 	    LIGHT,
 	    ASSEMBLY_INSTANCE
@@ -58,6 +59,10 @@ public:
 	 * This does not need to be 100% accurate, as it is only used
 	 * for sampling decisions.  But it should be approximately
 	 * correct.
+	 *
+	 * TODO: remove this function!  This is NOT where this should be handled.
+	 * This needs to be handled at a point where the material of the object
+	 * is known.
 	 */
 	virtual Color total_emitted_color() const = 0;
 };
@@ -84,7 +89,27 @@ public:
 
 
 /**
- * @brief An interface for surface patch with inherent UV coordinates, and
+ * @brief An interface for surfaces that require more complex handling
+ * and which require fast scratch memory.
+ */
+class ComplexSurface: public Object
+{
+public:
+	virtual ~ComplexSurface() {}
+
+	Object::Type get_type() const final {
+		return Object::COMPLEX_SURFACE;
+	}
+
+	/**
+	 * @brief Tests a batch of rays against the surface.
+	 */
+	virtual bool intersect_rays(const Ray* rays_begin, const Ray* rays_end, Intersection *intersections, Stack* data_stack) const = 0;
+};
+
+
+/**
+ * @brief An interface for surface patches with inherent UV coordinates, and
  * which can be easily recursively split into smaller patches.
  *
  * Other than defining get_type() there are no methods defined in this class.

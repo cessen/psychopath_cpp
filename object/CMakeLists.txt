@@ -1,2 +1,2 @@
 add_library(object
-            bilinear bicubic sphere)
+            bilinear bicubic sphere subdivision_surface)
