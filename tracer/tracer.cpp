@@ -146,6 +146,9 @@ void Tracer::trace_assembly(Assembly* assembly, Ray* rays, Ray* rays_end)
 				case Object::SURFACE:
 					trace_surface(reinterpret_cast<Surface*>(obj), std::get<0>(hits), std::get<1>(hits));
 					break;
+				case Object::COMPLEX_SURFACE:
+					trace_complex_surface(reinterpret_cast<ComplexSurface*>(obj), std::get<0>(hits), std::get<1>(hits));
+					break;
 				case Object::PATCH_SURFACE:
 					trace_patch_surface(reinterpret_cast<PatchSurface*>(obj), std::get<0>(hits), std::get<1>(hits));
 					break;
@@ -228,6 +231,27 @@ void Tracer::trace_surface(Surface* surface, Ray* rays, Ray* end)
 	}
 }
 
+
+
+
+void Tracer::trace_complex_surface(ComplexSurface* surface, Ray* rays, Ray* end)
+{
+	// Get parent transforms
+	const auto parent_xforms = Range<const Transform*>(xform_stack.top_frame<Transform>());
+
+	// Trace!
+	surface->intersect_rays(rays, end,
+	                        &(*(intersections.begin())),
+	                        parent_xforms,
+	                        &data_stack,
+	                        surface_shader_stack.back(),
+	                        element_id
+	                       );
+}
+
+
+
+
 template <typename PATCH>
 void intersect_rays_with_patch(const PATCH &patch, const Range<const Transform*> parent_xforms, Ray* ray_begin, Ray* ray_end, Intersection *intersections, Stack* data_stack, const SurfaceShader* surface_shader, const InstanceID& element_id)
 {
@@ -269,8 +293,8 @@ void intersect_rays_with_patch(const PATCH &patch, const Range<const Transform*>
 			// that there is more than one time sample, so store them outside
 			// of the if statement below.
 			float t_time;
-			size_t t_index;
-			float t_nalpha;
+			size_t t_index = 0;
+			float t_nalpha = 0.0f;
 
 			// Ray test
 			float hitt0, hitt1;

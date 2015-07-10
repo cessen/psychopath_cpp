@@ -12,6 +12,7 @@
 #include "intersection.hpp"
 #include "bbox.hpp"
 #include "transform.hpp"
+#include "surface_shader.hpp"
 
 
 /**
@@ -104,7 +105,12 @@ public:
 	/**
 	 * @brief Tests a batch of rays against the surface.
 	 */
-	virtual bool intersect_rays(const Ray* rays_begin, const Ray* rays_end, Intersection *intersections, Stack* data_stack) const = 0;
+	virtual void intersect_rays(const Ray* rays_begin, const Ray* rays_end,
+	                            Intersection *intersections,
+	                            const Range<const Transform*> parent_xforms,
+	                            Stack* data_stack,
+	                            const SurfaceShader* surface_shader,
+	                            const InstanceID& element_id) const = 0;
 };
 
 
