@@ -11,7 +11,7 @@ void SubdivisionSurface::intersect_rays(const Ray* rays_begin, const Ray* rays_e
 	// TODO
 }
 
-void finalize()
+void SubdivisionSurface::finalize()
 {
 	// TODO
 }

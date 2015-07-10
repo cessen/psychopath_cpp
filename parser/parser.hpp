@@ -11,6 +11,7 @@
 #include "rectangle_light.hpp"
 #include "bilinear.hpp"
 #include "bicubic.hpp"
+#include "subdivision_surface.hpp"
 #include "sphere.hpp"
 
 #include "renderer.hpp"
@@ -49,6 +50,11 @@ class Parser
 	 * @brief Parses a bicubic patch section.
 	 */
 	std::unique_ptr<Bicubic> parse_bicubic_patch(const DataTree::Node& node);
+
+	/**
+	 * @brief Parses a subdivision surface section.
+	 */
+	std::unique_ptr<SubdivisionSurface> parse_subdivision_surface(const DataTree::Node& node);
 
 	/**
 	 * @brief Parses a sphere section.

@@ -420,6 +420,57 @@ std::unique_ptr<Bicubic> Parser::parse_bicubic_patch(const DataTree::Node& node)
 }
 
 
+std::unique_ptr<SubdivisionSurface> Parser::parse_subdivision_surface(const DataTree::Node& node)
+{
+	// TODO: motion blur for verts
+	std::vector<Vec3> verts;
+	std::vector<int> face_vert_counts;
+	std::vector<int> face_vert_indices;
+
+	for (const auto& child: node.children) {
+		// Vertex list
+		if (child.type == "Vertices") {
+			std::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
+			int i = 0;
+			float v_values[3];
+			for (; matches != std::sregex_iterator(); ++matches) {
+				v_values[i%3] = std::stof(matches->str());
+				++i;
+				if ((i % 3) == 0) {
+					verts.emplace_back(Vec3(v_values[0], v_values[1], v_values[2]));
+				}
+			}
+		}
+		// Face vertex count list
+		else if (child.type == "FaceVertCounts") {
+			face_vert_counts.clear();
+			std::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_int);
+			for (; matches != std::sregex_iterator(); ++matches) {
+				face_vert_counts.emplace_back(std::stoi(matches->str()));
+			}
+		}
+		// Face vertex index list
+		else if (child.type == "FaceVertIndices") {
+			face_vert_indices.clear();
+			std::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_int);
+			for (; matches != std::sregex_iterator(); ++matches) {
+				face_vert_indices.emplace_back(std::stoi(matches->str()));
+			}
+		}
+	}
+
+	// Build the patch
+	std::unique_ptr<SubdivisionSurface> subdiv(new SubdivisionSurface());
+	subdiv->set_verts(std::move(verts));
+	subdiv->set_face_vert_counts(std::move(face_vert_counts));
+	subdiv->set_face_vert_indices(std::move(face_vert_indices));
+
+	subdiv->finalize();
+
+	return subdiv;
+}
+
+
 std::unique_ptr<SurfaceShader> Parser::parse_surface_shader(const DataTree::Node& node)
 {
 	// Find the shader type
