@@ -15,13 +15,13 @@
  * A bicubic bezier patch.
  * Vertices arranged like this:
  *     u-->
- *   v1----v2----v3----v4
+ *   v0----v1----v2----v3
  * v  |     |     |     |
- * | v5----v6----v7----v8
+ * | v4----v5----v6----v7
  * \/ |     |     |     |
- *   v9----v10---v11---v12
+ *   v8----v9----v10---v11
  *    |     |     |     |
- *   v13---v14---v15---v16
+ *   v12---v13---v14---v15
  */
 class Bicubic final: public PatchSurface
 {

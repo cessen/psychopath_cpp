@@ -16,7 +16,7 @@ class SubdivisionSurface final: public ComplexSurface
 {
 public:
 	// Final data
-	std::vector<Bilinear> patches;
+	std::vector<Bicubic> patches;
 	std::vector<BBox> bbox;
 
 	// Intermediate data
