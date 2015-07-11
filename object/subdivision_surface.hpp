@@ -9,12 +9,14 @@
 #include "stack.hpp"
 #include "vector.hpp"
 #include "bbox.hpp"
+#include "bilinear.hpp"
+#include "bicubic.hpp"
 
 class SubdivisionSurface final: public ComplexSurface
 {
 public:
 	// Final data
-	std::vector<std::array<Vec3, 16>> patches;
+	std::vector<Bilinear> patches;
 	std::vector<BBox> bbox;
 
 	// Intermediate data
@@ -43,7 +45,7 @@ public:
 		return Color(0.0f);
 	}
 
-	virtual void intersect_rays(const Ray* rays_begin, const Ray* rays_end,
+	virtual void intersect_rays(Ray* rays_begin, Ray* rays_end,
 	                            Intersection *intersections,
 	                            const Range<const Transform*> parent_xforms,
 	                            Stack* data_stack,
