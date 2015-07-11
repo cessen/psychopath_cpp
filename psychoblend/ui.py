@@ -154,6 +154,25 @@ class DATA_PT_psychopath_area_lamp(PsychopathPanel, bpy.types.Panel):
             sub.prop(lamp, "size_y", text="Size Y")
 
 
+class DATA_PT_psychopath_mesh(PsychopathPanel, bpy.types.Panel):
+    bl_label = "Psychopath Mesh Properties"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "data"
+    
+    @classmethod
+    def poll(cls, context):
+        engine = context.scene.render.engine
+        return context.mesh and (engine in cls.COMPAT_ENGINES)
+    
+    def draw(self, context):
+        layout = self.layout
+    
+        mesh = context.mesh
+    
+        layout.row().prop(mesh.psychopath, "is_subdivision_surface")
+        
+
 class MATERIAL_PT_psychopath_context_material(PsychopathPanel, bpy.types.Panel):
     bl_label = ""
     bl_space_type = "PROPERTIES"
@@ -233,6 +252,7 @@ def register():
     bpy.utils.register_class(RENDER_PT_psychopath_export_settings)
     bpy.utils.register_class(WORLD_PT_psychopath_background)
     bpy.utils.register_class(DATA_PT_psychopath_camera_dof)
+    bpy.utils.register_class(DATA_PT_psychopath_mesh)
     bpy.utils.register_class(DATA_PT_psychopath_lamp)
     bpy.utils.register_class(DATA_PT_psychopath_area_lamp)
     bpy.utils.register_class(MATERIAL_PT_psychopath_context_material)
@@ -243,6 +263,7 @@ def unregister():
     bpy.utils.unregister_class(RENDER_PT_psychopath_export_settings)
     bpy.utils.unregister_class(WORLD_PT_psychopath_background)
     bpy.utils.unregister_class(DATA_PT_psychopath_camera_dof)
+    bpy.utils.register_class(DATA_PT_psychopath_mesh)
     bpy.utils.unregister_class(DATA_PT_psychopath_lamp)
     bpy.utils.unregister_class(DATA_PT_psychopath_area_lamp)
     bpy.utils.unregister_class(MATERIAL_PT_psychopath_context_material)

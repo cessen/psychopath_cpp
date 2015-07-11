@@ -78,8 +78,12 @@ class IndentedWriter:
         if self.indent_level < 0:
             self.indent_level = 0
 
-    def write(self, text):
-        self.f.write(' '*self.indent_level + text)
+    def write(self, text, do_indent=True):
+        if do_indent:
+            self.f.write(' '*self.indent_level + text)
+        else:
+            self.f.write(text)
+            
 
 
 class PsychoExporter:
@@ -309,7 +313,8 @@ class PsychoExporter:
                 time_meshes += [ob.to_mesh(self.scene, True, 'RENDER')]
 
         # Export mesh data if necessary
-        if export_mesh:
+        if export_mesh and ob.data.psychopath.is_subdivision_surface == False:
+            # Exporting normal mesh
             self.mesh_names[mesh_name] = True
             self.w.write("Assembly $%s {\n" % escape_name(mesh_name))
             self.w.indent()
@@ -342,6 +347,35 @@ class PsychoExporter:
                 bpy.data.meshes.remove(m)
 
             # Assembly section end
+            self.w.unindent()
+            self.w.write("}\n")
+        elif export_mesh and ob.data.psychopath.is_subdivision_surface == True:
+            # Exporting subdivision surface cage
+            self.mesh_names[mesh_name] = True
+            self.w.write("SubdivisionSurface $%s {\n" % escape_name(mesh_name))
+            self.w.indent()
+            
+            # Write vertices
+            # TODO: motion blur
+            self.w.write("Vertices [")
+            for v in time_meshes[0].vertices:
+                self.w.write("%f %f %f " % (v.co[0], v.co[1], v.co[2]), False)
+            self.w.write("]\n", False)
+            
+            # Write face vertex counts
+            self.w.write("FaceVertCounts [")
+            for p in time_meshes[0].polygons:
+                self.w.write("%d " % len(p.vertices), False)
+            self.w.write("]\n", False)
+            
+            # Write face vertex indices
+            self.w.write("FaceVertIndices [")
+            for p in time_meshes[0].polygons:
+                for v in p.vertices:
+                    self.w.write("%d " % v, False)
+            self.w.write("]\n", False)
+            
+            # SubdivisionSurface section end
             self.w.unindent()
             self.w.write("}\n")
             

@@ -276,6 +276,11 @@ std::unique_ptr<Assembly> Parser::parse_assembly(const DataTree::Node& node, con
 			assembly->add_object(child.name, parse_bicubic_patch(child));
 		}
 
+		// Subdivision surface
+		else if (child.type == "SubdivisionSurface") {
+			assembly->add_object(child.name, parse_subdivision_surface(child));
+		}
+
 		// Sphere
 		else if (child.type == "Sphere") {
 			assembly->add_object(child.name, parse_sphere(child));

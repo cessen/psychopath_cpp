@@ -72,6 +72,13 @@ class PsychopathCamera(bpy.types.PropertyGroup):
         min=0.0, max=10000.0, soft_min=0.0, soft_max=2.0, default=0.0
         )
 
+# Custom Mesh properties
+class PsychopathMesh(bpy.types.PropertyGroup):
+    is_subdivision_surface = BoolProperty(
+        name="Is Subdivision Surface", description="Whether this is a sibdivision surface or just a normal mesh",
+        default=False
+        )
+
 # Psychopath material
 class PsychopathMaterial(bpy.types.PropertyGroup):
     surface_shader_type = EnumProperty(
@@ -123,9 +130,11 @@ def register():
     bpy.utils.register_class(PsychopathPreferences)
     bpy.utils.register_class(RenderPsychopathSettingsScene)
     bpy.utils.register_class(PsychopathCamera)
+    bpy.utils.register_class(PsychopathMesh)
     bpy.utils.register_class(PsychopathMaterial)
     bpy.types.Scene.psychopath = PointerProperty(type=RenderPsychopathSettingsScene)
     bpy.types.Camera.psychopath = PointerProperty(type=PsychopathCamera)
+    bpy.types.Mesh.psychopath = PointerProperty(type=PsychopathMesh)
     bpy.types.Material.psychopath = PointerProperty(type=PsychopathMaterial)
     render.register()
     ui.register()
@@ -135,9 +144,11 @@ def unregister():
     bpy.utils.unregister_class(PsychopathPreferences)
     bpy.utils.unregister_class(RenderPsychopathSettingsScene)
     bpy.utils.unregister_class(PsychopathCamera)
+    bpy.utils.unregister_class(PsychopathMesh)
     bpy.utils.unregister_class(PsychopathMaterial)
     del bpy.types.Scene.psychopath
     del bpy.types.Camera.psychopath
+    del bpy.types.Mesh.psychopath
     del bpy.types.Material.psychopath
     render.unregister()
     ui.unregister()
