@@ -20,14 +20,18 @@ public:
 	std::vector<BBox> bbox;
 
 	// Intermediate data
+	int motion_samples = 0;
+	int verts_per_motion_sample = 0;
 	std::vector<Vec3> verts;
 	std::vector<int> face_vert_counts;
 	std::vector<int> face_vert_indices;
 
 	// Construction
 	SubdivisionSurface() {}
-	void set_verts(std::vector<Vec3>&& verts_) {
+	void set_verts(std::vector<Vec3>&& verts_, int verts_per_motion_sample_) {
 		verts = std::move(verts_);
+		verts_per_motion_sample = verts_per_motion_sample_;
+		motion_samples = verts.size() / verts_per_motion_sample;
 	}
 	void set_face_vert_counts(std::vector<int>&& vert_counts) {
 		face_vert_counts = std::move(vert_counts);

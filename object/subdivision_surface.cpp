@@ -59,7 +59,7 @@ void SubdivisionSurface::finalize()
 	options.SetVtxBoundaryInterpolation(Sdc::Options::VTX_BOUNDARY_EDGE_ONLY);
 
 	Far::TopologyDescriptor desc;
-	desc.numVertices = verts.size();
+	desc.numVertices = verts_per_motion_sample;
 	desc.numFaces = face_vert_counts.size();
 	desc.numVertsPerFace = &(face_vert_counts[0]);
 	desc.vertIndicesPerFace  = &(face_vert_indices[0]);
@@ -76,22 +76,24 @@ void SubdivisionSurface::finalize()
 
 
 	// Evaluate control points for the bicubic patches
-	// TODO: motion blur
 	const int nRefinerVertices = refiner->GetNumVerticesTotal();
 	const int nLocalPoints = patchTable->GetNumLocalPoints();
-	std::vector<SubdivVec3> patch_verts(nRefinerVertices + nLocalPoints);
-	std::memcpy(&patch_verts[0], &verts[0], verts.size()*3*sizeof(float));
+	std::vector<SubdivVec3> patch_verts((nRefinerVertices + nLocalPoints) * motion_samples);
+	for (int ms = 0; ms < motion_samples; ++ms) {
+		std::memcpy(&patch_verts[(nRefinerVertices + nLocalPoints) * ms], &verts[verts_per_motion_sample*ms], verts_per_motion_sample*3*sizeof(float));
 
-	SubdivVec3* src = reinterpret_cast<SubdivVec3*>(&patch_verts[0]);
-	for (int level = 1; level <= maxIsolation; ++level) {
-		SubdivVec3* dst = src + refiner->GetLevel(level-1).GetNumVertices();
-		Far::PrimvarRefiner(*refiner).Interpolate(level, src, dst);
-		src = dst;
+		SubdivVec3* src = reinterpret_cast<SubdivVec3*>(&patch_verts[(nRefinerVertices + nLocalPoints) * ms]);
+		for (int level = 1; level <= maxIsolation; ++level) {
+			SubdivVec3* dst = src + refiner->GetLevel(level-1).GetNumVertices();
+			Far::PrimvarRefiner(*refiner).Interpolate(level, src, dst);
+			src = dst;
+		}
+		patchTable->ComputeLocalPointValues(&patch_verts[(nRefinerVertices + nLocalPoints) * ms], &patch_verts[((nRefinerVertices + nLocalPoints) * ms) + nRefinerVertices]);
 	}
-	patchTable->ComputeLocalPointValues(&patch_verts[0], &patch_verts[nRefinerVertices]);
 
 
 	// Extract bicubic patches from the patch table
+
 	// TODO: motion blur
 	Vec3* pvVec3 = reinterpret_cast<Vec3*>(&patch_verts[0]);
 	patches.clear();
@@ -108,103 +110,107 @@ void SubdivisionSurface::finalize()
 				patch_vert_indices[i] = pvi[i];
 			}
 
-			std::array<Vec3, 16> patch_verts {
-				pvVec3[patch_vert_indices[0]],
-				pvVec3[patch_vert_indices[1]],
-				pvVec3[patch_vert_indices[2]],
-				pvVec3[patch_vert_indices[3]],
-				pvVec3[patch_vert_indices[4]],
-				pvVec3[patch_vert_indices[5]],
-				pvVec3[patch_vert_indices[6]],
-				pvVec3[patch_vert_indices[7]],
-				pvVec3[patch_vert_indices[8]],
-				pvVec3[patch_vert_indices[9]],
-				pvVec3[patch_vert_indices[10]],
-				pvVec3[patch_vert_indices[11]],
-				pvVec3[patch_vert_indices[12]],
-				pvVec3[patch_vert_indices[13]],
-				pvVec3[patch_vert_indices[14]],
-				pvVec3[patch_vert_indices[15]]
-			};
+			// Get vertices for each time sample
+			for (int ms = 0; ms < motion_samples; ++ms) {
+				const int toffset = (nRefinerVertices + nLocalPoints) * ms;
+				std::array<Vec3, 16> patch_verts {
+					pvVec3[toffset + patch_vert_indices[0]],
+					pvVec3[toffset + patch_vert_indices[1]],
+					pvVec3[toffset + patch_vert_indices[2]],
+					pvVec3[toffset + patch_vert_indices[3]],
+					pvVec3[toffset + patch_vert_indices[4]],
+					pvVec3[toffset + patch_vert_indices[5]],
+					pvVec3[toffset + patch_vert_indices[6]],
+					pvVec3[toffset + patch_vert_indices[7]],
+					pvVec3[toffset + patch_vert_indices[8]],
+					pvVec3[toffset + patch_vert_indices[9]],
+					pvVec3[toffset + patch_vert_indices[10]],
+					pvVec3[toffset + patch_vert_indices[11]],
+					pvVec3[toffset + patch_vert_indices[12]],
+					pvVec3[toffset + patch_vert_indices[13]],
+					pvVec3[toffset + patch_vert_indices[14]],
+					pvVec3[toffset + patch_vert_indices[15]]
+				};
 
-			// Modify patch verts based on boundary condition
-			switch (boundary_bits) {
-				case 0b0001:
-					patch_verts[0] = patch_verts[4] * 2.0f - patch_verts[8];
-					patch_verts[1] = patch_verts[5] * 2.0f - patch_verts[9];
-					patch_verts[2] = patch_verts[6] * 2.0f - patch_verts[10];
-					patch_verts[3] = patch_verts[7] * 2.0f - patch_verts[11];
-					break;
+				// Modify patch verts based on boundary condition
+				switch (boundary_bits) {
+					case 0b0001:
+						patch_verts[0] = patch_verts[4] * 2.0f - patch_verts[8];
+						patch_verts[1] = patch_verts[5] * 2.0f - patch_verts[9];
+						patch_verts[2] = patch_verts[6] * 2.0f - patch_verts[10];
+						patch_verts[3] = patch_verts[7] * 2.0f - patch_verts[11];
+						break;
 
-				case 0b0010:
-					patch_verts[3]  = patch_verts[2]  * 2.0f - patch_verts[1];
-					patch_verts[7]  = patch_verts[6]  * 2.0f - patch_verts[5];
-					patch_verts[11] = patch_verts[10] * 2.0f - patch_verts[9];
-					patch_verts[15] = patch_verts[14] * 2.0f - patch_verts[13];
-					break;
+					case 0b0010:
+						patch_verts[3]  = patch_verts[2]  * 2.0f - patch_verts[1];
+						patch_verts[7]  = patch_verts[6]  * 2.0f - patch_verts[5];
+						patch_verts[11] = patch_verts[10] * 2.0f - patch_verts[9];
+						patch_verts[15] = patch_verts[14] * 2.0f - patch_verts[13];
+						break;
 
-				case 0b0100:
-					patch_verts[12] = patch_verts[8]  * 2.0f - patch_verts[4];
-					patch_verts[13] = patch_verts[9]  * 2.0f - patch_verts[5];
-					patch_verts[14] = patch_verts[10] * 2.0f - patch_verts[6];
-					patch_verts[15] = patch_verts[11] * 2.0f - patch_verts[7];
-					break;
+					case 0b0100:
+						patch_verts[12] = patch_verts[8]  * 2.0f - patch_verts[4];
+						patch_verts[13] = patch_verts[9]  * 2.0f - patch_verts[5];
+						patch_verts[14] = patch_verts[10] * 2.0f - patch_verts[6];
+						patch_verts[15] = patch_verts[11] * 2.0f - patch_verts[7];
+						break;
 
-				case 0b1000:
-					patch_verts[0]  = patch_verts[1]  * 2.0f - patch_verts[2];
-					patch_verts[4]  = patch_verts[5]  * 2.0f - patch_verts[6];
-					patch_verts[8]  = patch_verts[9]  * 2.0f - patch_verts[10];
-					patch_verts[12] = patch_verts[13] * 2.0f - patch_verts[14];
-					break;
+					case 0b1000:
+						patch_verts[0]  = patch_verts[1]  * 2.0f - patch_verts[2];
+						patch_verts[4]  = patch_verts[5]  * 2.0f - patch_verts[6];
+						patch_verts[8]  = patch_verts[9]  * 2.0f - patch_verts[10];
+						patch_verts[12] = patch_verts[13] * 2.0f - patch_verts[14];
+						break;
 
-				case 0b0011:
-					patch_verts[0]  = patch_verts[4]  * 2.0f - patch_verts[8];
-					patch_verts[1]  = patch_verts[5]  * 2.0f - patch_verts[9];
-					patch_verts[2]  = patch_verts[6]  * 2.0f - patch_verts[10];
-					patch_verts[3]  = patch_verts[6]  * 3.0f - patch_verts[10] - patch_verts[4];
-					patch_verts[7]  = patch_verts[6]  * 2.0f - patch_verts[4];
-					patch_verts[11] = patch_verts[10] * 2.0f - patch_verts[9];
-					patch_verts[15] = patch_verts[14] * 2.0f - patch_verts[13];
-					break;
+					case 0b0011:
+						patch_verts[0]  = patch_verts[4]  * 2.0f - patch_verts[8];
+						patch_verts[1]  = patch_verts[5]  * 2.0f - patch_verts[9];
+						patch_verts[2]  = patch_verts[6]  * 2.0f - patch_verts[10];
+						patch_verts[3]  = patch_verts[6]  * 3.0f - patch_verts[10] - patch_verts[4];
+						patch_verts[7]  = patch_verts[6]  * 2.0f - patch_verts[4];
+						patch_verts[11] = patch_verts[10] * 2.0f - patch_verts[9];
+						patch_verts[15] = patch_verts[14] * 2.0f - patch_verts[13];
+						break;
 
-				case 0b0110:
-					patch_verts[3]  = patch_verts[2]  * 2.0f - patch_verts[1];
-					patch_verts[7]  = patch_verts[6]  * 2.0f - patch_verts[5];
-					patch_verts[11] = patch_verts[10] * 2.0f - patch_verts[9];
-					patch_verts[15] = patch_verts[10] * 3.0f - patch_verts[9] - patch_verts[6];
-					patch_verts[14] = patch_verts[10] * 2.0f - patch_verts[6];
-					patch_verts[13] = patch_verts[9]  * 2.0f - patch_verts[5];
-					patch_verts[12] = patch_verts[8]  * 2.0f - patch_verts[4];
-					break;
+					case 0b0110:
+						patch_verts[3]  = patch_verts[2]  * 2.0f - patch_verts[1];
+						patch_verts[7]  = patch_verts[6]  * 2.0f - patch_verts[5];
+						patch_verts[11] = patch_verts[10] * 2.0f - patch_verts[9];
+						patch_verts[15] = patch_verts[10] * 3.0f - patch_verts[9] - patch_verts[6];
+						patch_verts[14] = patch_verts[10] * 2.0f - patch_verts[6];
+						patch_verts[13] = patch_verts[9]  * 2.0f - patch_verts[5];
+						patch_verts[12] = patch_verts[8]  * 2.0f - patch_verts[4];
+						break;
 
-				case 0b1100:
-					patch_verts[15] = patch_verts[11] * 2.0f - patch_verts[7];
-					patch_verts[14] = patch_verts[10] * 2.0f - patch_verts[6];
-					patch_verts[13] = patch_verts[9]  * 2.0f - patch_verts[5];
-					patch_verts[12] = patch_verts[9]  * 3.0f - patch_verts[5] - patch_verts[10];
-					patch_verts[8]  = patch_verts[9]  * 2.0f - patch_verts[10];
-					patch_verts[4]  = patch_verts[5]  * 2.0f - patch_verts[6];
-					patch_verts[0]  = patch_verts[1]  * 2.0f - patch_verts[2];
+					case 0b1100:
+						patch_verts[15] = patch_verts[11] * 2.0f - patch_verts[7];
+						patch_verts[14] = patch_verts[10] * 2.0f - patch_verts[6];
+						patch_verts[13] = patch_verts[9]  * 2.0f - patch_verts[5];
+						patch_verts[12] = patch_verts[9]  * 3.0f - patch_verts[5] - patch_verts[10];
+						patch_verts[8]  = patch_verts[9]  * 2.0f - patch_verts[10];
+						patch_verts[4]  = patch_verts[5]  * 2.0f - patch_verts[6];
+						patch_verts[0]  = patch_verts[1]  * 2.0f - patch_verts[2];
 
-					break;
+						break;
 
-				case 0b1001:
-					patch_verts[12] = patch_verts[13] * 2.0f - patch_verts[14];
-					patch_verts[8]  = patch_verts[9]  * 2.0f - patch_verts[10];
-					patch_verts[4]  = patch_verts[5]  * 2.0f - patch_verts[6];
-					patch_verts[0]  = patch_verts[5]  * 3.0f - patch_verts[6] - patch_verts[9];
-					patch_verts[1]  = patch_verts[5]  * 2.0f - patch_verts[9];
-					patch_verts[2]  = patch_verts[6]  * 2.0f - patch_verts[10];
-					patch_verts[3]  = patch_verts[7]  * 2.0f - patch_verts[11];
-					break;
+					case 0b1001:
+						patch_verts[12] = patch_verts[13] * 2.0f - patch_verts[14];
+						patch_verts[8]  = patch_verts[9]  * 2.0f - patch_verts[10];
+						patch_verts[4]  = patch_verts[5]  * 2.0f - patch_verts[6];
+						patch_verts[0]  = patch_verts[5]  * 3.0f - patch_verts[6] - patch_verts[9];
+						patch_verts[1]  = patch_verts[5]  * 2.0f - patch_verts[9];
+						patch_verts[2]  = patch_verts[6]  * 2.0f - patch_verts[10];
+						patch_verts[3]  = patch_verts[7]  * 2.0f - patch_verts[11];
+						break;
 
-				default:
-					break;
+					default:
+						break;
+				}
+
+				bspline_to_bezier_patch(&patch_verts);
+
+				patches[pi].add_time_sample(patch_verts);
 			}
-
-			bspline_to_bezier_patch(&patch_verts);
-
-			patches[pi].add_time_sample(patch_verts);
 
 			patches[pi].finalize();
 		}

@@ -356,11 +356,11 @@ class PsychoExporter:
             self.w.indent()
             
             # Write vertices
-            # TODO: motion blur
-            self.w.write("Vertices [")
-            for v in time_meshes[0].vertices:
-                self.w.write("%f %f %f " % (v.co[0], v.co[1], v.co[2]), False)
-            self.w.write("]\n", False)
+            for ti in range(len(time_meshes)):
+                self.w.write("Vertices [")
+                for v in time_meshes[ti].vertices:
+                    self.w.write("%f %f %f " % (v.co[0], v.co[1], v.co[2]), False)
+                self.w.write("]\n", False)
             
             # Write face vertex counts
             self.w.write("FaceVertCounts [")

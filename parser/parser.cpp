@@ -429,6 +429,7 @@ std::unique_ptr<SubdivisionSurface> Parser::parse_subdivision_surface(const Data
 {
 	// TODO: motion blur for verts
 	std::vector<Vec3> verts;
+	int vert_count = 0;
 	std::vector<int> face_vert_counts;
 	std::vector<int> face_vert_indices;
 
@@ -438,12 +439,20 @@ std::unique_ptr<SubdivisionSurface> Parser::parse_subdivision_surface(const Data
 			std::sregex_iterator matches(child.leaf_contents.begin(), child.leaf_contents.end(), re_float);
 			int i = 0;
 			float v_values[3];
+			int tot_verts = 0;
 			for (; matches != std::sregex_iterator(); ++matches) {
 				v_values[i%3] = std::stof(matches->str());
 				++i;
 				if ((i % 3) == 0) {
 					verts.emplace_back(Vec3(v_values[0], v_values[1], v_values[2]));
+					++tot_verts;
 				}
+			}
+			if (vert_count == 0) {
+				vert_count = tot_verts;
+			}
+			if (vert_count > 0) {
+				verts.resize(verts.size() - (verts.size() % vert_count));
 			}
 		}
 		// Face vertex count list
@@ -466,7 +475,7 @@ std::unique_ptr<SubdivisionSurface> Parser::parse_subdivision_surface(const Data
 
 	// Build the patch
 	std::unique_ptr<SubdivisionSurface> subdiv(new SubdivisionSurface());
-	subdiv->set_verts(std::move(verts));
+	subdiv->set_verts(std::move(verts), vert_count);
 	subdiv->set_face_vert_counts(std::move(face_vert_counts));
 	subdiv->set_face_vert_indices(std::move(face_vert_indices));
 

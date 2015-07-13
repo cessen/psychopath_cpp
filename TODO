@@ -49,7 +49,7 @@
 - More geometry types:
 	- Catmull-clark subdivision surfaces:
 	    //- Basic proof-of-concept implementation using OpenSubdiv
-	    - Deformation motion blur support
+	    //- Deformation motion blur support
 	    - BVH acceleration
 	    - Face-varying data support
 	- Triangle meshes
