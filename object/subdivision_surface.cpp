@@ -50,7 +50,7 @@ void SubdivisionSurface::intersect_rays(Ray* rays_begin, Ray* rays_end,
 void SubdivisionSurface::finalize()
 {
 	using namespace OpenSubdiv;
-	constexpr int maxIsolation = 3; // Max depth of refinement of the subdiv mesh
+	constexpr int maxIsolation = 5; // Max depth of refinement of the subdiv mesh
 
 
 	// Create a topology refiner, initialized from our mesh data
@@ -108,80 +108,6 @@ void SubdivisionSurface::finalize()
 				patch_vert_indices[i] = pvi[i];
 			}
 
-			// Modify patch indices based on boundary condition
-			switch (boundary_bits) {
-				case 0b0001:
-					patch_vert_indices[0] = patch_vert_indices[4];
-					patch_vert_indices[1] = patch_vert_indices[5];
-					patch_vert_indices[2] = patch_vert_indices[6];
-					patch_vert_indices[3] = patch_vert_indices[7];
-					break;
-
-				case 0b0010:
-					patch_vert_indices[3] = patch_vert_indices[2];
-					patch_vert_indices[7] = patch_vert_indices[6];
-					patch_vert_indices[11] = patch_vert_indices[10];
-					patch_vert_indices[15] = patch_vert_indices[14];
-					break;
-
-				case 0b0100:
-					patch_vert_indices[12] = patch_vert_indices[8];
-					patch_vert_indices[13] = patch_vert_indices[9];
-					patch_vert_indices[14] = patch_vert_indices[10];
-					patch_vert_indices[15] = patch_vert_indices[11];
-					break;
-
-				case 0b1000:
-					patch_vert_indices[0] = patch_vert_indices[1];
-					patch_vert_indices[4] = patch_vert_indices[5];
-					patch_vert_indices[8] = patch_vert_indices[9];
-					patch_vert_indices[12] = patch_vert_indices[13];
-					break;
-
-				case 0b0011:
-					patch_vert_indices[0] = patch_vert_indices[4];
-					patch_vert_indices[1] = patch_vert_indices[5];
-					patch_vert_indices[2] = patch_vert_indices[6];
-					patch_vert_indices[3] = patch_vert_indices[6];
-					patch_vert_indices[7] = patch_vert_indices[6];
-					patch_vert_indices[11] = patch_vert_indices[10];
-					patch_vert_indices[15] = patch_vert_indices[14];
-					break;
-
-				case 0b0110:
-					patch_vert_indices[3] = patch_vert_indices[2];
-					patch_vert_indices[7] = patch_vert_indices[6];
-					patch_vert_indices[11] = patch_vert_indices[10];
-					patch_vert_indices[15] = patch_vert_indices[10];
-					patch_vert_indices[14] = patch_vert_indices[10];
-					patch_vert_indices[13] = patch_vert_indices[9];
-					patch_vert_indices[12] = patch_vert_indices[8];
-					break;
-
-				case 0b1100:
-					patch_vert_indices[15] = patch_vert_indices[11];
-					patch_vert_indices[14] = patch_vert_indices[10];
-					patch_vert_indices[13] = patch_vert_indices[9];
-					patch_vert_indices[12] = patch_vert_indices[9];
-					patch_vert_indices[8] = patch_vert_indices[9];
-					patch_vert_indices[4] = patch_vert_indices[5];
-					patch_vert_indices[0] = patch_vert_indices[1];
-					break;
-
-				case 0b1001:
-					patch_vert_indices[12] = patch_vert_indices[13];
-					patch_vert_indices[8] = patch_vert_indices[9];
-					patch_vert_indices[4] = patch_vert_indices[5];
-					patch_vert_indices[0] = patch_vert_indices[5];
-					patch_vert_indices[1] = patch_vert_indices[5];
-					patch_vert_indices[2] = patch_vert_indices[6];
-					patch_vert_indices[3] = patch_vert_indices[7];
-					break;
-
-				default:
-					break;
-			}
-
 			std::array<Vec3, 16> patch_verts {
 				pvVec3[patch_vert_indices[0]],
 				pvVec3[patch_vert_indices[1]],
@@ -200,6 +126,81 @@ void SubdivisionSurface::finalize()
 				pvVec3[patch_vert_indices[14]],
 				pvVec3[patch_vert_indices[15]]
 			};
+
+			// Modify patch verts based on boundary condition
+			switch (boundary_bits) {
+				case 0b0001:
+					patch_verts[0] = patch_verts[4] * 2.0f - patch_verts[8];
+					patch_verts[1] = patch_verts[5] * 2.0f - patch_verts[9];
+					patch_verts[2] = patch_verts[6] * 2.0f - patch_verts[10];
+					patch_verts[3] = patch_verts[7] * 2.0f - patch_verts[11];
+					break;
+
+				case 0b0010:
+					patch_verts[3]  = patch_verts[2]  * 2.0f - patch_verts[1];
+					patch_verts[7]  = patch_verts[6]  * 2.0f - patch_verts[5];
+					patch_verts[11] = patch_verts[10] * 2.0f - patch_verts[9];
+					patch_verts[15] = patch_verts[14] * 2.0f - patch_verts[13];
+					break;
+
+				case 0b0100:
+					patch_verts[12] = patch_verts[8]  * 2.0f - patch_verts[4];
+					patch_verts[13] = patch_verts[9]  * 2.0f - patch_verts[5];
+					patch_verts[14] = patch_verts[10] * 2.0f - patch_verts[6];
+					patch_verts[15] = patch_verts[11] * 2.0f - patch_verts[7];
+					break;
+
+				case 0b1000:
+					patch_verts[0]  = patch_verts[1]  * 2.0f - patch_verts[2];
+					patch_verts[4]  = patch_verts[5]  * 2.0f - patch_verts[6];
+					patch_verts[8]  = patch_verts[9]  * 2.0f - patch_verts[10];
+					patch_verts[12] = patch_verts[13] * 2.0f - patch_verts[14];
+					break;
+
+				case 0b0011:
+					patch_verts[0]  = patch_verts[4]  * 2.0f - patch_verts[8];
+					patch_verts[1]  = patch_verts[5]  * 2.0f - patch_verts[9];
+					patch_verts[2]  = patch_verts[6]  * 2.0f - patch_verts[10];
+					patch_verts[3]  = patch_verts[6]  * 3.0f - patch_verts[10] - patch_verts[4];
+					patch_verts[7]  = patch_verts[6]  * 2.0f - patch_verts[4];
+					patch_verts[11] = patch_verts[10] * 2.0f - patch_verts[9];
+					patch_verts[15] = patch_verts[14] * 2.0f - patch_verts[13];
+					break;
+
+				case 0b0110:
+					patch_verts[3]  = patch_verts[2]  * 2.0f - patch_verts[1];
+					patch_verts[7]  = patch_verts[6]  * 2.0f - patch_verts[5];
+					patch_verts[11] = patch_verts[10] * 2.0f - patch_verts[9];
+					patch_verts[15] = patch_verts[10] * 3.0f - patch_verts[9] - patch_verts[6];
+					patch_verts[14] = patch_verts[10] * 2.0f - patch_verts[6];
+					patch_verts[13] = patch_verts[9]  * 2.0f - patch_verts[5];
+					patch_verts[12] = patch_verts[8]  * 2.0f - patch_verts[4];
+					break;
+
+				case 0b1100:
+					patch_verts[15] = patch_verts[11] * 2.0f - patch_verts[7];
+					patch_verts[14] = patch_verts[10] * 2.0f - patch_verts[6];
+					patch_verts[13] = patch_verts[9]  * 2.0f - patch_verts[5];
+					patch_verts[12] = patch_verts[9]  * 3.0f - patch_verts[5] - patch_verts[10];
+					patch_verts[8]  = patch_verts[9]  * 2.0f - patch_verts[10];
+					patch_verts[4]  = patch_verts[5]  * 2.0f - patch_verts[6];
+					patch_verts[0]  = patch_verts[1]  * 2.0f - patch_verts[2];
+
+					break;
+
+				case 0b1001:
+					patch_verts[12] = patch_verts[13] * 2.0f - patch_verts[14];
+					patch_verts[8]  = patch_verts[9]  * 2.0f - patch_verts[10];
+					patch_verts[4]  = patch_verts[5]  * 2.0f - patch_verts[6];
+					patch_verts[0]  = patch_verts[5]  * 3.0f - patch_verts[6] - patch_verts[9];
+					patch_verts[1]  = patch_verts[5]  * 2.0f - patch_verts[9];
+					patch_verts[2]  = patch_verts[6]  * 2.0f - patch_verts[10];
+					patch_verts[3]  = patch_verts[7]  * 2.0f - patch_verts[11];
+					break;
+
+				default:
+					break;
+			}
 
 			bspline_to_bezier_patch(&patch_verts);
 
