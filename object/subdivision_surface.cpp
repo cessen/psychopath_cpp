@@ -50,7 +50,7 @@ void SubdivisionSurface::intersect_rays(Ray* rays_begin, Ray* rays_end,
 void SubdivisionSurface::finalize()
 {
 	using namespace OpenSubdiv;
-	constexpr int maxIsolation = 0; // Max depth of refinement of the subdiv mesh
+	constexpr int maxIsolation = 3; // Max depth of refinement of the subdiv mesh
 
 
 	// Create a topology refiner, initialized from our mesh data
@@ -107,8 +107,6 @@ void SubdivisionSurface::finalize()
 			for (int i = 0; i < 16; ++i) {
 				patch_vert_indices[i] = pvi[i];
 			}
-
-			std::cout << patch_vert_indices.size() << "\n";
 
 			// Modify patch indices based on boundary condition
 			switch (boundary_bits) {
@@ -184,48 +182,32 @@ void SubdivisionSurface::finalize()
 					break;
 			}
 
-			patches[pi].add_time_sample(
-			    pvVec3[patch_vert_indices[0]],
-			    pvVec3[patch_vert_indices[1]],
-			    pvVec3[patch_vert_indices[2]],
-			    pvVec3[patch_vert_indices[3]],
-			    pvVec3[patch_vert_indices[4]],
-			    pvVec3[patch_vert_indices[5]],
-			    pvVec3[patch_vert_indices[6]],
-			    pvVec3[patch_vert_indices[7]],
-			    pvVec3[patch_vert_indices[8]],
-			    pvVec3[patch_vert_indices[9]],
-			    pvVec3[patch_vert_indices[10]],
-			    pvVec3[patch_vert_indices[11]],
-			    pvVec3[patch_vert_indices[12]],
-			    pvVec3[patch_vert_indices[13]],
-			    pvVec3[patch_vert_indices[14]],
-			    pvVec3[patch_vert_indices[15]]
-			);
+			std::array<Vec3, 16> patch_verts {
+				pvVec3[patch_vert_indices[0]],
+				pvVec3[patch_vert_indices[1]],
+				pvVec3[patch_vert_indices[2]],
+				pvVec3[patch_vert_indices[3]],
+				pvVec3[patch_vert_indices[4]],
+				pvVec3[patch_vert_indices[5]],
+				pvVec3[patch_vert_indices[6]],
+				pvVec3[patch_vert_indices[7]],
+				pvVec3[patch_vert_indices[8]],
+				pvVec3[patch_vert_indices[9]],
+				pvVec3[patch_vert_indices[10]],
+				pvVec3[patch_vert_indices[11]],
+				pvVec3[patch_vert_indices[12]],
+				pvVec3[patch_vert_indices[13]],
+				pvVec3[patch_vert_indices[14]],
+				pvVec3[patch_vert_indices[15]]
+			};
+
+			bspline_to_bezier_patch(&patch_verts);
+
+			patches[pi].add_time_sample(patch_verts);
 
 			patches[pi].finalize();
 		}
 	}
-
-
-
-
-	//// Extract bilinear patches from 4-vert faces
-	//// TODO: use OpenSubdiv to extract bicubic patches instead
-	//int vii = 0;
-	//for (const auto& fvc: face_vert_counts) {
-	//	if (fvc == 4) {
-	//		std::array<Vec3, 4> p;
-	//		for (int i = 0; i < fvc; ++i) {
-	//			p[i] = verts[face_vert_indices[vii+i]];
-	//		}
-	//		Bilinear bl(p[0], p[1], p[3], p[2]);
-	//		bl.finalize();
-	//		patches.emplace_back(bl);
-	//	}
-	//
-	//	vii += fvc;
-	//}
 
 
 	// Calculate bounds

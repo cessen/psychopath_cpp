@@ -201,4 +201,31 @@ void intersect_rays_with_patch(const PATCH &patch, const Range<const Transform*>
 }
 
 
+// Modifies a bicubic patch in place to convert it from bspline to bezier.
+static inline void bspline_to_bezier_curve(Vec3* v1, Vec3* v2, Vec3* v3, Vec3* v4)
+{
+	const Vec3 tmp_v2 = *v2;
+	*v1 = (*v1 * (1.0/3.0)) + (*v2 * (2.0/3.0));
+	*v4 = (*v4 * (1.0/3.0)) + (*v3 * (2.0/3.0));
+	*v2 = (*v2 * (2.0/3.0)) + (*v3 * (1.0/3.0));
+	*v3 = (*v3 * (2.0/3.0)) + (tmp_v2 * (1.0/3.0));
+	*v1 = (*v1 * 0.5f) + (*v2 * 0.5f);
+	*v4 = (*v4 * 0.5f) + (*v3 * 0.5f);
+}
+
+
+// Modifies a bicubic patch in place to convert it from bspline to bezier.
+static inline void bspline_to_bezier_patch(std::array<Vec3, 16>* patch)
+{
+	for (int i = 0; i < 4; ++i) {
+		int ii = i * 4;
+		bspline_to_bezier_curve(&(*patch)[ii], &(*patch)[ii+1], &(*patch)[ii+2], &(*patch)[ii+3]);
+	}
+
+	for (int i = 0; i < 4; ++i) {
+		bspline_to_bezier_curve(&(*patch)[i], &(*patch)[i+4], &(*patch)[i+8], &(*patch)[i+12]);
+	}
+}
+
+
 #endif // PATCH_UTILS_HPP

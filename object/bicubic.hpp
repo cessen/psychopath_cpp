@@ -40,6 +40,8 @@ public:
 	                     Vec3 v5,  Vec3 v6,  Vec3 v7,  Vec3 v8,
 	                     Vec3 v9,  Vec3 v10, Vec3 v11, Vec3 v12,
 	                     Vec3 v13, Vec3 v14, Vec3 v15, Vec3 v16);
+	void add_time_sample(std::array<Vec3, 16> patch);
+
 	void finalize();
 
 	virtual const std::vector<BBox> &bounds() const override;

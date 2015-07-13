@@ -76,6 +76,11 @@ void Bicubic::add_time_sample(Vec3 v1,  Vec3 v2,  Vec3 v3,  Vec3 v4,
 	verts[i][15] = v16;
 }
 
+void Bicubic::add_time_sample(std::array<Vec3, 16> patch)
+{
+	verts.emplace_back(patch);
+}
+
 
 void Bicubic::finalize()
 {
