@@ -14,10 +14,22 @@
 
 class SubdivisionSurface final: public ComplexSurface
 {
+	struct Node {
+		Range<BBox*> bounds;
+		Node* children[2];
+		Bicubic* leaf_data;
+	};
+
+	void build_bvh();
+	Node* build_bvh_recursive(Node* begin, Node* end);
+
 public:
 	// Final data
 	std::vector<Bicubic> patches;
 	std::vector<BBox> bbox;
+	std::vector<Node> bvh_nodes;
+	std::vector<BBox> bvh_bboxes;
+	Node* bvh_root;
 
 	// Intermediate data
 	int motion_samples = 0;
