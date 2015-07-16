@@ -64,7 +64,7 @@ bool Renderer::render(int thread_count)
 
 	PathTraceIntegrator integrator(scene.get(), image.get(), spp, spp_max, variance_max, seed, thread_count, image_writer);
 
-	std::cout << "Preparation time (seconds): " << timer.time() << std::endl;
+	std::cout << "Integrator prep time (seconds): " << timer.time() << std::endl;
 	timer.reset();
 
 	std::cout << "Rendering" << std::flush;

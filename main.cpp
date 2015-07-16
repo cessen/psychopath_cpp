@@ -218,6 +218,10 @@ int main(int argc, char **argv)
 
 		std::cout << "Parse time (seconds): " << parse_timer.time() << std::endl;
 
+		Timer<> preprocessing_timer;
+		r->scene->finalize();
+		std::cout << "Preprocessing time (seconds): " << preprocessing_timer.time() << std::endl;
+
 		// Resolution and sampling overrides
 		if (vm.count("resolution"))
 			r->set_resolution(resolution.x, resolution.y);

@@ -261,9 +261,6 @@ void SubdivisionSurface::finalize()
 
 
 
-
-
-
 void SubdivisionSurface::build_bvh()
 {
 	// Make sure we have enough memory reserved for the nodes and bboxes.

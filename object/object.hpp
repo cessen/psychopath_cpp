@@ -50,6 +50,11 @@ public:
 	virtual Type get_type() const = 0;
 
 	/**
+	 * Finalizes an object after parsing is complete, if needed.
+	 */
+	virtual void finalize() {}
+
+	/**
 	 * @brief Returns the bounds of the object.
 	 */
 	virtual const std::vector<BBox> &bounds() const = 0;

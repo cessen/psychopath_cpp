@@ -205,9 +205,12 @@ public:
 	 * Prepares the assembly to be used for rendering.
 	 */
 	bool finalize() {
-		// Finalize all sub-assemblies
+		// Finalize all sub-assemblies and objects
 		for (auto& ass: assemblies) {
 			ass->finalize();
+		}
+		for (auto& obj: objects) {
+			obj->finalize();
 		}
 
 		// Clear maps (no longer needed).

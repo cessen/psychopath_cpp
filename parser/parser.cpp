@@ -179,8 +179,6 @@ std::unique_ptr<Renderer> Parser::parse_next_frame()
 
 	// return nullptr;
 
-	scene->finalize();
-
 	std::unique_ptr<Renderer> renderer(new Renderer(scene.release(), res_x, res_y, spp, spp, 0.0f, seed, output_path));
 
 	return renderer;
@@ -368,8 +366,6 @@ std::unique_ptr<Bilinear> Parser::parse_bilinear_patch(const DataTree::Node& nod
 		                       Vec3(p.v[9], p.v[10], p.v[11]));
 	}
 
-	patch->finalize();
-
 	return patch;
 }
 
@@ -418,8 +414,6 @@ std::unique_ptr<Bicubic> Parser::parse_bicubic_patch(const DataTree::Node& node)
 		                       Vec3(p.v[42], p.v[43], p.v[44]),
 		                       Vec3(p.v[45], p.v[46], p.v[47]));
 	}
-
-	patch->finalize();
 
 	return patch;
 }
@@ -478,8 +472,6 @@ std::unique_ptr<SubdivisionSurface> Parser::parse_subdivision_surface(const Data
 	subdiv->set_verts(std::move(verts), vert_count);
 	subdiv->set_face_vert_counts(std::move(face_vert_counts));
 	subdiv->set_face_vert_indices(std::move(face_vert_indices));
-
-	subdiv->finalize();
 
 	return subdiv;
 }
@@ -676,8 +668,6 @@ std::unique_ptr<Sphere> Parser::parse_sphere(const DataTree::Node& node)
 
 	// Build sphere
 	std::unique_ptr<Sphere> s(new Sphere(location, radius));
-
-	s->finalize();
 
 	return s;
 }
