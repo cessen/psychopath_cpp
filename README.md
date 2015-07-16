@@ -25,6 +25,7 @@ Current Features
 - Spheres
 - Bilinear patches
 - Bicubic bezier patches
+- Catmull-Clark subdivision surfaces
 - Spherical light sources
 - Rectangular light sources
 - Simple shader system (assign BSDF's to objects)
@@ -52,7 +53,8 @@ with Psychopath.  Most Blender features are not yet supported.
 
 Features Supported
 ------------------
-- Quad mesh export (exported as bilinear patches, so only flat shading)
+- Quad mesh export as bilinear patches
+- Mesh export as Catmull-Clark subdivision surfaces (when marked as such)
 - Point lights exported as spherical lights (point lights have a "radius" setting)
 - Area lights, exported as rectangular area lights
 - Simple material system for assigning different BSDF's to different objects
