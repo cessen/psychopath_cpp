@@ -14,7 +14,7 @@ class BitStack
 	    NUM_BITS = sizeof(INT_TYPE) * 8
 	};
 
-	INT_TYPE bits;
+	INT_TYPE bits = 0;
 
 public:
 	BitStack() {}

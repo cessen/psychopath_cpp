@@ -87,6 +87,8 @@ T lerp_seq(float alpha, const RandIt& seq, int seq_length)
 
 	if (seq_length == 1) {
 		return seq[0];
+	} else if (alpha >= 1.0f) {
+		return seq[seq_length - 1];
 	} else {
 		const float temp = alpha * (seq_length - 1);
 		const auto index = static_cast<int>(temp);
