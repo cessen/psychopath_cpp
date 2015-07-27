@@ -30,8 +30,10 @@ public:
 	std::vector<Node> bvh_nodes;
 	std::vector<BBox> bvh_bboxes;
 	Node* bvh_root;
+	int max_depth;
 
 	// Intermediate data
+	int depth;
 	int motion_samples = 0;
 	int verts_per_motion_sample = 0;
 	std::vector<Vec3> verts;

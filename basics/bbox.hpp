@@ -87,6 +87,18 @@ struct BBox {
 	}
 
 	/**
+	 * @brief Extend bbox with point.
+	 */
+	BBox operator|(const Vec3& v) const {
+		BBox temp;
+		for (size_t i = 0; i < 3; i++) {
+			temp.min[i] = min[i] < v[i] ? min[i] : v[i];
+			temp.max[i] = max[i] > v[i] ? max[i] : v[i];
+		}
+		return temp;
+	}
+
+	/**
 	 * @brief Intersection of two BBoxes.
 	 */
 	BBox operator&(const BBox& b) const {

@@ -14,6 +14,10 @@
 #include <opensubdiv/far/patchMap.h>
 
 
+// Max depth of the BVH tree
+static constexpr int DEPTH_LIMIT = 64;
+
+
 /*
  * A variation on Vec3 with the needed interface for OpenSubdiv.
  */
@@ -42,27 +46,28 @@ void SubdivisionSurface::intersect_rays(Ray* rays_begin, Ray* rays_end,
                                         const InstanceID& element_id
                                        ) const
 {
-	constexpr int DEPTH_LIMIT = 64;
 	int stack_i = 0;
 	SubdivisionSurface::Node* node_stack[DEPTH_LIMIT];
-	std::pair<Ray*, Ray*> ray_stack[DEPTH_LIMIT];
+	Ray* ray_end_stack[DEPTH_LIMIT];
 
 	node_stack[0] = bvh_root;
-	ray_stack[0] = std::make_pair(rays_begin, rays_end);
+	ray_end_stack[0] = rays_end;
 
 	while (stack_i >= 0) {
+		assert(stack_i >= (DEPTH_LIMIT-1));
+
 		// If node is not a leaf
 		if (node_stack[stack_i]->leaf_data == nullptr) {
 			// Test rays against current node
-			ray_stack[stack_i].second = mutable_partition(ray_stack[stack_i].first, ray_stack[stack_i].second, [&](Ray& ray) {
+			ray_end_stack[stack_i] = mutable_partition(rays_begin, ray_end_stack[stack_i], [&](Ray& ray) {
 				return lerp_seq(ray.time, node_stack[stack_i]->bounds).intersect_ray(ray);
 			});
 
 			// If any of the rays hit, proceed deeper with the ones that did
-			if (ray_stack[stack_i].first != ray_stack[stack_i].second) {
+			if (rays_begin != ray_end_stack[stack_i]) {
 				node_stack[stack_i+1] = node_stack[stack_i]->children[0];
 				node_stack[stack_i] = node_stack[stack_i]->children[1];
-				ray_stack[stack_i+1] = ray_stack[stack_i];
+				ray_end_stack[stack_i+1] = ray_end_stack[stack_i];
 				++stack_i;
 			}
 			// Otherwise move up the stack
@@ -72,7 +77,7 @@ void SubdivisionSurface::intersect_rays(Ray* rays_begin, Ray* rays_end,
 		}
 		// If node is a leaf
 		else {
-			intersect_rays_with_patch<Bicubic>(*(node_stack[stack_i]->leaf_data), parent_xforms, ray_stack[stack_i].first, ray_stack[stack_i].second, intersections, data_stack, surface_shader, element_id);
+			intersect_rays_with_patch<Bicubic>(*(node_stack[stack_i]->leaf_data), parent_xforms, rays_begin, ray_end_stack[stack_i], intersections, data_stack, surface_shader, element_id);
 			--stack_i;
 		}
 	}
@@ -288,21 +293,31 @@ void SubdivisionSurface::build_bvh()
 	}
 
 	// Recursively build bvh from leaf nodes
+	depth = 1;
+	max_depth = 1;
 	bvh_root = build_bvh_recursive(&(*bvh_nodes.begin()), &(*bvh_nodes.end()));
+
+	// Max sure max_depth isn't too large
+	if (max_depth >= (DEPTH_LIMIT - 1)) {
+		std::cout << "WARNING: BVH depth for subdivision surface (" << max_depth << ") is too high.  Render may be incorrect." << std::endl;
+		std::cout << "There are a total of " << patches.size() << " patches after refinement." << std::endl;
+	}
 }
 
 SubdivisionSurface::Node* SubdivisionSurface::build_bvh_recursive(SubdivisionSurface::Node* begin, SubdivisionSurface::Node* end)
 {
+	max_depth = std::max(depth, max_depth);
+
 	if (begin+1 == end) {
 		// LEAF
 		return begin;
 	} else {
-		// Get total bounds of all the given leaf nodes
-		BBox total_bounds;
+		// Get bounds of the given leaf nodes' centroids.
+		BBox center_bounds;
 		for (auto node_itr = begin; node_itr < end; ++node_itr) {
-			total_bounds = total_bounds | node_itr->bounds[0];
+			center_bounds = center_bounds | node_itr->bounds[0].center();
 		}
-		const Vec3 extent = total_bounds.max - total_bounds.min;
+		const Vec3 extent = center_bounds.max - center_bounds.min;
 
 		// Find which axis to split the leaf nodes on
 		int max_axis = 0;
@@ -312,7 +327,7 @@ SubdivisionSurface::Node* SubdivisionSurface::build_bvh_recursive(SubdivisionSur
 			max_axis = 2;
 
 		// Partition the leaf nodes
-		const float pmid = (total_bounds.min[max_axis] + total_bounds.max[max_axis]) * 0.5f;
+		const float pmid = (center_bounds.min[max_axis] + center_bounds.max[max_axis]) * 0.5f;
 		auto mid_itr = std::partition(begin, end, [max_axis, pmid](const SubdivisionSurface::Node& bn) {
 			return bn.bounds[0].center()[max_axis] < pmid;
 		});
@@ -325,9 +340,11 @@ SubdivisionSurface::Node* SubdivisionSurface::build_bvh_recursive(SubdivisionSur
 		auto& node = bvh_nodes.back();
 
 		// Populate new node, further recursively building in the process
+		++depth;
 		node.children[0] = build_bvh_recursive(begin, mid_itr);
 		node.children[1] = build_bvh_recursive(mid_itr, end);
 		node.leaf_data = nullptr;
+		--depth;
 
 		// Calculate bounds of the node
 		const int first_bbox_i = bvh_bboxes.size();
