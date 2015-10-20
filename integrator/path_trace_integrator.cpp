@@ -46,8 +46,10 @@ void PathTraceIntegrator::integrate()
 	uint32_t i = 0;
 	uint32_t x = 0;
 	uint32_t y = 0;
-	const int morton_stop = std::max(image->width, image->height) * 2;
-	const bool greater_width = image->width > image->height;
+	const int subimage_w = image->si_x2 - image->si_x1;
+	const int subimage_h = image->si_y2 - image->si_y1;
+	const int morton_stop = std::max(subimage_w, subimage_h) * 2;
+	const bool greater_width = subimage_w > subimage_h;
 	while (true) {
 		if (greater_width)
 			Morton::d2xy(i, &y, &x);
@@ -56,10 +58,16 @@ void PathTraceIntegrator::integrate()
 		const int xp = x * bucket_size;
 		const int yp = y * bucket_size;
 
-		if (xp < image->width && yp < image->height) {
-			const int w = std::min(image->width - xp, bucket_size);
-			const int h = std::min(image->height - yp, bucket_size);
-			blocks.push_blocking( {xp,yp,w,h});
+		//if (xp < image->width && yp < image->height) {
+		//	const int w = std::min(image->width - xp, bucket_size);
+		//	const int h = std::min(image->height - yp, bucket_size);
+		//	blocks.push_blocking( {xp,yp,w,h});
+		//}
+
+		if (xp < subimage_w && yp < subimage_h) {
+			const int w = std::min(subimage_w - xp, bucket_size);
+			const int h = std::min(subimage_h - yp, bucket_size);
+			blocks.push_blocking( {xp+image->si_x1,yp+image->si_y1,w,h});
 		}
 
 		if (xp >= morton_stop && yp >= morton_stop)

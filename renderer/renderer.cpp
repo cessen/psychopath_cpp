@@ -55,6 +55,10 @@ bool Renderer::render(int thread_count)
 		                                      -1.0, -((static_cast<float>(res_y))/res_x),
 		                                      1.0, ((static_cast<float>(res_y))/res_x))
 	};
+	image->si_x1 = subimage_x1;
+	image->si_y1 = subimage_y1;
+	image->si_x2 = subimage_x2;
+	image->si_y2 = subimage_y2;
 
 	// Save blank image before rendering
 	write_png_from_film(image.get(), output_path, 0.0f);

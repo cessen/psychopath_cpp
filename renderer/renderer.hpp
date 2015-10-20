@@ -37,6 +37,7 @@ class Renderer
 {
 private:
 	uint res_x, res_y;
+	uint subimage_x1, subimage_y1, subimage_x2, subimage_y2;
 	uint spp;
 	uint spp_max;
 	float variance_max;
@@ -49,6 +50,7 @@ public:
 	Renderer(Scene *scene, uint res_x, uint res_y, uint spp, uint spp_max, float variance_max, uint seed, std::string output_path):
 		res_x {res_x},
 	      res_y {res_y},
+	      subimage_x1 {0}, subimage_y1 {0}, subimage_x2 {res_x}, subimage_y2 {res_y},
 	      spp {spp},
 	      spp_max {spp_max},
 	      variance_max {variance_max},
@@ -60,6 +62,13 @@ public:
 	void set_resolution(int res_x_, int res_y_) {
 		res_x = res_x_;
 		res_y = res_y_;
+	}
+
+	void set_subimage(int subimage_x1_, int subimage_y1_, int subimage_x2_, int subimage_y2_) {
+		subimage_x1 = subimage_x1_;
+		subimage_y1 = subimage_y1_;
+		subimage_x2 = subimage_x2_;
+		subimage_y2 = subimage_y2_;
 	}
 
 	void set_spp(int spp_) {

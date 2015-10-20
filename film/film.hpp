@@ -86,8 +86,9 @@ class Film
 public:
 	RNG rng;
 	uint16_t width, height; // Resolution of the image in pixels
-	float min_x, min_y; // Minimum x/y coordinates of the image
-	float max_x, max_y; // Maximum x/y coordinates of the image
+	float min_x, min_y; // Minimum x/y coordinates of the image for full res
+	float max_x, max_y; // Maximum x/y coordinates of the image for full res
+	uint16_t si_x1, si_y1, si_x2, si_y2;  // Sub image coordinates in pixels
 
 	BlockedArray<Color_XYZ, LBS> pixels; // Pixel data
 	BlockedArray<uint16_t, LBS> accum; // Accumulation buffer
@@ -103,7 +104,9 @@ public:
 		rng {RNG(7373546)},
 	    width {w}, height {h},
 	    min_x {std::min(x1, x2)}, min_y {std::min(y1, y2)},
-	max_x {std::max(x1, x2)}, max_y {std::max(y1, y2)} {
+	    max_x {std::max(x1, x2)}, max_y {std::max(y1, y2)},
+	    si_x1 {0}, si_y1 {0},
+	si_x2 {w}, si_y2 {h} {
 		// Allocate pixel and accum data
 		pixels.init(width, height);
 		accum.init(width, height);

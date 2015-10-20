@@ -67,13 +67,34 @@ struct Resolution {
 	}
 };
 
+// Holds four integers that specify a rectangle within the image.
+// For use by boost program options
+struct SubImage {
+	int x1, y1;
+	int x2, y2;
+
+	SubImage() {
+		x1 = 0;
+		y1 = 0;
+		x2 = 0;
+		y2 = 0;
+	}
+
+	SubImage(int x1_, int y1_, int x2_, int y2_) {
+		x1 = x1_;
+		y1 = y1_;
+		x2 = x2_;
+		y2 = y2_;
+	}
+};
+
 // Called by program_options to parse a set of Resolution arguments
 void validate(boost::any& v, const std::vector<std::string>& values,
               Resolution*, int)
 {
 	Resolution res;
 
-	//Extract tokens from values string vector and populate IntPair struct.
+	//Extract tokens from values string vector and populate Resolution struct.
 	if (values.size() < 2) {
 		throw BPO::validation_error(BPO::validation_error::invalid_option_value,
 		                            "Invalid Resolution specification, requires two ints");
@@ -83,6 +104,26 @@ void validate(boost::any& v, const std::vector<std::string>& values,
 	res.y = boost::lexical_cast<int>(values.at(1));
 
 	v = res;
+}
+
+// Called by program_options to parse a set of SubImage arguments
+void validate(boost::any& v, const std::vector<std::string>& values,
+              SubImage*, int)
+{
+	SubImage subim;
+
+	//Extract tokens from values string vector and populate SubImage struct.
+	if (values.size() < 4) {
+		throw BPO::validation_error(BPO::validation_error::invalid_option_value,
+		                            "Invalid SubImage specification, requires four ints");
+	}
+
+	subim.x1 = boost::lexical_cast<int>(values.at(0));
+	subim.y1 = boost::lexical_cast<int>(values.at(1));
+	subim.x2 = boost::lexical_cast<int>(values.at(2));
+	subim.y2 = boost::lexical_cast<int>(values.at(3));
+
+	v = subim;
 }
 
 
@@ -127,6 +168,7 @@ int main(int argc, char **argv)
 	std::string output_path = "default.png";
 	std::string input_path = "";
 	Resolution resolution(XRES, YRES);
+	SubImage subimage;
 
 	// Define them
 	BPO::options_description desc("Allowed options");
@@ -140,6 +182,7 @@ int main(int argc, char **argv)
 	("output,o", BPO::value<std::string>(), "The PNG file to render to")
 	("nooutput,n", "Don't save render (for timing tests)")
 	("resolution,r", BPO::value<Resolution>()->multitoken(), "The resolution to render at, e.g. 1280 720")
+	("subimage", BPO::value<SubImage>()->multitoken(), "The portion of the image to render as x1 y1 x2 y2, e.g. 24 24 100 120")
 	;
 
 	// Collect them
@@ -200,6 +243,12 @@ int main(int argc, char **argv)
 		std::cout << "Resolution: " << resolution.x << " " << resolution.y << "\n";
 	}
 
+	// Sub-image
+	if (vm.count("subimage")) {
+		subimage = vm["subimage"].as<SubImage>();
+		std::cout << "SubImage: " << subimage.x1 << " " << subimage.y1 << " " << subimage.x2 << " " << subimage.y2 << "\n";
+	}
+
 	std::cout << std::endl;
 
 	/*
@@ -225,6 +274,8 @@ int main(int argc, char **argv)
 		// Resolution and sampling overrides
 		if (vm.count("resolution"))
 			r->set_resolution(resolution.x, resolution.y);
+		if (vm.count("subimage"))
+			r->set_subimage(subimage.x1, subimage.y1, subimage.x1 + subimage.x2, subimage.y1 + subimage.y2);
 		if (vm.count("spp"))
 			r->set_spp(spp);
 		if (vm.count("sppmax"))
