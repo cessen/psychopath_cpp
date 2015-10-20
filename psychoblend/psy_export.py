@@ -168,7 +168,10 @@ class PsychoExporter:
         matz = Matrix()
         matz[2][2] = -1
         for i in range(self.time_samples):
-            self.w.write("Fov [%f]\n" % degrees(cam.data.angle))
+            if res_x >= res_y:
+                self.w.write("Fov [%f]\n" % degrees(cam.data.angle))
+            else:
+                self.w.write("Fov [%f]\n" % (degrees(cam.data.angle) * res_x / res_y))
             self.w.write("FocalDistance [%f]\n" % dof_distance)
             self.w.write("ApertureRadius [%f]\n" % (cam.data.psychopath.aperture_radius))
             self.set_frame(self.fr, self.shutter_start + (self.shutter_diff*i))
