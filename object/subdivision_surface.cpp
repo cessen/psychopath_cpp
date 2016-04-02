@@ -53,7 +53,7 @@ void SubdivisionSurface::intersect_rays(Ray* rays_begin, Ray* rays_end,
 	ray_end_stack[0] = rays_end;
 
 	while (stack_i >= 0) {
-		assert(stack_i >= (DEPTH_LIMIT-1));
+		assert(stack_i < DEPTH_LIMIT);
 
 		// If node is not a leaf
 		if (node_stack[stack_i]->leaf_data == nullptr) {
