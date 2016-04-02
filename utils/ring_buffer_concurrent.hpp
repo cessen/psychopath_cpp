@@ -14,8 +14,7 @@
  * Acts as a limited-size FIFO queue.
  */
 template <class T>
-class RingBufferConcurrent
-{
+class RingBufferConcurrent {
 private:
 	RingBuffer<T> buffer;
 

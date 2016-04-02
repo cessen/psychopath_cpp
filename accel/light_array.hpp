@@ -3,8 +3,7 @@
 
 #include "light_accel.hpp"
 
-class LightArray final: public LightAccel
-{
+class LightArray final: public LightAccel {
 	const Assembly* assembly;
 	std::vector<size_t> light_indices;
 	std::vector<std::tuple<size_t, size_t, size_t>> assembly_lights;  // 1: accumulated total lights, 2: number of light, 3: assembly instance index

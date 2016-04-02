@@ -6,8 +6,7 @@
 using namespace SIMD;
 
 
-TEST_CASE("simd")
-{
+TEST_CASE("simd") {
 	/* constructor tests */
 	SECTION("constructor_1") {
 		float4 f;

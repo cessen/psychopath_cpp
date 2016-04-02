@@ -44,8 +44,7 @@ void SubdivisionSurface::intersect_rays(Ray* rays_begin, Ray* rays_end,
                                         Stack* data_stack,
                                         const SurfaceShader* surface_shader,
                                         const InstanceID& element_id
-                                       ) const
-{
+                                       ) const {
 	int stack_i = 0;
 	SubdivisionSurface::Node* node_stack[DEPTH_LIMIT];
 	Ray* ray_end_stack[DEPTH_LIMIT];
@@ -83,8 +82,7 @@ void SubdivisionSurface::intersect_rays(Ray* rays_begin, Ray* rays_end,
 	}
 }
 
-void SubdivisionSurface::finalize()
-{
+void SubdivisionSurface::finalize() {
 	using namespace OpenSubdiv;
 	constexpr int maxIsolation = 5; // Max depth of refinement of the subdiv mesh
 
@@ -266,8 +264,7 @@ void SubdivisionSurface::finalize()
 
 
 
-void SubdivisionSurface::build_bvh()
-{
+void SubdivisionSurface::build_bvh() {
 	// Make sure we have enough memory reserved for the nodes and bboxes.
 	// This is super important to prevent iterator invalidation.
 	bvh_nodes.reserve(patches.size() * 2);
@@ -304,8 +301,7 @@ void SubdivisionSurface::build_bvh()
 	}
 }
 
-SubdivisionSurface::Node* SubdivisionSurface::build_bvh_recursive(SubdivisionSurface::Node* begin, SubdivisionSurface::Node* end)
-{
+SubdivisionSurface::Node* SubdivisionSurface::build_bvh_recursive(SubdivisionSurface::Node* begin, SubdivisionSurface::Node* end) {
 	max_depth = std::max(depth, max_depth);
 
 	if (begin+1 == end) {

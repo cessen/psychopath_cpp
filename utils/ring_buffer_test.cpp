@@ -2,8 +2,7 @@
 #include "ring_buffer.hpp"
 
 
-TEST_CASE("ring_buffer")
-{
+TEST_CASE("ring_buffer") {
 	/* constructor tests */
 	SECTION("constructor_1") {
 		RingBuffer<int> rb;

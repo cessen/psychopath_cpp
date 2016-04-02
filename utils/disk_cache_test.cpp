@@ -4,8 +4,7 @@
 #include "rng.hpp"
 
 
-TEST_CASE("disk_cache")
-{
+TEST_CASE("disk_cache") {
 	// Constructors
 	SECTION("constructor") {
 		DiskCache::Cache<float, 1024> cache1(100000, 32);

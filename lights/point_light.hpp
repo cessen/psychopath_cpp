@@ -9,8 +9,7 @@
  * Super simple point light source.  Practically an example of how
  * to write a finite light source.
  */
-class PointLight final: public Light
-{
+class PointLight final: public Light {
 	Vec3 pos;
 	Color col;
 	std::vector<BBox> bounds_;

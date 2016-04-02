@@ -5,19 +5,18 @@
 
 #include "utf8.hpp"
 
-namespace DataTree
-{
+namespace DataTree {
 
 struct Token {
 	enum Type {
-	    OPEN_INNER,
-	    CLOSE_INNER,
-	    OPEN_LEAF,
-	    CLOSE_LEAF,
-	    TYPE,
-	    NAME,
-	    END,
-	    UNKNOWN
+		OPEN_INNER,
+		CLOSE_INNER,
+		OPEN_LEAF,
+		CLOSE_LEAF,
+		TYPE,
+		NAME,
+		END,
+		UNKNOWN
 	};
 
 	std::string text {""};
@@ -27,8 +26,7 @@ struct Token {
 /**
  * Returns whether the given utf character is whitespace or not.
  */
-static inline bool is_ws_char(const std::string& s)
-{
+static inline bool is_ws_char(const std::string& s) {
 	if (s.length() == 0)
 		return false;
 
@@ -47,8 +45,7 @@ static inline bool is_ws_char(const std::string& s)
 /**
  * Returns whether the given utf character is a newline or not.
  */
-static inline bool is_nl_char(const std::string& s)
-{
+static inline bool is_nl_char(const std::string& s) {
 	if (s.length() == 1) {
 		switch (s[0]) {
 			case '\n':
@@ -66,8 +63,7 @@ static inline bool is_nl_char(const std::string& s)
 /**
  * Returns whether the given utf character is a comment starter or not.
  */
-static inline bool is_comment_char(const std::string& s)
-{
+static inline bool is_comment_char(const std::string& s) {
 	if (s.length() == 0)
 		return false;
 
@@ -81,8 +77,7 @@ static inline bool is_comment_char(const std::string& s)
 /**
  * Returns whether the given utf character is a reserved character or not.
  */
-static inline bool is_reserved_char(const std::string& s)
-{
+static inline bool is_reserved_char(const std::string& s) {
 	if (s.length() == 0)
 		return false;
 
@@ -104,8 +99,7 @@ static inline bool is_reserved_char(const std::string& s)
 /**
  * Returns whether the given utf character is a legal identifier character or not.
  */
-static inline bool is_ident_char(const std::string& s)
-{
+static inline bool is_ident_char(const std::string& s) {
 	if (s.length() == 0)
 		return false;
 
@@ -117,8 +111,7 @@ static inline bool is_ident_char(const std::string& s)
 }
 
 
-bool skip_whitespace(std::string::const_iterator& str_iter, const std::string::const_iterator& str_iter_end)
-{
+bool skip_whitespace(std::string::const_iterator& str_iter, const std::string::const_iterator& str_iter_end) {
 	bool skipped = false;
 
 	std::string cur_c = next_utf8(str_iter, str_iter_end);
@@ -132,8 +125,7 @@ bool skip_whitespace(std::string::const_iterator& str_iter, const std::string::c
 }
 
 
-bool skip_comment(std::string::const_iterator& str_iter, const std::string::const_iterator& str_iter_end)
-{
+bool skip_comment(std::string::const_iterator& str_iter, const std::string::const_iterator& str_iter_end) {
 	bool skipped = false;
 
 	std::string cur_c = next_utf8(str_iter, str_iter_end);
@@ -149,8 +141,7 @@ bool skip_comment(std::string::const_iterator& str_iter, const std::string::cons
 }
 
 
-bool skip_whitespace_and_comments(std::string::const_iterator& str_iter, const std::string::const_iterator& str_iter_end)
-{
+bool skip_whitespace_and_comments(std::string::const_iterator& str_iter, const std::string::const_iterator& str_iter_end) {
 	bool skipped = false;
 	int skip_consecutive_fail_count = 0;
 	while (true) {
@@ -183,8 +174,7 @@ bool skip_whitespace_and_comments(std::string::const_iterator& str_iter, const s
 /**
  * Returns the next token as a string.
  */
-Token lex_token(std::string::const_iterator& str_iter, const std::string::const_iterator& str_iter_end)
-{
+Token lex_token(std::string::const_iterator& str_iter, const std::string::const_iterator& str_iter_end) {
 	Token token;
 	std::string cur_c;
 
@@ -261,8 +251,7 @@ Token lex_token(std::string::const_iterator& str_iter, const std::string::const_
  *
  * This should be called instead of lex_token() after finding an opening square bracket.
  */
-std::string lex_leaf_contents(std::string::const_iterator& str_iter, const std::string::const_iterator& str_iter_end)
-{
+std::string lex_leaf_contents(std::string::const_iterator& str_iter, const std::string::const_iterator& str_iter_end) {
 	std::string contents;
 	std::string cur_c;
 
@@ -304,8 +293,7 @@ std::string lex_leaf_contents(std::string::const_iterator& str_iter, const std::
 }
 
 
-Node parse_node(const std::string& type, std::string::const_iterator& str_iter, const std::string::const_iterator& str_iter_end)
-{
+Node parse_node(const std::string& type, std::string::const_iterator& str_iter, const std::string::const_iterator& str_iter_end) {
 	Node node;
 	Token token;
 
@@ -357,8 +345,7 @@ Node parse_node(const std::string& type, std::string::const_iterator& str_iter, 
 }
 
 
-Node build_from_file(const char* file_path)
-{
+Node build_from_file(const char* file_path) {
 	// Read the file into text
 	std::string text;
 	std::ifstream in(file_path, std::ios::in | std::ios::binary);
@@ -392,8 +379,7 @@ Node build_from_file(const char* file_path)
 }
 
 
-void print_tree(const Node& node, const std::string& indent)
-{
+void print_tree(const Node& node, const std::string& indent) {
 	if (node.children.size() > 0) {
 		std::cout << indent << node.type << " ";
 		if (node.name.size() > 0)

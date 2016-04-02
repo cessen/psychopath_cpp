@@ -18,8 +18,7 @@
 /**
  * @brief Base object class, from which all other objects inherit.
  */
-class Object
-{
+class Object {
 public:
 	// Virtual destructor, and don't delete default copy/move constructors
 	Object() = default;
@@ -33,11 +32,11 @@ public:
 	 * @brief An enum type for describing the type of an object.
 	 */
 	enum Type {
-	    SURFACE,
-	    COMPLEX_SURFACE,
-	    PATCH_SURFACE,
-	    LIGHT,
-	    ASSEMBLY_INSTANCE
+		SURFACE,
+		COMPLEX_SURFACE,
+		PATCH_SURFACE,
+		LIGHT,
+		ASSEMBLY_INSTANCE
 	};
 
 	// Unique ID, used by Scene and Tracer for various purposes
@@ -78,8 +77,7 @@ public:
  * @brief An interface for traditional surface objects that can be easily
  * directly tested against a single ray at a time.
  */
-class Surface: public Object
-{
+class Surface: public Object {
 public:
 	virtual ~Surface() {}
 
@@ -98,8 +96,7 @@ public:
  * @brief An interface for surfaces that require more complex handling
  * and which require fast scratch memory.
  */
-class ComplexSurface: public Object
-{
+class ComplexSurface: public Object {
 public:
 	virtual ~ComplexSurface() {}
 
@@ -131,8 +128,7 @@ public:
  * time, look at the Bilinear and Bicubic classes for examples of the required
  * interface.
  */
-class PatchSurface: public Object
-{
+class PatchSurface: public Object {
 public:
 	virtual ~PatchSurface() {}
 

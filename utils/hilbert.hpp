@@ -6,12 +6,10 @@
 
 #include "numtype.h"
 
-namespace Hilbert
-{
+namespace Hilbert {
 
 // Utility function used by the functions below.
-static inline void hil_rot(uint32_t n, uint32_t &x, uint32_t &y, uint32_t rx, uint32_t ry)
-{
+static inline void hil_rot(uint32_t n, uint32_t &x, uint32_t &y, uint32_t rx, uint32_t ry) {
 	if (ry == 0) {
 		if (rx == 1) {
 			x = n-1 - x;
@@ -31,8 +29,7 @@ static inline void hil_rot(uint32_t n, uint32_t &x, uint32_t &y, uint32_t rx, ui
  *
  * @returns The hilbert curve index corresponding to the (x,y) coordinates given.
  */
-static inline uint32_t xy2d(uint32_t x, uint32_t y)
-{
+static inline uint32_t xy2d(uint32_t x, uint32_t y) {
 	const uint32_t n = 1 << 16;
 	uint32_t rx, ry, s, d=0;
 	for (s=n>>1; s>0; s>>=1) {
@@ -52,8 +49,7 @@ static inline uint32_t xy2d(uint32_t x, uint32_t y)
  * @param[out] x Pointer where the x coordinate will be stored.
  * @param[out] y Pointer where the y coordinate will be stored.
  */
-static inline void d2xy(uint32_t d, uint32_t *x, uint32_t *y)
-{
+static inline void d2xy(uint32_t d, uint32_t *x, uint32_t *y) {
 	const uint32_t n = 1 << 16;
 	uint32_t rx, ry, s, t=d;
 	*x = *y = 0;

@@ -18,8 +18,7 @@
  *
  *
  */
-static inline float spectrum_xyz_to_p(const float lambda, const float *xyz)
-{
+static inline float spectrum_xyz_to_p(const float lambda, const float *xyz) {
 	assert(lambda >= spectrum_sample_min);
 	assert(lambda <= spectrum_sample_max);
 	float xyY[3], uv[2];

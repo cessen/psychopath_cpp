@@ -4,8 +4,7 @@
 #include <string>
 #include <exception>
 
-class utf8_parse_error: std::exception
-{
+class utf8_parse_error: std::exception {
 public:
 	virtual const char* what() const noexcept {
 		return "Invalid UTF8 sequence.";
@@ -21,8 +20,7 @@ public:
  *
  * Throws a utf8_parse_error exception on malformed utf8 input.
  */
-static inline std::string cur_utf8(const std::string::const_iterator& in, const std::string::const_iterator& end)
-{
+static inline std::string cur_utf8(const std::string::const_iterator& in, const std::string::const_iterator& end) {
 	const unsigned char* c = reinterpret_cast<const unsigned char*>(&(*in));
 
 	if (in == end)
@@ -60,8 +58,7 @@ static inline std::string cur_utf8(const std::string::const_iterator& in, const 
 /**
  * Like cur_utf8, except it advances the string iterator after parsing the token.
  */
-static inline std::string next_utf8(std::string::const_iterator& in, const std::string::const_iterator& end)
-{
+static inline std::string next_utf8(std::string::const_iterator& in, const std::string::const_iterator& end) {
 	std::string c = cur_utf8(in, end);
 
 	in += c.length();

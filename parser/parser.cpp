@@ -34,8 +34,7 @@ static std::regex re_qstring("\".*\"");
 
 
 
-std::unique_ptr<Renderer> Parser::parse_next_frame()
-{
+std::unique_ptr<Renderer> Parser::parse_next_frame() {
 	unsigned int scene_node_index;
 
 	// Find next scene node, or return nullptr if no more are found
@@ -185,8 +184,7 @@ std::unique_ptr<Renderer> Parser::parse_next_frame()
 }
 
 
-Matrix44 Parser::parse_matrix(const std::string line)
-{
+Matrix44 Parser::parse_matrix(const std::string line) {
 	float matvals[16] {1, 0, 0, 0,  0, 1, 0, 0,  0, 0, 1, 0,  0, 0, 0, 1};
 	std::sregex_iterator matches(line.begin(), line.end(), re_float);
 	for (int i = 0; matches != std::sregex_iterator() && i < 16; ++matches) {
@@ -205,8 +203,7 @@ Matrix44 Parser::parse_matrix(const std::string line)
 }
 
 
-std::unique_ptr<Camera> Parser::parse_camera(const DataTree::Node& node)
-{
+std::unique_ptr<Camera> Parser::parse_camera(const DataTree::Node& node) {
 	std::vector<Matrix44> mats;
 	std::vector<float> fovs;
 	std::vector<float> focus_distances;
@@ -251,8 +248,7 @@ std::unique_ptr<Camera> Parser::parse_camera(const DataTree::Node& node)
 }
 
 
-std::unique_ptr<Assembly> Parser::parse_assembly(const DataTree::Node& node, const Assembly* parent_assembly)
-{
+std::unique_ptr<Assembly> Parser::parse_assembly(const DataTree::Node& node, const Assembly* parent_assembly) {
 	// Allocate assembly
 	std::unique_ptr<Assembly> assembly = std::unique_ptr<Assembly>(new Assembly());
 
@@ -335,8 +331,7 @@ std::unique_ptr<Assembly> Parser::parse_assembly(const DataTree::Node& node, con
 }
 
 
-std::unique_ptr<Bilinear> Parser::parse_bilinear_patch(const DataTree::Node& node)
-{
+std::unique_ptr<Bilinear> Parser::parse_bilinear_patch(const DataTree::Node& node) {
 	struct BilinearPatchVerts {
 		float v[12];
 	};
@@ -370,8 +365,7 @@ std::unique_ptr<Bilinear> Parser::parse_bilinear_patch(const DataTree::Node& nod
 }
 
 
-std::unique_ptr<Bicubic> Parser::parse_bicubic_patch(const DataTree::Node& node)
-{
+std::unique_ptr<Bicubic> Parser::parse_bicubic_patch(const DataTree::Node& node) {
 	struct BicubicPatchVerts {
 		float v[48];
 	};
@@ -419,8 +413,7 @@ std::unique_ptr<Bicubic> Parser::parse_bicubic_patch(const DataTree::Node& node)
 }
 
 
-std::unique_ptr<SubdivisionSurface> Parser::parse_subdivision_surface(const DataTree::Node& node)
-{
+std::unique_ptr<SubdivisionSurface> Parser::parse_subdivision_surface(const DataTree::Node& node) {
 	// TODO: motion blur for verts
 	std::vector<Vec3> verts;
 	int vert_count = 0;
@@ -477,8 +470,7 @@ std::unique_ptr<SubdivisionSurface> Parser::parse_subdivision_surface(const Data
 }
 
 
-std::unique_ptr<SurfaceShader> Parser::parse_surface_shader(const DataTree::Node& node)
-{
+std::unique_ptr<SurfaceShader> Parser::parse_surface_shader(const DataTree::Node& node) {
 	// Find the shader type
 	auto shader_type = std::find_if(node.children.cbegin(), node.children.cend(), [](const DataTree::Node& child) {
 		return child.type == "Type";
@@ -559,8 +551,7 @@ std::unique_ptr<SurfaceShader> Parser::parse_surface_shader(const DataTree::Node
 }
 
 
-std::unique_ptr<SphereLight> Parser::parse_sphere_light(const DataTree::Node& node)
-{
+std::unique_ptr<SphereLight> Parser::parse_sphere_light(const DataTree::Node& node) {
 	std::vector<Color> colors;
 	std::vector<Vec3> locations;
 	std::vector<float> radii;
@@ -603,8 +594,7 @@ std::unique_ptr<SphereLight> Parser::parse_sphere_light(const DataTree::Node& no
 }
 
 
-std::unique_ptr<RectangleLight> Parser::parse_rectangle_light(const DataTree::Node& node)
-{
+std::unique_ptr<RectangleLight> Parser::parse_rectangle_light(const DataTree::Node& node) {
 	std::vector<std::pair<float, float>> dimensions;
 	std::vector<Color> colors;
 
@@ -642,8 +632,7 @@ std::unique_ptr<RectangleLight> Parser::parse_rectangle_light(const DataTree::No
 }
 
 
-std::unique_ptr<Sphere> Parser::parse_sphere(const DataTree::Node& node)
-{
+std::unique_ptr<Sphere> Parser::parse_sphere(const DataTree::Node& node) {
 	// TODO: motion blur for spheres
 	Vec3 location {0,0,0};
 	float radius {0.5f};

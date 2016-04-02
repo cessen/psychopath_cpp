@@ -9,8 +9,7 @@
 /**
  * @brief An interface for light sources.
  */
-class Light: public Object
-{
+class Light: public Object {
 public:
 	virtual ~Light() {}
 

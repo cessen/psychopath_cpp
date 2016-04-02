@@ -4,8 +4,7 @@
 #include <chrono>
 
 template <class CLOCK=std::chrono::high_resolution_clock>
-class Timer
-{
+class Timer {
 	std::chrono::time_point<CLOCK> start {CLOCK::now()};
 
 public:

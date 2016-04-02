@@ -3,8 +3,7 @@
 #include <vector>
 #include "utils.hpp"
 
-TEST_CASE("mutable_partition")
-{
+TEST_CASE("mutable_partition") {
 	SECTION("already_partitioned") {
 		std::vector<int> v {1, 1, 1, 1, 2, 2, 2, 2};
 

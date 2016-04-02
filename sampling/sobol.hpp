@@ -23,8 +23,7 @@
 
 #include <cassert>
 
-namespace Sobol
-{
+namespace Sobol {
 
 struct Matrices {
 	static const unsigned num_dimensions = 1024;
@@ -41,8 +40,7 @@ struct Matrices {
 inline double sample(
     const unsigned dimension,
     unsigned long long index,
-    const unsigned long long scramble = 0ULL)
-{
+    const unsigned long long scramble = 0ULL) {
 	assert(dimension < Matrices::num_dimensions);
 
 	unsigned long long result = scramble & ~-(1ULL << Matrices::size);

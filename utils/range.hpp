@@ -10,8 +10,7 @@
  * But with a few things omitted.
  */
 template<typename Iterator>
-class Range
-{
+class Range {
 private:
 	Iterator iter_begin;
 	Iterator iter_end;
@@ -70,8 +69,7 @@ public:
 
 // deducing constructor wrappers
 template<typename Iterator>
-constexpr Range<Iterator> make_range(Iterator begin, Iterator end)
-{
+constexpr Range<Iterator> make_range(Iterator begin, Iterator end) {
 	return Range<Iterator>(begin, end);
 }
 

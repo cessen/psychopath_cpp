@@ -83,8 +83,7 @@ struct DifferentialGeometry {
  * Returns the origin differential transfered onto the surface intersection.
  */
 static inline Vec3 transfer_ray_origin_differential(const float t, const Vec3 normal, const Vec3 d,
-        const Vec3 od, const Vec3 dd)
-{
+        const Vec3 od, const Vec3 dd) {
 	const Vec3 temp = od + (dd * t);
 	const float td = -dot(temp, normal) / dot(d, normal);
 
@@ -111,8 +110,7 @@ static inline Vec3 transfer_ray_origin_differential(const float t, const Vec3 no
 *
 * Returns the direction differential reflected off the surface.
 */
-static inline Vec3 reflect_ray_direction_differential(const Vec3 normal, const Vec3 normal_d, const Vec3 d, const Vec3 dd)
-{
+static inline Vec3 reflect_ray_direction_differential(const Vec3 normal, const Vec3 normal_d, const Vec3 d, const Vec3 dd) {
 	const auto ddn = dot(dd, normal) + dot(d, normal_d);
 	const auto tmp = (normal_d * dot(d, normal)) + (normal * ddn);
 	return dd - (tmp * 2.0f);
@@ -124,8 +122,7 @@ static inline Vec3 reflect_ray_direction_differential(const Vec3 normal, const V
  * exceeding 1.0.  This is important to prevent self-intersections with
  * micro-geometry.
  */
-static inline void clamp_dd(WorldRay* ray)
-{
+static inline void clamp_dd(WorldRay* ray) {
 	const float len_d = ray->d.length();
 	const float len_dx = ray->ddx.length();
 	const float len_dy = ray->ddy.length();
@@ -145,8 +142,7 @@ static inline void clamp_dd(WorldRay* ray)
  * TODO: apparently this is wrong.  See pg. 508 of PBRT for a correct
  * implementation.
  */
-static inline std::pair<float, float> calc_uv_differentials(const Vec3 dp, const Vec3 dpdu, const Vec3 dpdv)
-{
+static inline std::pair<float, float> calc_uv_differentials(const Vec3 dp, const Vec3 dpdu, const Vec3 dpdv) {
 	const float dpdu_ilen = 1.0f / dpdu.length();
 	const Vec3 dpdu_n = dpdu * dpdu_ilen;
 

@@ -25,8 +25,8 @@
  */
 struct Instance {
 	enum Type {
-	    OBJECT,
-	    ASSEMBLY
+		OBJECT,
+		ASSEMBLY
 	};
 
 	Type type; // The type of the thing being instanced
@@ -71,8 +71,7 @@ struct Instance {
  * hierarchy: individual objects have completely independent
  * transforms.
  */
-class Assembly
-{
+class Assembly {
 public:
 	const Assembly* parent = nullptr; // Pointer to the parent assembly, if any
 

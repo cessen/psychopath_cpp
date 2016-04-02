@@ -9,8 +9,7 @@
  ************************************************************************
  */
 
-TEST_CASE("InstanceID")
-{
+TEST_CASE("InstanceID") {
 	// Test for the first constructor
 	SECTION("push/pop back") {
 		InstanceID id;

@@ -4,8 +4,7 @@
 #include "light_accel.hpp"
 #include <iostream>
 
-class LightTree final: public LightAccel
-{
+class LightTree final: public LightAccel {
 	struct BuildNode {
 		size_t instance_index;
 		Vec3 center;

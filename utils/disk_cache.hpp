@@ -9,14 +9,12 @@
 #include <vector>
 #include <string>
 
-namespace DiskCache
-{
+namespace DiskCache {
 
 /**
  * A temporary file, with an interface that resembles a subset of fstream.
  */
-class TemporaryFile
-{
+class TemporaryFile {
 private:
 	FILE* f {nullptr};
 	bool is_open {false};
@@ -119,8 +117,7 @@ struct BlockInfo {
  *
  */
 template <class T, size_t BLOCK_SIZE>
-class Cache
-{
+class Cache {
 private:
 	size_t priority_tally {1};
 
@@ -324,8 +321,7 @@ public:
  * For speed and accuracy comparisons.
  */
 template<class T, size_t BLOCK_SIZE>
-class DummyCache
-{
+class DummyCache {
 public:
 	std::vector<T> data;
 

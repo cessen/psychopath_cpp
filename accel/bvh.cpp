@@ -11,8 +11,7 @@
 #include "ray.hpp"
 #include "assembly.hpp"
 
-void BVH::build(const Assembly& _assembly)
-{
+void BVH::build(const Assembly& _assembly) {
 	assembly = &_assembly;
 
 	// Abbreviating subsequent code
@@ -48,8 +47,7 @@ void BVH::build(const Assembly& _assembly)
 	_bounds.insert(_bounds.begin(), bbbegin, bbend);
 }
 
-bool BVH::finalize()
-{
+bool BVH::finalize() {
 	// TODO: this method is no longer necessary
 	return true;
 }
@@ -88,8 +86,7 @@ struct CompareDim {
  * list.  Used in recursive_build for BVH construction.
  * Returns the split index (last index of the first group).
  */
-size_t BVH::split_primitives(size_t first_prim, size_t last_prim)
-{
+size_t BVH::split_primitives(size_t first_prim, size_t last_prim) {
 	// Find the minimum and maximum centroid values on each axis
 	Vec3 min, max;
 	min = bag[first_prim].c;
@@ -130,8 +127,7 @@ size_t BVH::split_primitives(size_t first_prim, size_t last_prim)
  * Recursively builds the BVH starting at the given node with the given
  * first and last primitive indices (in bag).
  */
-size_t BVH::recursive_build(size_t parent, size_t first_prim, size_t last_prim)
-{
+size_t BVH::recursive_build(size_t parent, size_t first_prim, size_t last_prim) {
 	// Allocate the node
 	const size_t me = nodes.size();
 	nodes.push_back(Node());
@@ -192,8 +188,7 @@ size_t BVH::recursive_build(size_t parent, size_t first_prim, size_t last_prim)
 }
 
 
-std::tuple<Ray*, Ray*, size_t> BVHStreamTraverser::next_object()
-{
+std::tuple<Ray*, Ray*, size_t> BVHStreamTraverser::next_object() {
 	// If there aren't any objects in the scene, return finished
 	if (bvh->nodes.size() == 0)
 		return std::make_tuple(rays_end, rays_end, 0);

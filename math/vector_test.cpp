@@ -9,8 +9,7 @@
  ************************************************************************
  */
 
-TEST_CASE("vector")
-{
+TEST_CASE("vector") {
 	// Test for the constructor
 	SECTION("constructor") {
 		Vec3 v1(0.0, 0.0, 0.0);

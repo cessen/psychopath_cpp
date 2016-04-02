@@ -18,8 +18,7 @@
  *
  */
 template <class T, uint32_t LOG_BLOCK_SIZE>
-class BlockedArrayDiskCache
-{
+class BlockedArrayDiskCache {
 private:
 	uint32_t block_size {1 << LOG_BLOCK_SIZE};
 	uint32_t block_mask {block_size - 1};

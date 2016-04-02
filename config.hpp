@@ -3,8 +3,7 @@
 
 #include "numtype.h"
 
-namespace Config
-{
+namespace Config {
 extern bool no_output;
 extern float dice_rate;
 extern float min_upoly_size;

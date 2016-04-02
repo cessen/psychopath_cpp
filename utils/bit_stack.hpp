@@ -8,10 +8,9 @@
  * push, pop, and peek operations.
  */
 template <typename INT_TYPE>
-class BitStack
-{
+class BitStack {
 	enum {
-	    NUM_BITS = sizeof(INT_TYPE) * 8
+		NUM_BITS = sizeof(INT_TYPE) * 8
 	};
 
 	INT_TYPE bits = 0;
@@ -98,11 +97,10 @@ public:
  * to give twice the stack size at BitStack.
  */
 template <typename INT_TYPE>
-class BitStack2
-{
+class BitStack2 {
 	enum {
-	    INT_SIZE = sizeof(INT_TYPE) * 8,
-	    NUM_BITS = sizeof(INT_TYPE) * 16
+		INT_SIZE = sizeof(INT_TYPE) * 8,
+		NUM_BITS = sizeof(INT_TYPE) * 16
 	};
 
 	INT_TYPE bits1, bits2;

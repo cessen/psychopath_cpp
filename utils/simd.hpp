@@ -3,8 +3,7 @@
 
 #include <x86intrin.h>
 
-namespace SIMD
-{
+namespace SIMD {
 
 struct float4 {
 	__m128 data;
@@ -33,74 +32,60 @@ struct float4 {
 };
 
 
-inline float4 operator+(const float4& a, const float4& b)
-{
+inline float4 operator+(const float4& a, const float4& b) {
 	return float4(_mm_add_ps(a.data, b.data));
 }
 
-inline float4 operator-(const float4& a, const float4& b)
-{
+inline float4 operator-(const float4& a, const float4& b) {
 	return float4(_mm_sub_ps(a.data, b.data));
 }
 
-inline float4 operator*(const float4& a, const float4& b)
-{
+inline float4 operator*(const float4& a, const float4& b) {
 	return float4(_mm_mul_ps(a.data, b.data));
 }
 
-inline float4 operator*(const float4& a, const float b)
-{
+inline float4 operator*(const float4& a, const float b) {
 	return float4(_mm_mul_ps(a.data, _mm_set_ps1(b)));
 }
 
-inline float4 operator/(const float4& a, const float4& b)
-{
+inline float4 operator/(const float4& a, const float4& b) {
 	return float4(_mm_div_ps(a.data, b.data));
 }
 
-inline float4 operator/(const float4& a, const float b)
-{
+inline float4 operator/(const float4& a, const float b) {
 	return float4(_mm_div_ps(a.data, _mm_set_ps1(b)));
 }
 
-inline float4 eq(const float4& a, const float4& b)
-{
+inline float4 eq(const float4& a, const float4& b) {
 	return float4(_mm_cmpeq_ps(a.data, b.data));
 }
 
-inline float4 lt(const float4& a, const float4& b)
-{
+inline float4 lt(const float4& a, const float4& b) {
 	return float4(_mm_cmplt_ps(a.data, b.data));
 }
 
-inline float4 gt(const float4& a, const float4& b)
-{
+inline float4 gt(const float4& a, const float4& b) {
 	return float4(_mm_cmpgt_ps(a.data, b.data));
 }
 
-inline float4 lte(const float4& a, const float4& b)
-{
+inline float4 lte(const float4& a, const float4& b) {
 	return float4(_mm_cmple_ps(a.data, b.data));
 }
 
-inline float4 gte(const float4& a, const float4& b)
-{
+inline float4 gte(const float4& a, const float4& b) {
 	return float4(_mm_cmpge_ps(a.data, b.data));
 }
 
-inline float4 operator&&(const float4& a, const float4& b)
-{
+inline float4 operator&&(const float4& a, const float4& b) {
 	return float4(_mm_and_ps(a.data, b.data));
 }
 
 
-inline float4 min(const float4& a, const float4& b)
-{
+inline float4 min(const float4& a, const float4& b) {
 	return float4(_mm_min_ps(a.data, b.data));
 }
 
-inline float4 max(const float4& a, const float4& b)
-{
+inline float4 max(const float4& a, const float4& b) {
 	return float4(_mm_max_ps(a.data, b.data));
 }
 
@@ -109,8 +94,7 @@ inline float4 max(const float4& a, const float4& b)
  *
  * Can be turned into a no-op by setting the "swap" parameter to false.
  */
-inline float4 shuffle_swap(const float4& a, bool swap=true)
-{
+inline float4 shuffle_swap(const float4& a, bool swap=true) {
 	static const unsigned int shuf_swap = (1<<6) | (0<<4) | (3<<2) | 2; // Shuffle parameter for swapping
 	if (swap)
 		return float4(_mm_shuffle_ps(a.data, a.data, shuf_swap));
@@ -118,14 +102,12 @@ inline float4 shuffle_swap(const float4& a, bool swap=true)
 		return a;
 }
 
-inline unsigned int to_bitmask(const float4& a)
-{
+inline unsigned int to_bitmask(const float4& a) {
 	return _mm_movemask_ps(a.data);
 }
 
 // Inverts a 4x4 matrix and returns the determinate
-inline float invert_44_matrix(float* src)
-{
+inline float invert_44_matrix(float* src) {
 	// Code pulled from "Streaming SIMD Extensions - Inverse of 4x4 Matrix"
 	// by Intel.
 	// ftp://download.intel.com/design/PentiumIII/sml/24504301.pdf

@@ -25,8 +25,7 @@
 /*
  * A bounding volume hierarchy.
  */
-class BVH4: public Accel
-{
+class BVH4: public Accel {
 public:
 	virtual void build(const Assembly& assembly);
 	virtual const std::vector<BBox>& bounds() const {
@@ -76,10 +75,10 @@ private:
 	std::vector<BBox> _bounds {BBox()};
 
 	enum {
-	    IS_SKIP = 1 << 8,
-	    IS_2ND  = 1 << 9,
-	    IS_3RD  = 1 << 10,
-	    IS_4TH  = 1 << 11
+		IS_SKIP = 1 << 8,
+		IS_2ND  = 1 << 9,
+		IS_3RD  = 1 << 10,
+		IS_4TH  = 1 << 11
 	};
 
 	/**
@@ -126,8 +125,7 @@ private:
 /**
  * @brief A breadth-first traverser for BVH4.
  */
-class BVH4StreamTraverser: public AccelStreamTraverser<BVH4>
-{
+class BVH4StreamTraverser: public AccelStreamTraverser<BVH4> {
 public:
 	virtual ~BVH4StreamTraverser() {}
 

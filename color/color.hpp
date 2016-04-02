@@ -28,8 +28,7 @@ static constexpr float XYZ_NORM_FAC = INV_XYZ_INTEGRAL * (WAVELENGTH_MAX - WAVEL
  * Gets the nth wavelength given a hero wavelength, as per the paper
  * "Hero Wavelength Spectral Sampling" by Wilkie et al.
  */
-static inline float wavelength_n(float hero_wavelength, int n)
-{
+static inline float wavelength_n(float hero_wavelength, int n) {
 	assert(n < SPECTRAL_COUNT);
 	hero_wavelength += n * (WAVELENGTH_RANGE / SPECTRAL_COUNT);
 	if (hero_wavelength > WAVELENGTH_MAX) {
@@ -148,21 +147,18 @@ struct SpectralSample {
  * @param wavelength The wavelength of light in nm.
  * @returns The sensitivity of the curve at that wavelength.
  */
-static inline float X_1931(float wavelength)
-{
+static inline float X_1931(float wavelength) {
 	float t1 = (wavelength - 442.0f) * ((wavelength < 442.0f) ? 0.0624f : 0.0374f);
 	float t2 = (wavelength - 599.8f) * ((wavelength < 599.8f) ? 0.0264f : 0.0323f);
 	float t3 = (wavelength - 501.1f) * ((wavelength < 501.1f) ? 0.0490f : 0.0382f);
 	return (0.362f * std::exp(-0.5f * t1 * t1)) + (1.056f * std::exp(-0.5f * t2 * t2)) - (0.065f * std::exp(-0.5f * t3 * t3));
 }
-static inline float Y_1931(float wavelength)
-{
+static inline float Y_1931(float wavelength) {
 	float t1 = (wavelength - 568.8f) * ((wavelength < 568.8f) ? 0.0213f : 0.0247f);
 	float t2 = (wavelength - 530.9f) * ((wavelength < 530.9f) ? 0.0613f : 0.0322f);
 	return (0.821f * std::exp(-0.5f * t1 * t1)) + (0.286f * std::exp(-0.5f * t2 * t2));
 }
-static inline float Z_1931(float wavelength)
-{
+static inline float Z_1931(float wavelength) {
 	float t1 = (wavelength - 437.0f) * ((wavelength < 437.0f) ? 0.0845f : 0.0278f);
 	float t2 = (wavelength - 459.0f) * ((wavelength < 459.0f) ? 0.0385f : 0.0725f);
 	return (1.217f * std::exp(-0.5f * t1 * t1)) + (0.681f * std::exp(-0.5f * t2 * t2));
@@ -385,18 +381,15 @@ struct Color {
 /********************************
  * Colorspace conversion functions
  ********************************/
-static inline float sRGB_gamma(float n)
-{
+static inline float sRGB_gamma(float n) {
 	return n < 0.0031308f ? (n * 12.92f) : ((1.055f * std::pow(n, 1.0f/2.4f)) - 0.055f);
 }
 
-static inline float sRGB_inv_gamma(float n)
-{
+static inline float sRGB_inv_gamma(float n) {
 	return n < 0.04045f ? (n / 12.92f) : std::pow(((n + 0.055f) / 1.055f), 2.4f);
 }
 
-static inline std::tuple<float, float, float> XYZ_to_sRGB(Color_XYZ xyz)
-{
+static inline std::tuple<float, float, float> XYZ_to_sRGB(Color_XYZ xyz) {
 	std::tuple<float, float, float> srgb;
 
 	// First convert from XYZ to linear sRGB
@@ -412,8 +405,7 @@ static inline std::tuple<float, float, float> XYZ_to_sRGB(Color_XYZ xyz)
 	return srgb;
 }
 
-static inline Color_XYZ sRGB_to_XYZ(std::tuple<float, float, float> srgb)
-{
+static inline Color_XYZ sRGB_to_XYZ(std::tuple<float, float, float> srgb) {
 	Color_XYZ xyz;
 
 	// Undo "gamma" correction
@@ -430,8 +422,7 @@ static inline Color_XYZ sRGB_to_XYZ(std::tuple<float, float, float> srgb)
 }
 
 // Conversion for sRGB scaled to have whitepoint E
-static inline std::tuple<float, float, float> XYZ_to_sRGB_E(Color_XYZ xyz)
-{
+static inline std::tuple<float, float, float> XYZ_to_sRGB_E(Color_XYZ xyz) {
 	std::tuple<float, float, float> srgbe;
 
 	// First convert from XYZ to linear sRGB with whitepoint E
@@ -448,8 +439,7 @@ static inline std::tuple<float, float, float> XYZ_to_sRGB_E(Color_XYZ xyz)
 }
 
 // Conversion for sRGB scaled to have whitepoint E
-static inline Color_XYZ sRGB_E_to_XYZ(std::tuple<float, float, float> srgbe)
-{
+static inline Color_XYZ sRGB_E_to_XYZ(std::tuple<float, float, float> srgbe) {
 	Color_XYZ xyz;
 
 	// Undo "gamma" correction
@@ -465,8 +455,7 @@ static inline Color_XYZ sRGB_E_to_XYZ(std::tuple<float, float, float> srgbe)
 	return xyz;
 }
 
-static inline Color XYZ_to_Color(Color_XYZ xyz)
-{
+static inline Color XYZ_to_Color(Color_XYZ xyz) {
 	Color col;
 
 	// Convert from XYZ to linear sRGB scaled to have a white point
@@ -478,8 +467,7 @@ static inline Color XYZ_to_Color(Color_XYZ xyz)
 	return col;
 }
 
-static inline Color_XYZ Color_to_XYZ(Color col)
-{
+static inline Color_XYZ Color_to_XYZ(Color col) {
 	Color_XYZ xyz;
 
 	// Convert from linear sRGB scaled to have a white point at rgb<1,1,1>
@@ -499,18 +487,15 @@ static inline Color_XYZ Color_to_XYZ(Color col)
  * The approach taken to upsample colors to spectrum is from the paper
  * "Physically Meaningful Rendering using Tristimulus Colours" by Hanika et al.
  *************************************************************************/
-static inline float XYZ_to_spectrum(const Color_XYZ& xyz, float wavelength)
-{
+static inline float XYZ_to_spectrum(const Color_XYZ& xyz, float wavelength) {
 	return spectrum_xyz_to_p(wavelength, &(xyz.x)) * (1.0f / equal_energy_reflectance);
 }
 
-static inline float Color_to_spectrum(const Color& col, float wavelength)
-{
+static inline float Color_to_spectrum(const Color& col, float wavelength) {
 	return XYZ_to_spectrum(Color_to_XYZ(col), wavelength);
 }
 
-static inline SpectralSample XYZ_to_SpectralSample(const Color_XYZ& xyz, float wavelength)
-{
+static inline SpectralSample XYZ_to_SpectralSample(const Color_XYZ& xyz, float wavelength) {
 	SpectralSample s;
 	s.hero_wavelength = wavelength;
 
@@ -521,8 +506,7 @@ static inline SpectralSample XYZ_to_SpectralSample(const Color_XYZ& xyz, float w
 	return s;
 }
 
-static inline SpectralSample Color_to_SpectralSample(const Color& col, float wavelength)
-{
+static inline SpectralSample Color_to_SpectralSample(const Color& col, float wavelength) {
 	return XYZ_to_SpectralSample(Color_to_XYZ(col), wavelength);
 }
 

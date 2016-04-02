@@ -3,8 +3,7 @@
 
 // Simple callable class that does nothing more than set an integer
 // value.
-class TestJob
-{
+class TestJob {
 	int *inc;
 	int value;
 public:
@@ -23,8 +22,7 @@ public:
 
 
 
-TEST_CASE("job_queue")
-{
+TEST_CASE("job_queue") {
 	SECTION("basic_usage") {
 		JobQueue<TestJob> q;
 		int ints[100];

@@ -46,8 +46,7 @@ struct LightQuery {
 /**
  * @brief An acceleration structure for sampling a collection of light sources.
  */
-class LightAccel
-{
+class LightAccel {
 public:
 	virtual ~LightAccel() {}
 

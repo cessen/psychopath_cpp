@@ -12,8 +12,7 @@
  * channels of a pixel stored next to each other.
  */
 template <class PIXFMT>
-class Raster
-{
+class Raster {
 public:
 	uint16_t width, height; // Resolution of the image
 	float min_x, min_y; // Minimum x/y coordinates of the image

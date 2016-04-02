@@ -7,8 +7,7 @@
 #include "surface_closure.hpp"
 #include "closure_union.hpp"
 
-class SurfaceShader
-{
+class SurfaceShader {
 public:
 	virtual ~SurfaceShader() {}
 
@@ -26,8 +25,7 @@ public:
 };
 
 
-class EmitShader: public SurfaceShader
-{
+class EmitShader: public SurfaceShader {
 public:
 	Color col;
 
@@ -41,8 +39,7 @@ public:
 };
 
 
-class LambertShader: public SurfaceShader
-{
+class LambertShader: public SurfaceShader {
 public:
 	Color col;
 
@@ -56,8 +53,7 @@ public:
 };
 
 
-class GTRShader: public SurfaceShader
-{
+class GTRShader: public SurfaceShader {
 public:
 	Color col;
 	float roughness;

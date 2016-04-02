@@ -47,10 +47,10 @@ struct Ray {
 	    const Vec3 &d_ = Vec3(std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN()),
 	    const float &time_ = 0.0f):
 		o {o_},
-	  max_t {std::numeric_limits<float>::infinity()},
-	  d {d_},
-	  time {time_},
-	  id_and_flags {0}
+	max_t {std::numeric_limits<float>::infinity()},
+	d {d_},
+	time {time_},
+	id_and_flags {0}
 	{}
 
 	// Access to occlusion flag
@@ -168,13 +168,13 @@ struct WorldRay {
 	 * in a path.
 	 */
 	enum Type: uint16_t {
-	    NONE       = 0,
-	    CAMERA     = 1 << 0,
-	    R_DIFFUSE  = 1 << 1, // Diffuse reflection
-	    R_SPECULAR = 1 << 2, // Specular reflection
-	    T_DIFFUSE  = 1 << 3, // Diffuse transmission
-	    T_SPECULAR = 1 << 4, // Specular transmission
-	    OCCLUSION  = 1 << 5
+		NONE       = 0,
+		CAMERA     = 1 << 0,
+		R_DIFFUSE  = 1 << 1, // Diffuse reflection
+		R_SPECULAR = 1 << 2, // Specular reflection
+		T_DIFFUSE  = 1 << 3, // Diffuse transmission
+		T_SPECULAR = 1 << 4, // Specular transmission
+		OCCLUSION  = 1 << 5
 	};
 
 	Vec3 o, d; // Origin and direction

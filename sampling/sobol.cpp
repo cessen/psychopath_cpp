@@ -28,8 +28,7 @@
 
 #include "sobol.hpp"
 
-namespace Sobol
-{
+namespace Sobol {
 
 const unsigned Matrices::num_dimensions;
 const unsigned Matrices::size;

@@ -4,8 +4,7 @@
 
 #include "matrix.hpp"
 
-TEST_CASE("matrix44")
-{
+TEST_CASE("matrix44") {
 	// Constructor 1 does nothing, so no need to test
 
 	SECTION("constructor_2") {

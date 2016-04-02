@@ -4,8 +4,7 @@
 #include <string>
 #include <vector>
 
-namespace DataTree
-{
+namespace DataTree {
 
 struct Node {
 	std::string type;

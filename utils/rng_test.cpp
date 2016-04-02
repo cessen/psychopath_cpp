@@ -5,8 +5,7 @@
 /*
  * Test suite for the random number generator.
  */
-TEST_CASE("RNG")
-{
+TEST_CASE("RNG") {
 	// Test to see if the RNG gives consistent results
 	// when given the same seed
 	SECTION("consistent") {
@@ -42,8 +41,7 @@ TEST_CASE("RNG")
 
 	// Test to see if the factory code works properly inside object
 	// initializations
-	class RNGTest
-	{
+	class RNGTest {
 	public:
 		RNG rng;
 		RNGTest() {}

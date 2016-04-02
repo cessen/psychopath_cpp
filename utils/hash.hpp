@@ -3,8 +3,7 @@
 
 #include <cstdint>
 
-static inline uint32_t hash_u32(uint32_t n, uint32_t seed)
-{
+static inline uint32_t hash_u32(uint32_t n, uint32_t seed) {
 	uint32_t hash = n;
 
 	for (uint32_t i=0; i < 3; ++i) {
@@ -16,8 +15,7 @@ static inline uint32_t hash_u32(uint32_t n, uint32_t seed)
 	return hash;
 }
 
-static inline float hash_f32(uint32_t n, uint32_t seed)
-{
+static inline float hash_f32(uint32_t n, uint32_t seed) {
 	uint32_t hash = hash_u32(n, seed);
 
 	union {
@@ -35,8 +33,7 @@ static inline float hash_f32(uint32_t n, uint32_t seed)
  * Takes 32 bit unsigned ints as input, and can output either
  * unsigned 32 bit ints or floats.
  */
-class Hash
-{
+class Hash {
 private:
 	uint32_t seed {42};
 

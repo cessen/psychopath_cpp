@@ -20,8 +20,7 @@
  * any class inheriting from this MUST be a POD type (aside from the inheritance
  * and implementing this interface, of course).
  */
-class SurfaceClosure
-{
+class SurfaceClosure {
 public:
 	/**
 	 * Returns whether the closure has a delta distribution or not.
@@ -112,8 +111,7 @@ public:
  *          surface's normal.  Probably calculated e.g. with a normalized
  *          dot product.
  */
-static inline float dielectric_fresnel(float ior_ratio, float c)
-{
+static inline float dielectric_fresnel(float ior_ratio, float c) {
 	const float g = std::sqrt(ior_ratio - 1.0f + (c * c));
 
 	const float f1 = g - c;
@@ -133,8 +131,7 @@ static inline float dielectric_fresnel(float ior_ratio, float c)
  *
  * Same interface as dielectric_fresnel(), above.
  */
-static inline float schlick_fresnel(float ior_ratio, float c)
-{
+static inline float schlick_fresnel(float ior_ratio, float c) {
 	const float f1 = (1.0f - ior_ratio) / (1.0f + ior_ratio);
 	const float f2 = f1 * f1;
 	const float c1 = (1.0f - c);
@@ -153,8 +150,7 @@ static inline float schlick_fresnel(float ior_ratio, float c)
  *          surface's normal.  Probably calculated e.g. with a normalized
  *          dot product.
  */
-static inline float dielectric_fresnel_from_fac(float fresnel_fac, float c)
-{
+static inline float dielectric_fresnel_from_fac(float fresnel_fac, float c) {
 	const float tmp1 = std::sqrt(fresnel_fac) - 1.0f;
 
 	// Protect against divide by zero.
@@ -174,8 +170,7 @@ static inline float dielectric_fresnel_from_fac(float fresnel_fac, float c)
 /**
  * Schlick's approximation version of dielectric_fresnel_from_fac() above.
  */
-static inline float schlick_fresnel_from_fac(float frensel_fac, float c)
-{
+static inline float schlick_fresnel_from_fac(float frensel_fac, float c) {
 	const float c1 = (1.0f - c);
 	const float c2 = c1 * c1;
 	return frensel_fac + ((1.0f-frensel_fac) * c1 * c2 * c2);
@@ -188,8 +183,7 @@ static inline float schlick_fresnel_from_fac(float frensel_fac, float c)
  * NOTE: this needs to be handled specially by the integrator!  It does not
  * behave like a standard closure!
  */
-class EmitClosure final: public SurfaceClosure
-{
+class EmitClosure final: public SurfaceClosure {
 	Color col {1.0f};
 
 public:
@@ -236,8 +230,7 @@ public:
 
 
 
-class LambertClosure final: public SurfaceClosure
-{
+class LambertClosure final: public SurfaceClosure {
 	Color col {1.0f};
 
 public:
@@ -329,8 +322,7 @@ public:
 /**
  * The GTR microfacet BRDF from the Disney Principled BRDF paper.
  */
-class GTRClosure final: public SurfaceClosure
-{
+class GTRClosure final: public SurfaceClosure {
 private:
 	Color col {1.0f};
 	float roughness {0.05f};

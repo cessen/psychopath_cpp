@@ -24,8 +24,7 @@
  *
  * This PRNG should be more than sufficient for most purposes.
  */
-class RNG
-{
+class RNG {
 private:
 	uint32_t x, y, z, c;
 

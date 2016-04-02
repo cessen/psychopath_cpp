@@ -1,8 +1,7 @@
 #ifndef DISPLACEMENT_SHADER_HPP
 #define DISPLACEMENT_SHADER_HPP
 
-class DisplacementShader
-{
+class DisplacementShader {
 	~DisplacementShader() {}
 
 	/**

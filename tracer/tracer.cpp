@@ -35,8 +35,7 @@
 
 
 
-uint32_t Tracer::trace(const WorldRay* w_rays_begin, const WorldRay* w_rays_end, Intersection* intersections_begin, Intersection* intersections_end)
-{
+uint32_t Tracer::trace(const WorldRay* w_rays_begin, const WorldRay* w_rays_end, Intersection* intersections_begin, Intersection* intersections_end) {
 	// Clear ID
 	element_id.clear();
 
@@ -100,8 +99,7 @@ uint32_t Tracer::trace(const WorldRay* w_rays_begin, const WorldRay* w_rays_end,
 
 
 
-void Tracer::trace_assembly(Assembly* assembly, Ray* rays, Ray* rays_end)
-{
+void Tracer::trace_assembly(Assembly* assembly, Ray* rays, Ray* rays_end) {
 	BVH4StreamTraverser traverser;
 
 	// Initialize traverser
@@ -199,8 +197,7 @@ void Tracer::trace_assembly(Assembly* assembly, Ray* rays, Ray* rays_end)
 
 
 
-void Tracer::trace_surface(Surface* surface, Ray* rays, Ray* end)
-{
+void Tracer::trace_surface(Surface* surface, Ray* rays, Ray* end) {
 	// Get parent transforms
 	const auto parent_xforms = xform_stack.top_frame<Transform>();
 	const size_t parent_xforms_count = std::distance(parent_xforms.first, parent_xforms.second);
@@ -236,8 +233,7 @@ void Tracer::trace_surface(Surface* surface, Ray* rays, Ray* end)
 
 
 
-void Tracer::trace_complex_surface(ComplexSurface* surface, Ray* rays, Ray* end)
-{
+void Tracer::trace_complex_surface(ComplexSurface* surface, Ray* rays, Ray* end) {
 	// Get parent transforms
 	const auto parent_xforms = Range<const Transform*>(xform_stack.top_frame<Transform>());
 
@@ -254,8 +250,7 @@ void Tracer::trace_complex_surface(ComplexSurface* surface, Ray* rays, Ray* end)
 
 
 
-void Tracer::trace_patch_surface(PatchSurface* surface, Ray* rays, Ray* end)
-{
+void Tracer::trace_patch_surface(PatchSurface* surface, Ray* rays, Ray* end) {
 	// Get parent transforms
 	const auto parent_xforms = Range<const Transform*>(xform_stack.top_frame<Transform>());
 
@@ -269,8 +264,7 @@ void Tracer::trace_patch_surface(PatchSurface* surface, Ray* rays, Ray* end)
 
 
 
-void Tracer::trace_lightsource(Light* light, Ray* rays, Ray* end)
-{
+void Tracer::trace_lightsource(Light* light, Ray* rays, Ray* end) {
 	// Get parent transforms
 	const auto parent_xforms = xform_stack.top_frame<Transform>();
 	const size_t parent_xforms_count = std::distance(parent_xforms.first, parent_xforms.second);

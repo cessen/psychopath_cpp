@@ -11,8 +11,7 @@
 /**
  * @brief A spherical light source, emitting light evenly from its surface.
  */
-class SphereLight final: public Light
-{
+class SphereLight final: public Light {
 	std::vector<Vec3> positions;
 	std::vector<float> radii;
 	std::vector<Color> colors;

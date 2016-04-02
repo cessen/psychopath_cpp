@@ -11,8 +11,7 @@
 /**
  * @brief A rectangular light source, emitting light evenly from its surface.
  */
-class RectangleLight final: public Light
-{
+class RectangleLight final: public Light {
 	std::vector<std::pair<float, float>> dimensions;
 	std::vector<Color> colors;
 	std::vector<BBox> bounds_;

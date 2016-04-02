@@ -18,8 +18,7 @@
 #include "scene.hpp"
 
 
-class Parser
-{
+class Parser {
 	DataTree::Node tree;
 	unsigned int node_index = 0;
 

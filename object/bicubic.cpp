@@ -21,8 +21,7 @@
 Bicubic::Bicubic(Vec3 v1,  Vec3 v2,  Vec3 v3,  Vec3 v4,
                  Vec3 v5,  Vec3 v6,  Vec3 v7,  Vec3 v8,
                  Vec3 v9,  Vec3 v10, Vec3 v11, Vec3 v12,
-                 Vec3 v13, Vec3 v14, Vec3 v15, Vec3 v16)
-{
+                 Vec3 v13, Vec3 v14, Vec3 v15, Vec3 v16) {
 	verts.resize(1);
 
 	verts[0][0]  = v1;
@@ -50,8 +49,7 @@ Bicubic::Bicubic(Vec3 v1,  Vec3 v2,  Vec3 v3,  Vec3 v4,
 void Bicubic::add_time_sample(Vec3 v1,  Vec3 v2,  Vec3 v3,  Vec3 v4,
                               Vec3 v5,  Vec3 v6,  Vec3 v7,  Vec3 v8,
                               Vec3 v9,  Vec3 v10, Vec3 v11, Vec3 v12,
-                              Vec3 v13, Vec3 v14, Vec3 v15, Vec3 v16)
-{
+                              Vec3 v13, Vec3 v14, Vec3 v15, Vec3 v16) {
 	const auto i = verts.size();
 	verts.resize(verts.size()+1);
 
@@ -76,14 +74,12 @@ void Bicubic::add_time_sample(Vec3 v1,  Vec3 v2,  Vec3 v3,  Vec3 v4,
 	verts[i][15] = v16;
 }
 
-void Bicubic::add_time_sample(std::array<Vec3, 16> patch)
-{
+void Bicubic::add_time_sample(std::array<Vec3, 16> patch) {
 	verts.emplace_back(patch);
 }
 
 
-void Bicubic::finalize()
-{
+void Bicubic::finalize() {
 	// Calculate bounds
 	bbox.resize(verts.size());
 	for (size_t time = 0; time < verts.size(); time++) {
@@ -98,8 +94,7 @@ void Bicubic::finalize()
 }
 
 
-const std::vector<BBox> &Bicubic::bounds() const
-{
+const std::vector<BBox> &Bicubic::bounds() const {
 	return bbox;
 }
 

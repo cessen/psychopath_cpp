@@ -18,8 +18,7 @@
  * Ideally, other code should never have to directly access the matrix, though
  * it is left public just in case.
  */
-class Transform
-{
+class Transform {
 public:
 	Matrix44 to;
 
@@ -219,8 +218,7 @@ public:
 };
 
 
-static inline Transform make_axis_angle_transform(Vec3 axis, float angle)
-{
+static inline Transform make_axis_angle_transform(Vec3 axis, float angle) {
 	const ImathVec3 a(axis.x, axis.y, axis.z);
 	Transform xform;
 	xform.to.setAxisAngle(a, angle);
@@ -240,8 +238,7 @@ static inline Transform make_axis_angle_transform(Vec3 axis, float angle)
 * transforms line up (i.e. the time segments of each are an even multiple of
 * each other).
 */
-static inline void merge(Transform* dest, const Transform* a_begin, const Transform* a_end, const Transform* b_begin, const Transform* b_end)
-{
+static inline void merge(Transform* dest, const Transform* a_begin, const Transform* a_end, const Transform* b_begin, const Transform* b_end) {
 	const auto size_a = std::distance(a_begin, a_end);
 	const auto size_b = std::distance(b_begin, b_end);
 
@@ -285,16 +282,14 @@ static inline void merge(Transform* dest, const Transform* a_begin, const Transf
  * each other).
  */
 static inline std::vector<Transform> merge(const std::vector<Transform>::const_iterator& a_begin, const std::vector<Transform>::const_iterator& a_end,
-        const std::vector<Transform>::const_iterator& b_begin, const std::vector<Transform>::const_iterator& b_end)
-{
+        const std::vector<Transform>::const_iterator& b_begin, const std::vector<Transform>::const_iterator& b_end) {
 	const auto size = std::max(std::distance(a_begin, a_end), std::distance(b_begin, b_end));
 	std::vector<Transform> c(size);
 	merge(&(c[0]), &(*a_begin), &(*a_end), &(*b_begin), &(*b_end));
 	return c;
 }
 
-static inline std::vector<Transform> merge(const std::vector<Transform>& a, const std::vector<Transform>& b)
-{
+static inline std::vector<Transform> merge(const std::vector<Transform>& a, const std::vector<Transform>& b) {
 	return merge(a.cbegin(), a.cend(), b.cbegin(), b.cend());
 }
 

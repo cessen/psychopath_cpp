@@ -14,8 +14,7 @@
 #include "utils.hpp"
 
 
-void BVH4::build(const Assembly& assembly)
-{
+void BVH4::build(const Assembly& assembly) {
 	// Build a normal BVH as a starting point
 	BVH bvh;
 	bvh.build(assembly);
@@ -161,8 +160,7 @@ void BVH4::build(const Assembly& assembly)
 
 
 
-std::tuple<Ray*, Ray*, size_t> BVH4StreamTraverser::next_object()
-{
+std::tuple<Ray*, Ray*, size_t> BVH4StreamTraverser::next_object() {
 	while (stack_ptr >= 0) {
 		if (bvh->is_leaf(node_stack[stack_ptr])) {
 			ray_stack[stack_ptr].second = mutable_partition(ray_stack[stack_ptr].first, ray_stack[stack_ptr].second, [&](Ray& ray) {

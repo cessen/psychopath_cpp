@@ -21,8 +21,7 @@
 /*
  * A bounding volume hierarchy.
  */
-class BVH: public Accel
-{
+class BVH: public Accel {
 	std::vector<BBox> _bounds {BBox()};
 public:
 	virtual ~BVH() {};
@@ -35,7 +34,7 @@ public:
 	friend class BVHStreamTraverser;
 
 	enum {
-	    IS_LEAF = 1 << 0
+		IS_LEAF = 1 << 0
 	};
 
 	/*
@@ -132,8 +131,7 @@ private:
 /**
  * @brief A breadth-first traverser for BVH.
  */
-class BVHStreamTraverser: public AccelStreamTraverser<BVH>
-{
+class BVHStreamTraverser: public AccelStreamTraverser<BVH> {
 public:
 	virtual ~BVHStreamTraverser() {}
 

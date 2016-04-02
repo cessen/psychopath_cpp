@@ -25,8 +25,7 @@
 #include "hilbert.hpp"
 
 
-void PathTraceIntegrator::integrate()
-{
+void PathTraceIntegrator::integrate() {
 	// Auto-calculate bucket_size
 	const int min_bucket_size = 1;
 	const int max_bucket_size = std::sqrt((image->width * image->height) / (thread_count * 4.0f));  // Roughly four buckets per thread
@@ -67,7 +66,7 @@ void PathTraceIntegrator::integrate()
 		if (xp < subimage_w && yp < subimage_h) {
 			const int w = std::min(subimage_w - xp, bucket_size);
 			const int h = std::min(subimage_h - yp, bucket_size);
-			blocks.push_blocking( {xp+image->si_x1,yp+image->si_y1,w,h});
+			blocks.push_blocking({xp+image->si_x1,yp+image->si_y1,w,h});
 		}
 
 		if (xp >= morton_stop && yp >= morton_stop)
@@ -89,8 +88,7 @@ void PathTraceIntegrator::integrate()
 /*
  * Initializes the state of a path.
  */
-void PathTraceIntegrator::init_path(PTState* pstate, Sampler s, short x, short y)
-{
+void PathTraceIntegrator::init_path(PTState* pstate, Sampler s, short x, short y) {
 	*pstate = PTState();
 	pstate->sampler = s;
 	pstate->pix_x = x;
@@ -105,8 +103,7 @@ void PathTraceIntegrator::init_path(PTState* pstate, Sampler s, short x, short y
 /*
  * Calculate the next ray the path needs to shoot.
  */
-WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTState* pstate)
-{
+WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTState* pstate) {
 	PTState& path = *pstate; // Shorthand for the passed path
 	WorldRay ray;
 
@@ -232,8 +229,7 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 /*
  * Update the path based on the result of a ray shot
  */
-void PathTraceIntegrator::update_path(PTState* pstate, const WorldRay& ray, const Intersection& inter)
-{
+void PathTraceIntegrator::update_path(PTState* pstate, const WorldRay& ray, const Intersection& inter) {
 	PTState& path = *pstate; // Shorthand for the passed path
 
 	if (path.step % 2) {
@@ -283,8 +279,7 @@ void PathTraceIntegrator::update_path(PTState* pstate, const WorldRay& ray, cons
 }
 
 
-void PathTraceIntegrator::render_blocks()
-{
+void PathTraceIntegrator::render_blocks() {
 	PixelBlock pb {0,0,0,0};
 	RNG rng;
 	ImageSampler image_sampler(spp, image->width, image->height, seed);

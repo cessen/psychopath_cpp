@@ -33,26 +33,21 @@ static float const spectrum_mat_uv_to_xy[] = {
 	0.022774487118711398f, 0.05133881401140044f, -0.008668845424536832f
 };
 // apply a 3x2 matrix to a 2D color.
-static inline void spectrum_apply_3x2(float const* matrix, float const* src, float* tgt)
-{
+static inline void spectrum_apply_3x2(float const* matrix, float const* src, float* tgt) {
 	tgt[0] = matrix[0] * src[0] + matrix[1] * src[1] + matrix[2];
 	tgt[1] = matrix[3] * src[0] + matrix[4] * src[1] + matrix[5];
 }
 // Concrete conversion routines.
-static inline void spectrum_xy_to_xystar(float const* xy, float* xystar)
-{
+static inline void spectrum_xy_to_xystar(float const* xy, float* xystar) {
 	spectrum_apply_3x2(spectrum_mat_xy_to_xystar, xy, xystar);
 }
-static inline void spectrum_xystar_to_xy(float const* xystar, float* xy)
-{
+static inline void spectrum_xystar_to_xy(float const* xystar, float* xy) {
 	spectrum_apply_3x2(spectrum_mat_xystar_to_xy, xystar, xy);
 }
-static inline void spectrum_xy_to_uv(float const* xy, float* uv)
-{
+static inline void spectrum_xy_to_uv(float const* xy, float* uv) {
 	spectrum_apply_3x2(spectrum_mat_xy_to_uv, xy, uv);
 }
-static inline void spectrum_uv_to_xy(float const* uv, float* xy)
-{
+static inline void spectrum_uv_to_xy(float const* uv, float* xy) {
 	spectrum_apply_3x2(spectrum_mat_uv_to_xy, uv, xy);
 }
 // Grid cells. Laid out in row-major format.
@@ -446,8 +441,7 @@ static float const cmf_z[] = {
 	0.00645f, 0.01055f, 0.02005f, 0.03621f, 0.06785f, 0.1102f, 0.2074f, 0.3713f, 0.6456f, 1.03905f, 1.3856f, 1.62296f, 1.74706f, 1.7826f, 1.77211f, 1.7441f, 1.6692f, 1.5281f, 1.28764f, 1.0419f, 0.81295f, 0.6162f, 0.46518f, 0.3533f, 0.272f, 0.2123f, 0.1582f, 0.1117f, 0.07825f, 0.05725f, 0.04216f, 0.02984f, 0.0203f, 0.0134f, 0.00875f, 0.00575f, 0.0039f, 0.00275f, 0.0021f, 0.0018f, 0.00165f, 0.0014f, 0.0011f, 0.001f, 0.0008f, 0.0006f, 0.00034f, 0.00024f, 0.00019f, 0.0001f, 5e-05f, 3e-05f, 2e-05f, 1e-05f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f
 };
 
-static inline void xyz_from_spectrum(float const* spectrum, float* xyz)
-{
+static inline void xyz_from_spectrum(float const* spectrum, float* xyz) {
 	for (int i = 0; i < 3; ++i)
 		xyz[i] = 0.f;
 	for (int i = 0; i < spectrum_num_samples; ++i) {

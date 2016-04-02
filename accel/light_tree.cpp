@@ -3,8 +3,7 @@
 #include "assembly.hpp"
 
 
-float LightTree::node_prob(const LightQuery& lq, uint32_t index) const
-{
+float LightTree::node_prob(const LightQuery& lq, uint32_t index) const {
 	const BBox bbox = lerp_seq(lq.time, nodes[index].bounds);
 	const Vec3 d = bbox.center() - lq.pos;
 	const float dist2 = d.length2();
@@ -28,8 +27,7 @@ float LightTree::node_prob(const LightQuery& lq, uint32_t index) const
 }
 
 
-void LightTree::sample(LightQuery* query) const
-{
+void LightTree::sample(LightQuery* query) const {
 	const Node* node = &(nodes[0]);
 
 	float tot_prob = 1.0f;
@@ -98,8 +96,7 @@ void LightTree::sample(LightQuery* query) const
 }
 
 
-void LightTree::build(const Assembly& assembly_)
-{
+void LightTree::build(const Assembly& assembly_) {
 	assembly = &assembly_;
 
 	// Populate the build nodes
@@ -159,8 +156,7 @@ void LightTree::build(const Assembly& assembly_)
 }
 
 
-std::vector<LightTree::BuildNode>::iterator LightTree::split_lights(std::vector<LightTree::BuildNode>::iterator start, std::vector<LightTree::BuildNode>::iterator end)
-{
+std::vector<LightTree::BuildNode>::iterator LightTree::split_lights(std::vector<LightTree::BuildNode>::iterator start, std::vector<LightTree::BuildNode>::iterator end) {
 	// Find the minimum and maximum centroid values on each axis
 	Vec3 min, max;
 	min = start->center;
@@ -192,8 +188,7 @@ std::vector<LightTree::BuildNode>::iterator LightTree::split_lights(std::vector<
 }
 
 
-size_t LightTree::recursive_build(std::vector<LightTree::BuildNode>::iterator start, std::vector<LightTree::BuildNode>::iterator end)
-{
+size_t LightTree::recursive_build(std::vector<LightTree::BuildNode>::iterator start, std::vector<LightTree::BuildNode>::iterator end) {
 	// Allocate the node
 	const size_t me = nodes.size();
 	nodes.push_back(Node());

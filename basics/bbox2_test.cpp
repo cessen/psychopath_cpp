@@ -15,8 +15,7 @@
  ************************************************************************
  */
 
-TEST_CASE("bbox2")
-{
+TEST_CASE("bbox2") {
 	// Test for the first constructor
 	SECTION("constructor_1") {
 		BBox2 bb;

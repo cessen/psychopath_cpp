@@ -16,14 +16,12 @@
  * decremented.
  */
 template <class T, size_t CHUNK_SIZE=1024>
-class ChunkedArray
-{
+class ChunkedArray {
 public:
 	/**
 	 * @brief A random access iterator for ChunkedArrays.
 	 */
-	class iterator: public std::iterator<std::random_access_iterator_tag, T>
-	{
+	class iterator: public std::iterator<std::random_access_iterator_tag, T> {
 		T **chunks;
 		size_t base;
 
@@ -89,8 +87,7 @@ public:
 		}
 	};
 
-	class const_iterator: public std::iterator<std::random_access_iterator_tag, T>
-	{
+	class const_iterator: public std::iterator<std::random_access_iterator_tag, T> {
 		const T * const * const chunks;
 		size_t base;
 

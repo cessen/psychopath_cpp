@@ -12,8 +12,7 @@
 #include "bilinear.hpp"
 #include "bicubic.hpp"
 
-class SubdivisionSurface final: public ComplexSurface
-{
+class SubdivisionSurface final: public ComplexSurface {
 	struct Node {
 		Range<BBox*> bounds;
 		Node* children[2];

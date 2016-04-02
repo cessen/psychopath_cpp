@@ -10,8 +10,7 @@
  ************************************************************************
  */
 
-TEST_CASE("float")
-{
+TEST_CASE("float") {
 	SECTION("inf_1") {
 		float yar = std::numeric_limits<float>::infinity();
 		float foo = -std::numeric_limits<float>::infinity();

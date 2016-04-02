@@ -18,8 +18,7 @@
 /*
  * A virtual camera.
  */
-class Camera
-{
+class Camera {
 public:
 	std::vector<Transform> transforms;
 	std::vector<float> fovs;

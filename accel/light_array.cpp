@@ -2,8 +2,7 @@
 
 #include "assembly.hpp"
 
-void LightArray::build(const Assembly& assembly_)
-{
+void LightArray::build(const Assembly& assembly_) {
 	assembly = &assembly_;
 
 	for (size_t i = 0; i < assembly->instances.size(); ++i) {
@@ -37,8 +36,7 @@ void LightArray::build(const Assembly& assembly_)
 
 
 
-void LightArray::sample(LightQuery* query) const
-{
+void LightArray::sample(LightQuery* query) const {
 	// Handle empty light accel
 	if (light_indices.size() == 0 && assembly_lights.size() == 0) {
 		query->spec_samp = SpectralSample(query->spec_samp.hero_wavelength, 0.0f);

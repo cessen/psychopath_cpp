@@ -90,8 +90,7 @@ struct SubImage {
 
 // Called by program_options to parse a set of Resolution arguments
 void validate(boost::any& v, const std::vector<std::string>& values,
-              Resolution*, int)
-{
+              Resolution*, int) {
 	Resolution res;
 
 	//Extract tokens from values string vector and populate Resolution struct.
@@ -108,8 +107,7 @@ void validate(boost::any& v, const std::vector<std::string>& values,
 
 // Called by program_options to parse a set of SubImage arguments
 void validate(boost::any& v, const std::vector<std::string>& values,
-              SubImage*, int)
-{
+              SubImage*, int) {
 	SubImage subim;
 
 	//Extract tokens from values string vector and populate SubImage struct.
@@ -127,8 +125,7 @@ void validate(boost::any& v, const std::vector<std::string>& values,
 }
 
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
 	// RNGs
 	RNG rng(0);
 	RNG rng2(1);

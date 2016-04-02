@@ -5,8 +5,7 @@
 #include <algorithm>
 #include "numtype.h"
 
-namespace CountingSort
-{
+namespace CountingSort {
 
 /**
  * @brief Counting sort algorithm.
@@ -26,8 +25,7 @@ namespace CountingSort
  * @param indexer Pointer to a function that can turn type T into an integer.
  */
 template <class T>
-bool sort(T *list, size_t list_length, size_t max_items, size_t(*indexer)(const T &))
-{
+bool sort(T *list, size_t list_length, size_t max_items, size_t(*indexer)(const T &)) {
 	size_t item_counts[max_items];
 	for (size_t i = 0; i < max_items; i++) {
 		item_counts[i] = 0;

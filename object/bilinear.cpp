@@ -12,13 +12,11 @@
 
 
 
-Bilinear::Bilinear(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4)
-{
-	verts.push_back( {{v1,v2,v3,v4}});
+Bilinear::Bilinear(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4) {
+	verts.push_back({{v1,v2,v3,v4}});
 }
 
-void Bilinear::finalize()
-{
+void Bilinear::finalize() {
 	// Calculate bounds
 	bbox.resize(verts.size());
 	for (size_t time = 0; time < verts.size(); time++) {
@@ -33,13 +31,11 @@ void Bilinear::finalize()
 }
 
 
-void Bilinear::add_time_sample(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4)
-{
-	verts.push_back( {{v1,v2,v3,v4}});
+void Bilinear::add_time_sample(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4) {
+	verts.push_back({{v1,v2,v3,v4}});
 }
 
 
-const std::vector<BBox> &Bilinear::bounds() const
-{
+const std::vector<BBox> &Bilinear::bounds() const {
 	return bbox;
 }

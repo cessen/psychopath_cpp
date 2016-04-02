@@ -16,8 +16,7 @@
 #define SPLIT_STACK_SIZE 64
 
 template <typename PATCH>
-void intersect_rays_with_patch(const PATCH &patch, const Range<const Transform*> parent_xforms, Ray* ray_begin, Ray* ray_end, Intersection *intersections, Stack* data_stack, const SurfaceShader* surface_shader, const InstanceID& element_id)
-{
+void intersect_rays_with_patch(const PATCH &patch, const Range<const Transform*> parent_xforms, Ray* ray_begin, Ray* ray_end, Intersection *intersections, Stack* data_stack, const SurfaceShader* surface_shader, const InstanceID& element_id) {
 	const size_t tsc = patch.verts.size(); // Time sample count
 	int stack_i = 0;
 	std::pair<Ray*, Ray*> ray_stack[SPLIT_STACK_SIZE];
@@ -202,8 +201,7 @@ void intersect_rays_with_patch(const PATCH &patch, const Range<const Transform*>
 
 
 // Modifies a bicubic patch in place to convert it from bspline to bezier.
-static inline void bspline_to_bezier_curve(Vec3* v1, Vec3* v2, Vec3* v3, Vec3* v4)
-{
+static inline void bspline_to_bezier_curve(Vec3* v1, Vec3* v2, Vec3* v3, Vec3* v4) {
 	const Vec3 tmp_v2 = *v2;
 	*v1 = (*v1 * (1.0/3.0)) + (*v2 * (2.0/3.0));
 	*v4 = (*v4 * (1.0/3.0)) + (*v3 * (2.0/3.0));
@@ -215,8 +213,7 @@ static inline void bspline_to_bezier_curve(Vec3* v1, Vec3* v2, Vec3* v3, Vec3* v
 
 
 // Modifies a bicubic patch in place to convert it from bspline to bezier.
-static inline void bspline_to_bezier_patch(std::array<Vec3, 16>* patch)
-{
+static inline void bspline_to_bezier_patch(std::array<Vec3, 16>* patch) {
 	for (int i = 0; i < 4; ++i) {
 		int ii = i * 4;
 		bspline_to_bezier_curve(&(*patch)[ii], &(*patch)[ii+1], &(*patch)[ii+2], &(*patch)[ii+3]);

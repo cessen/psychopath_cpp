@@ -23,8 +23,7 @@
  *    |     |     |     |
  *   v12---v13---v14---v15
  */
-class Bicubic final: public PatchSurface
-{
+class Bicubic final: public PatchSurface {
 public:
 	std::vector<std::array<Vec3, 16>> verts;
 	std::vector<BBox> bbox;

@@ -22,8 +22,7 @@
  * Although markov chain algorithms may play poorly with the Tracer, which is
  * designed to trace rays in bulk.
  */
-class Integrator
-{
+class Integrator {
 public:
 	virtual ~Integrator() {}
 

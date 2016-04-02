@@ -3,8 +3,7 @@
 
 
 
-TEST_CASE("ring_buffer_concurrent")
-{
+TEST_CASE("ring_buffer_concurrent") {
 	/* constructor tests */
 	SECTION("constructor_1") {
 		RingBufferConcurrent<int> rb;

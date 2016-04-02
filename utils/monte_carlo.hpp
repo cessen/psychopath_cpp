@@ -9,8 +9,7 @@
  * We use this as a close approximation to the gaussian inverse CDF,
  * since the gaussian inverse CDF (probit) has no analytic formula.
  */
-static inline float logit(float p, float width = 1.5f)
-{
+static inline float logit(float p, float width = 1.5f) {
 	p = 0.001f + (p * 0.998f);
 	return logf(p/(1.0f-p)) * width * (0.6266f/4);
 }
@@ -21,8 +20,7 @@ static inline float logit(float p, float width = 1.5f)
  * NOTE: x and y should be distributed within [-1, 1],
  * not [0, 1].
  */
-static inline void square_to_circle(float *x, float *y)
-{
+static inline void square_to_circle(float *x, float *y) {
 	assert(*x >= -1.0 && *x <= 1.0 && *y >= -1.0 && *y <= 1.0);
 
 	if (*x == 0.0 && *y == 0.0)
@@ -48,8 +46,7 @@ static inline void square_to_circle(float *x, float *y)
 	*y = radius * std::sin(angle);
 }
 
-static inline Vec3 cosine_sample_hemisphere(float u, float v)
-{
+static inline Vec3 cosine_sample_hemisphere(float u, float v) {
 	u = (u*2)-1;
 	v = (v*2)-1;
 	square_to_circle(&u, &v);
@@ -57,8 +54,7 @@ static inline Vec3 cosine_sample_hemisphere(float u, float v)
 	return Vec3(u, v, z);
 }
 
-static inline Vec3 cosine_sample_hemisphere_polar(float u, float v)
-{
+static inline Vec3 cosine_sample_hemisphere_polar(float u, float v) {
 	const float r = std::sqrt(u);
 	const float theta = 2 * M_PI * v;
 
@@ -68,8 +64,7 @@ static inline Vec3 cosine_sample_hemisphere_polar(float u, float v)
 	return Vec3(x, y, std::sqrt(std::max(0.0f, 1 - u)));
 }
 
-static inline Vec3 uniform_sample_hemisphere(float u, float v)
-{
+static inline Vec3 uniform_sample_hemisphere(float u, float v) {
 	float z = u;
 	float r = std::sqrt(std::max(0.f, 1.f - z*z));
 	float phi = 2 * M_PI * v;
@@ -78,8 +73,7 @@ static inline Vec3 uniform_sample_hemisphere(float u, float v)
 	return Vec3(x, y, z);
 }
 
-static inline Vec3 uniform_sample_sphere(float u, float v)
-{
+static inline Vec3 uniform_sample_sphere(float u, float v) {
 	float z = 1.f - (2.f * u);
 	float r = std::sqrt(std::max(0.f, 1.f - z*z));
 	float phi = 2.f * M_PI * v;
@@ -89,8 +83,7 @@ static inline Vec3 uniform_sample_sphere(float u, float v)
 }
 
 template <typename T>
-static inline Vec3 uniform_sample_cone(T u, T v, T cos_theta_max)
-{
+static inline Vec3 uniform_sample_cone(T u, T v, T cos_theta_max) {
 	const T cos_theta = (1.0 - u) + (u * cos_theta_max);
 	const T sin_theta = std::sqrt(1.0 - (cos_theta * cos_theta));
 	const T phi = v * 2.0 * M_PI;
@@ -98,8 +91,7 @@ static inline Vec3 uniform_sample_cone(T u, T v, T cos_theta_max)
 }
 
 template <typename T>
-static inline T uniform_sample_cone_pdf(T cos_theta_max)
-{
+static inline T uniform_sample_cone_pdf(T cos_theta_max) {
 	// 1.0 / solid angle
 	return 1.0 / (2.0 * M_PI * (1.0 - cos_theta_max));
 }
@@ -109,8 +101,7 @@ static inline T uniform_sample_cone_pdf(T cos_theta_max)
  *
  * A, B, and C are the points of the triangle on a unit sphere.
  */
-static inline float spherical_triangle_solid_angle(Vec3 A, Vec3 B, Vec3 C)
-{
+static inline float spherical_triangle_solid_angle(Vec3 A, Vec3 B, Vec3 C) {
 	// Calculate sines and cosines of the spherical triangle's edge lengths
 	const double cos_a = clamp((double)(dot(B, C)), -1.0, 1.0);
 	const double cos_b = clamp((double)(dot(C, A)), -1.0, 1.0);
@@ -143,8 +134,7 @@ static inline float spherical_triangle_solid_angle(Vec3 A, Vec3 B, Vec3 C)
  * Generates a uniform sample on a spherical triangle given two uniform
  * random variables i and j in [0, 1].
  */
-static inline Vec3 uniform_sample_spherical_triangle(Vec3 A, Vec3 B, Vec3 C, float i, float j)
-{
+static inline Vec3 uniform_sample_spherical_triangle(Vec3 A, Vec3 B, Vec3 C, float i, float j) {
 	// Calculate sines and cosines of the spherical triangle's edge lengths
 	const double cos_a = clamp((double)(dot(B, C)), -1.0, 1.0);
 	const double cos_b = clamp((double)(dot(C, A)), -1.0, 1.0);

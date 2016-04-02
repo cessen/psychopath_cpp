@@ -23,14 +23,12 @@
  * @brief Maps a linear brightness range to a range that approximates
  * the human eye's sensitivity to brightness.
  */
-static float hcol(float n)
-{
+static float hcol(float n) {
 	if (n < 0.0f)
 		n = 0.0f;
 	return pow(n, 1.0f/2.2f);
 }
-static Color_XYZ hcol(Color_XYZ n)
-{
+static Color_XYZ hcol(Color_XYZ n) {
 	return Color_XYZ(hcol(n[0]), hcol(n[1]), hcol(n[2]));
 }
 
@@ -38,12 +36,10 @@ static Color_XYZ hcol(Color_XYZ n)
 /**
  * @brief Calculates the absolute difference between two values.
  */
-static float diff(float n1, float n2)
-{
+static float diff(float n1, float n2) {
 	return fabs(n1-n2);
 }
-static Color_XYZ diff(Color_XYZ c1, Color_XYZ c2)
-{
+static Color_XYZ diff(Color_XYZ c1, Color_XYZ c2) {
 	Color_XYZ c = Color_XYZ(diff(c1[0], c2[0]),
 	                        diff(c1[1], c2[1]),
 	                        diff(c1[2], c2[2]));
@@ -57,15 +53,13 @@ static Color_XYZ diff(Color_XYZ c1, Color_XYZ c2)
  * In the case of multi-component variables, it returns a variable
  * with each component being individually maximized.
  */
-static float mmax(float a, float b)
-{
+static float mmax(float a, float b) {
 	if (a > b)
 		return a;
 	else
 		return b;
 }
-static Color_XYZ mmax(Color_XYZ a, Color_XYZ b)
-{
+static Color_XYZ mmax(Color_XYZ a, Color_XYZ b) {
 	return Color_XYZ(mmax(a[0], b[0]), mmax(a[1], b[1]), mmax(a[2], b[2]));
 }
 
@@ -81,8 +75,7 @@ static Color_XYZ mmax(Color_XYZ a, Color_XYZ b)
  * TODO: currently Film only collects color data.  Should be expanded to handle
  * render layers and AOV's.
  */
-class Film
-{
+class Film {
 public:
 	RNG rng;
 	uint16_t width, height; // Resolution of the image in pixels

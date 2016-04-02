@@ -19,31 +19,26 @@
 #define QPI (M_PI / 4)
 
 // Math operators for some types commonly used in Psychopath
-static inline std::pair<float, float> operator *(const std::pair<float, float>& a, float b)
-{
+static inline std::pair<float, float> operator *(const std::pair<float, float>& a, float b) {
 	return std::make_pair(a.first * b, a.second * b);
 }
 
-static inline std::pair<float, float> operator /(const std::pair<float, float>& a, float b)
-{
+static inline std::pair<float, float> operator /(const std::pair<float, float>& a, float b) {
 	return std::make_pair(a.first / b, a.second / b);
 }
 
-static inline std::pair<float, float> operator +(const std::pair<float, float>& a, const std::pair<float, float>& b)
-{
+static inline std::pair<float, float> operator +(const std::pair<float, float>& a, const std::pair<float, float>& b) {
 	return std::make_pair(a.first + b.first, a.second + b. second);
 }
 
-static inline std::pair<float, float> operator -(const std::pair<float, float>& a, const std::pair<float, float>& b)
-{
+static inline std::pair<float, float> operator -(const std::pair<float, float>& a, const std::pair<float, float>& b) {
 	return std::make_pair(a.first - b.first, a.second - b. second);
 }
 
 
 // Returns value clamped to within the range [a,b]
 template <class T>
-static inline T clamp(const T& value, const T& a, const T& b)
-{
+static inline T clamp(const T& value, const T& a, const T& b) {
 	return std::min(b, std::max(a, value));
 }
 
@@ -53,8 +48,7 @@ static inline T clamp(const T& value, const T& a, const T& b)
    alpha = 1.0 means full b
  */
 template <class T>
-static inline T lerp(const float &alpha, const T &a, const T &b)
-{
+static inline T lerp(const float &alpha, const T &a, const T &b) {
 	assert(alpha >= 0 && alpha <= 1);
 	return (a * (1.0-alpha)) + (b * alpha);
 }
@@ -62,8 +56,7 @@ static inline T lerp(const float &alpha, const T &a, const T &b)
 
 template <class T>
 static inline T lerp2d(float alpha_u, float alpha_v,
-                       T s00, T s10, T s01, T s11)
-{
+                       T s00, T s10, T s01, T s11) {
 	const T temp1 = lerp(alpha_u, s00, s10);
 	const T temp2 = lerp(alpha_u, s01, s11);
 	return lerp(alpha_v, temp1, temp2);
@@ -80,8 +73,7 @@ static inline T lerp2d(float alpha_u, float alpha_v,
  * alpha = 1.0 means the last element in the sequence
  */
 template<typename RandIt, typename T = typename std::iterator_traits<RandIt>::value_type>
-T lerp_seq(float alpha, const RandIt& seq, int seq_length)
-{
+T lerp_seq(float alpha, const RandIt& seq, int seq_length) {
 	assert(alpha >= 0 && alpha <= 1);
 	assert(seq_length > 0);
 
@@ -98,16 +90,14 @@ T lerp_seq(float alpha, const RandIt& seq, int seq_length)
 }
 
 template<typename RandIt, typename T = typename std::iterator_traits<RandIt>::value_type>
-T lerp_seq(float alpha, const RandIt& begin, const RandIt& end)
-{
+T lerp_seq(float alpha, const RandIt& begin, const RandIt& end) {
 	const auto seq_length = std::distance(begin, end);
 	return lerp_seq(alpha, begin, seq_length);
 }
 
 // Version of lerp_seq for containers with begin() and end() methods that return iterators.
 template<typename RandContainer, typename T = typename RandContainer::value_type>
-T lerp_seq(float alpha, const RandContainer& c)
-{
+T lerp_seq(float alpha, const RandContainer& c) {
 	return lerp_seq(alpha, c.cbegin(), c.cend());
 }
 
@@ -129,8 +119,7 @@ T lerp_seq(float alpha, const RandContainer& c)
  * under the MIT open source license.
  */
 template <typename Predicate, typename BidirIt>
-BidirIt mutable_partition(BidirIt begin, BidirIt end, Predicate pred)
-{
+BidirIt mutable_partition(BidirIt begin, BidirIt end, Predicate pred) {
 	alignas(decltype(*begin)) char tmp[sizeof(decltype(*begin))];
 
 	while (true) {
@@ -198,8 +187,7 @@ BidirIt mutable_partition(BidirIt begin, BidirIt end, Predicate pred)
  * time samples.
  * The first index and alpha are put into i and alpha respectively.
  */
-static inline bool calc_time_interp(const uint8_t& time_count, const float &time, uint32_t *i, float *alpha)
-{
+static inline bool calc_time_interp(const uint8_t& time_count, const float &time, uint32_t *i, float *alpha) {
 	if (time_count < 2)
 		return false;
 
@@ -222,8 +210,7 @@ static inline bool calc_time_interp(const uint8_t& time_count, const float &time
 /**
  * @brief Creates a coordinate system from a single vector.
  */
-static inline void coordinate_system_from_vec3(const Vec3 &v1, Vec3 *v2, Vec3 *v3)
-{
+static inline void coordinate_system_from_vec3(const Vec3 &v1, Vec3 *v2, Vec3 *v3) {
 	if (std::abs(v1.x) > std::fabs(v1.y)) {
 		float invlen = 1.f / std::sqrt(v1.x*v1.x + v1.z*v1.z);
 		*v2 = Vec3(-v1.z * invlen, 0.f, v1.x * invlen);
@@ -248,8 +235,7 @@ static inline void coordinate_system_from_vec3(const Vec3 &v1, Vec3 *v2, Vec3 *v
  *
  * @return The transformed vector.
  */
-static inline Vec3 zup_to_vec(Vec3 from, Vec3 toz)
-{
+static inline Vec3 zup_to_vec(Vec3 from, Vec3 toz) {
 	Vec3 tox, toy;
 	toz.normalize();
 	coordinate_system_from_vec3(toz, &tox, &toy);
@@ -264,8 +250,7 @@ static inline Vec3 zup_to_vec(Vec3 from, Vec3 toz)
 /**
  * @brief Returns the log base 2 of the given integer.
  */
-static inline uint32_t intlog2(uint32_t v)
-{
+static inline uint32_t intlog2(uint32_t v) {
 	uint32_t r;
 	uint32_t shift;
 
@@ -288,8 +273,7 @@ static inline uint32_t intlog2(uint32_t v)
 /**
  * @brief Rounds an integer up to the next power of two.
  */
-static inline uint32_t upper_power_of_two(uint32_t v)
-{
+static inline uint32_t upper_power_of_two(uint32_t v) {
 	v--;
 	v |= v >> 1;
 	v |= v >> 2;
@@ -301,8 +285,7 @@ static inline uint32_t upper_power_of_two(uint32_t v)
 
 }
 
-static inline float log2(float x)
-{
+static inline float log2(float x) {
 	return std::log(x) * 1.4426950408889634f;
 }
 
@@ -313,8 +296,7 @@ static inline float log2(float x)
  * (C) 2011 Paul Mineiro
  * Under a BSD style license.  See above URL for details.
  */
-static inline float fastlog2(float x)
-{
+static inline float fastlog2(float x) {
 	union {
 		float f;
 		uint32_t i;
@@ -338,8 +320,7 @@ static inline float fastlog2(float x)
  * (C) 2011 Paul Mineiro
  * Under a BSD style license.  See above URL for details.
  */
-static inline float fasterlog2(float x)
-{
+static inline float fasterlog2(float x) {
 	union {
 		float f;
 		uint32_t i;
@@ -352,8 +333,7 @@ static inline float fasterlog2(float x)
 /**
  * @brief Approximate 1/sqrt(n)
  */
-static inline float fastrsqrt(float n)
-{
+static inline float fastrsqrt(float n) {
 	union {
 		int32_t i;
 		float y;
@@ -372,8 +352,7 @@ static inline float fastrsqrt(float n)
 /**
  * @brief Even more approximate (but faster) 1/sqrt(n)
  */
-static inline float fasterrsqrt(float n)
-{
+static inline float fasterrsqrt(float n) {
 	union {
 		int32_t i;
 		float y;
@@ -385,8 +364,7 @@ static inline float fasterrsqrt(float n)
 	return y;
 }
 
-static inline std::string to_string(const __m128& v)
-{
+static inline std::string to_string(const __m128& v) {
 	float vs[4];
 	_mm_store_ps(vs, v);
 
@@ -414,8 +392,7 @@ static inline std::string to_string(const __m128& v)
  *
  * Returns the t parameter and distance as a tuple.
  */
-static inline std::tuple<float, float> closest_ray_t(Vec3 o1, Vec3 d1, Vec3 o2, Vec3 d2)
-{
+static inline std::tuple<float, float> closest_ray_t(Vec3 o1, Vec3 d1, Vec3 o2, Vec3 d2) {
 	const Vec3 w = o1 - o2;
 
 	const float a = dot(d1, d1);
@@ -450,8 +427,7 @@ static inline std::tuple<float, float> closest_ray_t(Vec3 o1, Vec3 d1, Vec3 o2, 
  *
  * Returns the t parameter and distance as a tuple.
  */
-static inline std::tuple<float, float> closest_ray_t2(Vec3 o1, Vec3 d1, Vec3 o2, Vec3 d2)
-{
+static inline std::tuple<float, float> closest_ray_t2(Vec3 o1, Vec3 d1, Vec3 o2, Vec3 d2) {
 	const Vec3 dd = d1 - d2;
 	const float dd2 = dot(dd, dd);
 
@@ -473,8 +449,7 @@ static inline std::tuple<float, float> closest_ray_t2(Vec3 o1, Vec3 d1, Vec3 o2,
  * p is the point.
  * o and d are the point in space and direction that define the line.
  */
-static inline float point_line_distance(Vec3 p, Vec3 o, Vec3 d)
-{
+static inline float point_line_distance(Vec3 p, Vec3 o, Vec3 d) {
 	const auto w = p - o;
 	const auto n = d.normalized();
 

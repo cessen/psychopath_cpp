@@ -23,8 +23,7 @@
 
 #include "numtype.h"
 
-namespace Halton
-{
+namespace Halton {
 
 uint32_t max_dimension();
 

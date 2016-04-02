@@ -38,13 +38,11 @@ ImageSampler::ImageSampler(uint spp,
 }
 
 
-ImageSampler::~ImageSampler()
-{
+ImageSampler::~ImageSampler() {
 }
 
 
-void ImageSampler::get_sample(uint32_t x, uint32_t y, uint32_t d, uint32_t ns, float *sample, uint16_t *coords)
-{
+void ImageSampler::get_sample(uint32_t x, uint32_t y, uint32_t d, uint32_t ns, float *sample, uint16_t *coords) {
 	if (coords != nullptr) {
 		coords[0] = x;
 		coords[1] = y;
@@ -83,8 +81,7 @@ void ImageSampler::get_sample(uint32_t x, uint32_t y, uint32_t d, uint32_t ns, f
  */
 //#define PROGRESSIVE_SAMPLING
 #ifndef PROGRESSIVE_SAMPLING
-bool ImageSampler::get_next_sample(uint32_t ns, float *sample, uint16_t *coords)
-{
+bool ImageSampler::get_next_sample(uint32_t ns, float *sample, uint16_t *coords) {
 	//std::cout << s << " " << x << " " << y << std::endl;
 	// Check if we're done
 	if (points_traversed >= (curve_res*curve_res))
@@ -110,8 +107,7 @@ bool ImageSampler::get_next_sample(uint32_t ns, float *sample, uint16_t *coords)
 	return true;
 }
 #else
-bool ImageSampler::get_next_sample(uint32_t ns, float *sample, uint16_t *coords)
-{
+bool ImageSampler::get_next_sample(uint32_t ns, float *sample, uint16_t *coords) {
 	//std::cout << s << " " << x << " " << y << std::endl;
 	// Check if we're done
 	if (points_traversed >= (curve_res*curve_res) && s >= spp)

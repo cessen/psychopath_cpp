@@ -617,8 +617,7 @@ struct BBox4 {
  * being the BBoxes over time.  The result is a vector that
  * is the union of the two vectors of BBoxes.
  */
-static inline std::vector<BBox> merge(const std::vector<BBox>& a, const std::vector<BBox>& b)
-{
+static inline std::vector<BBox> merge(const std::vector<BBox>& a, const std::vector<BBox>& b) {
 	std::vector<BBox> c;
 
 	if (a.size() == 0) {
@@ -642,8 +641,7 @@ static inline std::vector<BBox> merge(const std::vector<BBox>& a, const std::vec
 }
 
 
-static inline std::vector<BBox> transform_from(const std::vector<BBox>& bbs_in, std::vector<Transform>::const_iterator xstart, std::vector<Transform>::const_iterator xend)
-{
+static inline std::vector<BBox> transform_from(const std::vector<BBox>& bbs_in, std::vector<Transform>::const_iterator xstart, std::vector<Transform>::const_iterator xend) {
 	std::vector<BBox> bbs = bbs_in;
 
 	// Transform the bounding boxes

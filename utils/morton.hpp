@@ -5,8 +5,7 @@
 #ifndef MORTON_HPP
 #define MORTON_HPP
 
-namespace Morton
-{
+namespace Morton {
 
 /**
  * @brief Encodes x and y coordinates into a morton code index.
@@ -14,8 +13,7 @@ namespace Morton
  * In practice x and y need to be within the range of an unsigned 16 bit
  * integer, since the output is a single 32 bit index.
  */
-static inline uint32_t xy2d(uint32_t x, uint32_t y)
-{
+static inline uint32_t xy2d(uint32_t x, uint32_t y) {
 	x &= 0x0000ffff;
 	y &= 0x0000ffff;
 	x |= (x << 8);
@@ -40,8 +38,7 @@ static inline uint32_t xy2d(uint32_t x, uint32_t y)
 /**
  * @brief Decodes a morton code index into x and y coordinates.
  */
-static inline void d2xy(uint32_t d, uint32_t *x, uint32_t *y)
-{
+static inline void d2xy(uint32_t d, uint32_t *x, uint32_t *y) {
 	*x = d;
 	*y = (*x >> 1);
 	*x &= 0x55555555;

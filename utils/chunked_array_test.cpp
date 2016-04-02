@@ -13,8 +13,7 @@ struct MyInt {
 
 
 
-TEST_CASE("chunked_array")
-{
+TEST_CASE("chunked_array") {
 	SECTION("constructor_1") {
 		ChunkedArray<int, 10> ar;
 		REQUIRE(ar.size() == 0);

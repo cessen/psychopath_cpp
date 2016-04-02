@@ -10,8 +10,7 @@
  * @brief A 2d array optimized for cache coherency.
  */
 template <class T, uint32_t LOG_BLOCK_SIZE>
-class BlockedArray
-{
+class BlockedArray {
 private:
 	uint32_t block_size {1 << LOG_BLOCK_SIZE};
 	uint32_t block_mask {block_size - 1};

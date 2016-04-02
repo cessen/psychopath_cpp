@@ -3,11 +3,10 @@
 #include "stack.hpp"
 
 struct alignas(64) Yar {
-    int a, b;
+	int a, b;
 };
 
-TEST_CASE("Stack")
-{
+TEST_CASE("Stack") {
 	SECTION("ints") {
 		Stack s(1024, 64);
 

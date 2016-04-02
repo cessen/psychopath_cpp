@@ -13,8 +13,7 @@
  * will not be run.  Also, you must keep track of the types
  * you store yourself.
  */
-class Stack
-{
+class Stack {
 	std::vector<char> data;
 	std::vector<std::pair<char*, char*>> frames;
 

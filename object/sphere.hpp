@@ -12,8 +12,7 @@
  *
  * This serves as a simple example of how to implement a surface primitive.
  */
-class Sphere final: public Surface
-{
+class Sphere final: public Surface {
 public:
 	std::vector<Vec3> center;
 	std::vector<float> radius;

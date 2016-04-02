@@ -19,8 +19,7 @@
  * | v3----v4
  * \/
  */
-class Bilinear final: public PatchSurface
-{
+class Bilinear final: public PatchSurface {
 public:
 	std::vector<std::array<Vec3, 4>> verts;
 	std::vector<BBox> bbox;

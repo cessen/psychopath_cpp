@@ -19,8 +19,7 @@ class Assembly;
  * This pure virtual class should never be used directly.  It's only purpose
  * is to enforce an interface for classes that inherit from it.
  */
-class Accel
-{
+class Accel {
 public:
 	virtual ~Accel() {}
 
@@ -46,8 +45,7 @@ public:
  * is to enforce an interface for classes that inherit from it.
  */
 template <typename T>
-class AccelStreamTraverser
-{
+class AccelStreamTraverser {
 public:
 	virtual ~AccelStreamTraverser() {}
 

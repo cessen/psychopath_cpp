@@ -19,8 +19,7 @@
  * choice is std::function<void()>
  */
 template <class T=std::function<void()>>
-class JobQueue
-{
+class JobQueue {
 	RingBufferConcurrent<T> queue;
 	std::vector<std::thread> threads;
 

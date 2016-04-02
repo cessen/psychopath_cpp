@@ -11,8 +11,7 @@
  * the queue overwriting itself from the back.
  */
 template <class T>
-class RingBuffer
-{
+class RingBuffer {
 private:
 	std::vector<T> buffer {T{}}; // Default 1 item large
 

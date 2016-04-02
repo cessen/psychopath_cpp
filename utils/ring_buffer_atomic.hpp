@@ -7,8 +7,7 @@
 
 
 template <class T>
-class RingBufferAtomicItem
-{
+class RingBufferAtomicItem {
 	T item;
 	std::atomic_flag taken;
 };
@@ -24,8 +23,7 @@ class RingBufferAtomicItem
  * the queue overwriting itself from the back.
  */
 template <class T>
-class RingBufferAtomic
-{
+class RingBufferAtomic {
 private:
 	std::vector<RingBufferAtomicItem<T>> buffer;
 

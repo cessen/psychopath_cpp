@@ -33,8 +33,7 @@
  * Essentially, anything that is not part of the scene description is entirely
  * the responsibility of the renderer.
  */
-class Renderer
-{
+class Renderer {
 private:
 	uint res_x, res_y;
 	uint subimage_x1, subimage_y1, subimage_x2, subimage_y2;

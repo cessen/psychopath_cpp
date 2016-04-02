@@ -41,8 +41,7 @@
  * resulting intersection data is stored in the rays' data structures directly.
  * Wash, rinse, repeat.
  */
-class Tracer
-{
+class Tracer {
 public:
 	Scene *scene;
 	Range<const WorldRay*> w_rays; // Rays to trace

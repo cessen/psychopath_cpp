@@ -3,12 +3,10 @@
 #include <atomic>
 #include "numtype.h"
 
-namespace Global
-{
+namespace Global {
 std::atomic<size_t> next_object_uid {0};
 
-namespace Stats
-{
+namespace Stats {
 std::atomic<uint64_t> rays_shot(0);
 std::atomic<uint64_t> split_count(0);
 std::atomic<size_t> object_ray_tests(0);

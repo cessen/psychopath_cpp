@@ -12,8 +12,7 @@
 
 // Should be overloaded for more complex types
 template <class T>
-size_t size_in_bytes(const T& data)
-{
+size_t size_in_bytes(const T& data) {
 	return sizeof(T);
 }
 
@@ -21,8 +20,7 @@ size_t size_in_bytes(const T& data)
  * A thread-safe Least-Recently-Used cache.
  */
 template <class K, class T>
-class LRUCache
-{
+class LRUCache {
 	struct LRUPair {
 		K key;
 		std::shared_ptr<T> data_ptr;

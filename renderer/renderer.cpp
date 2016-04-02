@@ -21,8 +21,7 @@
 
 #define GAMMA 2.2
 
-void write_png_from_film(Film *image, std::string path, float min_time=4.0)
-{
+void write_png_from_film(Film *image, std::string path, float min_time=4.0) {
 	static Timer<> timer;
 
 	if ((timer.time() > min_time || min_time == 0.0f) && !Config::no_output) {
@@ -43,8 +42,7 @@ void write_png_from_film(Film *image, std::string path, float min_time=4.0)
 }
 
 
-bool Renderer::render(int thread_count)
-{
+bool Renderer::render(int thread_count) {
 	Timer<> timer; // Start timer
 
 	// Clear rendering statistics

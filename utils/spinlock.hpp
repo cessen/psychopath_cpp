@@ -11,8 +11,7 @@
  * not held for very long compared to other work done.  For locks that
  * are held for long periods of time, a mutex is generally better.
  */
-class SpinLock
-{
+class SpinLock {
 	std::atomic_flag lock_flag {ATOMIC_FLAG_INIT};
 public:
 	/**
@@ -47,8 +46,7 @@ public:
  * readers and where the locks are generally only held for short
  * periods.
  */
-class SpinLockRW
-{
+class SpinLockRW {
 	std::atomic_flag w_lock {ATOMIC_FLAG_INIT}; // Writer lock
 	std::atomic<unsigned int> r_lock_count {0}; // Reader lock count
 public:

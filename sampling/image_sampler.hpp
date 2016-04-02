@@ -47,8 +47,7 @@ struct Sampler {
  * and cube respectively.
  * The renderer is expected to transform sample ranges as necessary.
  */
-class ImageSampler
-{
+class ImageSampler {
 private:
 	/* General settings. */
 	uint spp;  // Approximate number of samples per pixel
