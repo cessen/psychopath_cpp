@@ -195,4 +195,41 @@ static inline Vec3 uniform_sample_spherical_triangle(Vec3 A, Vec3 B, Vec3 C, flo
 	return result;
 }
 
+
+/**
+ * Analytically calculates lambert shading from a uniform light source
+ * subtending a circular solid angle.
+ * Only works for solid angle subtending equal to or less than a hemisphere.
+ *
+ * Formula taken from "Area Light Sources for Real-Time Graphics"
+ * by John M. Snyder
+ */
+static inline float sphere_lambert(float nlcos, float rcos) {
+	assert(nlcos >= -1.0 && nlcos <= 1.0);
+	assert(rcos >= 0.0 && rcos <= 1.0);
+
+	const float nlsin = std::sqrt(1.0 - (nlcos * nlcos));
+	const float rsin2 = 1.0 - (rcos * rcos);
+	const float rsin = std::sqrt(rsin2);
+	const float ysin = rcos / nlsin;
+	const float ycos2 = 1.0 - (ysin * ysin);
+	const float ycos = std::sqrt(ycos2);
+
+	const float g = (-2.0 * nlsin * rcos * ycos) + HPI - std::asin(ysin) + (ysin * ycos);
+	const float h = nlcos * ((ycos * std::sqrt(rsin2 - ycos2)) + (rsin2 * std::asin(ycos / rsin)));
+
+	const float nl = std::acos(nlcos);
+	const float r = std::acos(rcos);
+
+	if (nl < (HPI - r)) {
+		return nlcos * rsin2;
+	} else if (nl < HPI) {
+		return (nlcos * rsin2) + g - h;
+	} else if (nl < (HPI + r)) {
+		return (g + h) * INV_PI;
+	} else {
+		return 0.0;
+	}
+}
+
 #endif // MONTE_CARLO_HPP

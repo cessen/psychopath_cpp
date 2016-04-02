@@ -276,17 +276,31 @@ public:
 	float estimate_eval_over_solid_angle(const Vec3 &in, const Vec3 &out, const float cos_theta, const Vec3 nor, const float wavelength) const override {
 		assert(cos_theta >= -1.0f && cos_theta <= 1.0f);
 
-		Vec3 nn = nor.normalized();
-		const Vec3 v = out.normalized();
+// 		Vec3 nn = nor.normalized();
+// 		const Vec3 v = out.normalized();
 
-		if (dot(nn, in) > 0.0f)
-			nn *= -1.0f;
+// 		if (dot(nn, in) > 0.0f)
+// 			nn *= -1.0f;
 
-		const float cos_nv = dot(nn, v);
-		const float blend = clamp(cos_theta, 0.0f, 1.0f);
-		float fac = lerp(blend, (float)(M_PI), std::max(0.0f, cos_nv)) * std::min(1.0f - cos_theta, 1.0f);
+// 		const float cos_nv = dot(nn, v);
+// 		const float blend = clamp(cos_theta, 0.0f, 1.0f);
+// 		float fac = lerp(blend, (float)(M_PI), std::max(0.0f, cos_nv)) * std::min(1.0f - cos_theta, 1.0f);
 
-		return fac;
+// 		return fac;
+
+		if (cos_theta < 0.0f) {
+			return 1.0f;
+		} else {
+			Vec3 nn = nor.normalized();
+			const Vec3 v = out.normalized();
+
+			if (dot(nn, in) > 0.0f)
+				nn *= -1.0f;
+
+			const float cos_nv = dot(nn, v);
+
+			return sphere_lambert(cos_nv, cos_theta);
+		}
 	}
 
 	void propagate_differentials(const float t, const WorldRay& in, const DifferentialGeometry &geo, WorldRay* out) const override {
