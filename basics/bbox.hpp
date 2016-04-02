@@ -460,7 +460,7 @@ struct BBox4 {
 	}
 	{}
 
-	// Construct from two BBox's
+	// Construct from four BBox's
 	BBox4(const BBox& b1, const BBox& b2, const BBox& b3, const BBox& b4): bounds {
 		{b1.min.x, b2.min.x, b3.min.x, b4.min.x},
 		{b1.max.x, b2.max.x, b3.max.x, b4.max.x},
