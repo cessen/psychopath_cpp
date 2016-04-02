@@ -11,7 +11,13 @@
  */
 static inline float logit(float p, float width = 1.5f) {
 	p = 0.001f + (p * 0.998f);
-	return logf(p/(1.0f-p)) * width * (0.6266f/4);
+	return logf(p/(1.0f-p)) * width * (0.6266f/4.0f);
+}
+
+static inline float fast_logit(float p, float width = 1.5f) {
+	const float n = 0.001f + (p * 0.998f);
+
+	return faster_ln((n / (1.0f - n))) * width * (0.6266f / 4.0f);
 }
 
 /*

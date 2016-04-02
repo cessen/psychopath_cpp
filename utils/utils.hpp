@@ -16,6 +16,7 @@
 #define M_PI 3.1415926535897932384626433
 #endif
 #define INV_PI (1.0 / M_PI)
+#define HPI (M_PI / 2)
 #define QPI (M_PI / 4)
 
 // Math operators for some types commonly used in Psychopath
@@ -329,6 +330,18 @@ static inline float fasterlog2(float x) {
 	y *= 1.1920928955078125e-7f;
 	return y - 126.94269504f;
 }
+
+// Adapted from from http://fastapprox.googlecode.com
+static inline float faster_ln(float x) {
+	union {
+		float f;
+		uint32_t i;
+	} vx = { x };
+	float y = vx.i;
+	y *= 8.2629582881927490e-8f;
+	return y - 87.989971088f;
+}
+
 
 /**
  * @brief Approximate 1/sqrt(n)

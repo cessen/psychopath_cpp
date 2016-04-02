@@ -109,8 +109,8 @@ WorldRay PathTraceIntegrator::next_ray_for_path(const WorldRay& prev_ray, PTStat
 
 	if (path.step == 0) {
 		const static float PIXEL_FILTER_WIDTH = 1.5f;
-		const float samp_x = (logit(path.sampler.next(), PIXEL_FILTER_WIDTH) + 0.5f + path.pix_x) / image->width;
-		const float samp_y = (logit(path.sampler.next(), PIXEL_FILTER_WIDTH) + 0.5f + path.pix_y) / image->height;
+		const float samp_x = (fast_logit(path.sampler.next(), PIXEL_FILTER_WIDTH) + 0.5f + path.pix_x) / image->width;
+		const float samp_y = (fast_logit(path.sampler.next(), PIXEL_FILTER_WIDTH) + 0.5f + path.pix_y) / image->height;
 
 		// Camera ray
 		const float rx = (samp_x - 0.5) * (image->max_x - image->min_x);
