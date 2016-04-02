@@ -63,32 +63,55 @@ uint32_t Tracer::trace(const WorldRay* w_rays_begin, const WorldRay* w_rays_end,
 
 	// Start tracing!
 
-#if 0
-	// Split rays into groups based on primary direction before tracing
-	auto split2 = std::partition(rays.begin(), rays.end(), [](Ray r) {
-		return std::abs(r.d[0]) > std::abs(r.d[1]) &&
-		       std::abs(r.d[0]) > std::abs(r.d[2]);
+#if 1
+	// Split rays into groups based on direction signs before tracing
+	auto xsplit_4 = std::partition(rays.begin(), rays.end(), [](Ray r) {
+		return (r.d[0] > 0.0f);
 	});
-	auto split1 = std::partition(rays.begin(), split2, [](Ray r) {
-		return r.d[0] > 0.0f;
-	});
-	trace_assembly(scene->root.get(), &(*rays.begin()), &(*split1));
-	trace_assembly(scene->root.get(), &(*split1), &(*split2));
 
-	auto split4 = std::partition(split2, rays.end(), [](Ray r) {
-		return std::abs(r.d[1]) > std::abs(r.d[2]);
+	auto ysplit_2 = std::partition(rays.begin(), xsplit_4, [](Ray r) {
+		return (r.d[1] > 0.0f);
 	});
-	auto split3 = std::partition(split2, split4, [](Ray r) {
-		return r.d[1] > 0.0f;
+	auto ysplit_6 = std::partition(xsplit_4, rays.end(), [](Ray r) {
+		return (r.d[1] > 0.0f);
 	});
-	trace_assembly(scene->root.get(), &(*split2), &(*split3));
-	trace_assembly(scene->root.get(), &(*split3), &(*split4));
 
-	auto split5 = std::partition(split4, rays.end(), [](Ray r) {
-		return r.d[2] > 0.0f;
+	auto zsplit_1 = std::partition(rays.begin(), ysplit_2, [](Ray r) {
+		return (r.d[2] > 0.0f);
 	});
-	trace_assembly(scene->root.get(), &(*split4), &(*split5));
-	trace_assembly(scene->root.get(), &(*split5), &(*rays.end()));
+	auto zsplit_3 = std::partition(ysplit_2, xsplit_4, [](Ray r) {
+		return (r.d[2] > 0.0f);
+	});
+	auto zsplit_5 = std::partition(xsplit_4, ysplit_6, [](Ray r) {
+		return (r.d[2] > 0.0f);
+	});
+	auto zsplit_7 = std::partition(ysplit_6, rays.end(), [](Ray r) {
+		return (r.d[2] > 0.0f);
+	});
+
+	// +X +Y +Z
+	trace_assembly(scene->root.get(), &(*rays.begin()), &(*zsplit_1));
+
+	// +X +Y -Z
+	trace_assembly(scene->root.get(), &(*zsplit_1), &(*ysplit_2));
+
+	// +X -Y +Z
+	trace_assembly(scene->root.get(), &(*ysplit_2), &(*zsplit_3));
+
+	// +X -Y -Z
+	trace_assembly(scene->root.get(), &(*zsplit_3), &(*xsplit_4));
+
+	// -X +Y +Z
+	trace_assembly(scene->root.get(), &(*xsplit_4), &(*zsplit_5));
+
+	// -X +Y -Z
+	trace_assembly(scene->root.get(), &(*zsplit_5), &(*ysplit_6));
+
+	// -X -Y +Z
+	trace_assembly(scene->root.get(), &(*ysplit_6), &(*zsplit_7));
+
+	// -X -Y -Z
+	trace_assembly(scene->root.get(), &(*zsplit_7), &(*rays.end()));
 #else
 	// Just trace all the rays together
 	trace_assembly(scene->root.get(), &(*rays.begin()), &(*rays.end()));
