@@ -5,7 +5,7 @@
 
 # Contiguous strings of whitespace characters (and comments) are always
 # semantically equivalent to a single space.  Whitespace formatting is purely
-# for human readability and does not affect how the file is interpretted.
+# for human readability and does not affect how the file is interpreted.
 
 # Non-leaf properties follow the format:
 #   TypeName $optional_name {<contents>}
@@ -96,15 +96,15 @@ Scene $yar_0001 {
 		SurfaceShader $grey_diffuse {
 			Type [Lambert]
 			Color [0.9 0.9 0.9]
-	}
+		}
 
-	SurfaceShader $mirror {
-		Type [GTR]
-		Color [0.9 0.9 0.9]
-		Roughness [0.0]
-		TailShape [2.0]
-		Fresnel [0.25]
-	}
+		SurfaceShader $mirror {
+			Type [GTR]
+			Color [0.9 0.9 0.9]
+			Roughness [0.0]
+			TailShape [2.0]
+			Fresnel [0.25]
+		}
 
 		SphereLight $light.001 {
 			Location [20 20 20]
@@ -120,9 +120,9 @@ Scene $yar_0001 {
 		# Assemblies can contain other assemblies
 		Assembly $gruble {
 			SurfaceShader $complex_shader {
-			Type [OSL]
-			FilePath ["cool_shader.osl"]
-		}
+				Type [OSL]
+				FilePath ["cool_shader.osl"]
+			}
 
 			# Assembly namespaces are local, so $subdiv_test here does
 			# not conflict with $subdiv_test in the parent assembly.
