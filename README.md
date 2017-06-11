@@ -1,3 +1,7 @@
+Note
+====
+This repo is the old version of Psychopath, and no further development is happening here.  The new repo is at https://github.com/cessen/psychopath
+
 Overview
 ========
 
